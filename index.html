@@ -267,7 +267,7 @@ let activeKey = TABS[0].key;
 const cache = {};
 
 function buildUrl(sheetName){
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
+  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}`;
 }
 
 async function fetchSheet(sheetName){
@@ -296,21 +296,23 @@ function escapeHtml(s){
 const CROWNS = ['👑','👑','👑'];
 
 function renderLeaderboard(data){
-  // Leaderboards sheet: groups of 3 columns (Number, Name, Points) separated by blank columns,
-  // headers in row 0 carry the board title (e.g. Group / Play-off / General).
-  const cols = data.cols;
+  // With headers=0, data.rows includes everything: row 0 = board titles (Group / Play-off / General,
+  // spaced 3 columns apart), row 1 = sub-headers (№ / Name / Points), row 2+ = actual entries.
   const rows = data.rows;
+  if(rows.length < 3) return '<div class="status-line">Немає даних для відображення.</div>';
+  const titleRow = rows[0];
+  const dataRows = rows.slice(2);
   const boards = [];
   let i = 0;
-  while(i < cols.length){
-    if(cols[i] && cols[i].trim() !== ''){
-      const title = cols[i].trim();
+  while(i < titleRow.length){
+    const title = titleRow[i] !== '' && titleRow[i] !== undefined ? String(titleRow[i]).trim() : '';
+    if(title !== ''){
       const entries = [];
-      for(const r of rows){
+      for(const r of dataRows){
         const rank = r[i];
         const name = r[i+1];
         const pts = r[i+2];
-        if(name === '' || name === undefined) continue;
+        if(name === '' || name === undefined || name === null) continue;
         entries.push({
           rank: rank === '' || rank === undefined ? '' : String(rank),
           name: String(name),
@@ -343,15 +345,16 @@ function renderLeaderboard(data){
 }
 
 function renderGenericTable(data){
-  const cols = data.cols;
-  const rows = data.rows.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
-  if(rows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  const allRows = data.rows.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
+  if(allRows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  const headerRow = allRows[0];
+  const bodyRows = allRows.slice(1);
   return `
     <div class="table-card">
       <table class="sheet-table">
-        <thead><tr>${cols.map(c => `<th>${escapeHtml(c || '')}</th>`).join('')}</tr></thead>
+        <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c || '')}</th>`).join('')}</tr></thead>
         <tbody>
-          ${rows.map(r => `<tr>${r.map(v => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}
+          ${bodyRows.map(r => `<tr>${r.map(v => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}
         </tbody>
       </table>
     </div>`;
