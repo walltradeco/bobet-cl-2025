@@ -141,28 +141,26 @@
     border-bottom:1px solid var(--line);
   }
   .row:last-child{border-bottom:none;}
+  .row.podium{background:rgba(76,174,107,0.10);}
   .rank{
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
-    width:22px;
+    width:28px;
     text-align:center;
     color:var(--text-dim);
     flex-shrink:0;
   }
-  .row.r1 .rank{color:var(--gold); font-weight:700;}
-  .row.r2 .rank{color:var(--silver); font-weight:700;}
-  .row.r3 .rank{color:var(--bronze); font-weight:700;}
+  .row.podium .rank{color:var(--green); font-weight:700;}
+  .rank .crown{font-size:16px;}
   .name{flex:1; font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
   .pts{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
     font-size:15px;
-    color:var(--green);
+    color:var(--text);
     flex-shrink:0;
   }
-  .row.r1 .pts{color:var(--gold);}
-  .row.r2 .pts{color:var(--silver);}
-  .row.r3 .pts{color:var(--bronze);}
+  .row.podium .pts{color:var(--green);}
 
   /* ===== GENERIC TABLE VIEW ===== */
   .table-card{
@@ -295,6 +293,8 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
+const CROWNS = ['👑','👑','👑'];
+
 function renderLeaderboard(data){
   // Leaderboards sheet: groups of 3 columns (Number, Name, Points) separated by blank columns,
   // headers in row 0 carry the board title (e.g. Group / Play-off / General).
@@ -307,10 +307,15 @@ function renderLeaderboard(data){
       const title = cols[i].trim();
       const entries = [];
       for(const r of rows){
+        const rank = r[i];
         const name = r[i+1];
         const pts = r[i+2];
         if(name === '' || name === undefined) continue;
-        entries.push({ name: String(name), pts: pts === '' || pts === undefined ? '' : pts });
+        entries.push({
+          rank: rank === '' || rank === undefined ? '' : String(rank),
+          name: String(name),
+          pts: pts === '' || pts === undefined ? '' : pts
+        });
       }
       boards.push({ title, entries });
       i += 3;
@@ -320,18 +325,21 @@ function renderLeaderboard(data){
   }
   if(boards.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
 
-  return `<div class="boards">${boards.map(b => `
+  return `<div class="boards">${boards.map(b => {
+    const isGeneral = /general/i.test(b.title);
+    return `
     <div class="board">
       <div class="board-head">${escapeHtml(b.title)}</div>
       ${b.entries.map((e, idx) => `
-        <div class="row r${idx+1}">
-          <div class="rank">${idx+1}</div>
+        <div class="row ${idx < 3 ? 'podium' : ''}">
+          <div class="rank">${isGeneral && idx < 3 ? `<span class="crown">${CROWNS[idx]}</span>` : escapeHtml(e.rank)}</div>
           <div class="name">${escapeHtml(e.name)}</div>
           <div class="pts">${escapeHtml(e.pts)}</div>
         </div>
       `).join('')}
     </div>
-  `).join('')}</div>`;
+  `;
+  }).join('')}</div>`;
 }
 
 function renderGenericTable(data){
