@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>[BoBet] Клубний ЧС 2025</title>
+<title>BoBet · Fantasy League</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -15,10 +15,7 @@
     --text: #EDEFE8;
     --text-dim: #8B9A8C;
     --gold: #E8B23C;
-    --silver: #C7CDC3;
-    --bronze: #C97B4A;
     --green: #4CAE6B;
-    --green-deep: #2E7A47;
     --red: #C75C4A;
     --field-line: rgba(237,239,232,0.08);
   }
@@ -32,18 +29,21 @@
     font-family:'Inter',sans-serif;
     min-height:100vh;
   }
-  .wrap{max-width:980px;margin:0 auto;padding:0 20px 80px;}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
 
   /* ===== HEADER ===== */
   header{
-    padding:48px 0 28px;
+    padding:40px 0 0;
     border-bottom:1px solid var(--line);
-    margin-bottom:32px;
+    margin-bottom:28px;
+  }
+  .head-top{
     display:flex;
     justify-content:space-between;
-    align-items:flex-end;
+    align-items:flex-start;
     flex-wrap:wrap;
     gap:16px;
+    margin-bottom:24px;
   }
   .brand-tag{
     font-family:'JetBrains Mono',monospace;
@@ -56,7 +56,7 @@
   h1{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:38px;
+    font-size:34px;
     line-height:1.1;
     margin:0;
     letter-spacing:-0.01em;
@@ -81,9 +81,37 @@
   }
   #refresh-btn:hover{border-color:var(--green);}
   #refresh-btn:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
-  #refresh-btn.spinning{opacity:0.6; cursor:wait;}
+  #refresh-btn:disabled{opacity:0.6; cursor:wait;}
 
-  /* ===== TABS ===== */
+  /* tournament switcher */
+  nav.tournaments{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    padding-bottom:20px;
+  }
+  nav.tournaments button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px;
+    font-weight:500;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  nav.tournaments button:hover{color:var(--text); border-color:var(--green);}
+  nav.tournaments button.active{
+    background:var(--green);
+    border-color:var(--green);
+    color:#0E1410;
+    font-weight:700;
+  }
+  nav.tournaments button:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+
+  /* ===== SHEET TABS ===== */
   nav.tabs{
     display:flex;
     gap:4px;
@@ -108,27 +136,24 @@
   nav.tabs button.active{color:var(--green); border-bottom-color:var(--green);}
   nav.tabs button:focus-visible{outline:2px solid var(--green); outline-offset:-2px;}
 
-  section.view{display:none;}
-  section.view.active{display:block;}
-
   /* ===== LEADERBOARD GRID ===== */
   .boards{
     display:grid;
-    grid-template-columns:repeat(3,1fr);
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
     gap:20px;
   }
-  @media(max-width:760px){ .boards{grid-template-columns:1fr;} }
   .board{
     background:var(--panel);
     border:1px solid var(--line);
     border-radius:10px;
     overflow:hidden;
+    height:fit-content;
   }
   .board-head{
     padding:14px 16px;
     font-family:'Space Grotesk',sans-serif;
-    font-weight:500;
-    font-size:14px;
+    font-weight:700;
+    font-size:15px;
     color:var(--text);
     border-bottom:1px solid var(--line);
     background:var(--panel-2);
@@ -145,7 +170,7 @@
   .rank{
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
-    width:28px;
+    min-width:34px;
     text-align:center;
     color:var(--text-dim);
     flex-shrink:0;
@@ -162,7 +187,7 @@
   }
   .row.podium .pts{color:var(--green);}
 
-  /* ===== GENERIC TABLE VIEW ===== */
+  /* ===== GENERIC TABLE ===== */
   .table-card{
     background:var(--panel);
     border:1px solid var(--line);
@@ -174,7 +199,6 @@
     width:100%;
     border-collapse:collapse;
     font-size:13px;
-    min-width:480px;
   }
   table.sheet-table th{
     text-align:left;
@@ -200,14 +224,6 @@
   table.sheet-table tbody tr:last-child td{border-bottom:none;}
   table.sheet-table tbody tr:nth-child(even){background:rgba(255,255,255,0.015);}
   table.sheet-table tbody tr:hover{background:rgba(76,174,107,0.06);}
-
-  .section-title{
-    font-family:'Space Grotesk',sans-serif;
-    font-size:15px;
-    font-weight:500;
-    margin:0 0 12px;
-    color:var(--text-dim);
-  }
 
   .rules-card{
     background:var(--panel);
@@ -236,14 +252,17 @@
 <div class="wrap">
 
   <header>
-    <div>
-      <p class="brand-tag">BoBet &middot; Fantasy League</p>
-      <h1>Клубний ЧС 2025</h1>
+    <div class="head-top">
+      <div>
+        <p class="brand-tag">BoBet · Fantasy League</p>
+        <h1 id="tournament-title"></h1>
+      </div>
+      <div class="meta-block">
+        <div id="updated-at">Завантаження...</div>
+        <button id="refresh-btn">⟳ Оновити дані</button>
+      </div>
     </div>
-    <div class="meta-block">
-      <div id="updated-at">Завантаження...</div>
-      <button id="refresh-btn">⟳ Оновити дані</button>
-    </div>
+    <nav class="tournaments" id="tournaments"></nav>
   </header>
 
   <nav class="tabs" id="tabs"></nav>
@@ -252,26 +271,64 @@
 </div>
 
 <script>
-const SHEET_ID = '1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ';
-
-const TABS = [
-  { key:'leaderboards', label:'Загальний зачет', sheet:'Leaderboards', kind:'leaderboard' },
-  { key:'group',        label:'Група',           sheet:'Group',        kind:'table' },
-  { key:'groupPos',     label:'Динаміка груп',    sheet:'Group positions', kind:'table' },
-  { key:'playoff',      label:'Плей-офф',         sheet:'Play-off',     kind:'table' },
-  { key:'playoffBonus', label:'Бонуси плей-офф',  sheet:'Play-off bonus points', kind:'table' },
-  { key:'rules',        label:'Правила і призи',  sheet:'Rules + Prize pool', kind:'rules' },
+/* ======== CONFIG: tournaments and their sheet tabs ======== */
+const TOURNAMENTS = [
+  {
+    key:'clubwc2025',
+    title:'Клубний ЧС 2025',
+    sheetId:'1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ',
+    tabs:[
+      { sheet:'Leaderboards',           label:'Лідерборди',        kind:'leaderboard' },
+      { sheet:'Group',                  label:'Група',             kind:'table' },
+      { sheet:'Group positions',        label:'Динаміка груп',     kind:'table' },
+      { sheet:'Play-off',               label:'Плей-офф',          kind:'table' },
+      { sheet:'Play-off bonus points',  label:'Бонуси плей-офф',   kind:'table' },
+      { sheet:'Rules + Prize pool',     label:'Правила і призи',   kind:'rules' },
+    ]
+  },
+  {
+    key:'cl2025',
+    title:'ЛЧ 2025',
+    sheetId:'1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U',
+    tabs:[
+      { sheet:'Leaderboards',                        label:'Лідерборди',           kind:'leaderboard' },
+      { sheet:'Play-off',                            label:'Плей-офф',             kind:'table' },
+      { sheet:'Knockout phase play-offs',            label:'Стикові матчі',        kind:'table' },
+      { sheet:'Knockout phase play-offs winners',    label:'Переможці стиків',     kind:'table' },
+      { sheet:'1&2place + Real + Liverpool',         label:'1&2 місце + Реал + Ліверпуль', kind:'table' },
+      { sheet:'Rules + Prize pool',                  label:'Правила і призи',      kind:'rules' },
+    ]
+  },
+  {
+    key:'euro2024',
+    title:'Євро 2024',
+    sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
+    tabs:[
+      { sheet:'Leaderboards',                  label:'Лідерборди',      kind:'leaderboard' },
+      { sheet:'Group',                         label:'Група',           kind:'table' },
+      { sheet:'Group positions',               label:'Динаміка груп',   kind:'table' },
+      { sheet:'Play-off',                      label:'Плей-офф',        kind:'table' },
+      { sheet:'1&2place + Mudryk + Ukraine',   label:'1&2 місце + Мудрик + Україна', kind:'table' },
+      { sheet:'Rules + Prize pool',            label:'Правила і призи', kind:'rules' },
+    ]
+  },
 ];
 
-let activeKey = TABS[0].key;
-const cache = {};
+const CROWNS = ['👑','👑','👑'];
 
-function buildUrl(sheetName){
-  return `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}`;
+let activeTournament = TOURNAMENTS[0];
+let activeTabIndex = 0;
+const cache = {}; // key: sheetId + '::' + sheetName
+
+/* ======== DATA ======== */
+function buildUrl(sheetId, sheetName){
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}`;
 }
 
-async function fetchSheet(sheetName){
-  const res = await fetch(buildUrl(sheetName));
+async function fetchSheet(sheetId, sheetName){
+  const cacheKey = sheetId + '::' + sheetName;
+  if(cache[cacheKey]) return cache[cacheKey];
+  const res = await fetch(buildUrl(sheetId, sheetName));
   if(!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
@@ -280,24 +337,24 @@ async function fetchSheet(sheetName){
   if(json.status === 'error'){
     throw new Error((json.errors && json.errors[0] && json.errors[0].detailed_message) || 'Помилка таблиці');
   }
-  const cols = json.table.cols.map(c => c.label || c.id || '');
-  const rows = json.table.rows.map(r => r.c.map(cell => {
+  const rows = json.table.rows.map(r => (r.c || []).map(cell => {
     if(!cell) return '';
     if(cell.f !== undefined && cell.f !== null) return cell.f;
     return cell.v === null || cell.v === undefined ? '' : cell.v;
   }));
-  return { cols, rows };
+  const data = { rows };
+  cache[cacheKey] = data;
+  return data;
 }
 
 function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-const CROWNS = ['👑','👑','👑'];
-
+/* ======== RENDERERS ======== */
 function renderLeaderboard(data){
-  // With headers=0, data.rows includes everything: row 0 = board titles (Group / Play-off / General,
-  // spaced 3 columns apart), row 1 = sub-headers (№ / Name / Points), row 2+ = actual entries.
+  // row 0 = board titles (Group / Play-off / General ...), spaced 3 cols apart
+  // row 1 = sub-headers (№ / Name / Points), row 2+ = entries
   const rows = data.rows;
   if(rows.length < 3) return '<div class="status-line">Немає даних для відображення.</div>';
   const titleRow = rows[0];
@@ -319,7 +376,7 @@ function renderLeaderboard(data){
           pts: pts === '' || pts === undefined ? '' : pts
         });
       }
-      boards.push({ title, entries });
+      if(entries.length) boards.push({ title, entries });
       i += 3;
     } else {
       i += 1;
@@ -339,22 +396,28 @@ function renderLeaderboard(data){
           <div class="pts">${escapeHtml(e.pts)}</div>
         </div>
       `).join('')}
-    </div>
-  `;
+    </div>`;
   }).join('')}</div>`;
 }
 
 function renderGenericTable(data){
   const allRows = data.rows.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
   if(allRows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
-  const headerRow = allRows[0];
-  const bodyRows = allRows.slice(1);
+  // trim fully-empty trailing columns
+  const maxCols = Math.max(...allRows.map(r => {
+    let last = -1;
+    r.forEach((v, idx) => { if(v !== '' && v !== null && v !== undefined) last = idx; });
+    return last + 1;
+  }));
+  const trimmed = allRows.map(r => r.slice(0, maxCols));
+  const headerRow = trimmed[0];
+  const bodyRows = trimmed.slice(1);
   return `
     <div class="table-card">
       <table class="sheet-table">
-        <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c || '')}</th>`).join('')}</tr></thead>
+        <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c ?? '')}</th>`).join('')}</tr></thead>
         <tbody>
-          ${bodyRows.map(r => `<tr>${r.map(v => `<td>${escapeHtml(v)}</td>`).join('')}</tr>`).join('')}
+          ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) => `<td>${escapeHtml(r[ci] ?? '')}</td>`).join('')}</tr>`).join('')}
         </tbody>
       </table>
     </div>`;
@@ -375,61 +438,77 @@ function renderTabContent(tab, data){
   return renderGenericTable(data);
 }
 
-async function loadTab(key, { force=false } = {}){
-  const tab = TABS.find(t => t.key === key);
+/* ======== UI ======== */
+async function loadActiveTab(){
+  const tab = activeTournament.tabs[activeTabIndex];
   const content = document.getElementById('content');
-  if(!force && cache[key]){
-    content.innerHTML = renderTabContent(tab, cache[key]);
-    return;
-  }
   content.innerHTML = '<div class="status-line">Завантаження даних з Google Sheets...</div>';
   try{
-    const data = await fetchSheet(tab.sheet);
-    cache[key] = data;
+    const data = await fetchSheet(activeTournament.sheetId, tab.sheet);
+    // make sure user hasn't switched away while loading
+    if(activeTournament.tabs[activeTabIndex] !== tab) return;
     content.innerHTML = renderTabContent(tab, data);
   }catch(err){
     content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.label)}»: ${escapeHtml(err.message)}</div>`;
   }
 }
 
-function setActiveTab(key){
-  activeKey = key;
-  document.querySelectorAll('nav.tabs button').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.key === key);
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = activeTournament.tabs.map((t, idx) =>
+    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.label)}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTabIndex = Number(btn.dataset.idx);
+      nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      loadActiveTab();
+    });
   });
-  loadTab(key);
 }
 
-function buildTabs(){
-  const nav = document.getElementById('tabs');
-  nav.innerHTML = TABS.map(t => `<button data-key="${t.key}">${escapeHtml(t.label)}</button>`).join('');
+function renderTournaments(){
+  const nav = document.getElementById('tournaments');
+  nav.innerHTML = TOURNAMENTS.map(t =>
+    `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}</button>`
+  ).join('');
   nav.querySelectorAll('button').forEach(btn => {
-    btn.addEventListener('click', () => setActiveTab(btn.dataset.key));
+    btn.addEventListener('click', () => setTournament(btn.dataset.key));
   });
+}
+
+function setTournament(key){
+  const t = TOURNAMENTS.find(x => x.key === key);
+  if(!t) return;
+  activeTournament = t;
+  activeTabIndex = 0;
+  document.getElementById('tournament-title').textContent = t.title;
+  document.querySelectorAll('nav.tournaments button').forEach(b =>
+    b.classList.toggle('active', b.dataset.key === key));
+  renderTabs();
+  loadActiveTab();
+  updateTimestamp();
 }
 
 function updateTimestamp(){
   const el = document.getElementById('updated-at');
-  const now = new Date();
-  el.textContent = 'Оновлено: ' + now.toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  el.textContent = 'Оновлено: ' + new Date().toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 
 async function refreshAll(){
   const btn = document.getElementById('refresh-btn');
-  btn.classList.add('spinning');
   btn.disabled = true;
   Object.keys(cache).forEach(k => delete cache[k]);
-  await loadTab(activeKey, { force:true });
+  await loadActiveTab();
   updateTimestamp();
-  btn.classList.remove('spinning');
   btn.disabled = false;
 }
 
 document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
-buildTabs();
-setActiveTab(activeKey);
-updateTimestamp();
+/* ======== INIT ======== */
+renderTournaments();
+setTournament(activeTournament.key);
 
 // auto-refresh every 60s
 setInterval(refreshAll, 60000);
