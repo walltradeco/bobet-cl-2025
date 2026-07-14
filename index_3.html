@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BoBet · Fantasy League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0E1410;
+    --panel: #151D17;
+    --panel-2: #1B251D;
+    --line: #2A362B;
+    --text: #EDEFE8;
+    --text-dim: #8B9A8C;
+    --gold: #E8B23C;
+    --green: #4CAE6B;
+    --red: #C75C4A;
+    --field-line: rgba(237,239,232,0.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, var(--field-line) 0px, var(--field-line) 1px, transparent 1px, transparent 64px),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+  }
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 80px;}
+
+  /* ===== HEADER ===== */
+  header{
+    padding:40px 0 0;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .head-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:24px;
+  }
+  .brand-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--green);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:34px;
+    line-height:1.1;
+    margin:0;
+    letter-spacing:-0.01em;
+  }
+  .meta-block{
+    text-align:right;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  #refresh-btn{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    padding:8px 14px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:8px;
+    transition:border-color .15s;
+  }
+  #refresh-btn:hover{border-color:var(--green);}
+  #refresh-btn:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+  #refresh-btn:disabled{opacity:0.6; cursor:wait;}
+
+  /* tournament switcher */
+  nav.tournaments{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    padding-bottom:20px;
+  }
+  nav.tournaments button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px;
+    font-weight:500;
+    padding:10px 20px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  nav.tournaments button:hover{color:var(--text); border-color:var(--green);}
+  nav.tournaments button.active{
+    background:var(--green);
+    border-color:var(--green);
+    color:#0E1410;
+    font-weight:700;
+  }
+  nav.tournaments button:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+
+  /* ===== SHEET TABS ===== */
+  nav.tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:32px;
+    overflow-x:auto;
+    border-bottom:1px solid var(--line);
+  }
+  nav.tabs button{
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    font-weight:500;
+    padding:10px 16px;
+    cursor:pointer;
+    white-space:nowrap;
+    border-bottom:2px solid transparent;
+    transition:color .15s, border-color .15s;
+  }
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{color:var(--green); border-bottom-color:var(--green);}
+  nav.tabs button:focus-visible{outline:2px solid var(--green); outline-offset:-2px;}
+
+  /* ===== LEADERBOARD GRID ===== */
+  .boards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));
+    gap:20px;
+  }
+  .board{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    height:fit-content;
+  }
+  .board-head{
+    padding:14px 16px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+    border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+  }
+  .row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:11px 16px;
+    border-bottom:1px solid var(--line);
+  }
+  .row:last-child{border-bottom:none;}
+  .row.podium{background:rgba(76,174,107,0.10);}
+  .rank{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    min-width:34px;
+    text-align:center;
+    color:var(--text-dim);
+    flex-shrink:0;
+  }
+  .row.podium .rank{color:var(--green); font-weight:700;}
+  .rank .crown{font-size:16px;}
+  .name{flex:1; font-size:14px; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .pts{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+    flex-shrink:0;
+  }
+  .row.podium .pts{color:var(--green);}
+
+  /* ===== GENERIC TABLE ===== */
+  .table-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:auto;
+    margin-bottom:24px;
+  }
+  table.sheet-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.sheet-table th{
+    text-align:left;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:500;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.04em;
+    color:var(--text-dim);
+    background:var(--panel-2);
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+    position:sticky;
+    top:0;
+  }
+  table.sheet-table td{
+    padding:9px 14px;
+    border-bottom:1px solid var(--line);
+    color:var(--text);
+    white-space:nowrap;
+  }
+  table.sheet-table tbody tr:last-child td{border-bottom:none;}
+  table.sheet-table tbody tr:nth-child(even){background:rgba(255,255,255,0.015);}
+  table.sheet-table tbody tr:hover{background:rgba(76,174,107,0.06);}
+
+  .rules-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 24px;
+    font-size:14px;
+    line-height:1.8;
+  }
+  .rules-card p{margin:0 0 10px;}
+
+  .status-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    padding:30px 0;
+    text-align:center;
+  }
+  .status-line.err{color:var(--red);}
+
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-top">
+      <div>
+        <p class="brand-tag">BoBet · Fantasy League</p>
+        <h1 id="tournament-title"></h1>
+      </div>
+      <div class="meta-block">
+        <div id="updated-at">Завантаження...</div>
+        <button id="refresh-btn">⟳ Оновити дані</button>
+      </div>
+    </div>
+    <nav class="tournaments" id="tournaments"></nav>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div id="content"></div>
+
+</div>
+
+<script>
+/* ======== CONFIG: tournaments and their sheet tabs ======== */
+const TOURNAMENTS = [
+  {
+    key:'clubwc2025',
+    title:'Клубний ЧС 2025',
+    sheetId:'1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ',
+    tabs:[
+      { sheet:'Leaderboards',           label:'Лідерборди',        kind:'leaderboard' },
+      { sheet:'Group',                  label:'Група',             kind:'table' },
+      { sheet:'Group positions',        label:'Динаміка груп',     kind:'table' },
+      { sheet:'Play-off',               label:'Плей-офф',          kind:'table' },
+      { sheet:'Play-off bonus points',  label:'Бонуси плей-офф',   kind:'table' },
+      { sheet:'Rules + Prize pool',     label:'Правила і призи',   kind:'rules' },
+    ]
+  },
+  {
+    key:'cl2025',
+    title:'ЛЧ 2025',
+    sheetId:'1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U',
+    tabs:[
+      { sheet:'Leaderboards',                        label:'Лідерборди',           kind:'leaderboard' },
+      { sheet:'Play-off',                            label:'Плей-офф',             kind:'table' },
+      { sheet:'Knockout phase play-offs',            label:'Стикові матчі',        kind:'table' },
+      { sheet:'Knockout phase play-offs winners',    label:'Переможці стиків',     kind:'table' },
+      { sheet:'1&2place + Real + Liverpool',         label:'1&2 місце + Реал + Ліверпуль', kind:'table' },
+      { sheet:'Rules + Prize pool',                  label:'Правила і призи',      kind:'rules' },
+    ]
+  },
+  {
+    key:'euro2024',
+    title:'Євро 2024',
+    sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
+    tabs:[
+      { sheet:'Leaderboards',                  label:'Лідерборди',      kind:'leaderboard' },
+      { sheet:'Group',                         label:'Група',           kind:'table' },
+      { sheet:'Group positions',               label:'Динаміка груп',   kind:'table' },
+      { sheet:'Play-off',                      label:'Плей-офф',        kind:'table' },
+      { sheet:'1&2place + Mudryk + Ukraine',   label:'1&2 місце + Мудрик + Україна', kind:'table' },
+      { sheet:'Rules + Prize pool',            label:'Правила і призи', kind:'rules' },
+    ]
+  },
+];
+
+const CROWNS = ['👑','👑','👑'];
+
+let activeTournament = TOURNAMENTS[0];
+let activeTabIndex = 0;
+const cache = {}; // key: sheetId + '::' + sheetName
+
+/* ======== DATA ======== */
+function buildUrl(sheetId, sheetName){
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+async function fetchSheet(sheetId, sheetName){
+  const cacheKey = sheetId + '::' + sheetName;
+  if(cache[cacheKey]) return cache[cacheKey];
+  const res = await fetch(buildUrl(sheetId, sheetName));
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
+  if(!match) throw new Error('Не вдалося розпарсити відповідь Google Sheets');
+  const json = JSON.parse(match[1]);
+  if(json.status === 'error'){
+    throw new Error((json.errors && json.errors[0] && json.errors[0].detailed_message) || 'Помилка таблиці');
+  }
+  const rows = json.table.rows.map(r => (r.c || []).map(cell => {
+    if(!cell) return '';
+    if(cell.f !== undefined && cell.f !== null) return cell.f;
+    return cell.v === null || cell.v === undefined ? '' : cell.v;
+  }));
+  const data = { rows };
+  cache[cacheKey] = data;
+  return data;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ======== RENDERERS ======== */
+function renderLeaderboard(data){
+  // row 0 = board titles (Group / Play-off / General ...), spaced 3 cols apart
+  // row 1 = sub-headers (№ / Name / Points), row 2+ = entries
+  const rows = data.rows;
+  if(rows.length < 3) return '<div class="status-line">Немає даних для відображення.</div>';
+  const titleRow = rows[0];
+  const dataRows = rows.slice(2);
+  const boards = [];
+  let i = 0;
+  while(i < titleRow.length){
+    const title = titleRow[i] !== '' && titleRow[i] !== undefined ? String(titleRow[i]).trim() : '';
+    if(title !== ''){
+      const entries = [];
+      for(const r of dataRows){
+        const rank = r[i];
+        const name = r[i+1];
+        const pts = r[i+2];
+        if(name === '' || name === undefined || name === null) continue;
+        entries.push({
+          rank: rank === '' || rank === undefined ? '' : String(rank),
+          name: String(name),
+          pts: pts === '' || pts === undefined ? '' : pts
+        });
+      }
+      if(entries.length) boards.push({ title, entries });
+      i += 3;
+    } else {
+      i += 1;
+    }
+  }
+  if(boards.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+
+  return `<div class="boards">${boards.map(b => {
+    const isGeneral = /general/i.test(b.title);
+    return `
+    <div class="board">
+      <div class="board-head">${escapeHtml(b.title)}</div>
+      ${b.entries.map((e, idx) => `
+        <div class="row ${idx < 3 ? 'podium' : ''}">
+          <div class="rank">${isGeneral && idx < 3 ? `<span class="crown">${CROWNS[idx]}</span>` : escapeHtml(e.rank)}</div>
+          <div class="name">${escapeHtml(e.name)}</div>
+          <div class="pts">${escapeHtml(e.pts)}</div>
+        </div>
+      `).join('')}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+function renderGenericTable(data){
+  const allRows = data.rows.filter(r => r.some(v => v !== '' && v !== null && v !== undefined));
+  if(allRows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  // trim fully-empty trailing columns
+  const maxCols = Math.max(...allRows.map(r => {
+    let last = -1;
+    r.forEach((v, idx) => { if(v !== '' && v !== null && v !== undefined) last = idx; });
+    return last + 1;
+  }));
+  const trimmed = allRows.map(r => r.slice(0, maxCols));
+  const headerRow = trimmed[0];
+  const bodyRows = trimmed.slice(1);
+  return `
+    <div class="table-card">
+      <table class="sheet-table">
+        <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c ?? '')}</th>`).join('')}</tr></thead>
+        <tbody>
+          ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) => `<td>${escapeHtml(r[ci] ?? '')}</td>`).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+function renderRules(data){
+  const lines = data.rows
+    .flat()
+    .filter(v => v !== '' && v !== null && v !== undefined)
+    .map(v => String(v));
+  if(lines.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  return `<div class="rules-card">${lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')}</div>`;
+}
+
+function renderTabContent(tab, data){
+  if(tab.kind === 'leaderboard') return renderLeaderboard(data);
+  if(tab.kind === 'rules') return renderRules(data);
+  return renderGenericTable(data);
+}
+
+/* ======== UI ======== */
+async function loadActiveTab(){
+  const tab = activeTournament.tabs[activeTabIndex];
+  const content = document.getElementById('content');
+  content.innerHTML = '<div class="status-line">Завантаження даних з Google Sheets...</div>';
+  try{
+    const data = await fetchSheet(activeTournament.sheetId, tab.sheet);
+    // make sure user hasn't switched away while loading
+    if(activeTournament.tabs[activeTabIndex] !== tab) return;
+    content.innerHTML = renderTabContent(tab, data);
+  }catch(err){
+    content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.label)}»: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = activeTournament.tabs.map((t, idx) =>
+    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.label)}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTabIndex = Number(btn.dataset.idx);
+      nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      loadActiveTab();
+    });
+  });
+}
+
+function renderTournaments(){
+  const nav = document.getElementById('tournaments');
+  nav.innerHTML = TOURNAMENTS.map(t =>
+    `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => setTournament(btn.dataset.key));
+  });
+}
+
+function setTournament(key){
+  const t = TOURNAMENTS.find(x => x.key === key);
+  if(!t) return;
+  activeTournament = t;
+  activeTabIndex = 0;
+  document.getElementById('tournament-title').textContent = t.title;
+  document.querySelectorAll('nav.tournaments button').forEach(b =>
+    b.classList.toggle('active', b.dataset.key === key));
+  renderTabs();
+  loadActiveTab();
+  updateTimestamp();
+}
+
+function updateTimestamp(){
+  const el = document.getElementById('updated-at');
+  el.textContent = 'Оновлено: ' + new Date().toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  Object.keys(cache).forEach(k => delete cache[k]);
+  await loadActiveTab();
+  updateTimestamp();
+  btn.disabled = false;
+}
+
+document.getElementById('refresh-btn').addEventListener('click', refreshAll);
+
+/* ======== INIT ======== */
+renderTournaments();
+setTournament(activeTournament.key);
+
+// auto-refresh every 60s
+setInterval(refreshAll, 60000);
+</script>
+</body>
+</html>
