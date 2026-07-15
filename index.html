@@ -31,7 +31,7 @@
     font-family:'Inter',sans-serif;
     min-height:100vh;
   }
-  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 80px;}
+  .wrap{max-width:1320px;margin:0 auto;padding:0 24px 80px;}
 
   /* ===== HEADER ===== */
   header{
@@ -141,8 +141,8 @@
   /* ===== LEADERBOARDS ===== */
   .boards{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
-    gap:20px;
+    grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));
+    gap:24px;
     align-items:start;
   }
   .board{
@@ -212,8 +212,8 @@
   table.matches{
     width:100%;
     border-collapse:collapse;
-    font-size:13px;
-    min-width:720px;
+    font-size:14px;
+    min-width:760px;
   }
   table.matches thead th{
     position:sticky;
@@ -256,11 +256,11 @@
     border-radius:20px;
   }
   table.matches td{
-    padding:9px 12px;
+    padding:11px 14px;
     border-bottom:1px solid var(--line);
     text-align:center;
     font-family:'JetBrains Mono',monospace;
-    font-size:13px;
+    font-size:14px;
     color:var(--text-dim);
     white-space:nowrap;
   }
@@ -321,7 +321,7 @@
   table.sheet-table{
     width:100%;
     border-collapse:collapse;
-    font-size:13px;
+    font-size:14px;
   }
   table.sheet-table th{
     text-align:left;
@@ -339,7 +339,7 @@
     top:0;
   }
   table.sheet-table td{
-    padding:9px 14px;
+    padding:11px 16px;
     border-bottom:1px solid var(--line);
     color:var(--text);
     white-space:nowrap;
@@ -495,27 +495,48 @@ function outcomeSign(pair){
 
 /* ======== LEADERBOARDS ======== */
 function renderLeaderboard(data){
-  const rows = data.rows;
-  if(rows.length < 3) return '<div class="status-line">Немає даних для відображення.</div>';
-  const titleRow = rows[0];
-  const headRow = rows[1];
-  const dataRows = rows.slice(2);
+  const rows = data.rows.map(r => r.map(cellStr));
+
+  // find the sub-header row: the row containing the MOST "№ / Name / Points" triplets
+  // (the real one has one triplet per board; hidden helper columns have at most one)
+  let headerRowIdx = -1;
+  let boardsCols = [];
+  for(let ri = 0; ri < rows.length; ri++){
+    const r = rows[ri];
+    const found = [];
+    for(let ci = 0; ci < r.length; ci++){
+      const a = r[ci], b = r[ci+1] || '', c = r[ci+2] || '';
+      if(/№|#|^No\.?$/i.test(a) && /name/i.test(b) && /point/i.test(c)){
+        found.push(ci);
+      }
+    }
+    if(found.length > boardsCols.length){
+      headerRowIdx = ri;
+      boardsCols = found;
+    }
+  }
+
+  if(headerRowIdx === -1){
+    // structure not recognized — show raw data instead of nothing
+    return renderGenericTable(data);
+  }
+
+  const dataRows = rows.slice(headerRowIdx + 1);
   const boards = [];
 
-  // a valid board starts at column i where row1 has a title and row2 = № / Name / Points
-  for(let i = 0; i < titleRow.length; i++){
-    const title = cellStr(titleRow[i]);
-    if(title === '') continue;
-    const h1 = cellStr(headRow[i]);
-    const h2 = cellStr(headRow[i+1]);
-    const h3 = cellStr(headRow[i+2]);
-    const looksLikeBoard = /№|#/.test(h1) && /name/i.test(h2) && /point/i.test(h3);
-    if(!looksLikeBoard) continue;
+  for(const ci of boardsCols){
+    // board title: look up to 3 rows above the header row at this column
+    let title = '';
+    for(let up = 1; up <= 3 && headerRowIdx - up >= 0; up++){
+      const t = cellStr(rows[headerRowIdx - up][ci]);
+      if(t !== ''){ title = t; break; }
+    }
+    if(title === '') title = 'Лідерборд';
 
     const entries = [];
     for(const r of dataRows){
-      const name = cellStr(r[i+1]);
-      const pts = toNum(r[i+2]);
+      const name = cellStr(r[ci+1]);
+      const pts = toNum(r[ci+2]);
       if(name === '' || isPlaceholderName(name)) continue;
       if(pts === null) continue;
       entries.push({ name, pts });
@@ -523,7 +544,7 @@ function renderLeaderboard(data){
     if(entries.length) boards.push({ title, entries });
   }
 
-  if(boards.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  if(boards.length === 0) return renderGenericTable(data);
 
   return `<div class="boards">${boards.map(b => {
     const isGeneral = /general/i.test(b.title);
