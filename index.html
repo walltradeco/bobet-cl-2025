@@ -38,7 +38,7 @@
     min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1320px;margin:0 auto;padding:0 24px 80px;}
+  .wrap{max-width:1600px;margin:0 auto;padding:0 32px 80px;}
 
   /* ===== HEADER ===== */
   header{
@@ -179,40 +179,49 @@
     display:flex;
     align-items:center;
     gap:14px;
-    padding:12px 18px;
+    padding:13px 18px;
     border-bottom:1px solid var(--line);
+    transition:background .12s;
   }
   .lb-row:last-child{border-bottom:none;}
-  .lb-row.podium{background:var(--green-soft);}
-  .board.stage-general .lb-row.podium{background:var(--gold-soft);}
+  .lb-row.p1{background:linear-gradient(90deg, rgba(232,178,60,0.16), rgba(232,178,60,0.03));}
+  .lb-row.p2{background:linear-gradient(90deg, rgba(199,205,195,0.14), rgba(199,205,195,0.02));}
+  .lb-row.p3{background:linear-gradient(90deg, rgba(201,123,74,0.14), rgba(201,123,74,0.02));}
   .lb-rank{
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
-    min-width:40px;
+    font-weight:700;
+    min-width:42px;
     text-align:center;
     color:var(--text-dim);
     flex-shrink:0;
   }
-  .lb-row.podium .lb-rank{color:var(--green); font-weight:700;}
-  .lb-rank .crown{font-size:17px;}
+  .lb-row.p1 .lb-rank{color:var(--gold);}
+  .lb-row.p2 .lb-rank{color:#C7CDC3;}
+  .lb-row.p3 .lb-rank{color:#C97B4A;}
+  .lb-rank .crown{font-size:18px;}
   .lb-name{
     flex:1;
-    font-size:15px;
-    font-weight:600;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    font-weight:500;
     min-width:0;
     overflow:hidden;
     text-overflow:ellipsis;
     white-space:nowrap;
   }
+  .lb-row.p1 .lb-name, .lb-row.p2 .lb-name, .lb-row.p3 .lb-name{font-weight:700;}
   .lb-pts{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
-    font-size:17px;
+    font-size:18px;
     color:var(--text);
     flex-shrink:0;
+    font-variant-numeric:tabular-nums;
   }
-  .lb-row.podium .lb-pts{color:var(--green);}
-  .board.stage-general .lb-row.podium .lb-pts{color:var(--gold);}
+  .lb-row.p1 .lb-pts{color:var(--gold);}
+  .lb-row.p2 .lb-pts{color:#C7CDC3;}
+  .lb-row.p3 .lb-pts{color:#C97B4A;}
 
   /* ===== MATCHES ===== */
   .matches-card{
@@ -254,17 +263,19 @@
   .player-head .p-name{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:14px;
+    font-size:15px;
     color:var(--purple);
+    letter-spacing:0.01em;
   }
   .player-head .p-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
-    font-size:13px;
+    font-size:14px;
     color:var(--gold);
     background:var(--gold-soft);
-    padding:2px 10px;
+    padding:3px 12px;
     border-radius:20px;
+    font-variant-numeric:tabular-nums;
   }
   table.matches td{
     padding:10px 12px;
@@ -292,13 +303,12 @@
     color:var(--gold);
     background:var(--gold-soft);
   }
+  td.pred{position:relative;}
   td.pred.exact{
-    background:var(--green-soft);
-    color:var(--green);
+    background:rgba(76,174,107,0.45);
+    color:#EFFAF0;
     font-weight:700;
-  }
-  td.pred.outcome{
-    color:var(--green);
+    box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);
   }
   tr.day-start td{border-top:2px solid var(--panel-3);}
   tr.day-even td.c-date, tr.day-even td.c-game{background:rgba(255,255,255,0.02);}
@@ -328,8 +338,7 @@
     width:22px; height:14px;
     border-radius:3px;
   }
-  .chip.exact{background:var(--green-soft); border:1px solid var(--green);}
-  .chip.outcome{background:transparent; border:1px solid var(--green);}
+  .chip.exact{background:rgba(76,174,107,0.45); box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);}
 
   /* ===== GROUPS BLOCK (Group A–F team compositions) ===== */
   .groups-grid{
@@ -414,6 +423,13 @@
     border-bottom:1px solid var(--line);
     white-space:nowrap;
   }
+  table.gp-table th.gp-player{
+    color:var(--purple);
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.02em;
+    text-transform:none;
+  }
   table.gp-table td{
     padding:8px 12px;
     border-bottom:1px solid var(--line);
@@ -435,31 +451,38 @@
     color:var(--green);
     font-weight:700;
   }
-  .gp-points{
+  /* Points summary on top */
+  .gp-summary{
     display:flex;
     flex-wrap:wrap;
-    align-items:center;
-    gap:16px;
-    background:var(--gold-soft);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:14px 18px;
+    gap:12px;
     margin-bottom:22px;
   }
-  .gp-points-label{
+  .gp-summary-cell{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    min-width:96px;
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .gp-summary-name{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:12px;
-    letter-spacing:0.08em;
-    text-transform:uppercase;
-    color:var(--gold);
+    font-size:14px;
+    color:var(--purple);
   }
-  .gp-points-cell{
+  .gp-summary-pts{
     font-family:'JetBrains Mono',monospace;
-    font-size:13px;
-    color:var(--text);
+    font-weight:700;
+    font-size:20px;
+    color:var(--gold);
+    font-variant-numeric:tabular-nums;
   }
-  .gp-points-cell b{color:var(--purple); font-weight:700; margin-right:2px;}
 
   /* ===== SPECIAL BETS ===== */
   table.special td.sb-label{
@@ -689,7 +712,7 @@ const TOURNAMENTS = [
   },
 ];
 
-const CROWNS = ['👑','🥈','🥉'];
+const MEDALS = ['🥇','🥈','🥉'];
 
 let activeTournament = TOURNAMENTS[0];
 let activeTabIndex = 0;
@@ -789,13 +812,15 @@ function renderLeaderboard(data){
   const boards = [];
   for(const nameCol of nameCols){
     const ptsCol = nameCol + 1;
-    // title: nearest non-empty text above, scanning the №/Name columns of this board
+    const numCol = nameCol - 1;
+    // title: nearest non-empty text above this board, scanning its own columns
+    // (№, Name, Points) up to 4 rows higher. Stage title spans the merged block.
     let title = '';
-    for(let up = 1; up <= 3 && headerRowIdx - up >= 0 && title === ''; up++){
-      for(const tc of [nameCol - 1, nameCol]){
-        if(tc < 0) continue;
+    for(let up = 1; up <= 4 && headerRowIdx - up >= 0 && title === ''; up++){
+      for(const tc of [numCol, nameCol, ptsCol]){
+        if(tc < 0 || tc >= nCols) continue;
         const t = cellStr(rows[headerRowIdx - up][tc]);
-        if(t !== '' && !/^(№|#|name|points?)$/i.test(t)){ title = t; break; }
+        if(t !== '' && !/^(№|#|name|points?)$/i.test(t) && toNum(t) === null && !parseScore(t)){ title = t; break; }
       }
     }
     const entries = [];
@@ -806,11 +831,15 @@ function renderLeaderboard(data){
       if(pts === null) continue;
       entries.push({ name, pts });
     }
-    if(entries.length) boards.push({ title: title || `Board ${boards.length + 1}`, entries });
+    if(entries.length) boards.push({ title, entries });
   }
 
-  if(boards.length === 0) return renderGenericTable(data);
-  return renderBoards(boards);
+  // Keep only boards that have a real stage title (Group / Play-off / General).
+  // Hidden helper copies have no title above them.
+  const titled = boards.filter(b => b.title);
+  const finalBoards = titled.length ? titled : boards.map((b, i) => ({ ...b, title: b.title || `Board ${i+1}` }));
+  if(finalBoards.length === 0) return renderGenericTable(data);
+  return renderBoards(finalBoards);
 }
 
 function renderBoards(finalBoards){
@@ -833,13 +862,18 @@ function renderBoards(finalBoards){
     return `
     <div class="board ${stageClass(b.title)}">
       <div class="board-head">${escapeHtml(b.title)}</div>
-      ${sorted.map((e, idx) => `
-        <div class="lb-row ${idx < 3 ? 'podium' : ''}">
-          <div class="lb-rank">${isGeneral && idx < 3 ? `<span class="crown">${CROWNS[idx]}</span>` : escapeHtml(labels[idx])}</div>
+      ${sorted.map((e, idx) => {
+        const placeCls = idx === 0 ? 'p1' : idx === 1 ? 'p2' : idx === 2 ? 'p3' : '';
+        const rankInner = (isGeneral && idx < 3)
+          ? `<span class="crown">${MEDALS[idx]}</span>`
+          : escapeHtml(labels[idx]);
+        return `
+        <div class="lb-row ${placeCls}">
+          <div class="lb-rank">${rankInner}</div>
           <div class="lb-name">${escapeHtml(e.name)}</div>
           <div class="lb-pts">${e.pts}</div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
   }).join('')}</div>`;
 }
@@ -889,14 +923,13 @@ function findMatchesLayout(rows){
 }
 
 /* Group compositions block (Group A ... Group F with team lists) */
-function extractGroupsBlock(rows, headerRow, maxCol){
+function extractGroupsBlock(rows, headerRow, minCol, maxCol){
   const groups = [];
   const seen = new Set();
   const searchLimit = Math.max(0, headerRow - 1);
   for(let ri = 0; ri < searchLimit; ri++){
     const r = rows[ri];
-    const limit = Math.min(r.length, maxCol + 1);
-    for(let ci = 0; ci < limit; ci++){
+    for(let ci = 0; ci <= Math.min(r.length - 1, maxCol); ci++){
       const v = cellStr(r[ci]);
       if(/^group\s+\S+$/i.test(v)){
         const key = v.toLowerCase();
@@ -983,7 +1016,7 @@ function renderMatches(data){
   }
   if(body.filter(b => !b.sep).length === 0) return null;
 
-  const groups = extractGroupsBlock(rows, headerRow, Math.max(...players.map(p => p.col)));
+  const groups = extractGroupsBlock(rows, headerRow, Math.min(...players.map(p => p.col)), Math.max(...players.map(p => p.col)));
   const nCols = 3 + players.length;
 
   return `
@@ -1017,12 +1050,9 @@ function renderMatches(data){
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
             ${row.preds.map(pv => {
               const pPair = parseScore(pv);
-              let cls = '';
-              if(resPair && pPair){
-                if(pPair[0] === resPair[0] && pPair[1] === resPair[1]) cls = 'exact';
-                else if(outcomeSign(pPair) === outcomeSign(resPair)) cls = 'outcome';
-              }
-              return `<td class="pred ${cls}">${escapeHtml(pv || '—')}</td>`;
+              // green ONLY when the prediction exactly equals the match result
+              const exact = resPair && pPair && pPair[0] === resPair[0] && pPair[1] === resPair[1];
+              return `<td class="pred ${exact ? 'exact' : ''}">${escapeHtml(pv || '—')}</td>`;
             }).join('')}
           </tr>`;
         }).join('')}
@@ -1030,8 +1060,7 @@ function renderMatches(data){
     </table>
   </div>
   <div class="legend">
-    <span><span class="chip exact"></span> exact score</span>
-    <span><span class="chip outcome"></span> correct outcome</span>
+    <span><span class="chip exact"></span> вгаданий точний рахунок</span>
   </div>`;
 }
 
@@ -1109,7 +1138,7 @@ function renderGroupPositions(data){
           <tr>
             <th>#</th>
             <th>Actual</th>
-            ${players.map(p => `<th>${escapeHtml(p.name)}</th>`).join('')}
+            ${players.map(p => `<th class="gp-player">${escapeHtml(p.name)}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
@@ -1126,13 +1155,17 @@ function renderGroupPositions(data){
       </table>
     </div>`).join('');
 
-  const pointsBar = pointsRow ? `
-    <div class="gp-points">
-      <span class="gp-points-label">Points</span>
-      ${players.map((p, i) => `<span class="gp-points-cell"><b>${escapeHtml(p.name)}</b> ${escapeHtml(pointsRow[i] || '0')}</span>`).join('')}
+  // Points summary on TOP (like the totals badges in other tabs)
+  const pointsHeader = pointsRow ? `
+    <div class="gp-summary">
+      ${players.map((p, i) => `
+        <div class="gp-summary-cell">
+          <span class="gp-summary-name">${escapeHtml(p.name)}</span>
+          <span class="gp-summary-pts">${escapeHtml(pointsRow[i] || '0')}</span>
+        </div>`).join('')}
     </div>` : '';
 
-  return `<div class="gp-wrap">${body}${pointsBar}</div>
+  return `${pointsHeader}<div class="gp-wrap">${body}</div>
   <div class="legend"><span><span class="chip exact"></span> correct position</span></div>`;
 }
 
@@ -1195,7 +1228,7 @@ function renderSpecialBets(data){
         <tr>
           <th>Bet</th>
           <th style="text-align:center;">Result</th>
-          ${players.map(p => `<th style="text-align:center; color:var(--purple);">${escapeHtml(p.name)}</th>`).join('')}
+          ${players.map(p => `<th style="text-align:center; color:var(--purple); font-weight:700; font-size:14px;">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
