@@ -16,9 +16,15 @@
     --text: #EDEFE8;
     --text-dim: #8B9A8C;
     --gold: #E8B23C;
+    --teal: #6FAFAF;
+    --blue: #5E97D0;
+    --purple: #A98FDB;
+    --purple-soft: rgba(169,143,219,0.12);
     --green: #4CAE6B;
     --green-soft: rgba(76,174,107,0.14);
     --red: #C75C4A;
+    --red-soft: rgba(199,92,74,0.14);
+    --gold-soft: rgba(232,178,60,0.10);
     --field-line: rgba(237,239,232,0.06);
   }
   *{box-sizing:border-box;}
@@ -30,6 +36,7 @@
     color:var(--text);
     font-family:'Inter',sans-serif;
     min-height:100vh;
+    -webkit-text-size-adjust:100%;
   }
   .wrap{max-width:1320px;margin:0 auto;padding:0 24px 80px;}
 
@@ -120,7 +127,9 @@
     margin-bottom:28px;
     overflow-x:auto;
     border-bottom:1px solid var(--line);
+    scrollbar-width:none;
   }
+  nav.tabs::-webkit-scrollbar{display:none;}
   nav.tabs button{
     background:transparent;
     border:none;
@@ -141,7 +150,7 @@
   /* ===== LEADERBOARDS ===== */
   .boards{
     display:grid;
-    grid-template-columns:repeat(auto-fit, minmax(340px, 1fr));
+    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
     gap:24px;
     align-items:start;
   }
@@ -156,13 +165,16 @@
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
     font-size:14px;
-    letter-spacing:0.08em;
+    letter-spacing:0.1em;
     text-transform:uppercase;
-    color:var(--text);
     border-bottom:1px solid var(--line);
     background:var(--panel-2);
+    color:var(--text);
   }
-  .board.general .board-head{color:var(--gold);}
+  /* stage accents (match the sheet: Group=teal, Play-off=blue, General=gold) */
+  .board.stage-group .board-head{color:var(--teal); box-shadow:inset 0 3px 0 var(--teal);}
+  .board.stage-playoff .board-head{color:var(--blue); box-shadow:inset 0 3px 0 var(--blue);}
+  .board.stage-general .board-head{color:var(--gold); box-shadow:inset 0 3px 0 var(--gold);}
   .lb-row{
     display:flex;
     align-items:center;
@@ -172,10 +184,11 @@
   }
   .lb-row:last-child{border-bottom:none;}
   .lb-row.podium{background:var(--green-soft);}
+  .board.stage-general .lb-row.podium{background:var(--gold-soft);}
   .lb-rank{
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
-    min-width:38px;
+    min-width:40px;
     text-align:center;
     color:var(--text-dim);
     flex-shrink:0;
@@ -199,10 +212,9 @@
     flex-shrink:0;
   }
   .lb-row.podium .lb-pts{color:var(--green);}
-  .board.general .lb-row.podium .lb-pts{color:var(--gold);}
-  .board.general .lb-row.podium{background:rgba(232,178,60,0.08);}
+  .board.stage-general .lb-row.podium .lb-pts{color:var(--gold);}
 
-  /* ===== MATCHES (predictions grid) ===== */
+  /* ===== MATCHES ===== */
   .matches-card{
     background:var(--panel);
     border:1px solid var(--line);
@@ -213,7 +225,6 @@
     width:100%;
     border-collapse:collapse;
     font-size:14px;
-    min-width:760px;
   }
   table.matches thead th{
     position:sticky;
@@ -229,10 +240,10 @@
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
     font-size:11px;
-    font-weight:500;
+    font-weight:700;
     letter-spacing:0.08em;
     text-transform:uppercase;
-    color:var(--text-dim);
+    color:var(--purple);
   }
   .player-head{
     display:flex;
@@ -244,19 +255,19 @@
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
     font-size:14px;
-    color:var(--text);
+    color:var(--purple);
   }
   .player-head .p-total{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
     font-size:13px;
-    color:var(--green);
-    background:var(--green-soft);
+    color:var(--gold);
+    background:var(--gold-soft);
     padding:2px 10px;
     border-radius:20px;
   }
   table.matches td{
-    padding:11px 14px;
+    padding:10px 12px;
     border-bottom:1px solid var(--line);
     text-align:center;
     font-family:'JetBrains Mono',monospace;
@@ -267,22 +278,19 @@
   table.matches tbody tr:last-child td{border-bottom:none;}
   td.c-date{
     text-align:left;
-    font-family:'JetBrains Mono',monospace;
     font-size:12px;
     color:var(--text-dim);
-    white-space:nowrap;
   }
   td.c-game{
     text-align:left;
     font-family:'Inter',sans-serif;
     font-weight:500;
     color:var(--text);
-    white-space:nowrap;
   }
   td.c-result{
     font-weight:700;
     color:var(--gold);
-    font-size:14px;
+    background:var(--gold-soft);
   }
   td.pred.exact{
     background:var(--green-soft);
@@ -293,6 +301,19 @@
     color:var(--green);
   }
   tr.day-start td{border-top:2px solid var(--panel-3);}
+  tr.day-even td.c-date, tr.day-even td.c-game{background:rgba(255,255,255,0.02);}
+  /* stage separators (1/8, 1/4, Semifinals, Final) */
+  tr.sep-row td{
+    background:var(--panel-3);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--gold);
+    text-align:center;
+    padding:10px 12px;
+  }
   .legend{
     display:flex;
     gap:20px;
@@ -310,6 +331,74 @@
   .chip.exact{background:var(--green-soft); border:1px solid var(--green);}
   .chip.outcome{background:transparent; border:1px solid var(--green);}
 
+  /* ===== GROUPS BLOCK (Group A–F team compositions) ===== */
+  .groups-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .group-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .group-card .g-head{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:9px 14px;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--line);
+  }
+  .group-card .g-team{
+    font-size:13px;
+    padding:7px 14px;
+    border-bottom:1px solid var(--line);
+    color:var(--text);
+  }
+  .group-card .g-team:last-child{border-bottom:none;}
+
+  /* ===== SPECIAL BETS ===== */
+  table.special td.sb-label{
+    text-align:left;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    color:var(--purple);
+    white-space:nowrap;
+  }
+  table.special td.sb-actual{text-align:center;}
+  .sb-badge{
+    display:inline-block;
+    font-family:'Inter',sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:var(--green);
+    background:var(--green-soft);
+    border:1px solid rgba(76,174,107,0.4);
+    padding:3px 12px;
+    border-radius:20px;
+    white-space:nowrap;
+  }
+  table.special td.sb-val{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+  }
+  table.special tr.sb-points td{
+    background:var(--gold-soft);
+    border-bottom:1px solid var(--line);
+  }
+  table.special tr.sb-points td.sb-label{color:var(--gold);}
+  table.special tr.sb-points td.sb-val{
+    color:var(--gold);
+    font-weight:700;
+  }
+  table.special tr.sb-points td.sb-val.scored{color:var(--green);}
+
   /* ===== GENERIC TABLE ===== */
   .table-card{
     background:var(--panel);
@@ -326,13 +415,13 @@
   table.sheet-table th{
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
-    font-weight:500;
+    font-weight:600;
     font-size:11px;
     text-transform:uppercase;
     letter-spacing:0.08em;
     color:var(--text-dim);
     background:var(--panel-2);
-    padding:11px 14px;
+    padding:11px 16px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
     position:sticky;
@@ -348,15 +437,48 @@
   table.sheet-table tbody tr:nth-child(even){background:rgba(255,255,255,0.015);}
   table.sheet-table tbody tr:hover{background:rgba(76,174,107,0.06);}
 
-  .rules-card{
-    background:var(--panel);
-    border:1px solid var(--line);
-    border-radius:12px;
-    padding:22px 26px;
-    font-size:14px;
-    line-height:1.8;
+  /* ===== RULES ===== */
+  .rules-block{margin-bottom:26px;}
+  table.rules th.group-head{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text);
+    background:var(--panel-3);
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
   }
-  .rules-card p{margin:0 0 10px;}
+  table.rules th.sub-head{
+    text-align:center;
+  }
+  table.rules td{text-align:center;}
+  table.rules td.c-condition{
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    white-space:normal;
+    min-width:220px;
+  }
+  table.rules td.c-points{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--gold);
+    background:var(--gold-soft);
+  }
+  .yn{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    font-weight:700;
+    text-transform:uppercase;
+    padding:3px 12px;
+    border-radius:20px;
+  }
+  .yn.yes{color:var(--green); background:var(--green-soft); border:1px solid rgba(76,174,107,0.4);}
+  .yn.no{color:var(--red); background:var(--red-soft); border:1px solid rgba(199,92,74,0.4);}
 
   .status-line{
     font-family:'JetBrains Mono',monospace;
@@ -369,6 +491,37 @@
 
   ::-webkit-scrollbar{height:8px; width:8px;}
   ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:1000px){
+    h1{font-size:28px;}
+  }
+  @media(max-width:640px){
+    .wrap{padding:0 12px 60px;}
+    header{padding-top:22px;}
+    .head-top{flex-direction:column; gap:10px; margin-bottom:14px;}
+    .meta-block{text-align:left; display:flex; align-items:center; gap:12px;}
+    #refresh-btn{margin-top:0;}
+    h1{font-size:24px;}
+    nav.tournaments{padding-bottom:14px; gap:6px;}
+    nav.tournaments button{padding:8px 12px; font-size:12px;}
+    nav.tabs{margin-bottom:20px;}
+    nav.tabs button{padding:9px 12px; font-size:13px;}
+    .boards{gap:14px;}
+    .lb-row{padding:10px 14px; gap:10px;}
+    .lb-name{font-size:14px;}
+    .lb-pts{font-size:15px;}
+    .lb-rank{min-width:34px;}
+    table.matches{font-size:12px;}
+    table.matches td{padding:8px 8px; font-size:12px;}
+    table.matches thead th{padding:9px 8px 8px;}
+    .player-head .p-name{font-size:12px;}
+    .player-head .p-total{font-size:11px; padding:1px 8px;}
+    table.sheet-table{font-size:12px;}
+    table.sheet-table td{padding:8px 10px;}
+    table.sheet-table th{padding:9px 10px;}
+    .yn{padding:2px 8px; font-size:10px;}
+  }
 </style>
 </head>
 <body>
@@ -401,12 +554,12 @@ const TOURNAMENTS = [
     title:'Євро 2024',
     sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
     tabs:[
-      { sheet:'Leaderboards',                  label:'Лідерборди',      kind:'leaderboard' },
-      { sheet:'Group',                         label:'Група',           kind:'auto' },
-      { sheet:'Group positions',               label:'Динаміка груп',   kind:'auto' },
-      { sheet:'Play-off',                      label:'Плей-офф',        kind:'auto' },
-      { sheet:'1&2place + Mudryk + Ukraine',   label:'Спецставки',      kind:'auto' },
-      { sheet:'Rules + Prize pool',            label:'Правила і призи', kind:'rules' },
+      { sheet:'Leaderboards',                 kind:'leaderboard' },
+      { sheet:'Group',                        kind:'auto' },
+      { sheet:'Group positions',              kind:'auto' },
+      { sheet:'Play-off',                     kind:'auto' },
+      { sheet:'1&2place + Mudryk + Ukraine',  kind:'auto' },
+      { sheet:'Rules + Prize pool',           kind:'rules' },
     ]
   },
   {
@@ -414,12 +567,12 @@ const TOURNAMENTS = [
     title:'ЛЧ 2025',
     sheetId:'1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U',
     tabs:[
-      { sheet:'Leaderboards',                        label:'Лідерборди',       kind:'leaderboard' },
-      { sheet:'Play-off',                            label:'Плей-офф',         kind:'auto' },
-      { sheet:'Knockout phase play-offs',            label:'Стикові матчі',    kind:'auto' },
-      { sheet:'Knockout phase play-offs winners',    label:'Переможці стиків', kind:'auto' },
-      { sheet:'1&2place + Real + Liverpool',         label:'Спецставки',       kind:'auto' },
-      { sheet:'Rules + Prize pool',                  label:'Правила і призи',  kind:'rules' },
+      { sheet:'Leaderboards',                       kind:'leaderboard' },
+      { sheet:'Play-off',                           kind:'auto' },
+      { sheet:'Knockout phase play-offs',           kind:'auto' },
+      { sheet:'Knockout phase play-offs winners',   kind:'auto' },
+      { sheet:'1&2place + Real + Liverpool',        kind:'auto' },
+      { sheet:'Rules + Prize pool',                 kind:'rules' },
     ]
   },
   {
@@ -427,12 +580,12 @@ const TOURNAMENTS = [
     title:'Клубний ЧС 2025',
     sheetId:'1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ',
     tabs:[
-      { sheet:'Leaderboards',           label:'Лідерборди',      kind:'leaderboard' },
-      { sheet:'Group',                  label:'Група',           kind:'auto' },
-      { sheet:'Group positions',        label:'Динаміка груп',   kind:'auto' },
-      { sheet:'Play-off',               label:'Плей-офф',        kind:'auto' },
-      { sheet:'Play-off bonus points',  label:'Бонуси плей-офф', kind:'auto' },
-      { sheet:'Rules + Prize pool',     label:'Правила і призи', kind:'rules' },
+      { sheet:'Leaderboards',           kind:'leaderboard' },
+      { sheet:'Group',                  kind:'auto' },
+      { sheet:'Group positions',        kind:'auto' },
+      { sheet:'Play-off',               kind:'auto' },
+      { sheet:'Play-off bonus points',  kind:'auto' },
+      { sheet:'Rules + Prize pool',     kind:'rules' },
     ]
   },
 ];
@@ -443,9 +596,32 @@ let activeTournament = TOURNAMENTS[0];
 let activeTabIndex = 0;
 const cache = {};
 
-/* ======== DATA ======== */
+/* ======== DATA (CSV — no type coercion, all cells come as displayed text) ======== */
 function buildUrl(sheetId, sheetName){
-  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:json&headers=0&sheet=${encodeURIComponent(sheetName)}`;
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(inQ){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = false;
+      } else cur += ch;
+    } else {
+      if(ch === '"') inQ = true;
+      else if(ch === ','){ row.push(cur); cur = ''; }
+      else if(ch === '\n'){ row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if(ch === '\r'){ /* skip */ }
+      else cur += ch;
+    }
+  }
+  row.push(cur);
+  rows.push(row);
+  return rows;
 }
 
 async function fetchSheet(sheetId, sheetName){
@@ -454,17 +630,7 @@ async function fetchSheet(sheetId, sheetName){
   const res = await fetch(buildUrl(sheetId, sheetName));
   if(!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
-  const match = text.match(/setResponse\(([\s\S]*)\);?\s*$/);
-  if(!match) throw new Error('Не вдалося розпарсити відповідь Google Sheets');
-  const json = JSON.parse(match[1]);
-  if(json.status === 'error'){
-    throw new Error((json.errors && json.errors[0] && json.errors[0].detailed_message) || 'Помилка таблиці');
-  }
-  const rows = json.table.rows.map(r => (r.c || []).map(cell => {
-    if(!cell) return '';
-    if(cell.f !== undefined && cell.f !== null) return cell.f;
-    return cell.v === null || cell.v === undefined ? '' : cell.v;
-  }));
+  const rows = parseCSV(text).map(r => r.map(v => (v === null || v === undefined ? '' : String(v).trim())));
   const data = { rows };
   cache[cacheKey] = data;
   return data;
@@ -475,9 +641,7 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function cellStr(v){ return v === null || v === undefined ? '' : String(v).trim(); }
-function isEmpty(v){ return cellStr(v) === ''; }
 function isPlaceholderName(name){
-  // hidden helper rows often contain "№6", "№13" etc instead of a real name
   return /^№\s*\d+$/.test(name.trim());
 }
 function toNum(v){
@@ -492,82 +656,68 @@ function parseScore(s){
 function outcomeSign(pair){
   return pair[0] > pair[1] ? 1 : pair[0] < pair[1] ? -1 : 0;
 }
+function stageClass(title){
+  const t = title.toLowerCase();
+  if(t.includes('general')) return 'stage-general';
+  if(t.includes('play')) return 'stage-playoff';
+  if(t.includes('group')) return 'stage-group';
+  return '';
+}
 
 /* ======== LEADERBOARDS ======== */
 function renderLeaderboard(data){
-  const rows = data.rows.map(r => r.map(cellStr));
+  const rows = data.rows;
 
-  // find the sub-header row: the row containing the MOST "№ / Name / Points" triplets
-  // (the real one has one triplet per board; hidden helper columns have at most one)
-  let headerRowIdx = -1;
-  let boardsCols = [];
-  for(let ri = 0; ri < rows.length; ri++){
-    const r = rows[ri];
-    const found = [];
-    for(let ci = 0; ci < r.length; ci++){
-      const a = r[ci], b = r[ci+1] || '', c = r[ci+2] || '';
-      if(/№|#|^No\.?$/i.test(a) && /name/i.test(b) && /point/i.test(c)){
-        found.push(ci);
-      }
-    }
-    if(found.length > boardsCols.length){
-      headerRowIdx = ri;
-      boardsCols = found;
-    }
-  }
-
-  if(headerRowIdx === -1){
-    // structure not recognized — show raw data instead of nothing
-    return renderGenericTable(data);
-  }
-
-  const dataRows = rows.slice(headerRowIdx + 1);
+  // Find "№ / Name / Points" triplets. A REAL (visible) board has a stage title
+  // in the cell directly above its "№" header; hidden helper copies don't.
   const boards = [];
+  for(let ri = 1; ri < rows.length; ri++){
+    const r = rows[ri];
+    for(let ci = 0; ci < r.length; ci++){
+      const a = cellStr(r[ci]), b = cellStr(r[ci+1] || ''), c = cellStr(r[ci+2] || '');
+      if(!(/№|#|^No\.?$/i.test(a) && /^name$/i.test(b) && /^points?$/i.test(c))) continue;
 
-  for(const ci of boardsCols){
-    // board title: look up to 3 rows above the header row at this column
-    let title = '';
-    for(let up = 1; up <= 3 && headerRowIdx - up >= 0; up++){
-      const t = cellStr(rows[headerRowIdx - up][ci]);
-      if(t !== ''){ title = t; break; }
-    }
-    if(title === '') title = 'Лідерборд';
+      // title in the cell above the "№" header (real boards have one)
+      let title = '';
+      for(let up = 1; up <= 2 && ri - up >= 0; up++){
+        const t = cellStr(rows[ri - up][ci]);
+        if(t !== ''){ title = t; break; }
+      }
+      if(title === '' || /^(№|#|name|points?)$/i.test(title)) continue;
 
-    const entries = [];
-    for(const r of dataRows){
-      const name = cellStr(r[ci+1]);
-      const pts = toNum(r[ci+2]);
-      if(name === '' || isPlaceholderName(name)) continue;
-      if(pts === null) continue;
-      entries.push({ name, pts });
+      const entries = [];
+      for(let di = ri + 1; di < rows.length; di++){
+        const name = cellStr(rows[di][ci+1]);
+        const pts = toNum(rows[di][ci+2]);
+        if(name === '' || isPlaceholderName(name)) continue;
+        if(pts === null) continue;
+        // stop if we ran into another header block
+        if(/^name$/i.test(name)) break;
+        entries.push({ name, pts });
+      }
+      if(entries.length) boards.push({ title, entries });
     }
-    if(entries.length) boards.push({ title, entries });
   }
 
   if(boards.length === 0) return renderGenericTable(data);
 
   return `<div class="boards">${boards.map(b => {
     const isGeneral = /general/i.test(b.title);
-    // sort by points desc
     const sorted = [...b.entries].sort((a, z) => z.pts - a.pts);
-    // build tie-aware rank labels: 42,42,34 -> "1&2","1&2","3"
+    // tie-aware rank labels: 42,42,34 -> "1&2","1&2","3"
     const labels = [];
-    let pos = 1;
-    let k = 0;
+    let pos = 1, k = 0;
     while(k < sorted.length){
       let j = k;
       while(j + 1 < sorted.length && sorted[j+1].pts === sorted[k].pts) j++;
-      const groupSize = j - k + 1;
-      const label = groupSize === 1
-        ? String(pos)
-        : Array.from({length: groupSize}, (_, q) => pos + q).join('&');
+      const size = j - k + 1;
+      const label = size === 1 ? String(pos) : Array.from({length:size}, (_, q) => pos + q).join('&');
       for(let q = k; q <= j; q++) labels[q] = label;
-      pos += groupSize;
+      pos += size;
       k = j + 1;
     }
-
     return `
-    <div class="board ${isGeneral ? 'general' : ''}">
+    <div class="board ${stageClass(b.title)}">
       <div class="board-head">${escapeHtml(b.title)}</div>
       ${sorted.map((e, idx) => `
         <div class="lb-row ${idx < 3 ? 'podium' : ''}">
@@ -580,10 +730,15 @@ function renderLeaderboard(data){
   }).join('')}</div>`;
 }
 
-/* ======== MATCHES / PREDICTIONS GRID ======== */
+/* ======== MATCHES ======== */
+const GROUP_PALETTE = ['#E8944A','#9AA5A8','#A98FDB','#5FB3B3','#7CC47F','#D9C79A','#D07777','#5E97D0'];
+
+function isDateLike(s){
+  return /\d{1,2}\.\d{1,2}(\.\d{2,4})?/.test(s);
+}
+
 function findMatchesLayout(rows){
-  // look for a header row containing Date + Game + Result
-  for(let ri = 0; ri < Math.min(rows.length, 8); ri++){
+  for(let ri = 0; ri < Math.min(rows.length, 12); ri++){
     const r = rows[ri];
     let dateCol = -1, gameCol = -1, resCol = -1;
     r.forEach((v, ci) => {
@@ -593,23 +748,25 @@ function findMatchesLayout(rows){
       if(s === 'result' && resCol === -1) resCol = ci;
     });
     if(dateCol !== -1 && gameCol !== -1 && resCol !== -1){
-      // player columns: non-empty header cells after Result
       const players = [];
       for(let ci = resCol + 1; ci < r.length; ci++){
         const name = cellStr(r[ci]);
-        if(name !== '' && !isPlaceholderName(name)){
+        if(name !== '' && !isPlaceholderName(name) && toNum(name) === null){
           players.push({ col: ci, name });
         }
       }
       if(players.length === 0) return null;
-      // totals row: the row above the header (e.g. "Points | 30 | 21 | ...")
-      let totals = {};
+      // totals: row above the header (Group layout: "Points | 30 | 21 ...")
+      let totals = null;
       if(ri > 0){
         const tRow = rows[ri - 1];
+        const t = {};
+        let any = false;
         players.forEach(p => {
-          const t = toNum(tRow[p.col]);
-          if(t !== null) totals[p.col] = t;
+          const n = toNum(tRow[p.col]);
+          if(n !== null){ t[p.col] = n; any = true; }
         });
+        if(any) totals = t;
       }
       return { headerRow: ri, dateCol, gameCol, resCol, players, totals };
     }
@@ -617,47 +774,123 @@ function findMatchesLayout(rows){
   return null;
 }
 
+/* Group compositions block (Group A ... Group F with team lists) */
+function extractGroupsBlock(rows, headerRow){
+  const groups = [];
+  const searchLimit = Math.max(0, headerRow - 1);
+  for(let ri = 0; ri < searchLimit; ri++){
+    const r = rows[ri];
+    for(let ci = 0; ci < r.length; ci++){
+      const v = cellStr(r[ci]);
+      if(/^group\s+\S+$/i.test(v)){
+        const teams = [];
+        for(let di = ri + 1; di < headerRow; di++){
+          const t = cellStr(rows[di][ci]);
+          if(t === '' || toNum(t) !== null || /^points?$/i.test(t)) break;
+          teams.push(t);
+        }
+        if(teams.length) groups.push({ title: v, teams });
+      }
+    }
+    if(groups.length) break; // group titles all live on one row
+  }
+  return groups;
+}
+
+function renderGroupsBlock(groups){
+  if(!groups.length) return '';
+  return `<div class="groups-grid">${groups.map((g, i) => {
+    const color = GROUP_PALETTE[i % GROUP_PALETTE.length];
+    return `
+    <div class="group-card">
+      <div class="g-head" style="color:${color}; box-shadow:inset 0 3px 0 ${color};">${escapeHtml(g.title)}</div>
+      ${g.teams.map(t => `<div class="g-team">${escapeHtml(t)}</div>`).join('')}
+    </div>`;
+  }).join('')}</div>`;
+}
+
 function renderMatches(data){
   const rows = data.rows;
   const layout = findMatchesLayout(rows);
   if(!layout) return null;
-  const { headerRow, dateCol, gameCol, resCol, players, totals } = layout;
+  const { headerRow, dateCol, gameCol, resCol, players } = layout;
+  let totals = layout.totals;
 
   const body = [];
   let lastDate = '';
+  let dayIndex = 0;
   for(let ri = headerRow + 1; ri < rows.length; ri++){
     const r = rows[ri];
     const game = cellStr(r[gameCol]);
-    if(game === '') continue; // skip hidden/helper/empty rows
-    const rawDate = cellStr(r[dateCol]);
-    const isDayStart = rawDate !== '' && rawDate !== lastDate;
-    if(rawDate !== '') lastDate = rawDate;
-    body.push({ date: rawDate, isDayStart, game, result: cellStr(r[resCol]), preds: players.map(p => cellStr(r[p.col])) });
-  }
-  if(body.length === 0) return null;
+    const dateVal = cellStr(r[dateCol]);
+    const preds = players.map(p => cellStr(r[p.col]));
 
-  const html = `
+    if(game === ''){
+      // stage separator (merged "1/8", "Semifinals", "Final" lands in the date column)
+      if(dateVal !== '' && !isDateLike(dateVal)){
+        // this row may carry the totals (Play-off layout)
+        if(!totals){
+          const t = {};
+          let any = false;
+          players.forEach((p, pi) => {
+            const n = toNum(preds[pi]);
+            if(n !== null){ t[p.col] = n; any = true; }
+          });
+          if(any) totals = t;
+        }
+        body.push({ sep: true, label: dateVal });
+      }
+      continue;
+    }
+    // a stage label can also land in the game column
+    if(cellStr(r[resCol]) === '' && !isDateLike(dateVal) && dateVal === '' && preds.every(v => v === '' || toNum(v) !== null) && !parseScore(game) && preds.some(v => toNum(v) !== null)){
+      if(!totals){
+        const t = {};
+        players.forEach((p, pi) => {
+          const n = toNum(preds[pi]);
+          if(n !== null) t[p.col] = n;
+        });
+        totals = t;
+      }
+      body.push({ sep: true, label: game });
+      continue;
+    }
+
+    const isDayStart = dateVal !== '' && dateVal !== lastDate;
+    if(isDayStart){ lastDate = dateVal; dayIndex++; }
+    body.push({ date: dateVal, isDayStart, dayIndex, game, result: cellStr(r[resCol]), preds });
+  }
+  if(body.filter(b => !b.sep).length === 0) return null;
+
+  const groups = extractGroupsBlock(rows, headerRow);
+  const nCols = 3 + players.length;
+
+  return `
+  ${renderGroupsBlock(groups)}
   <div class="matches-card">
     <table class="matches">
       <thead>
         <tr>
-          <th class="meta">Дата</th>
-          <th class="meta">Матч</th>
-          <th class="meta" style="text-align:center;">Рахунок</th>
+          <th class="meta">Date</th>
+          <th class="meta">Game</th>
+          <th class="meta" style="text-align:center;">Result</th>
           ${players.map(p => `
             <th>
               <div class="player-head">
                 <span class="p-name">${escapeHtml(p.name)}</span>
-                ${totals[p.col] !== undefined ? `<span class="p-total">${totals[p.col]}</span>` : ''}
+                ${totals && totals[p.col] !== undefined ? `<span class="p-total">${totals[p.col]}</span>` : ''}
               </div>
             </th>`).join('')}
         </tr>
       </thead>
       <tbody>
         ${body.map(row => {
+          if(row.sep){
+            return `<tr class="sep-row"><td colspan="${nCols}">${escapeHtml(row.label)}</td></tr>`;
+          }
           const resPair = parseScore(row.result);
           return `
-          <tr class="${row.isDayStart ? 'day-start' : ''}">
+          <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
             <td class="c-date">${escapeHtml(row.date)}</td>
             <td class="c-game">${escapeHtml(row.game)}</td>
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
@@ -676,30 +909,109 @@ function renderMatches(data){
     </table>
   </div>
   <div class="legend">
-    <span><span class="chip exact"></span> точний рахунок</span>
-    <span><span class="chip outcome"></span> вгаданий результат</span>
+    <span><span class="chip exact"></span> exact score</span>
+    <span><span class="chip outcome"></span> correct outcome</span>
   </div>`;
-  return html;
 }
 
-/* ======== GENERIC TABLE (with junk filtering) ======== */
+/* ======== SPECIAL BETS (1&2place + ... tabs) ======== */
+function renderSpecialBets(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+
+  // marker column: the one containing "Prediction" / "Points" labels
+  let markerCol = -1;
+  for(const r of rows){
+    for(let ci = 0; ci < r.length; ci++){
+      if(/^prediction$/i.test(r[ci])){ markerCol = ci; break; }
+    }
+    if(markerCol !== -1) break;
+  }
+  if(markerCol === -1) return null;
+
+  // player header row: first row with 2+ non-empty non-numeric cells after markerCol
+  let playersRowIdx = -1;
+  let players = [];
+  for(let ri = 0; ri < rows.length; ri++){
+    const cand = [];
+    for(let ci = markerCol + 1; ci < rows[ri].length; ci++){
+      const v = rows[ri][ci];
+      if(v !== '' && toNum(v) === null && !parseScore(v)) cand.push({ col: ci, name: v });
+    }
+    if(cand.length >= 2){
+      playersRowIdx = ri;
+      players = cand;
+      break;
+    }
+  }
+  if(players.length === 0) return null;
+
+  const items = [];
+  let carryLabel = '';
+  for(let ri = playersRowIdx + 1; ri < rows.length; ri++){
+    const r = rows[ri];
+    const marker = cellStr(r[markerCol]);
+    if(!/^(prediction|points?)$/i.test(marker)) continue;
+    // label: first non-empty cell left of the actual-result column
+    let label = '';
+    for(let ci = 0; ci < markerCol - 1; ci++){
+      if(cellStr(r[ci]) !== ''){ label = cellStr(r[ci]); break; }
+    }
+    const actual = markerCol - 1 >= 0 ? cellStr(r[markerCol - 1]) : '';
+    if(/^prediction$/i.test(marker)){
+      if(label !== '') carryLabel = label;
+      items.push({ type:'pred', label: label || carryLabel, actual, values: players.map(p => cellStr(r[p.col])) });
+    } else {
+      items.push({ type:'points', values: players.map(p => cellStr(r[p.col])) });
+    }
+  }
+  if(items.length === 0) return null;
+
+  return `
+  <div class="table-card">
+    <table class="sheet-table special">
+      <thead>
+        <tr>
+          <th>Bet</th>
+          <th style="text-align:center;">Result</th>
+          ${players.map(p => `<th style="text-align:center; color:var(--purple);">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(it => {
+          if(it.type === 'pred'){
+            return `<tr>
+              <td class="sb-label">${escapeHtml(it.label)}</td>
+              <td class="sb-actual">${it.actual && it.actual !== '-' ? `<span class="sb-badge">${escapeHtml(it.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
+              ${it.values.map(v => `<td class="sb-val">${escapeHtml(v || '—')}</td>`).join('')}
+            </tr>`;
+          }
+          return `<tr class="sb-points">
+            <td class="sb-label">Points</td>
+            <td></td>
+            ${it.values.map(v => {
+              const n = toNum(v);
+              return `<td class="sb-val ${n !== null && n > 0 ? 'scored' : ''}">${escapeHtml(v || '—')}</td>`;
+            }).join('')}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* ======== GENERIC TABLE ======== */
 function renderGenericTable(data){
   let rows = data.rows.map(r => r.map(cellStr));
 
-  // drop rows that are completely empty
   rows = rows.filter(r => r.some(v => v !== ''));
-
-  // drop rows that contain only zeros and/or placeholder "№N" values (hidden helper rows)
   rows = rows.filter(r => {
     const filled = r.filter(v => v !== '');
     if(filled.length === 0) return false;
-    const junk = filled.every(v => v === '0' || isPlaceholderName(v));
-    return !junk;
+    return !filled.every(v => v === '0' || isPlaceholderName(v));
   });
 
   if(rows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
 
-  // drop columns that are empty in every remaining row
   const colCount = Math.max(...rows.map(r => r.length));
   const keepCols = [];
   for(let ci = 0; ci < colCount; ci++){
@@ -721,23 +1033,116 @@ function renderGenericTable(data){
     </div>`;
 }
 
-/* ======== RULES ======== */
+/* ======== RULES + PRIZE POOL ======== */
 function renderRules(data){
-  const lines = data.rows
-    .flat()
-    .map(cellStr)
-    .filter(v => v !== '' && v !== '0' && !isPlaceholderName(v));
-  if(lines.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
-  return `<div class="rules-card">${lines.map(l => `<p>${escapeHtml(l)}</p>`).join('')}</div>`;
+  // split content into blocks separated by fully-empty rows
+  const raw = data.rows.map(r => r.map(cellStr));
+  const blocks = [];
+  let current = [];
+  for(const r of raw){
+    if(r.every(v => v === '')){
+      if(current.length){ blocks.push(current); current = []; }
+    } else {
+      current.push(r);
+    }
+  }
+  if(current.length) blocks.push(current);
+
+  if(blocks.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+
+  return blocks.map(block => {
+    // trim empty columns within the block
+    const colCount = Math.max(...block.map(r => r.length));
+    const keepCols = [];
+    for(let ci = 0; ci < colCount; ci++){
+      if(block.some(r => cellStr(r[ci]) !== '')) keepCols.push(ci);
+    }
+    const rows = block.map(r => keepCols.map(ci => cellStr(r[ci])));
+
+    // does this block look like the conditions table? (header contains "Condition")
+    const condRowIdx = rows.findIndex(r => r.some(v => /^condition$/i.test(v)));
+    if(condRowIdx !== -1 && rows.length > condRowIdx + 2){
+      return renderConditionsTable(rows, condRowIdx);
+    }
+    // otherwise: simple table (first row = header)
+    const headerRow = rows[0];
+    const bodyRows = rows.slice(1);
+    return `
+      <div class="rules-block table-card">
+        <table class="sheet-table">
+          <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+          <tbody>
+            ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) => `<td>${formatYesNo(r[ci] ?? '')}</td>`).join('')}</tr>`).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  }).join('');
+}
+
+function formatYesNo(v){
+  const s = cellStr(v);
+  if(/^yes$/i.test(s)) return '<span class="yn yes">yes</span>';
+  if(/^no$/i.test(s)) return '<span class="yn no">no</span>';
+  return escapeHtml(s);
+}
+
+function renderConditionsTable(rows, condRowIdx){
+  const h1 = rows[condRowIdx];         // Condition | Points | Condition is valid at... | ... | Condition is valid for...
+  const h2 = rows[condRowIdx + 1];     //           |        | Group | Play-off | Group | Play-off | General
+  const body = rows.slice(condRowIdx + 2).filter(r => r.some(v => v !== ''));
+
+  const nCols = Math.max(h1.length, h2.length, ...body.map(r => r.length));
+
+  // build top header cells with colspans (carry-forward of non-empty h1 cells)
+  const topCells = [];
+  let ci = 0;
+  while(ci < nCols){
+    const label = cellStr(h1[ci]);
+    let span = 1;
+    while(ci + span < nCols && cellStr(h1[ci + span]) === '') span++;
+    topCells.push({ label, span, col: ci });
+    ci += span;
+  }
+
+  const hasSubHeader = h2.some(v => v !== '');
+
+  const condCol = h1.findIndex(v => /^condition$/i.test(v));
+  const pointsCol = h1.findIndex(v => /^points?$/i.test(v));
+
+  return `
+  <div class="rules-block table-card">
+    <table class="sheet-table rules">
+      <thead>
+        <tr>
+          ${topCells.map(c => `<th class="group-head" colspan="${c.span}" ${hasSubHeader && cellStr(h2[c.col]) === '' ? 'rowspan="2"' : ''}>${escapeHtml(c.label)}</th>`).join('')}
+        </tr>
+        ${hasSubHeader ? `<tr>${
+          Array.from({length: nCols}, (_, i) => i)
+            .filter(i => cellStr(h2[i]) !== '')
+            .map(i => `<th class="sub-head">${escapeHtml(h2[i])}</th>`).join('')
+        }</tr>` : ''}
+      </thead>
+      <tbody>
+        ${body.map(r => `<tr>${
+          Array.from({length: nCols}, (_, i) => {
+            const v = cellStr(r[i]);
+            const cls = i === condCol ? 'c-condition' : i === pointsCol ? 'c-points' : '';
+            return `<td class="${cls}">${formatYesNo(v)}</td>`;
+          }).join('')
+        }</tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
 }
 
 /* ======== DISPATCH ======== */
 function renderTabContent(tab, data){
   if(tab.kind === 'leaderboard') return renderLeaderboard(data);
   if(tab.kind === 'rules') return renderRules(data);
-  // 'auto': try matches layout first (Date/Game/Result + players), fall back to generic table
   const matches = renderMatches(data);
   if(matches) return matches;
+  const special = renderSpecialBets(data);
+  if(special) return special;
   return renderGenericTable(data);
 }
 
@@ -751,14 +1156,14 @@ async function loadActiveTab(){
     if(activeTournament.tabs[activeTabIndex] !== tab) return;
     content.innerHTML = renderTabContent(tab, data);
   }catch(err){
-    content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.label)}»: ${escapeHtml(err.message)}</div>`;
+    content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.sheet)}»: ${escapeHtml(err.message)}</div>`;
   }
 }
 
 function renderTabs(){
   const nav = document.getElementById('tabs');
   nav.innerHTML = activeTournament.tabs.map((t, idx) =>
-    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.label)}</button>`
+    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.sheet)}</button>`
   ).join('');
   nav.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
