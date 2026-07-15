@@ -38,7 +38,7 @@
     min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1600px;margin:0 auto;padding:0 32px 80px;}
+  .wrap{max-width:1760px;margin:0 auto;padding:0 40px 80px;}
 
   /* ===== HEADER ===== */
   header{
@@ -191,11 +191,15 @@
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
     font-weight:700;
-    min-width:42px;
-    text-align:center;
+    min-width:52px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:4px;
     color:var(--text-dim);
     flex-shrink:0;
   }
+  .lb-rank .rank-num{font-size:11px; opacity:0.85;}
   .lb-row.p1 .lb-rank{color:var(--gold);}
   .lb-row.p2 .lb-rank{color:#C7CDC3;}
   .lb-row.p3 .lb-rank{color:#C97B4A;}
@@ -558,6 +562,18 @@
   table.sheet-table tbody tr:last-child td{border-bottom:none;}
   table.sheet-table tbody tr:nth-child(even){background:rgba(255,255,255,0.015);}
   table.sheet-table tbody tr:hover{background:rgba(76,174,107,0.06);}
+  /* uniform Points highlighting in generic tables */
+  table.sheet-table th.th-points{
+    color:var(--gold);
+    font-weight:700;
+  }
+  table.sheet-table td.td-points{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--gold);
+    background:var(--gold-soft);
+    font-variant-numeric:tabular-nums;
+  }
 
   /* ===== RULES ===== */
   .rules-block{margin-bottom:26px;}
@@ -601,6 +617,16 @@
   }
   .yn.yes{color:var(--green); background:var(--green-soft); border:1px solid rgba(76,174,107,0.4);}
   .yn.no{color:var(--red); background:var(--red-soft); border:1px solid rgba(199,92,74,0.4);}
+  .rules-note{
+    margin-top:16px;
+    padding:16px 20px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    font-size:13px;
+    line-height:1.7;
+    color:var(--text-dim);
+  }
 
   .status-line{
     font-family:'JetBrains Mono',monospace;
@@ -812,12 +838,11 @@ function renderLeaderboard(data){
   const boards = [];
   for(const nameCol of nameCols){
     const ptsCol = nameCol + 1;
-    const numCol = nameCol - 1;
-    // title: nearest non-empty text above this board, scanning its own columns
-    // (№, Name, Points) up to 4 rows higher. Stage title spans the merged block.
+    // title: nearest non-empty text above this board. Merged stage titles in CSV land
+    // in the leftmost cell of the merged range, so scan a few columns left of Name too.
     let title = '';
-    for(let up = 1; up <= 4 && headerRowIdx - up >= 0 && title === ''; up++){
-      for(const tc of [numCol, nameCol, ptsCol]){
+    for(let up = 1; up <= 5 && headerRowIdx - up >= 0 && title === ''; up++){
+      for(const tc of [nameCol - 1, nameCol, nameCol - 2, nameCol - 3, ptsCol]){
         if(tc < 0 || tc >= nCols) continue;
         const t = cellStr(rows[headerRowIdx - up][tc]);
         if(t !== '' && !/^(№|#|name|points?)$/i.test(t) && toNum(t) === null && !parseScore(t)){ title = t; break; }
@@ -835,9 +860,17 @@ function renderLeaderboard(data){
   }
 
   // Keep only boards that have a real stage title (Group / Play-off / General).
-  // Hidden helper copies have no title above them.
+  // Hidden helper copies have no stage title above them.
   const titled = boards.filter(b => b.title);
-  const finalBoards = titled.length ? titled : boards.map((b, i) => ({ ...b, title: b.title || `Board ${i+1}` }));
+  let finalBoards;
+  if(titled.length >= 1){
+    finalBoards = titled;
+  } else {
+    // No titles found at all → fall back to the standard 3-board naming by position.
+    // Leaderboards always are Group / Play-off / General in that order.
+    const STD = ['Group', 'Play-off', 'General'];
+    finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
+  }
   if(finalBoards.length === 0) return renderGenericTable(data);
   return renderBoards(finalBoards);
 }
@@ -845,17 +878,17 @@ function renderLeaderboard(data){
 function renderBoards(finalBoards){
 
   return `<div class="boards">${finalBoards.map(b => {
-    const isGeneral = /general/i.test(b.title);
     const sorted = [...b.entries].sort((a, z) => z.pts - a.pts);
-    // tie-aware rank labels: 42,42,34 -> "1&2","1&2","3"
+    // tie-aware: assign each entry a "place" (1-based). Tied entries share the same place.
     const labels = [];
+    const places = []; // best place index for coloring (0-based rank)
     let pos = 1, k = 0;
     while(k < sorted.length){
       let j = k;
       while(j + 1 < sorted.length && sorted[j+1].pts === sorted[k].pts) j++;
       const size = j - k + 1;
       const label = size === 1 ? String(pos) : Array.from({length:size}, (_, q) => pos + q).join('&');
-      for(let q = k; q <= j; q++) labels[q] = label;
+      for(let q = k; q <= j; q++){ labels[q] = label; places[q] = pos - 1; }
       pos += size;
       k = j + 1;
     }
@@ -863,9 +896,11 @@ function renderBoards(finalBoards){
     <div class="board ${stageClass(b.title)}">
       <div class="board-head">${escapeHtml(b.title)}</div>
       ${sorted.map((e, idx) => {
-        const placeCls = idx === 0 ? 'p1' : idx === 1 ? 'p2' : idx === 2 ? 'p3' : '';
-        const rankInner = (isGeneral && idx < 3)
-          ? `<span class="crown">${MEDALS[idx]}</span>`
+        const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
+        const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
+        // medal only for the first row of a podium place; tied rows all get medal of their place
+        const rankInner = place < 3
+          ? `<span class="crown">${MEDALS[place]}</span><span class="rank-num">${escapeHtml(labels[idx])}</span>`
           : escapeHtml(labels[idx]);
         return `
         <div class="lb-row ${placeCls}">
@@ -1281,12 +1316,19 @@ function renderGenericTable(data){
   const headerRow = rows[0];
   const bodyRows = rows.slice(1);
 
+  // detect a "Points" column (header cell equals Points/Очки) to gold-highlight it
+  const pointsColIdx = headerRow.findIndex(c => /^(points?|очк[иі]|бали?)$/i.test(cellStr(c)));
+
   return `
     <div class="table-card">
       <table class="sheet-table">
-        <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
+        <thead><tr>${headerRow.map((c, ci) =>
+          `<th class="${ci === pointsColIdx ? 'th-points' : ''}">${escapeHtml(c)}</th>`
+        ).join('')}</tr></thead>
         <tbody>
-          ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) => `<td>${escapeHtml(r[ci] ?? '')}</td>`).join('')}</tr>`).join('')}
+          ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) =>
+            `<td class="${ci === pointsColIdx ? 'td-points' : ''}">${escapeHtml(r[ci] ?? '')}</td>`
+          ).join('')}</tr>`).join('')}
         </tbody>
       </table>
     </div>`;
@@ -1294,48 +1336,46 @@ function renderGenericTable(data){
 
 /* ======== RULES + PRIZE POOL ======== */
 function renderRules(data){
-  // split content into blocks separated by fully-empty rows
   const raw = data.rows.map(r => r.map(cellStr));
-  const blocks = [];
-  let current = [];
-  for(const r of raw){
-    if(r.every(v => v === '')){
-      if(current.length){ blocks.push(current); current = []; }
-    } else {
-      current.push(r);
-    }
+
+  // Find the conditions table: the row that has a "Condition" header.
+  let condRowIdx = -1;
+  for(let ri = 0; ri < raw.length; ri++){
+    if(raw[ri].some(v => /^condition$/i.test(v))){ condRowIdx = ri; break; }
   }
-  if(current.length) blocks.push(current);
+  if(condRowIdx === -1) return renderGenericTable(data);
 
-  if(blocks.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+  // The conditions table runs until the first fully-empty row after it
+  // (that's where Prize pool / Призові begins — we intentionally drop that).
+  let endIdx = raw.length;
+  for(let ri = condRowIdx + 2; ri < raw.length; ri++){
+    if(raw[ri].every(v => v === '')){ endIdx = ri; break; }
+    // also stop at a "Призові"/"Prize pool" marker row
+    if(raw[ri].some(v => /^(призові|prize pool)$/i.test(v))){ endIdx = ri; break; }
+  }
+  const block = raw.slice(condRowIdx, endIdx);
 
-  return blocks.map(block => {
-    // trim empty columns within the block
-    const colCount = Math.max(...block.map(r => r.length));
-    const keepCols = [];
-    for(let ci = 0; ci < colCount; ci++){
-      if(block.some(r => cellStr(r[ci]) !== '')) keepCols.push(ci);
-    }
-    const rows = block.map(r => keepCols.map(ci => cellStr(r[ci])));
+  // trim empty columns — but keep any column that carries header text in the
+  // Condition header rows (h1/h2), so merged group titles are never dropped.
+  const headerRowsForKeep = block.slice(0, 2);
+  const colCount = Math.max(...block.map(r => r.length));
+  const keepCols = [];
+  for(let ci = 0; ci < colCount; ci++){
+    const hasBody = block.some(r => cellStr(r[ci]) !== '');
+    if(hasBody) keepCols.push(ci);
+  }
+  const rows = block.map(r => keepCols.map(ci => cellStr(r[ci])));
 
-    // does this block look like the conditions table? (header contains "Condition")
-    const condRowIdx = rows.findIndex(r => r.some(v => /^condition$/i.test(v)));
-    if(condRowIdx !== -1 && rows.length > condRowIdx + 2){
-      return renderConditionsTable(rows, condRowIdx);
-    }
-    // otherwise: simple table (first row = header)
-    const headerRow = rows[0];
-    const bodyRows = rows.slice(1);
-    return `
-      <div class="rules-block table-card">
-        <table class="sheet-table">
-          <thead><tr>${headerRow.map(c => `<th>${escapeHtml(c)}</th>`).join('')}</tr></thead>
-          <tbody>
-            ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) => `<td>${formatYesNo(r[ci] ?? '')}</td>`).join('')}</tr>`).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  }).join('');
+  // capture a footnote paragraph if it exists after the table (the "Прогноз робимо лише..." note)
+  let footnote = '';
+  for(let ri = endIdx; ri < raw.length; ri++){
+    const text = raw[ri].map(cellStr).filter(v => v !== '').join(' ');
+    if(text.length > 40 && !/^(група|group|play|general|\d+%)/i.test(text)){ footnote = text; break; }
+  }
+
+  const table = renderConditionsTable(rows, 0);
+  const note = footnote ? `<div class="rules-note">${escapeHtml(footnote)}</div>` : '';
+  return table + note;
 }
 
 function formatYesNo(v){
