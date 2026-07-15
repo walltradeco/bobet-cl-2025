@@ -775,21 +775,28 @@ function findMatchesLayout(rows){
 }
 
 /* Group compositions block (Group A ... Group F with team lists) */
-function extractGroupsBlock(rows, headerRow){
+function extractGroupsBlock(rows, headerRow, maxCol){
   const groups = [];
+  const seen = new Set();
   const searchLimit = Math.max(0, headerRow - 1);
   for(let ri = 0; ri < searchLimit; ri++){
     const r = rows[ri];
-    for(let ci = 0; ci < r.length; ci++){
+    const limit = Math.min(r.length, maxCol + 1);
+    for(let ci = 0; ci < limit; ci++){
       const v = cellStr(r[ci]);
       if(/^group\s+\S+$/i.test(v)){
+        const key = v.toLowerCase();
+        if(seen.has(key)) continue; // hidden duplicates repeat the same titles
         const teams = [];
         for(let di = ri + 1; di < headerRow; di++){
           const t = cellStr(rows[di][ci]);
           if(t === '' || toNum(t) !== null || /^points?$/i.test(t)) break;
           teams.push(t);
         }
-        if(teams.length) groups.push({ title: v, teams });
+        if(teams.length){
+          seen.add(key);
+          groups.push({ title: v, teams });
+        }
       }
     }
     if(groups.length) break; // group titles all live on one row
@@ -862,7 +869,7 @@ function renderMatches(data){
   }
   if(body.filter(b => !b.sep).length === 0) return null;
 
-  const groups = extractGroupsBlock(rows, headerRow);
+  const groups = extractGroupsBlock(rows, headerRow, Math.max(...players.map(p => p.col)));
   const nCols = 3 + players.length;
 
   return `
@@ -1015,7 +1022,11 @@ function renderGenericTable(data){
   const colCount = Math.max(...rows.map(r => r.length));
   const keepCols = [];
   for(let ci = 0; ci < colCount; ci++){
-    if(rows.some(r => cellStr(r[ci]) !== '')) keepCols.push(ci);
+    const vals = rows.map(r => cellStr(r[ci])).filter(v => v !== '');
+    if(vals.length === 0) continue; // fully empty column
+    // junk column: every value is 0 / №N placeholder (hidden helper columns)
+    const junk = vals.every(v => v === '0' || isPlaceholderName(v));
+    if(!junk) keepCols.push(ci);
   }
   rows = rows.map(r => keepCols.map(ci => cellStr(r[ci])));
 
