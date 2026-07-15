@@ -332,6 +332,19 @@
     font-weight:500;
     color:var(--text);
   }
+  .flag{
+    display:inline-block;
+    width:22px;
+    height:16px;
+    border-radius:2px;
+    object-fit:cover;
+    vertical-align:middle;
+    flex-shrink:0;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .team{display:inline-flex; align-items:center; gap:8px;}
+  .game-teams{display:inline-flex; align-items:center; gap:7px; flex-wrap:wrap;}
+  .game-teams .vs{color:var(--text-dim); margin:0 2px;}
   td.c-result{
     font-weight:700;
     color:var(--gold);
@@ -402,6 +415,9 @@
     padding:7px 14px;
     border-bottom:1px solid var(--line);
     color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:8px;
   }
   .group-card .g-team:last-child{border-bottom:none;}
 
@@ -479,6 +495,8 @@
     color:var(--green);
     font-weight:600;
   }
+  .gp-actualteam .team, .gp-pred .team{gap:6px;}
+  .gp-actualteam .flag, .gp-pred .flag{width:20px; height:15px;}
   .gp-pred{color:var(--text-dim);}
   .gp-pred.hit{
     background:var(--green-soft);
@@ -769,6 +787,67 @@ const TOURNAMENTS = [
 ];
 
 const MEDALS = ['🥇','🥈','🥉'];
+
+/* ======== FLAGS (national teams) ======== */
+// Ukrainian country name -> ISO 3166-1 alpha-2 code (for flagcdn.com).
+const COUNTRY_ISO = {
+  'німеччина':'de','шотландія':'gb-sct','угорщина':'hu','швейцарія':'ch',
+  'іспанія':'es','хорватія':'hr','італія':'it','албанія':'al',
+  'словенія':'si','данія':'dk','сербія':'rs','англія':'gb-eng',
+  'польща':'pl','нідерланди':'nl','австрія':'at','франція':'fr',
+  'бельгія':'be','словаччина':'sk','румунія':'ro','україна':'ua',
+  'туреччина':'tr','грузія':'ge','португалія':'pt','чехія':'cz',
+  'нідерланди ':'nl','туречина':'tr',
+  // extras that may appear
+  'уельс':'gb-wls','ірландія':'ie','північна ірландія':'gb-nir',
+  'ісландія':'is','швеція':'se','норвегія':'no','фінляндія':'fi',
+  'греція':'gr','болгарія':'bg','росія':'ru','білорусь':'by',
+  'молдова':'md','північна македонія':'mk','македонія':'mk',
+  'боснія':'ba','чорногорія':'me','косово':'xk','сан-марино':'sm',
+  'мальта':'mt','кіпр':'cy','люксембург':'lu','ліхтенштейн':'li',
+  'андорра':'ad','естонія':'ee','латвія':'lv','литва':'lt',
+  'вірменія':'am','азербайджан':'az','казахстан':'kz','ізраїль':'il',
+  'бразилія':'br','аргентина':'ar','уругвай':'uy','мексика':'mx',
+  'сша':'us','канада':'ca','японія':'jp','південна корея':'kr',
+  'корея':'kr','австралія':'au','марокко':'ma','єгипет':'eg',
+  'туніс':'tn','сенегал':'sn','гана':'gh','нігерія':'ng',
+  'камерун':'cm','саудівська аравія':'sa','катар':'qa','іран':'ir',
+  'нова зеландія':'nz'
+};
+
+function isoForName(name){
+  const key = cellStr(name).toLowerCase().replace(/\s+/g,' ').trim();
+  return COUNTRY_ISO[key] || null;
+}
+
+// returns an <img> flag tag for a country name, or '' if not a known country
+function flagImg(name){
+  const iso = isoForName(name);
+  if(!iso) return '';
+  return `<img class="flag" src="https://flagcdn.com/24x18/${iso}.png" srcset="https://flagcdn.com/48x36/${iso}.png 2x" alt="" loading="lazy" width="24" height="18">`;
+}
+
+// wraps a single team name with its flag (if known). For a "TeamA - TeamB" game
+// string, flags both sides.
+function withFlag(name){
+  const s = cellStr(name);
+  const f = flagImg(s);
+  return f ? `<span class="team">${f}<span>${escapeHtml(s)}</span></span>` : escapeHtml(s);
+}
+
+function gameWithFlags(game){
+  const s = cellStr(game);
+  // split on the dash separators used in the sheet ("A - B", "A — B")
+  const m = s.split(/\s+[-–—]\s+/);
+  if(m.length === 2){
+    const a = m[0], b = m[1];
+    const fa = flagImg(a), fb = flagImg(b);
+    if(fa || fb){
+      return `<span class="game-teams">${fa}<span>${escapeHtml(a)}</span><span class="vs">–</span>${fb}<span>${escapeHtml(b)}</span></span>`;
+    }
+  }
+  return escapeHtml(s);
+}
 
 // Explicit leaderboard board names per tournament (used when the sheet's own
 // stage titles can't be detected). Order matches the boards left-to-right.
@@ -1079,7 +1158,7 @@ function renderGroupsBlock(groups){
     return `
     <div class="group-card">
       <div class="g-head" style="color:${color}; box-shadow:inset 0 3px 0 ${color};">${escapeHtml(g.title)}</div>
-      ${g.teams.map(t => `<div class="g-team">${escapeHtml(t)}</div>`).join('')}
+      ${g.teams.map(t => `<div class="g-team">${withFlag(t)}</div>`).join('')}
     </div>`;
   }).join('')}</div>`;
 }
@@ -1169,7 +1248,7 @@ function renderMatches(data){
           return `
           <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
             ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
-            <td class="c-game">${escapeHtml(row.game)}</td>
+            <td class="c-game">${gameWithFlags(row.game)}</td>
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
             ${row.preds.map(pv => {
               const pPair = parseScore(pv);
@@ -1286,10 +1365,10 @@ function renderGroupPositions(data){
           ${b.teams.map((t, i) => `
             <tr>
               <td class="gp-rank">${i + 1}</td>
-              <td class="gp-actualteam">${escapeHtml(t.actual)}</td>
+              <td class="gp-actualteam">${withFlag(t.actual)}</td>
               ${t.preds.map(pv => {
                 const correct = pv !== '' && pv === t.actual;
-                return `<td class="gp-pred ${correct ? 'hit' : ''}">${escapeHtml(pv || '—')}</td>`;
+                return `<td class="gp-pred ${correct ? 'hit' : ''}">${withFlag(pv)}</td>`;
               }).join('')}
             </tr>`).join('')}
         </tbody>
