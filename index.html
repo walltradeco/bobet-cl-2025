@@ -257,6 +257,37 @@
     text-transform:uppercase;
     color:var(--purple);
   }
+  /* separate Points totals row (gold), above the player-names row */
+  table.matches thead tr.totals-row th{
+    background:var(--gold-soft);
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    text-align:center;
+  }
+  table.matches thead th.totals-label{
+    text-align:right;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+  }
+  table.matches thead th.totals-val{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:16px;
+    color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  table.matches thead th.p-name-cell{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--purple);
+    padding:12px;
+  }
   .player-head{
     display:flex;
     flex-direction:column;
@@ -1115,17 +1146,18 @@ function renderMatches(data){
   <div class="matches-card">
     <table class="matches">
       <thead>
+        ${totals ? `
+        <tr class="totals-row">
+          ${hasDate ? '<th></th>' : ''}
+          <th></th>
+          <th class="totals-label">Points</th>
+          ${players.map(p => `<th class="totals-val">${totals[p.col] !== undefined ? totals[p.col] : ''}</th>`).join('')}
+        </tr>` : ''}
         <tr>
           ${hasDate ? '<th class="meta">Date</th>' : ''}
           <th class="meta">Game</th>
           <th class="meta" style="text-align:center;">Result</th>
-          ${players.map(p => `
-            <th>
-              <div class="player-head">
-                <span class="p-name">${escapeHtml(p.name)}</span>
-                ${totals && totals[p.col] !== undefined ? `<span class="p-total">${totals[p.col]}</span>` : ''}
-              </div>
-            </th>`).join('')}
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -1141,7 +1173,6 @@ function renderMatches(data){
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
             ${row.preds.map(pv => {
               const pPair = parseScore(pv);
-              // green ONLY when the prediction exactly equals the match result
               const exact = resPair && pPair && pPair[0] === resPair[0] && pPair[1] === resPair[1];
               return `<td class="pred ${exact ? 'exact' : ''}">${escapeHtml(pv || '—')}</td>`;
             }).join('')}
