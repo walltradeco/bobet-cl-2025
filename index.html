@@ -362,6 +362,105 @@
   }
   .group-card .g-team:last-child{border-bottom:none;}
 
+  /* ===== GROUP POSITIONS ===== */
+  .gp-wrap{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+    gap:18px;
+    margin-bottom:22px;
+    align-items:start;
+  }
+  .gp-block{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .gp-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 16px;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--line);
+  }
+  .gp-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--purple);
+  }
+  .gp-actual-label{
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:var(--green);
+  }
+  table.gp-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  table.gp-table th{
+    text-align:left;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:500;
+    font-size:10px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  table.gp-table td{
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  table.gp-table tbody tr:last-child td{border-bottom:none;}
+  .gp-rank{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--text-dim);
+    width:24px;
+  }
+  .gp-actualteam{
+    color:var(--green);
+    font-weight:600;
+  }
+  .gp-pred{color:var(--text-dim);}
+  .gp-pred.hit{
+    background:var(--green-soft);
+    color:var(--green);
+    font-weight:700;
+  }
+  .gp-points{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:16px;
+    background:var(--gold-soft);
+    border:1px solid var(--line);
+    border-radius:12px;
+    padding:14px 18px;
+    margin-bottom:22px;
+  }
+  .gp-points-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+  }
+  .gp-points-cell{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--text);
+  }
+  .gp-points-cell b{color:var(--purple); font-weight:700; margin-right:2px;}
+
   /* ===== SPECIAL BETS ===== */
   table.special td.sb-label{
     text-align:left;
@@ -667,41 +766,56 @@ function stageClass(title){
 /* ======== LEADERBOARDS ======== */
 function renderLeaderboard(data){
   const rows = data.rows;
+  const nCols = Math.max(0, ...rows.map(r => r.length));
 
-  // Find "№ / Name / Points" triplets. A REAL (visible) board has a stage title
-  // in the cell directly above its "№" header; hidden helper copies don't.
-  const boards = [];
-  for(let ri = 1; ri < rows.length; ri++){
-    const r = rows[ri];
-    for(let ci = 0; ci < r.length; ci++){
-      const a = cellStr(r[ci]), b = cellStr(r[ci+1] || ''), c = cellStr(r[ci+2] || '');
-      if(!(/№|#|^No\.?$/i.test(a) && /^name$/i.test(b) && /^points?$/i.test(c))) continue;
-
-      // title in the cell above the "№" header (real boards have one)
-      let title = '';
-      for(let up = 1; up <= 2 && ri - up >= 0; up++){
-        const t = cellStr(rows[ri - up][ci]);
-        if(t !== ''){ title = t; break; }
-      }
-      if(title === '' || /^(№|#|name|points?)$/i.test(title)) continue;
-
-      const entries = [];
-      for(let di = ri + 1; di < rows.length; di++){
-        const name = cellStr(rows[di][ci+1]);
-        const pts = toNum(rows[di][ci+2]);
-        if(name === '' || isPlaceholderName(name)) continue;
-        if(pts === null) continue;
-        // stop if we ran into another header block
-        if(/^name$/i.test(name)) break;
-        entries.push({ name, pts });
-      }
-      if(entries.length) boards.push({ title, entries });
+  // Find the header row: the one containing "Name" cells. Each "Name" cell marks a board
+  // whose columns are [№ | Name | Points] = [ci-1 | ci | ci+1]. The board title sits in
+  // the row(s) above, spanning that block.
+  let headerRowIdx = -1;
+  const nameCols = [];
+  for(let ri = 0; ri < rows.length; ri++){
+    const cols = [];
+    for(let ci = 0; ci < nCols; ci++){
+      if(/^name$/i.test(cellStr(rows[ri][ci]))) cols.push(ci);
     }
+    if(cols.length > nameCols.length){
+      headerRowIdx = ri;
+      nameCols.length = 0;
+      cols.forEach(c => nameCols.push(c));
+    }
+  }
+  if(headerRowIdx === -1) return renderGenericTable(data);
+
+  const boards = [];
+  for(const nameCol of nameCols){
+    const ptsCol = nameCol + 1;
+    // title: nearest non-empty text above, scanning the №/Name columns of this board
+    let title = '';
+    for(let up = 1; up <= 3 && headerRowIdx - up >= 0 && title === ''; up++){
+      for(const tc of [nameCol - 1, nameCol]){
+        if(tc < 0) continue;
+        const t = cellStr(rows[headerRowIdx - up][tc]);
+        if(t !== '' && !/^(№|#|name|points?)$/i.test(t)){ title = t; break; }
+      }
+    }
+    const entries = [];
+    for(let di = headerRowIdx + 1; di < rows.length; di++){
+      const name = cellStr(rows[di][nameCol]);
+      const pts = toNum(rows[di][ptsCol]);
+      if(name === '' || isPlaceholderName(name)) continue;
+      if(pts === null) continue;
+      entries.push({ name, pts });
+    }
+    if(entries.length) boards.push({ title: title || `Board ${boards.length + 1}`, entries });
   }
 
   if(boards.length === 0) return renderGenericTable(data);
+  return renderBoards(boards);
+}
 
-  return `<div class="boards">${boards.map(b => {
+function renderBoards(finalBoards){
+
+  return `<div class="boards">${finalBoards.map(b => {
     const isGeneral = /general/i.test(b.title);
     const sorted = [...b.entries].sort((a, z) => z.pts - a.pts);
     // tie-aware rank labels: 42,42,34 -> "1&2","1&2","3"
@@ -919,6 +1033,107 @@ function renderMatches(data){
     <span><span class="chip exact"></span> exact score</span>
     <span><span class="chip outcome"></span> correct outcome</span>
   </div>`;
+}
+
+/* ======== GROUP POSITIONS ========
+   Layout per group block:
+   [Group X | Final positions |  | P1 | P2 | ... ]  <- header-ish
+   [team    | actualTeam      |  | predTeam | ...  ]  x4 teams
+   Groups stacked vertically, separated by a "-" spacer row.
+   A trailing "Points" row holds each player's score. */
+function renderGroupPositions(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+  const nCols = Math.max(0, ...rows.map(r => r.length));
+
+  // find player header row: contains "Final positions" and player names to the right
+  let headerRow = -1, fpCol = -1;
+  for(let ri = 0; ri < rows.length; ri++){
+    const ci = rows[ri].findIndex(v => /^final positions$/i.test(v));
+    if(ci !== -1){ headerRow = ri; fpCol = ci; break; }
+  }
+  if(headerRow === -1) return null;
+
+  // player columns: non-empty cells to the right of fpCol on the header row
+  const players = [];
+  for(let ci = fpCol + 1; ci < nCols; ci++){
+    const name = cellStr(rows[headerRow][ci]);
+    if(name !== '' && toNum(name) === null) players.push({ col: ci, name });
+  }
+  if(players.length === 0) return null;
+
+  const groupTitleCol = fpCol - 1 >= 0 ? fpCol - 1 : 0; // "Group A" sits left of "Final positions"
+
+  // walk rows building group blocks
+  const blocks = [];
+  let cur = null;
+  let pointsRow = null;
+  for(let ri = 0; ri < rows.length; ri++){
+    const r = rows[ri];
+    const gcell = cellStr(r[groupTitleCol]);
+    const fpHeader = /^final positions$/i.test(cellStr(r[fpCol]));
+
+    if(/^group\s+\S+/i.test(gcell) && fpHeader){
+      if(cur) blocks.push(cur);
+      cur = { title: gcell, teams: [] };
+      continue;
+    }
+    // points row (bottom): marker "Points" somewhere left of players
+    if(r.some(v => /^points$/i.test(v)) && players.some(p => toNum(r[p.col]) !== null)){
+      pointsRow = players.map(p => cellStr(r[p.col]));
+      continue;
+    }
+    if(cur){
+      const team = cellStr(r[groupTitleCol]);
+      const actual = cellStr(r[fpCol]);
+      const preds = players.map(p => cellStr(r[p.col]));
+      // team rows have an actual team name; skip separators ("-") and empties
+      if(actual !== '' && actual !== '-'){
+        cur.teams.push({ team, actual, preds });
+      } else if(team === '' && actual === '' && preds.every(v => v === '')){
+        // spacer row → close current block
+        if(cur.teams.length){ blocks.push(cur); cur = null; }
+      }
+    }
+  }
+  if(cur && cur.teams.length) blocks.push(cur);
+  if(blocks.length === 0) return null;
+
+  const body = blocks.map(b => `
+    <div class="gp-block">
+      <div class="gp-head">
+        <span class="gp-title">${escapeHtml(b.title)}</span>
+        <span class="gp-actual-label">Final positions</span>
+      </div>
+      <table class="gp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Actual</th>
+            ${players.map(p => `<th>${escapeHtml(p.name)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${b.teams.map((t, i) => `
+            <tr>
+              <td class="gp-rank">${i + 1}</td>
+              <td class="gp-actualteam">${escapeHtml(t.actual)}</td>
+              ${t.preds.map(pv => {
+                const correct = pv !== '' && pv === t.actual;
+                return `<td class="gp-pred ${correct ? 'hit' : ''}">${escapeHtml(pv || '—')}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+
+  const pointsBar = pointsRow ? `
+    <div class="gp-points">
+      <span class="gp-points-label">Points</span>
+      ${players.map((p, i) => `<span class="gp-points-cell"><b>${escapeHtml(p.name)}</b> ${escapeHtml(pointsRow[i] || '0')}</span>`).join('')}
+    </div>` : '';
+
+  return `<div class="gp-wrap">${body}${pointsBar}</div>
+  <div class="legend"><span><span class="chip exact"></span> correct position</span></div>`;
 }
 
 /* ======== SPECIAL BETS (1&2place + ... tabs) ======== */
@@ -1152,6 +1367,8 @@ function renderTabContent(tab, data){
   if(tab.kind === 'rules') return renderRules(data);
   const matches = renderMatches(data);
   if(matches) return matches;
+  const positions = renderGroupPositions(data);
+  if(positions) return positions;
   const special = renderSpecialBets(data);
   if(special) return special;
   return renderGenericTable(data);
