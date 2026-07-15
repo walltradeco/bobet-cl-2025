@@ -38,7 +38,7 @@
     min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1760px;margin:0 auto;padding:0 40px 80px;}
+  .wrap{max-width:2100px;margin:0 auto;padding:0 48px 80px;}
 
   /* ===== HEADER ===== */
   header{
@@ -174,12 +174,13 @@
   /* stage accents (match the sheet: Group=teal, Play-off=blue, General=gold) */
   .board.stage-group .board-head{color:var(--teal); box-shadow:inset 0 3px 0 var(--teal);}
   .board.stage-playoff .board-head{color:var(--blue); box-shadow:inset 0 3px 0 var(--blue);}
+  .board.stage-knockout .board-head{color:#B98FE0; box-shadow:inset 0 3px 0 #B98FE0;}
   .board.stage-general .board-head{color:var(--gold); box-shadow:inset 0 3px 0 var(--gold);}
   .lb-row{
     display:flex;
     align-items:center;
-    gap:14px;
-    padding:13px 18px;
+    gap:16px;
+    padding:16px 22px;
     border-bottom:1px solid var(--line);
     transition:background .12s;
   }
@@ -189,25 +190,23 @@
   .lb-row.p3{background:linear-gradient(90deg, rgba(201,123,74,0.14), rgba(201,123,74,0.02));}
   .lb-rank{
     font-family:'JetBrains Mono',monospace;
-    font-size:13px;
+    font-size:15px;
     font-weight:700;
-    min-width:52px;
+    min-width:44px;
     display:flex;
     align-items:center;
     justify-content:center;
-    gap:4px;
     color:var(--text-dim);
     flex-shrink:0;
   }
-  .lb-rank .rank-num{font-size:11px; opacity:0.85;}
   .lb-row.p1 .lb-rank{color:var(--gold);}
   .lb-row.p2 .lb-rank{color:#C7CDC3;}
   .lb-row.p3 .lb-rank{color:#C97B4A;}
-  .lb-rank .crown{font-size:18px;}
+  .lb-rank .crown{font-size:26px;}
   .lb-name{
     flex:1;
     font-family:'Space Grotesk',sans-serif;
-    font-size:16px;
+    font-size:19px;
     font-weight:500;
     min-width:0;
     overflow:hidden;
@@ -218,7 +217,7 @@
   .lb-pts{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
-    font-size:18px;
+    font-size:22px;
     color:var(--text);
     flex-shrink:0;
     font-variant-numeric:tabular-nums;
@@ -740,6 +739,14 @@ const TOURNAMENTS = [
 
 const MEDALS = ['🥇','🥈','🥉'];
 
+// Explicit leaderboard board names per tournament (used when the sheet's own
+// stage titles can't be detected). Order matches the boards left-to-right.
+const LEADERBOARD_NAMES = {
+  euro2024:   ['Group', 'Play-off', 'General'],
+  cl2025:     ['Knockout phase play-offs', 'Play-off', 'General'],
+  clubwc2025: ['Group', 'Play-off', 'General'],
+};
+
 let activeTournament = TOURNAMENTS[0];
 let activeTabIndex = 0;
 const cache = {};
@@ -807,6 +814,7 @@ function outcomeSign(pair){
 function stageClass(title){
   const t = title.toLowerCase();
   if(t.includes('general')) return 'stage-general';
+  if(t.includes('knockout')) return 'stage-knockout';
   if(t.includes('play')) return 'stage-playoff';
   if(t.includes('group')) return 'stage-group';
   return '';
@@ -859,16 +867,14 @@ function renderLeaderboard(data){
     if(entries.length) boards.push({ title, entries });
   }
 
-  // Keep only boards that have a real stage title (Group / Play-off / General).
-  // Hidden helper copies have no stage title above them.
+  // Keep only boards that have a real stage title. Hidden helper copies have none.
   const titled = boards.filter(b => b.title);
   let finalBoards;
   if(titled.length >= 1){
     finalBoards = titled;
   } else {
-    // No titles found at all → fall back to the standard 3-board naming by position.
-    // Leaderboards always are Group / Play-off / General in that order.
-    const STD = ['Group', 'Play-off', 'General'];
+    // Fall back to this tournament's explicit board names.
+    const STD = LEADERBOARD_NAMES[activeTournament.key] || ['Group', 'Play-off', 'General'];
     finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
   }
   if(finalBoards.length === 0) return renderGenericTable(data);
@@ -898,9 +904,9 @@ function renderBoards(finalBoards){
       ${sorted.map((e, idx) => {
         const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
         const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
-        // medal only for the first row of a podium place; tied rows all get medal of their place
+        // podium places show ONLY a medal (shared across ties); others show the numeric place
         const rankInner = place < 3
-          ? `<span class="crown">${MEDALS[place]}</span><span class="rank-num">${escapeHtml(labels[idx])}</span>`
+          ? `<span class="crown">${MEDALS[place]}</span>`
           : escapeHtml(labels[idx]);
         return `
         <div class="lb-row ${placeCls}">
@@ -927,22 +933,71 @@ function findMatchesLayout(rows){
     r.forEach((v, ci) => {
       const s = cellStr(v).toLowerCase();
       if(s === 'date' && dateCol === -1) dateCol = ci;
-      if(s === 'game' && gameCol === -1) gameCol = ci;
-      if(s === 'result' && resCol === -1) resCol = ci;
+      if((s === 'game' || s === 'match') && gameCol === -1) gameCol = ci;
+      if((s === 'result' || s === 'score') && resCol === -1) resCol = ci;
     });
-    if(dateCol !== -1 && gameCol !== -1 && resCol !== -1){
-      const players = [];
+    // Game + Result are required; Date is optional (Knockout tabs may omit it)
+    if(gameCol !== -1 && resCol !== -1){
+      // Players may be on the header row (old layout) OR on a dedicated names row
+      // above the header (new layout: row1=Points+totals, row2=names, row3=Date/Game/Result).
+      let players = [];
       for(let ci = resCol + 1; ci < r.length; ci++){
         const name = cellStr(r[ci]);
         if(name !== '' && !isPlaceholderName(name) && toNum(name) === null){
           players.push({ col: ci, name });
         }
       }
+      // if the header row has no names to the right, find the names row.
+      // Preferred: the row directly BELOW the "Points" totals row holds player names.
+      if(players.length === 0){
+        let pointsRi = -1;
+        for(let pri = 0; pri < rows.length; pri++){
+          if(rows[pri].some(v => /^points$/i.test(cellStr(v))) &&
+             rows[pri].slice(resCol + 1).some(v => toNum(v) !== null)){
+            pointsRi = pri; break;
+          }
+        }
+        if(pointsRi !== -1 && pointsRi + 1 < rows.length){
+          const cand = [];
+          for(let ci = resCol + 1; ci < rows[pointsRi + 1].length; ci++){
+            const name = cellStr(rows[pointsRi + 1][ci]);
+            if(name !== '' && !isPlaceholderName(name) && toNum(name) === null && !/^group\s+\S+$/i.test(name)){
+              cand.push({ col: ci, name });
+            }
+          }
+          if(cand.length >= 2) players = cand;
+        }
+        // fallback: scan upward skipping group-composition rows
+        if(players.length === 0){
+          for(let pri = ri - 1; pri >= 0 && pri >= ri - 6; pri--){
+            const cand = [];
+            let looksLikeGroups = false;
+            for(let ci = resCol + 1; ci < rows[pri].length; ci++){
+              const name = cellStr(rows[pri][ci]);
+              if(/^group\s+\S+$/i.test(name)) looksLikeGroups = true;
+              if(name !== '' && !isPlaceholderName(name) && toNum(name) === null && !/^points$/i.test(name) && !/^group\s+\S+$/i.test(name)){
+                cand.push({ col: ci, name });
+              }
+            }
+            if(looksLikeGroups) continue;
+            if(cand.length >= 2){ players = cand; break; }
+          }
+        }
+      }
       if(players.length === 0) return null;
-      // totals: row above the header (Group layout: "Points | 30 | 21 ...")
+      // totals: find the "Points" row (marked "Points" in a left column) and read
+      // each player's total from it. Falls back to the row directly above the header.
       let totals = null;
-      if(ri > 0){
-        const tRow = rows[ri - 1];
+      let pointsRowIdx = -1;
+      for(let pri = 0; pri < rows.length; pri++){
+        if(rows[pri].some(v => /^points$/i.test(cellStr(v))) &&
+           players.some(p => toNum(rows[pri][p.col]) !== null)){
+          pointsRowIdx = pri;
+          break;
+        }
+      }
+      const tRow = pointsRowIdx !== -1 ? rows[pointsRowIdx] : (ri > 0 ? rows[ri - 1] : null);
+      if(tRow){
         const t = {};
         let any = false;
         players.forEach(p => {
@@ -1052,7 +1107,8 @@ function renderMatches(data){
   if(body.filter(b => !b.sep).length === 0) return null;
 
   const groups = extractGroupsBlock(rows, headerRow, Math.min(...players.map(p => p.col)), Math.max(...players.map(p => p.col)));
-  const nCols = 3 + players.length;
+  const hasDate = dateCol !== -1;
+  const nCols = (hasDate ? 3 : 2) + players.length;
 
   return `
   ${renderGroupsBlock(groups)}
@@ -1060,7 +1116,7 @@ function renderMatches(data){
     <table class="matches">
       <thead>
         <tr>
-          <th class="meta">Date</th>
+          ${hasDate ? '<th class="meta">Date</th>' : ''}
           <th class="meta">Game</th>
           <th class="meta" style="text-align:center;">Result</th>
           ${players.map(p => `
@@ -1080,7 +1136,7 @@ function renderMatches(data){
           const resPair = parseScore(row.result);
           return `
           <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
-            <td class="c-date">${escapeHtml(row.date)}</td>
+            ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
             <td class="c-game">${escapeHtml(row.game)}</td>
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
             ${row.preds.map(pv => {
@@ -1109,28 +1165,54 @@ function renderGroupPositions(data){
   const rows = data.rows.map(r => r.map(cellStr));
   const nCols = Math.max(0, ...rows.map(r => r.length));
 
-  // find player header row: contains "Final positions" and player names to the right
-  let headerRow = -1, fpCol = -1;
+  // Find the "Final positions" column (it marks the actual-results column, and
+  // "Group A/B/..." sits directly to its left).
+  let fpCol = -1;
   for(let ri = 0; ri < rows.length; ri++){
     const ci = rows[ri].findIndex(v => /^final positions$/i.test(v));
-    if(ci !== -1){ headerRow = ri; fpCol = ci; break; }
+    if(ci !== -1){ fpCol = ci; break; }
   }
-  if(headerRow === -1) return null;
+  if(fpCol === -1) return null;
 
-  // player columns: non-empty cells to the right of fpCol on the header row
-  const players = [];
-  for(let ci = fpCol + 1; ci < nCols; ci++){
-    const name = cellStr(rows[headerRow][ci]);
-    if(name !== '' && toNum(name) === null) players.push({ col: ci, name });
+  // Players row: the row whose cells right of fpCol are player NAMES (text, not numbers).
+  // Totals row: a row marked "Points" with numeric totals in the same columns.
+  let playersRowIdx = -1, players = [];
+  let totalsRow = null;
+  for(let ri = 0; ri < rows.length; ri++){
+    const r = rows[ri];
+    const cand = [];
+    for(let ci = fpCol + 1; ci < nCols; ci++){
+      const v = cellStr(r[ci]);
+      if(v !== '' && toNum(v) === null && !/^final positions$/i.test(v)) cand.push({ col: ci, name: v });
+    }
+    // a "Points" row has numbers in those columns
+    if(r.some(v => /^points$/i.test(v))){
+      const nums = {};
+      let any = false;
+      for(let ci = fpCol + 1; ci < nCols; ci++){
+        const n = toNum(r[ci]);
+        if(n !== null){ nums[ci] = n; any = true; }
+      }
+      if(any) totalsRow = nums;
+    }
+    if(cand.length >= 2 && playersRowIdx === -1){
+      playersRowIdx = ri;
+      players = cand;
+    }
   }
   if(players.length === 0) return null;
 
-  const groupTitleCol = fpCol - 1 >= 0 ? fpCol - 1 : 0; // "Group A" sits left of "Final positions"
+  const groupTitleCol = fpCol - 1 >= 0 ? fpCol - 1 : 0;
+
+  // build points summary (player -> total)
+  let pointsRow = null;
+  if(totalsRow){
+    pointsRow = players.map(p => totalsRow[p.col] !== undefined ? String(totalsRow[p.col]) : '0');
+  }
 
   // walk rows building group blocks
   const blocks = [];
   let cur = null;
-  let pointsRow = null;
   for(let ri = 0; ri < rows.length; ri++){
     const r = rows[ri];
     const gcell = cellStr(r[groupTitleCol]);
@@ -1141,20 +1223,13 @@ function renderGroupPositions(data){
       cur = { title: gcell, teams: [] };
       continue;
     }
-    // points row (bottom): marker "Points" somewhere left of players
-    if(r.some(v => /^points$/i.test(v)) && players.some(p => toNum(r[p.col]) !== null)){
-      pointsRow = players.map(p => cellStr(r[p.col]));
-      continue;
-    }
     if(cur){
       const team = cellStr(r[groupTitleCol]);
       const actual = cellStr(r[fpCol]);
       const preds = players.map(p => cellStr(r[p.col]));
-      // team rows have an actual team name; skip separators ("-") and empties
       if(actual !== '' && actual !== '-'){
         cur.teams.push({ team, actual, preds });
       } else if(team === '' && actual === '' && preds.every(v => v === '')){
-        // spacer row → close current block
         if(cur.teams.length){ blocks.push(cur); cur = null; }
       }
     }
@@ -1338,44 +1413,90 @@ function renderGenericTable(data){
 function renderRules(data){
   const raw = data.rows.map(r => r.map(cellStr));
 
-  // Find the conditions table: the row that has a "Condition" header.
-  let condRowIdx = -1;
+  // find the "Condition" header row
+  let condRowIdx = -1, condCol = -1;
   for(let ri = 0; ri < raw.length; ri++){
-    if(raw[ri].some(v => /^condition$/i.test(v))){ condRowIdx = ri; break; }
+    const ci = raw[ri].findIndex(v => /^condition$/i.test(v));
+    if(ci !== -1){ condRowIdx = ri; condCol = ci; break; }
   }
   if(condRowIdx === -1) return renderGenericTable(data);
 
-  // The conditions table runs until the first fully-empty row after it
-  // (that's where Prize pool / Призові begins — we intentionally drop that).
+  // table ends at first fully-empty row (Prize pool block follows — dropped)
   let endIdx = raw.length;
   for(let ri = condRowIdx + 2; ri < raw.length; ri++){
     if(raw[ri].every(v => v === '')){ endIdx = ri; break; }
-    // also stop at a "Призові"/"Prize pool" marker row
     if(raw[ri].some(v => /^(призові|prize pool)$/i.test(v))){ endIdx = ri; break; }
   }
-  const block = raw.slice(condRowIdx, endIdx);
 
-  // trim empty columns — but keep any column that carries header text in the
-  // Condition header rows (h1/h2), so merged group titles are never dropped.
-  const headerRowsForKeep = block.slice(0, 2);
-  const colCount = Math.max(...block.map(r => r.length));
-  const keepCols = [];
-  for(let ci = 0; ci < colCount; ci++){
-    const hasBody = block.some(r => cellStr(r[ci]) !== '');
-    if(hasBody) keepCols.push(ci);
+  const h1 = raw[condRowIdx];
+  const h2 = raw[condRowIdx + 1] || [];
+  const bodyRows = raw.slice(condRowIdx + 2, endIdx).filter(r => r.some(v => v !== ''));
+
+  const pointsCol = h1.findIndex(v => /^points?$/i.test(v));
+
+  // yes/no columns = every column at/after (pointsCol+1) that has a sub-header (h2)
+  // or yes/no body values. Collect them in order.
+  const nCols = Math.max(h1.length, h2.length, ...bodyRows.map(r => r.length));
+  const ynCols = [];
+  for(let ci = Math.max(pointsCol + 1, condCol + 1); ci < nCols; ci++){
+    const sub = cellStr(h2[ci]);
+    const bodyHasYN = bodyRows.some(r => /^(yes|no)$/i.test(cellStr(r[ci])));
+    if(sub !== '' || bodyHasYN) ynCols.push(ci);
   }
-  const rows = block.map(r => keepCols.map(ci => cellStr(r[ci])));
 
-  // capture a footnote paragraph if it exists after the table (the "Прогноз робимо лише..." note)
+  // group the yn columns by their h1 top-label (carry-forward across empty h1 cells)
+  const groups = [];
+  let curLabel = null;
+  for(const ci of ynCols){
+    let top = cellStr(h1[ci]);
+    if(top === ''){
+      // carry forward: search left until a non-empty h1 within the yn region
+      for(let k = ci - 1; k > pointsCol; k--){
+        if(cellStr(h1[k]) !== ''){ top = cellStr(h1[k]); break; }
+      }
+    }
+    if(groups.length === 0 || groups[groups.length-1].label !== top){
+      groups.push({ label: top, cols: [ci] });
+      curLabel = top;
+    } else {
+      groups[groups.length-1].cols.push(ci);
+    }
+  }
+
+  const hasGroups = groups.some(g => g.label !== '');
+
+  const topHeader = `
+    <tr>
+      <th class="c-condition" rowspan="2">Condition</th>
+      <th rowspan="2" style="text-align:center;">Points</th>
+      ${groups.map(g => `<th class="group-head" colspan="${g.cols.length}">${escapeHtml(g.label)}</th>`).join('')}
+    </tr>
+    <tr>
+      ${ynCols.map(ci => `<th class="sub-head">${escapeHtml(cellStr(h2[ci]))}</th>`).join('')}
+    </tr>`;
+
+  const body = bodyRows.map(r => `
+    <tr>
+      <td class="c-condition">${escapeHtml(cellStr(r[condCol]))}</td>
+      <td class="c-points">${escapeHtml(cellStr(r[pointsCol]))}</td>
+      ${ynCols.map(ci => `<td>${formatYesNo(cellStr(r[ci]))}</td>`).join('')}
+    </tr>`).join('');
+
+  // footnote (the "Прогноз робимо лише..." paragraph)
   let footnote = '';
   for(let ri = endIdx; ri < raw.length; ri++){
     const text = raw[ri].map(cellStr).filter(v => v !== '').join(' ');
     if(text.length > 40 && !/^(група|group|play|general|\d+%)/i.test(text)){ footnote = text; break; }
   }
-
-  const table = renderConditionsTable(rows, 0);
   const note = footnote ? `<div class="rules-note">${escapeHtml(footnote)}</div>` : '';
-  return table + note;
+
+  return `
+  <div class="rules-block table-card">
+    <table class="sheet-table rules">
+      <thead>${topHeader}</thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>${note}`;
 }
 
 function formatYesNo(v){
@@ -1383,55 +1504,6 @@ function formatYesNo(v){
   if(/^yes$/i.test(s)) return '<span class="yn yes">yes</span>';
   if(/^no$/i.test(s)) return '<span class="yn no">no</span>';
   return escapeHtml(s);
-}
-
-function renderConditionsTable(rows, condRowIdx){
-  const h1 = rows[condRowIdx];         // Condition | Points | Condition is valid at... | ... | Condition is valid for...
-  const h2 = rows[condRowIdx + 1];     //           |        | Group | Play-off | Group | Play-off | General
-  const body = rows.slice(condRowIdx + 2).filter(r => r.some(v => v !== ''));
-
-  const nCols = Math.max(h1.length, h2.length, ...body.map(r => r.length));
-
-  // build top header cells with colspans (carry-forward of non-empty h1 cells)
-  const topCells = [];
-  let ci = 0;
-  while(ci < nCols){
-    const label = cellStr(h1[ci]);
-    let span = 1;
-    while(ci + span < nCols && cellStr(h1[ci + span]) === '') span++;
-    topCells.push({ label, span, col: ci });
-    ci += span;
-  }
-
-  const hasSubHeader = h2.some(v => v !== '');
-
-  const condCol = h1.findIndex(v => /^condition$/i.test(v));
-  const pointsCol = h1.findIndex(v => /^points?$/i.test(v));
-
-  return `
-  <div class="rules-block table-card">
-    <table class="sheet-table rules">
-      <thead>
-        <tr>
-          ${topCells.map(c => `<th class="group-head" colspan="${c.span}" ${hasSubHeader && cellStr(h2[c.col]) === '' ? 'rowspan="2"' : ''}>${escapeHtml(c.label)}</th>`).join('')}
-        </tr>
-        ${hasSubHeader ? `<tr>${
-          Array.from({length: nCols}, (_, i) => i)
-            .filter(i => cellStr(h2[i]) !== '')
-            .map(i => `<th class="sub-head">${escapeHtml(h2[i])}</th>`).join('')
-        }</tr>` : ''}
-      </thead>
-      <tbody>
-        ${body.map(r => `<tr>${
-          Array.from({length: nCols}, (_, i) => {
-            const v = cellStr(r[i]);
-            const cls = i === condCol ? 'c-condition' : i === pointsCol ? 'c-points' : '';
-            return `<td class="${cls}">${formatYesNo(v)}</td>`;
-          }).join('')
-        }</tr>`).join('')}
-      </tbody>
-    </table>
-  </div>`;
 }
 
 /* ======== DISPATCH ======== */
