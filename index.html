@@ -342,6 +342,14 @@
     flex-shrink:0;
     box-shadow:0 0 0 1px rgba(255,255,255,0.08);
   }
+  .crest{
+    display:inline-block;
+    width:20px;
+    height:20px;
+    object-fit:contain;
+    vertical-align:middle;
+    flex-shrink:0;
+  }
   .team{display:inline-flex; align-items:center; gap:8px;}
   .game-teams{display:inline-flex; align-items:center; gap:7px; flex-wrap:wrap;}
   .game-teams .vs{color:var(--text-dim); margin:0 2px;}
@@ -820,6 +828,80 @@ function isoForName(name){
   return COUNTRY_ISO[key] || null;
 }
 
+/* ======== CLUB LOGOS ========
+   Ukrainian club name -> API-Sports football team ID.
+   Logos are served directly from https://media.api-sports.io/football/teams/{id}.png
+   (no API key needed for the media CDN). IDs are stable identifiers from API-Football. */
+const CLUB_ID = {
+  'реал':541, 'реал мадрид':541,
+  'барселона':529, 'барса':529,
+  'арсенал':42,
+  'ліверпуль':40,
+  'псж':85, 'парі сен-жермен':85,
+  'челсі':49,
+  'манчестер сіті':50, 'сіті':50, 'ман сіті':50,
+  'манчестер юнайтед':33, 'юнайтед':33,
+  'баварія':157, 'баварія мюнхен':157,
+  'борусія д':165, 'боруссія д':165, 'боруссія дортмунд':165, 'дортмунд':165,
+  'ювентус':496, 'юве':496,
+  'мілан':489, 'ак мілан':489,
+  'інтер':505,
+  'наполі':492,
+  'аталанта':499,
+  'бенфіка':211,
+  'спортинг':228, 'спортінг':228,
+  'порту':212,
+  'аякс':194,
+  'псв':197, 'псв ейндговен':197,
+  'феєнорд':209, 'фейєнорд':209,
+  'брюге':569, 'клуб брюге':569,
+  'селтік':247, 'селтик':247,
+  'монако':91, 'монако фк':91,
+  'брест':106, 'стад брест':106,
+  'штутгарт':172,
+  'лейпциг':173, 'рб лейпциг':173,
+  'байєр':168, 'баєр':168, 'баєр леверкузен':168, 'леверкузен':168,
+  'атлетіко':530, 'атлетіко мадрид':530,
+  'севілья':536,
+  'вільярреал':533,
+  'тоттенгем':47, 'тоттенхем':47,
+  'астон вілла':66,
+  'ньюкасл':34,
+  'ліон':80, 'олімпік ліон':80,
+  'марсель':81, 'олімпік марсель':81,
+  'лілль':79,
+  'шахтар':550, 'шахтар донецьк':550,
+  'динамо київ':553, 'динамо':553,
+  'галатасарай':645,
+  'фенербахче':611,
+  'ред булл зальцбург':571, 'зальцбург':571,
+  'шеріф':568,
+  'янг бойз':569,
+  'копенгаген':400,
+  'славія прага':2003, 'славія':2003,
+  'ботафого':120,
+  'палмейрас':121,
+  'фламенго':127,
+  'флуміненсе':124,
+  'рівер плейт':435,
+  'бока juniors':451, 'бока хуніорс':451,
+  'аль-хіляль':2932,
+  'аль-ахлі':1024,
+  'манчестер':50
+};
+
+function clubLogo(name){
+  const key = cellStr(name).toLowerCase().replace(/\s+/g,' ').trim();
+  const id = CLUB_ID[key];
+  if(!id) return '';
+  return `<img class="crest" src="https://media.api-sports.io/football/teams/${id}.png" alt="" loading="lazy" width="20" height="20">`;
+}
+
+// icon for any team: flag if it's a country, crest if it's a known club, else nothing
+function teamIcon(name){
+  return flagImg(name) || clubLogo(name);
+}
+
 // returns an <img> flag tag for a country name, or '' if not a known country
 function flagImg(name){
   const iso = isoForName(name);
@@ -827,23 +909,21 @@ function flagImg(name){
   return `<img class="flag" src="https://flagcdn.com/24x18/${iso}.png" srcset="https://flagcdn.com/48x36/${iso}.png 2x" alt="" loading="lazy" width="24" height="18">`;
 }
 
-// wraps a single team name with its flag (if known). For a "TeamA - TeamB" game
-// string, flags both sides.
+// wraps a single team name with its icon (flag or club crest, if known).
 function withFlag(name){
   const s = cellStr(name);
-  const f = flagImg(s);
-  return f ? `<span class="team">${f}<span>${escapeHtml(s)}</span></span>` : escapeHtml(s);
+  const icon = teamIcon(s);
+  return icon ? `<span class="team">${icon}<span>${escapeHtml(s)}</span></span>` : escapeHtml(s);
 }
 
 function gameWithFlags(game){
   const s = cellStr(game);
-  // split on the dash separators used in the sheet ("A - B", "A — B")
   const m = s.split(/\s+[-–—]\s+/);
   if(m.length === 2){
     const a = m[0], b = m[1];
-    const fa = flagImg(a), fb = flagImg(b);
-    if(fa || fb){
-      return `<span class="game-teams">${fa}<span>${escapeHtml(a)}</span><span class="vs">–</span>${fb}<span>${escapeHtml(b)}</span></span>`;
+    const ia = teamIcon(a), ib = teamIcon(b);
+    if(ia || ib){
+      return `<span class="game-teams">${ia}<span>${escapeHtml(a)}</span><span class="vs">–</span>${ib}<span>${escapeHtml(b)}</span></span>`;
     }
   }
   return escapeHtml(s);
