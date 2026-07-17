@@ -251,11 +251,12 @@
   table.matches thead th.meta{
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
-    font-size:11px;
+    font-size:13px;
     font-weight:700;
     letter-spacing:0.08em;
     text-transform:uppercase;
     color:var(--purple);
+    padding-left:20px;
   }
   /* separate Points totals row (gold), above the player-names row */
   table.matches thead tr.totals-row th{
@@ -312,24 +313,26 @@
     font-variant-numeric:tabular-nums;
   }
   table.matches td{
-    padding:10px 12px;
+    padding:12px 14px;
     border-bottom:1px solid var(--line);
     text-align:center;
     font-family:'JetBrains Mono',monospace;
-    font-size:14px;
+    font-size:16px;
     color:var(--text-dim);
     white-space:nowrap;
   }
   table.matches tbody tr:last-child td{border-bottom:none;}
   td.c-date{
     text-align:left;
-    font-size:12px;
+    font-size:14px;
     color:var(--text-dim);
+    padding-left:20px;
   }
   td.c-game{
     text-align:left;
     font-family:'Inter',sans-serif;
     font-weight:500;
+    font-size:16px;
     color:var(--text);
   }
   .flag{
@@ -489,15 +492,17 @@
     text-transform:none;
   }
   table.gp-table td{
-    padding:8px 12px;
+    padding:11px 14px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
+    font-size:15px;
   }
   table.gp-table tbody tr:last-child td{border-bottom:none;}
   .gp-rank{
     font-family:'JetBrains Mono',monospace;
     color:var(--text-dim);
     width:24px;
+    font-size:14px;
   }
   .gp-actualteam{
     color:var(--green);
@@ -549,7 +554,7 @@
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:13px;
+    font-size:15px;
     color:var(--purple);
     white-space:nowrap;
   }
@@ -557,18 +562,19 @@
   .sb-badge{
     display:inline-block;
     font-family:'Inter',sans-serif;
-    font-size:12px;
+    font-size:14px;
     font-weight:600;
     color:var(--green);
     background:var(--green-soft);
     border:1px solid rgba(76,174,107,0.4);
-    padding:3px 12px;
+    padding:4px 14px;
     border-radius:20px;
     white-space:nowrap;
   }
   table.special td.sb-val{
     text-align:center;
     font-family:'JetBrains Mono',monospace;
+    font-size:15px;
   }
   table.special tr.sb-points td{
     background:var(--gold-soft);
@@ -1367,11 +1373,11 @@ function renderGroupPositions(data){
   const rows = data.rows.map(r => r.map(cellStr));
   const nCols = Math.max(0, ...rows.map(r => r.length));
 
-  // Find the "Final positions" column (it marks the actual-results column, and
-  // "Group A/B/..." sits directly to its left).
+  // Find the "Final result" (a.k.a. "Final positions") column — it holds the actual
+  // final standings; "Group A/B/..." sits to its left, players to its right.
   let fpCol = -1;
   for(let ri = 0; ri < rows.length; ri++){
-    const ci = rows[ri].findIndex(v => /^final positions$/i.test(v));
+    const ci = rows[ri].findIndex(v => /^final (result|positions?)$/i.test(v));
     if(ci !== -1){ fpCol = ci; break; }
   }
   if(fpCol === -1) return null;
@@ -1396,7 +1402,7 @@ function renderGroupPositions(data){
   for(let ri = 0; ri < rows.length; ri++){
     const r = rows[ri];
     const gcell = cellStr(r[groupTitleCol]);
-    const fpHeader = /^final positions$/i.test(cellStr(r[fpCol]));
+    const fpHeader = /^final (result|positions?)$/i.test(cellStr(r[fpCol]));
 
     if(/^group\s+\S+/i.test(gcell) && fpHeader){
       if(cur) blocks.push(cur);
@@ -1421,7 +1427,7 @@ function renderGroupPositions(data){
     <div class="gp-block">
       <div class="gp-head">
         <span class="gp-title">${escapeHtml(b.title)}</span>
-        <span class="gp-actual-label">Final positions</span>
+        <span class="gp-actual-label">Final result</span>
       </div>
       <table class="gp-table">
         <thead>
