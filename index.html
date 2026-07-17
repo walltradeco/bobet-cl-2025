@@ -786,7 +786,6 @@ const TOURNAMENTS = [
     tabs:[
       { sheet:'Leaderboards',           kind:'leaderboard' },
       { sheet:'Group',                  kind:'auto' },
-      { sheet:'Group positions',        kind:'auto' },
       { sheet:'Play-off',               kind:'auto' },
       { sheet:'Play-off bonus points',  kind:'auto' },
       { sheet:'Rules + Prize pool',     kind:'rules' },
@@ -833,19 +832,19 @@ function isoForName(name){
    Logos are served directly from https://media.api-sports.io/football/teams/{id}.png
    (no API key needed for the media CDN). IDs are stable identifiers from API-Football. */
 const CLUB_ID = {
-  'реал':541, 'реал мадрид':541,
+  'реал':541, 'реал мадрид':541, 'реал м':541,
   'барселона':529, 'барса':529,
   'арсенал':42,
   'ліверпуль':40,
   'псж':85, 'парі сен-жермен':85,
   'челсі':49,
-  'манчестер сіті':50, 'сіті':50, 'ман сіті':50,
+  'манчестер сіті':50, 'сіті':50, 'ман сіті':50, 'манчестер':50,
   'манчестер юнайтед':33, 'юнайтед':33,
-  'баварія':157, 'баварія мюнхен':157,
-  'борусія д':165, 'боруссія д':165, 'боруссія дортмунд':165, 'дортмунд':165,
+  'баварія':157, 'баварія мюнхен':157, 'баварія м':157,
+  'борусія д':165, 'боруссія д':165, 'боруссія дортмунд':165, 'дортмунд':165, 'борусія дортмунд':165,
   'ювентус':496, 'юве':496,
   'мілан':489, 'ак мілан':489,
-  'інтер':505,
+  'інтер':505, 'інтер мілан':505,
   'наполі':492,
   'аталанта':499,
   'бенфіка':211,
@@ -861,7 +860,8 @@ const CLUB_ID = {
   'штутгарт':172,
   'лейпциг':173, 'рб лейпциг':173,
   'байєр':168, 'баєр':168, 'баєр леверкузен':168, 'леверкузен':168,
-  'атлетіко':530, 'атлетіко мадрид':530,
+  // Atletico variants (ЛЧ)
+  'атлетіко':530, 'атлетіко мадрид':530, 'атлетіко м':530, 'атлетико':530, 'атлетико мадрид':530, 'атлетико м':530,
   'севілья':536,
   'вільярреал':533,
   'тоттенгем':47, 'тоттенхем':47,
@@ -875,19 +875,39 @@ const CLUB_ID = {
   'галатасарай':645,
   'фенербахче':611,
   'ред булл зальцбург':571, 'зальцбург':571,
-  'шеріф':568,
-  'янг бойз':569,
-  'копенгаген':400,
   'славія прага':2003, 'славія':2003,
-  'ботафого':120,
-  'палмейрас':121,
-  'фламенго':127,
-  'флуміненсе':124,
-  'рівер плейт':435,
-  'бока juniors':451, 'бока хуніорс':451,
-  'аль-хіляль':2932,
-  'аль-ахлі':1024,
-  'манчестер':50
+
+  /* ===== FIFA Club World Cup 2025 (32 teams) ===== */
+  // UEFA
+  'манчестер сіті ':50, 'ювентус ':496, 'реал мадрид ':541,
+  'зальцбург ':571,
+  // CONMEBOL (South America)
+  'палмейрас':121, 'palmeiras':121,
+  'фламенго':127, 'flamengo':127,
+  'флуміненсе':124, 'флумінензе':124, 'fluminense':124,
+  'рівер плейт':435, 'рівер':435, 'river plate':435,
+  'бока хуніорс':451, 'бока':451, 'бока juniors':451, 'boca juniors':451,
+  'ботафого':120, 'botafogo':120,
+  // CONCACAF
+  'монтеррей':2273, 'monterrey':2273,
+  'сіетл саундерс':1595, 'сіетл':1595,
+  'пачука':2288, 'pachuca':2288,
+  'лос-анджелес':1616, 'лафк':1616, 'lafc':1616, 'los angeles fc':1616,
+  'інтер маямі':9568, 'інтер майамі':9568, 'inter miami':9568, 'маямі':9568,
+  // CAF (Africa)
+  'аль-ахлі':1024, 'аль ахлі':1024, 'al ahly':1024,
+  'вайдад':1043, 'вайдад касабланка':1043,
+  'есперанс':2724, 'есперанс туніс':2724, 'esperance':2724,
+  'мамелоді сандаунз':2769, 'мамелоді':2769, 'mamelodi sundowns':2769,
+  // AFC (Asia)
+  'аль-хіляль':2932, 'аль хіляль':2932, 'al hilal':2932,
+  'аль-айн':2933, 'аль айн':2933, 'al ain':2933,
+  'ульсан':2748, 'ульсан хеде':2748, 'ulsan':2748,
+  'урава':1608, 'урава ред дайамондс':1608, 'urawa':1608,
+  // OFC
+  'окленд сіті':4644, 'окленд':4644, 'auckland city':4644,
+  // more CWC UEFA
+  'ред булл зальцбург ':571,
 };
 
 function clubLogo(name){
@@ -1469,6 +1489,84 @@ function renderGroupPositions(data){
   <div class="legend"><span><span class="chip exact"></span> correct position</span></div>`;
 }
 
+/* ======== PAIR WINNERS (Knockout phase play-offs winners) ========
+   Layout: row1 = Points + totals, row2 = "Pair | Pair winner | Бо | Лб | ...",
+   then rows = "Брест/ПСЖ | Псж(actual) | Псж | Псж | ...".
+   Highlight a player's pick green when it equals the actual pair winner. */
+function renderPairWinners(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+
+  let headerRow = -1, pairCol = -1, winnerCol = -1;
+  for(let ri = 0; ri < rows.length; ri++){
+    const wi = rows[ri].findIndex(v => /^pair winner$/i.test(v));
+    if(wi !== -1){
+      headerRow = ri;
+      winnerCol = wi;
+      const pi = rows[ri].findIndex(v => /^pair$/i.test(v));
+      pairCol = pi !== -1 ? pi : 0;
+      break;
+    }
+  }
+  if(headerRow === -1) return null;
+
+  const players = [];
+  for(let ci = winnerCol + 1; ci < rows[headerRow].length; ci++){
+    const name = cellStr(rows[headerRow][ci]);
+    if(name !== '' && toNum(name) === null && !isPlaceholderName(name)) players.push({ col: ci, name });
+  }
+  if(players.length === 0) return null;
+
+  let totals = null;
+  for(let ri = 0; ri < rows.length; ri++){
+    if(rows[ri].some(v => /^points$/i.test(v)) && players.some(p => toNum(rows[ri][p.col]) !== null)){
+      totals = {};
+      players.forEach(p => { const n = toNum(rows[ri][p.col]); if(n !== null) totals[p.col] = n; });
+      break;
+    }
+  }
+
+  const items = [];
+  for(let ri = headerRow + 1; ri < rows.length; ri++){
+    const r = rows[ri];
+    const pair = cellStr(r[pairCol]);
+    const actual = cellStr(r[winnerCol]);
+    if(pair === '' && actual === '') continue;
+    if(/^points$/i.test(pair)) continue;
+    items.push({ pair, actual, picks: players.map(p => cellStr(r[p.col])) });
+  }
+  if(items.length === 0) return null;
+
+  return `
+  <div class="table-card">
+    <table class="matches">
+      <thead>
+        ${totals ? `
+        <tr class="totals-row">
+          <th></th><th class="totals-label">Points</th>
+          ${players.map(p => `<th class="totals-val">${totals[p.col] !== undefined ? totals[p.col] : ''}</th>`).join('')}
+        </tr>` : ''}
+        <tr>
+          <th class="meta">Pair</th>
+          <th class="meta" style="text-align:center;">Winner</th>
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(it => `
+          <tr>
+            <td class="c-game">${escapeHtml(it.pair)}</td>
+            <td class="c-result">${it.actual ? withFlag(it.actual) : '—'}</td>
+            ${it.picks.map(pick => {
+              const correct = pick !== '' && it.actual !== '' && pick.toLowerCase() === it.actual.toLowerCase();
+              return `<td class="pred ${correct ? 'exact' : ''}">${pick ? withFlag(pick) : '—'}</td>`;
+            }).join('')}
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span><span class="chip exact"></span> вгаданий переможець пари</span></div>`;
+}
+
 /* ======== SPECIAL BETS (1&2place + ... tabs) ======== */
 function renderSpecialBets(data){
   const rows = data.rows.map(r => r.map(cellStr));
@@ -1700,6 +1798,8 @@ function formatYesNo(v){
 function renderTabContent(tab, data){
   if(tab.kind === 'leaderboard') return renderLeaderboard(data);
   if(tab.kind === 'rules') return renderRules(data);
+  const pairs = renderPairWinners(data);
+  if(pairs) return pairs;
   const matches = renderMatches(data);
   if(matches) return matches;
   const positions = renderGroupPositions(data);
