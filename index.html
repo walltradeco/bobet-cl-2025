@@ -251,13 +251,15 @@
   table.matches thead th.meta{
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
-    font-size:13px;
+    font-size:15px;
     font-weight:700;
     letter-spacing:0.08em;
     text-transform:uppercase;
     color:var(--purple);
     padding-left:20px;
   }
+  /* GAME header sits above the game cells, which share the same 20px left pad */
+  table.matches thead th.meta.th-game{padding-left:20px;}
   /* separate Points totals row (gold), above the player-names row */
   table.matches thead tr.totals-row th{
     background:var(--gold-soft);
@@ -285,7 +287,7 @@
     text-align:center;
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:15px;
+    font-size:17px;
     color:var(--purple);
     padding:12px;
   }
@@ -313,18 +315,18 @@
     font-variant-numeric:tabular-nums;
   }
   table.matches td{
-    padding:12px 14px;
+    padding:14px 14px;
     border-bottom:1px solid var(--line);
     text-align:center;
     font-family:'JetBrains Mono',monospace;
-    font-size:16px;
+    font-size:18px;
     color:var(--text-dim);
     white-space:nowrap;
   }
   table.matches tbody tr:last-child td{border-bottom:none;}
   td.c-date{
     text-align:left;
-    font-size:14px;
+    font-size:15px;
     color:var(--text-dim);
     padding-left:20px;
   }
@@ -332,8 +334,9 @@
     text-align:left;
     font-family:'Inter',sans-serif;
     font-weight:500;
-    font-size:16px;
+    font-size:18px;
     color:var(--text);
+    padding-left:20px;
   }
   .flag{
     display:inline-block;
@@ -435,7 +438,7 @@
   /* ===== GROUP POSITIONS ===== */
   .gp-wrap{
     display:grid;
-    grid-template-columns:repeat(auto-fill, minmax(340px, 1fr));
+    grid-template-columns:1fr;
     gap:18px;
     margin-bottom:22px;
     align-items:start;
@@ -444,7 +447,7 @@
     background:var(--panel);
     border:1px solid var(--line);
     border-radius:12px;
-    overflow:hidden;
+    overflow:auto;
   }
   .gp-head{
     display:flex;
@@ -470,45 +473,54 @@
   table.gp-table{
     width:100%;
     border-collapse:collapse;
-    font-size:13px;
+    font-size:14px;
   }
   table.gp-table th{
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
     font-weight:500;
-    font-size:10px;
+    font-size:11px;
     text-transform:uppercase;
     letter-spacing:0.06em;
     color:var(--text-dim);
-    padding:8px 12px;
+    padding:9px 14px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
   }
   table.gp-table th.gp-player{
     color:var(--purple);
     font-weight:700;
-    font-size:12px;
+    font-size:14px;
     letter-spacing:0.02em;
     text-transform:none;
   }
+  table.gp-table th.gp-seed-h{color:var(--text-dim);}
+  table.gp-table th.gp-actual-h{color:var(--green); font-weight:700; font-size:12px;}
   table.gp-table td{
-    padding:11px 14px;
+    padding:11px 16px;
     border-bottom:1px solid var(--line);
     white-space:nowrap;
-    font-size:15px;
+    font-size:16px;
   }
   table.gp-table tbody tr:last-child td{border-bottom:none;}
   .gp-rank{
     font-family:'JetBrains Mono',monospace;
     color:var(--text-dim);
     width:24px;
-    font-size:14px;
+    font-size:15px;
   }
+  .gp-seed{
+    color:var(--text-dim);
+    border-right:1px solid var(--line);
+  }
+  .gp-seed .team{gap:7px;}
+  .gp-seed .flag{width:20px; height:15px;}
   .gp-actualteam{
     color:var(--green);
     font-weight:600;
+    border-right:2px solid var(--line);
   }
-  .gp-actualteam .team, .gp-pred .team{gap:6px;}
+  .gp-actualteam .team, .gp-pred .team{gap:7px;}
   .gp-actualteam .flag, .gp-pred .flag{width:20px; height:15px;}
   .gp-pred{color:var(--text-dim);}
   .gp-pred.hit{
@@ -554,27 +566,38 @@
     text-align:left;
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:15px;
+    font-size:17px;
     color:var(--purple);
     white-space:nowrap;
   }
   table.special td.sb-actual{text-align:center;}
   .sb-badge{
-    display:inline-block;
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
     font-family:'Inter',sans-serif;
-    font-size:14px;
+    font-size:16px;
     font-weight:600;
     color:var(--green);
     background:var(--green-soft);
     border:1px solid rgba(76,174,107,0.4);
-    padding:4px 14px;
+    padding:5px 16px;
     border-radius:20px;
     white-space:nowrap;
   }
+  .sb-badge .team{gap:7px;}
+  .sb-badge .flag{width:22px; height:16px;}
   table.special td.sb-val{
     text-align:center;
     font-family:'JetBrains Mono',monospace;
-    font-size:15px;
+    font-size:17px;
+  }
+  table.special td.sb-val .team{justify-content:center; gap:7px;}
+  table.special td.sb-val.sb-hit{
+    background:rgba(76,174,107,0.45);
+    color:#EFFAF0;
+    font-weight:700;
+    box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);
   }
   table.special tr.sb-points td{
     background:var(--gold-soft);
@@ -1270,16 +1293,17 @@ function renderMatches(data){
 
   const body = [];
   let lastDate = '';
+  let filledDate = '';   // last non-empty, date-like value seen (for merge forward-fill)
   let dayIndex = 0;
   for(let ri = headerRow + 1; ri < rows.length; ri++){
     const r = rows[ri];
     const game = cellStr(r[gameCol]);
-    const dateVal = cellStr(r[dateCol]);
+    const rawDate = cellStr(r[dateCol]);
     const preds = players.map(p => cellStr(r[p.col]));
 
     if(game === ''){
       // stage separator (merged "1/8", "Semifinals", "Final" lands in the date column)
-      if(dateVal !== '' && !isDateLike(dateVal)){
+      if(rawDate !== '' && !isDateLike(rawDate)){
         // this row may carry the totals (Play-off layout)
         if(!totals){
           const t = {};
@@ -1290,12 +1314,12 @@ function renderMatches(data){
           });
           if(any) totals = t;
         }
-        body.push({ sep: true, label: dateVal });
+        body.push({ sep: true, label: rawDate });
       }
       continue;
     }
     // a stage label can also land in the game column
-    if(cellStr(r[resCol]) === '' && !isDateLike(dateVal) && dateVal === '' && preds.every(v => v === '' || toNum(v) !== null) && !parseScore(game) && preds.some(v => toNum(v) !== null)){
+    if(cellStr(r[resCol]) === '' && !isDateLike(rawDate) && rawDate === '' && preds.every(v => v === '' || toNum(v) !== null) && !parseScore(game) && preds.some(v => toNum(v) !== null)){
       if(!totals){
         const t = {};
         players.forEach((p, pi) => {
@@ -1308,6 +1332,10 @@ function renderMatches(data){
       continue;
     }
 
+    // merged Date cells arrive empty on all but the first row of the day;
+    // forward-fill so every match row carries its date.
+    if(rawDate !== '' && isDateLike(rawDate)) filledDate = rawDate;
+    const dateVal = filledDate;
     const isDayStart = dateVal !== '' && dateVal !== lastDate;
     if(isDayStart){ lastDate = dateVal; dayIndex++; }
     body.push({ date: dateVal, isDayStart, dayIndex, game, result: cellStr(r[resCol]), preds });
@@ -1332,7 +1360,7 @@ function renderMatches(data){
         </tr>` : ''}
         <tr>
           ${hasDate ? '<th class="meta">Date</th>' : ''}
-          <th class="meta">Game</th>
+          <th class="meta th-game">Game</th>
           <th class="meta" style="text-align:center;">Result</th>
           ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
@@ -1433,7 +1461,8 @@ function renderGroupPositions(data){
         <thead>
           <tr>
             <th>#</th>
-            <th>Actual</th>
+            <th class="gp-seed-h">Склад</th>
+            <th class="gp-actual-h">Final result</th>
             ${players.map(p => `<th class="gp-player">${escapeHtml(p.name)}</th>`).join('')}
           </tr>
         </thead>
@@ -1441,6 +1470,7 @@ function renderGroupPositions(data){
           ${b.teams.map((t, i) => `
             <tr>
               <td class="gp-rank">${i + 1}</td>
+              <td class="gp-seed">${t.team ? withFlag(t.team) : ''}</td>
               <td class="gp-actualteam">${withFlag(t.actual)}</td>
               ${t.preds.map(pv => {
                 const correct = pv !== '' && pv === t.actual;
@@ -1540,7 +1570,15 @@ function renderPairWinners(data){
   <div class="legend"><span><span class="chip exact"></span> вгаданий переможець пари</span></div>`;
 }
 
-/* ======== SPECIAL BETS (1&2place + ... tabs) ======== */
+/* ======== SPECIAL BETS (1&2place + ... tabs) ========
+   Layout (screenshot-confirmed):
+   [Question | Final Result | (marker) | Бо | Лб | ...]   header row
+   [1 place  | Іспанія      | Prediction | Франція | ...]  a bet's predictions
+   [         |              | Points     | 0 | 4 | ...]    that bet's points
+   [Mudryk   | -            | Prediction | 1 | 2 | ...]     numeric bets: Final Result "-"
+   [         |              | Points     | 0 | 0 | ...]
+   A player's prediction is highlighted green when it matches the Final Result
+   (text bets), or — when Final Result is "-" — when that player's Points > 0. */
 function renderSpecialBets(data){
   const rows = data.rows.map(r => r.map(cellStr));
 
@@ -1560,26 +1598,50 @@ function renderSpecialBets(data){
   const playersRowIdx = pr.rowIdx;
   const players = pr.players;
 
-  const items = [];
+  // Build bets: each bet couples a Prediction row with the following Points row.
+  const bets = [];
   let carryLabel = '';
+  let cur = null;
   for(let ri = playersRowIdx + 1; ri < rows.length; ri++){
     const r = rows[ri];
     const marker = cellStr(r[markerCol]);
-    if(!/^(prediction|points?)$/i.test(marker)) continue;
-    // label: first non-empty cell left of the actual-result column
-    let label = '';
-    for(let ci = 0; ci < markerCol - 1; ci++){
-      if(cellStr(r[ci]) !== ''){ label = cellStr(r[ci]); break; }
-    }
-    const actual = markerCol - 1 >= 0 ? cellStr(r[markerCol - 1]) : '';
     if(/^prediction$/i.test(marker)){
+      // flush a dangling prediction with no points row
+      if(cur) bets.push(cur);
+      let label = '';
+      for(let ci = 0; ci < markerCol - 1; ci++){
+        if(cellStr(r[ci]) !== ''){ label = cellStr(r[ci]); break; }
+      }
       if(label !== '') carryLabel = label;
-      items.push({ type:'pred', label: label || carryLabel, actual, values: players.map(p => cellStr(r[p.col])) });
-    } else {
-      items.push({ type:'points', values: players.map(p => cellStr(r[p.col])) });
+      const actual = markerCol - 1 >= 0 ? cellStr(r[markerCol - 1]) : '';
+      cur = {
+        label: label || carryLabel,
+        actual,
+        preds: players.map(p => cellStr(r[p.col])),
+        points: players.map(() => '')
+      };
+    } else if(/^points?$/i.test(marker)){
+      if(cur){
+        cur.points = players.map(p => cellStr(r[p.col]));
+        bets.push(cur);
+        cur = null;
+      }
     }
   }
-  if(items.length === 0) return null;
+  if(cur) bets.push(cur);
+  if(bets.length === 0) return null;
+
+  // decide green highlight per player for a bet
+  function isHit(bet, i){
+    const pred = cellStr(bet.preds[i]);
+    if(pred === '' || pred === '-') return false;
+    const actual = cellStr(bet.actual);
+    if(actual !== '' && actual !== '-'){
+      return pred.toLowerCase() === actual.toLowerCase();  // text bet: match Final Result
+    }
+    const pts = toNum(bet.points[i]);                       // numeric bet: scored points
+    return pts !== null && pts > 0;
+  }
 
   return `
   <div class="table-card">
@@ -1587,31 +1649,35 @@ function renderSpecialBets(data){
       <thead>
         <tr>
           <th>Bet</th>
-          <th style="text-align:center;">Result</th>
-          ${players.map(p => `<th style="text-align:center; color:var(--purple); font-weight:700; font-size:14px;">${escapeHtml(p.name)}</th>`).join('')}
+          <th style="text-align:center;">Final Result</th>
+          ${players.map(p => `<th style="text-align:center; color:var(--purple); font-weight:700; font-size:16px;">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
-        ${items.map(it => {
-          if(it.type === 'pred'){
-            return `<tr>
-              <td class="sb-label">${escapeHtml(it.label)}</td>
-              <td class="sb-actual">${it.actual && it.actual !== '-' ? `<span class="sb-badge">${escapeHtml(it.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
-              ${it.values.map(v => `<td class="sb-val">${escapeHtml(v || '—')}</td>`).join('')}
-            </tr>`;
-          }
-          return `<tr class="sb-points">
+        ${bets.map(bet => {
+          const predRow = `<tr>
+            <td class="sb-label">${escapeHtml(bet.label)}</td>
+            <td class="sb-actual">${bet.actual && bet.actual !== '-' ? `<span class="sb-badge">${withFlag(bet.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
+            ${bet.preds.map((v, i) => {
+              const hit = isHit(bet, i);
+              return `<td class="sb-val ${hit ? 'sb-hit' : ''}">${v ? withFlag(v) : '—'}</td>`;
+            }).join('')}
+          </tr>`;
+          const hasPoints = bet.points.some(v => cellStr(v) !== '');
+          const pointsRow = hasPoints ? `<tr class="sb-points">
             <td class="sb-label">Points</td>
             <td></td>
-            ${it.values.map(v => {
+            ${bet.points.map(v => {
               const n = toNum(v);
               return `<td class="sb-val ${n !== null && n > 0 ? 'scored' : ''}">${escapeHtml(v || '—')}</td>`;
             }).join('')}
-          </tr>`;
+          </tr>` : '';
+          return predRow + pointsRow;
         }).join('')}
       </tbody>
     </table>
-  </div>`;
+  </div>
+  <div class="legend"><span><span class="chip exact"></span> вгаданий прогноз</span></div>`;
 }
 
 /* ======== GENERIC TABLE ======== */
