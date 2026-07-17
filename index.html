@@ -852,11 +852,15 @@ const CLUB_ID = {
   'порту':212,
   'аякс':194,
   'псв':197, 'псв ейндговен':197,
-  'феєнорд':209, 'фейєнорд':209,
+  'феєнорд':209, 'фейєнорд':209, 'фейенорд':209, 'феєнорд ':209,
   'брюге':569, 'клуб брюге':569,
   'селтік':247, 'селтик':247,
   'монако':91, 'монако фк':91,
   'брест':106, 'стад брест':106,
+  // Al-Hilal spelling variants
+  'аль-гіляль':2932, 'аль гіляль':2932, 'аль-хіляль':2932, 'аль хіляль':2932, 'аль-хіляр':2932,
+  // Monterrey
+  'монтеррей':2273, 'монтерей':2273, 'монтерррей':2273,
   'штутгарт':172,
   'лейпциг':173, 'рб лейпциг':173,
   'байєр':168, 'баєр':168, 'баєр леверкузен':168, 'леверкузен':168,
@@ -1006,6 +1010,37 @@ function escapeHtml(s){
   return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 function cellStr(v){ return v === null || v === undefined ? '' : String(v).trim(); }
+
+/* Known participant names across all tournaments — used to reliably locate the
+   player header row regardless of surrounding structure. */
+const KNOWN_PLAYERS = ['бо','лб','антон','макс','саня','миша','женя','денис'];
+function isKnownPlayer(name){
+  return KNOWN_PLAYERS.includes(cellStr(name).toLowerCase());
+}
+// find the row that contains player names and return {rowIdx, players:[{col,name}]}
+function findPlayersRow(rows, minCol){
+  minCol = minCol || 0;
+  for(let ri = 0; ri < rows.length; ri++){
+    const cand = [];
+    for(let ci = minCol; ci < rows[ri].length; ci++){
+      if(isKnownPlayer(rows[ri][ci])) cand.push({ col: ci, name: cellStr(rows[ri][ci]) });
+    }
+    if(cand.length >= 2) return { rowIdx: ri, players: cand };
+  }
+  return null;
+}
+// find the Points totals row: has "Points" label and numbers in player columns
+function findTotalsRow(rows, players){
+  for(let ri = 0; ri < rows.length; ri++){
+    if(rows[ri].some(v => /^points$/i.test(cellStr(v))) &&
+       players.some(p => toNum(rows[ri][p.col]) !== null)){
+      const t = {};
+      players.forEach(p => { const n = toNum(rows[ri][p.col]); if(n !== null) t[p.col] = n; });
+      return t;
+    }
+  }
+  return null;
+}
 function isPlaceholderName(name){
   return /^№\s*\d+$/.test(name.trim());
 }
@@ -1148,74 +1183,31 @@ function findMatchesLayout(rows){
     });
     // Game + Result are required; Date is optional (Knockout tabs may omit it)
     if(gameCol !== -1 && resCol !== -1){
-      // Players may be on the header row (old layout) OR on a dedicated names row
-      // above the header (new layout: row1=Points+totals, row2=names, row3=Date/Game/Result).
-      let players = [];
-      for(let ci = resCol + 1; ci < r.length; ci++){
-        const name = cellStr(r[ci]);
-        if(name !== '' && !isPlaceholderName(name) && toNum(name) === null){
-          players.push({ col: ci, name });
+      // If no explicit "Date" header found, check the column to the left of Game:
+      // if body rows there hold date-like values, it's the date column.
+      if(dateCol === -1 && gameCol - 1 >= 0){
+        let dateHits = 0;
+        for(let bi = ri + 1; bi < Math.min(rows.length, ri + 12); bi++){
+          if(isDateLike(cellStr(rows[bi][gameCol - 1]))) dateHits++;
         }
+        if(dateHits >= 1) dateCol = gameCol - 1;
       }
-      // if the header row has no names to the right, find the names row.
-      // Preferred: the row directly BELOW the "Points" totals row holds player names.
+      // Locate players reliably by known names (works for both old and new layouts).
+      let players = [];
+      const pr = findPlayersRow(rows, resCol + 1);
+      if(pr) players = pr.players;
+      // fallback: any text cells to the right of Result on the header row
       if(players.length === 0){
-        let pointsRi = -1;
-        for(let pri = 0; pri < rows.length; pri++){
-          if(rows[pri].some(v => /^points$/i.test(cellStr(v))) &&
-             rows[pri].slice(resCol + 1).some(v => toNum(v) !== null)){
-            pointsRi = pri; break;
-          }
-        }
-        if(pointsRi !== -1 && pointsRi + 1 < rows.length){
-          const cand = [];
-          for(let ci = resCol + 1; ci < rows[pointsRi + 1].length; ci++){
-            const name = cellStr(rows[pointsRi + 1][ci]);
-            if(name !== '' && !isPlaceholderName(name) && toNum(name) === null && !/^group\s+\S+$/i.test(name)){
-              cand.push({ col: ci, name });
-            }
-          }
-          if(cand.length >= 2) players = cand;
-        }
-        // fallback: scan upward skipping group-composition rows
-        if(players.length === 0){
-          for(let pri = ri - 1; pri >= 0 && pri >= ri - 6; pri--){
-            const cand = [];
-            let looksLikeGroups = false;
-            for(let ci = resCol + 1; ci < rows[pri].length; ci++){
-              const name = cellStr(rows[pri][ci]);
-              if(/^group\s+\S+$/i.test(name)) looksLikeGroups = true;
-              if(name !== '' && !isPlaceholderName(name) && toNum(name) === null && !/^points$/i.test(name) && !/^group\s+\S+$/i.test(name)){
-                cand.push({ col: ci, name });
-              }
-            }
-            if(looksLikeGroups) continue;
-            if(cand.length >= 2){ players = cand; break; }
+        for(let ci = resCol + 1; ci < r.length; ci++){
+          const name = cellStr(r[ci]);
+          if(name !== '' && !isPlaceholderName(name) && toNum(name) === null){
+            players.push({ col: ci, name });
           }
         }
       }
       if(players.length === 0) return null;
-      // totals: find the "Points" row (marked "Points" in a left column) and read
-      // each player's total from it. Falls back to the row directly above the header.
-      let totals = null;
-      let pointsRowIdx = -1;
-      for(let pri = 0; pri < rows.length; pri++){
-        if(rows[pri].some(v => /^points$/i.test(cellStr(v))) &&
-           players.some(p => toNum(rows[pri][p.col]) !== null)){
-          pointsRowIdx = pri;
-          break;
-        }
-      }
-      const tRow = pointsRowIdx !== -1 ? rows[pointsRowIdx] : (ri > 0 ? rows[ri - 1] : null);
-      if(tRow){
-        const t = {};
-        let any = false;
-        players.forEach(p => {
-          const n = toNum(tRow[p.col]);
-          if(n !== null){ t[p.col] = n; any = true; }
-        });
-        if(any) totals = t;
-      }
+      // totals from the Points row
+      let totals = findTotalsRow(rows, players);
       return { headerRow: ri, dateCol, gameCol, resCol, players, totals };
     }
   }
@@ -1384,33 +1376,11 @@ function renderGroupPositions(data){
   }
   if(fpCol === -1) return null;
 
-  // Players row: the row whose cells right of fpCol are player NAMES (text, not numbers).
-  // Totals row: a row marked "Points" with numeric totals in the same columns.
-  let playersRowIdx = -1, players = [];
-  let totalsRow = null;
-  for(let ri = 0; ri < rows.length; ri++){
-    const r = rows[ri];
-    const cand = [];
-    for(let ci = fpCol + 1; ci < nCols; ci++){
-      const v = cellStr(r[ci]);
-      if(v !== '' && toNum(v) === null && !/^final positions$/i.test(v)) cand.push({ col: ci, name: v });
-    }
-    // a "Points" row has numbers in those columns
-    if(r.some(v => /^points$/i.test(v))){
-      const nums = {};
-      let any = false;
-      for(let ci = fpCol + 1; ci < nCols; ci++){
-        const n = toNum(r[ci]);
-        if(n !== null){ nums[ci] = n; any = true; }
-      }
-      if(any) totalsRow = nums;
-    }
-    if(cand.length >= 2 && playersRowIdx === -1){
-      playersRowIdx = ri;
-      players = cand;
-    }
-  }
-  if(players.length === 0) return null;
+  // Players row: reliably located by known participant names.
+  const pr = findPlayersRow(rows, fpCol + 1);
+  if(!pr) return null;
+  const players = pr.players;
+  const totalsRow = findTotalsRow(rows, players);
 
   const groupTitleCol = fpCol - 1 >= 0 ? fpCol - 1 : 0;
 
@@ -1509,11 +1479,8 @@ function renderPairWinners(data){
   }
   if(headerRow === -1) return null;
 
-  const players = [];
-  for(let ci = winnerCol + 1; ci < rows[headerRow].length; ci++){
-    const name = cellStr(rows[headerRow][ci]);
-    if(name !== '' && toNum(name) === null && !isPlaceholderName(name)) players.push({ col: ci, name });
-  }
+  const prPW = findPlayersRow(rows, winnerCol + 1);
+  const players = prPW ? prPW.players : [];
   if(players.length === 0) return null;
 
   let totals = null;
@@ -1581,22 +1548,11 @@ function renderSpecialBets(data){
   }
   if(markerCol === -1) return null;
 
-  // player header row: first row with 2+ non-empty non-numeric cells after markerCol
-  let playersRowIdx = -1;
-  let players = [];
-  for(let ri = 0; ri < rows.length; ri++){
-    const cand = [];
-    for(let ci = markerCol + 1; ci < rows[ri].length; ci++){
-      const v = rows[ri][ci];
-      if(v !== '' && toNum(v) === null && !parseScore(v)) cand.push({ col: ci, name: v });
-    }
-    if(cand.length >= 2){
-      playersRowIdx = ri;
-      players = cand;
-      break;
-    }
-  }
-  if(players.length === 0) return null;
+  // player header row: reliably located by known participant names (right of marker)
+  const pr = findPlayersRow(rows, markerCol + 1);
+  if(!pr) return null;
+  const playersRowIdx = pr.rowIdx;
+  const players = pr.players;
 
   const items = [];
   let carryLabel = '';
