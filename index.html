@@ -789,9 +789,9 @@ const TOURNAMENTS = [
     tabs:[
       { sheet:'Leaderboards',                 kind:'leaderboard' },
       { sheet:'Group',                        kind:'auto' },
-      { sheet:'Group positions',              kind:'auto' },
+      { sheet:'Group positions',              kind:'groupPositions' },
       { sheet:'Play-off',                     kind:'auto' },
-      { sheet:'1&2place + Mudryk + Ukraine',  kind:'auto' },
+      { sheet:'1&2place + Mudryk + Ukraine',  kind:'special', gid:'1945041354' },
       { sheet:'Rules + Prize pool',           kind:'rules' },
     ]
   },
@@ -804,7 +804,7 @@ const TOURNAMENTS = [
       { sheet:'Play-off',                           kind:'auto' },
       { sheet:'Knockout phase play-offs',           kind:'auto' },
       { sheet:'Knockout phase play-offs winners',   kind:'auto' },
-      { sheet:'1&2place + Real + Liverpool',        kind:'auto' },
+      { sheet:'1&2place + Real + Liverpool',        kind:'special' },
       { sheet:'Rules + Prize pool',                 kind:'rules' },
     ]
   },
@@ -816,7 +816,7 @@ const TOURNAMENTS = [
       { sheet:'Leaderboards',           kind:'leaderboard' },
       { sheet:'Group',                  kind:'auto' },
       { sheet:'Play-off',               kind:'auto' },
-      { sheet:'Play-off bonus points',  kind:'auto' },
+      { sheet:'Play-off bonus points',  kind:'special', gid:'1945041354' },
       { sheet:'Rules + Prize pool',     kind:'rules' },
     ]
   },
@@ -994,8 +994,15 @@ let activeTournament = TOURNAMENTS[0];
 let activeTabIndex = 0;
 const cache = {};
 
-/* ======== DATA (CSV — no type coercion, all cells come as displayed text) ======== */
-function buildUrl(sheetId, sheetName){
+/* ======== DATA (CSV — no type coercion, all cells come as displayed text) ========
+   Two sources:
+   - gviz (by sheet name): CORS-friendly, but coerces number-dominant columns to
+     numeric and DROPS text cells in them (breaks tabs like Play-off bonus points).
+   - /export?format=csv&gid=: exact WYSIWYG, no coercion. Used where a gid is set. */
+function buildUrl(sheetId, sheetName, gid){
+  if(gid !== undefined && gid !== null && gid !== ''){
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  }
   return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
 }
 
@@ -1022,10 +1029,10 @@ function parseCSV(text){
   return rows;
 }
 
-async function fetchSheet(sheetId, sheetName){
-  const cacheKey = sheetId + '::' + sheetName;
+async function fetchSheet(sheetId, sheetName, gid){
+  const cacheKey = sheetId + '::' + sheetName + '::' + (gid || '');
   if(cache[cacheKey]) return cache[cacheKey];
-  const res = await fetch(buildUrl(sheetId, sheetName));
+  const res = await fetch(buildUrl(sheetId, sheetName, gid));
   if(!res.ok) throw new Error('HTTP ' + res.status);
   const text = await res.text();
   const rows = parseCSV(text).map(r => r.map(v => (v === null || v === undefined ? '' : String(v).trim())));
@@ -1401,8 +1408,7 @@ function renderGroupPositions(data){
   const rows = data.rows.map(r => r.map(cellStr));
   const nCols = Math.max(0, ...rows.map(r => r.length));
 
-  // Find the "Final result" (a.k.a. "Final positions") column — it holds the actual
-  // final standings; "Group A/B/..." sits to its left, players to its right.
+  // "Final result" column — holds the actual final standings.
   let fpCol = -1;
   for(let ri = 0; ri < rows.length; ri++){
     const ci = rows[ri].findIndex(v => /^final (result|positions?)$/i.test(v));
@@ -1410,13 +1416,21 @@ function renderGroupPositions(data){
   }
   if(fpCol === -1) return null;
 
-  // Players row: reliably located by known participant names.
+  // "Group X" title column (the seeded/composition column). Confirmed structure:
+  // col0 = seed list + "Group X" title, then a spacer, fpCol = Final result, spacer, players.
+  let seedCol = -1;
+  for(let ri = 0; ri < rows.length && seedCol === -1; ri++){
+    for(let ci = 0; ci < fpCol; ci++){
+      if(/^group\s+\S+/i.test(cellStr(rows[ri][ci]))){ seedCol = ci; break; }
+    }
+  }
+  if(seedCol === -1) seedCol = 0;
+
+  // Players row: reliably located by known participant names (to the right of Final result).
   const pr = findPlayersRow(rows, fpCol + 1);
   if(!pr) return null;
   const players = pr.players;
   const totalsRow = findTotalsRow(rows, players);
-
-  const groupTitleCol = fpCol - 1 >= 0 ? fpCol - 1 : 0;
 
   // build points summary (player -> total)
   let pointsRow = null;
@@ -1429,21 +1443,21 @@ function renderGroupPositions(data){
   let cur = null;
   for(let ri = 0; ri < rows.length; ri++){
     const r = rows[ri];
-    const gcell = cellStr(r[groupTitleCol]);
+    const gcell = cellStr(r[seedCol]);
     const fpHeader = /^final (result|positions?)$/i.test(cellStr(r[fpCol]));
 
     if(/^group\s+\S+/i.test(gcell) && fpHeader){
-      if(cur) blocks.push(cur);
+      if(cur && cur.teams.length) blocks.push(cur);
       cur = { title: gcell, teams: [] };
       continue;
     }
     if(cur){
-      const team = cellStr(r[groupTitleCol]);
-      const actual = cellStr(r[fpCol]);
+      const seed = cellStr(r[seedCol]);          // composition (col 0)
+      const actual = cellStr(r[fpCol]);          // final standing
       const preds = players.map(p => cellStr(r[p.col]));
       if(actual !== '' && actual !== '-'){
-        cur.teams.push({ team, actual, preds });
-      } else if(team === '' && actual === '' && preds.every(v => v === '')){
+        cur.teams.push({ seed, actual, preds });
+      } else if(seed === '' && actual === '' && preds.every(v => v === '')){
         if(cur.teams.length){ blocks.push(cur); cur = null; }
       }
     }
@@ -1470,7 +1484,7 @@ function renderGroupPositions(data){
           ${b.teams.map((t, i) => `
             <tr>
               <td class="gp-rank">${i + 1}</td>
-              <td class="gp-seed">${t.team ? withFlag(t.team) : ''}</td>
+              <td class="gp-seed">${t.seed ? withFlag(t.seed) : ''}</td>
               <td class="gp-actualteam">${withFlag(t.actual)}</td>
               ${t.preds.map(pv => {
                 const correct = pv !== '' && pv === t.actual;
@@ -1648,8 +1662,8 @@ function renderSpecialBets(data){
     <table class="sheet-table special">
       <thead>
         <tr>
-          <th>Bet</th>
-          <th style="text-align:center;">Final Result</th>
+          <th class="sb-th">Question</th>
+          <th class="sb-th" style="text-align:center;">Final Result</th>
           ${players.map(p => `<th style="text-align:center; color:var(--purple); font-weight:700; font-size:16px;">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
@@ -1826,6 +1840,9 @@ function formatYesNo(v){
 function renderTabContent(tab, data){
   if(tab.kind === 'leaderboard') return renderLeaderboard(data);
   if(tab.kind === 'rules') return renderRules(data);
+  // explicit renderers (bypass auto-detect to avoid mis-routing)
+  if(tab.kind === 'special'){ return renderSpecialBets(data) || renderGenericTable(data); }
+  if(tab.kind === 'groupPositions'){ return renderGroupPositions(data) || renderGenericTable(data); }
   const pairs = renderPairWinners(data);
   if(pairs) return pairs;
   const matches = renderMatches(data);
@@ -1843,7 +1860,7 @@ async function loadActiveTab(){
   const content = document.getElementById('content');
   content.innerHTML = '<div class="status-line">Завантаження даних з Google Sheets...</div>';
   try{
-    const data = await fetchSheet(activeTournament.sheetId, tab.sheet);
+    const data = await fetchSheet(activeTournament.sheetId, tab.sheet, tab.gid);
     if(activeTournament.tabs[activeTabIndex] !== tab) return;
     content.innerHTML = renderTabContent(tab, data);
   }catch(err){
