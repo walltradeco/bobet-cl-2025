@@ -659,6 +659,45 @@
   table.boosts td.boost-val .flag, table.boosts td.boost-val .crest{width:18px; height:13px;}
   table.boosts td.boost-val .crest{height:18px;}
 
+  /* ===== BOOST COLOURS (як контури в таблиці) ===== */
+  :root{
+    --b2x: #C2568F;
+    --b3x: #57BE7A;
+    --bdp: #5E97D0;
+    --bot: #E8B23C;
+    --bgen: #A98FDB;
+  }
+  td.pred.boosted{
+    position:relative;
+    border-radius:4px;
+  }
+  td.pred.b2x{box-shadow:inset 0 0 0 2px var(--b2x);}
+  td.pred.b3x{box-shadow:inset 0 0 0 2px var(--b3x);}
+  td.pred.bdp{box-shadow:inset 0 0 0 2px var(--bdp);}
+  td.pred.bot{box-shadow:inset 0 0 0 2px var(--bot);}
+  td.pred.bgen{box-shadow:inset 0 0 0 2px var(--bgen);}
+  /* вгаданий рахунок + буст: лишаємо зелену заливку і контур буста поверх */
+  td.pred.exact.b2x{box-shadow:inset 0 0 0 2px var(--b2x);}
+  td.pred.exact.b3x{box-shadow:inset 0 0 0 2px var(--b3x);}
+  td.pred.exact.bdp{box-shadow:inset 0 0 0 2px var(--bdp);}
+  td.pred.exact.bot{box-shadow:inset 0 0 0 2px var(--bot);}
+  .dp-alt{
+    display:block;
+    font-size:11px;
+    color:var(--text-dim);
+    margin-top:2px;
+  }
+  td.pred.exact .dp-alt{color:rgba(239,250,240,0.75);}
+  .chip.b2x{background:transparent; box-shadow:inset 0 0 0 2px var(--b2x);}
+  .chip.b3x{background:transparent; box-shadow:inset 0 0 0 2px var(--b3x);}
+  .chip.bdp{background:transparent; box-shadow:inset 0 0 0 2px var(--bdp);}
+  .chip.bot{background:transparent; box-shadow:inset 0 0 0 2px var(--bot);}
+  .chip.bgen{background:transparent; box-shadow:inset 0 0 0 2px var(--bgen);}
+  table.boosts td.boost-label.b2x{color:var(--b2x); background:rgba(194,86,143,0.12); box-shadow:inset 3px 0 0 var(--b2x);}
+  table.boosts td.boost-label.b3x{color:var(--b3x); background:rgba(87,190,122,0.12); box-shadow:inset 3px 0 0 var(--b3x);}
+  table.boosts td.boost-label.bdp{color:var(--bdp); background:rgba(94,151,208,0.12); box-shadow:inset 3px 0 0 var(--bdp);}
+  table.boosts td.boost-label.bot{color:var(--bot); background:var(--gold-soft); box-shadow:inset 3px 0 0 var(--bot);}
+
   /* ===== GENERIC TABLE ===== */
   .table-card{
     background:var(--panel);
@@ -849,11 +888,11 @@ const TOURNAMENTS = [
     title:'Євро 2024',
     sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
     tabs:[
-      { sheet:'Leaderboards',                 kind:'leaderboard' },
-      { sheet:'Group',                        kind:'auto' },
-      { sheet:'Group positions',              kind:'groupPositions' },
-      { sheet:'Play-off',                     kind:'auto' },
-      { sheet:'1&2place + Mudryk + Ukraine',  kind:'special', gid:'1945041354' },
+      { sheet:'Leaderboards',                 kind:'leaderboard',    gid:'0' },
+      { sheet:'Group',                        kind:'auto',           gid:'922722732' },
+      { sheet:'Group positions',              kind:'groupPositions', gid:'2021317951' },
+      { sheet:'Play-off',                     kind:'auto',           gid:'682618555' },
+      { sheet:'1&2place + Mudryk + Ukraine',  kind:'special',        gid:'1945041354' },
       { sheet:'Rules + Prize pool',           kind:'rules' },
     ]
   },
@@ -862,11 +901,11 @@ const TOURNAMENTS = [
     title:'ЛЧ 2025',
     sheetId:'1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U',
     tabs:[
-      { sheet:'Leaderboards',                       kind:'leaderboard' },
-      { sheet:'Play-off',                           kind:'auto' },
-      { sheet:'Knockout phase play-offs',           kind:'auto' },
-      { sheet:'Knockout phase play-offs winners',   kind:'auto' },
-      { sheet:'1&2place + Real + Liverpool',        kind:'special' },
+      { sheet:'Leaderboards',                       kind:'leaderboard', gid:'0' },
+      { sheet:'Play-off',                           kind:'auto',        gid:'682618555' },
+      { sheet:'Knockout phase play-offs',           kind:'auto',        gid:'922722732' },
+      { sheet:'Knockout phase play-offs winners',   kind:'pairWinners', gid:'2021317951' },
+      { sheet:'1&2place + Real + Liverpool',        kind:'special',     gid:'1945041354' },
       { sheet:'Rules + Prize pool',                 kind:'rules' },
     ]
   },
@@ -875,10 +914,10 @@ const TOURNAMENTS = [
     title:'Клубний ЧС 2025',
     sheetId:'1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ',
     tabs:[
-      { sheet:'Leaderboards',           kind:'leaderboard' },
-      { sheet:'Group',                  kind:'auto' },
-      { sheet:'Play-off',               kind:'auto' },
-      { sheet:'Play-off bonus points',  kind:'special', gid:'1945041354' },
+      { sheet:'Leaderboards',           kind:'leaderboard', gid:'0' },
+      { sheet:'Group',                  kind:'auto',        gid:'922722732' },
+      { sheet:'Play-off',               kind:'auto',        gid:'682618555' },
+      { sheet:'Play-off bonus points',  kind:'special',     gid:'1945041354' },
       { sheet:'Rules + Prize pool',     kind:'rules' },
     ]
   },
@@ -1515,12 +1554,49 @@ function renderBoostsBlock(boosts, players){
       <tbody>
         ${boosts.items.map(it => `
           <tr>
-            <td class="boost-label">${escapeHtml(it.label)}</td>
+            <td class="boost-label ${boostKind(it.label)}">${escapeHtml(it.label)}</td>
             ${it.vals.map(v => `<td class="boost-val">${v ? v.split(/\r?\n/).map(part => cellStr(part)).filter(Boolean).map(part => gameWithFlags(part)).join('<br>') : '—'}</td>`).join('')}
           </tr>`).join('')}
       </tbody>
     </table>
   </div>`;
+}
+
+/* Тип буста за підписом у таблиці. Кольори повторюють контури в Google Sheets. */
+function boostKind(label){
+  const s = cellStr(label).toLowerCase();
+  if(/^2\s*[хx]/.test(s)) return 'b2x';
+  if(/^3\s*[хx]/.test(s)) return 'b3x';
+  if(/double/.test(s)) return 'bdp';
+  if(/overtime|овертайм|додатков/.test(s)) return 'bot';
+  return 'bgen';
+}
+
+/* Нормалізація назви матчу, щоб «Франція - Швеція » з блоку бустів збіглася
+   з «Франція - Швеція» у таблиці матчів. */
+function normGame(s){
+  return cellStr(s).toLowerCase().replace(/[–—]/g, '-').replace(/\s*-\s*/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+/* key: "<колонка гравця>|<матч>" -> { kind, label, scores:[...] } */
+function buildBoostMap(boosts, players){
+  const map = {};
+  if(!boosts) return map;
+  for(const item of boosts.items){
+    const kind = boostKind(item.label);
+    item.vals.forEach((val, i) => {
+      const lines = cellStr(val).split(/\r?\n/).map(cellStr).filter(Boolean);
+      if(!lines.length) return;
+      const game = lines[0];
+      const scores = [];
+      lines.slice(1).join(' ').split('/').forEach(part => {
+        const p = cellStr(part);
+        if(parseScore(p)) scores.push(p);
+      });
+      map[players[i].col + '|' + normGame(game)] = { kind, label: item.label, scores };
+    });
+  }
+  return map;
 }
 
 function renderMatches(data){
@@ -1577,8 +1653,14 @@ function renderMatches(data){
       body.push({ sep: true, label: game });
       continue;
     }
+    // рядок-стадія, у якого підпис лежить у колонці Game, а прогнози порожні
+    // ("1/8", "1/4", "Фінал" у старих турнірах)
+    if(cellStr(r[resCol]) === '' && !parseScore(game) && !splitGame(game) && preds.every(v => v === '') &&
+       (rawDate === '' || !isDateLike(rawDate)) && game.length <= 40){
+      body.push({ sep: true, label: game });
+      continue;
+    }
 
-    // merged Date cells arrive empty on all but the first row of the day;
     // forward-fill so every match row carries its date.
     if(rawDate !== '' && isDateLike(rawDate)) filledDate = rawDate;
     const dateVal = filledDate;
@@ -1589,6 +1671,10 @@ function renderMatches(data){
   if(body.filter(b => !b.sep).length === 0) return null;
 
   const groups = extractGroupsBlock(rows, headerRow, Math.min(...players.map(p => p.col)), Math.max(...players.map(p => p.col)));
+  const boosts = extractBoosts(rows, boostsStart, players);
+  const boostMap = buildBoostMap(boosts, players);
+  const usedKinds = [...new Set(Object.values(boostMap).map(b => b.kind + '\u0000' + b.label))]
+    .map(s => ({ kind: s.split('\u0000')[0], label: s.split('\u0000')[1] }));
   const hasDate = dateCol !== -1;
   const nCols = (hasDate ? 3 : 2) + players.length;
 
@@ -1616,10 +1702,20 @@ function renderMatches(data){
             ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
             <td class="c-game">${gameWithFlags(row.game)}</td>
             <td class="c-result">${escapeHtml(row.result || '—')}</td>
-            ${row.preds.map(pv => {
+            ${row.preds.map((pv, pi) => {
               const pPair = parseScore(pv);
-              const exact = resPair && pPair && pPair[0] === resPair[0] && pPair[1] === resPair[1];
-              return `<td class="pred ${exact ? 'exact' : ''}">${escapeHtml(pv || '—')}</td>`;
+              const boost = boostMap[players[pi].col + '|' + normGame(row.game)];
+              // Double prediction: у блоці бустів лежать обидва рахунки, у таблиці — зарахований.
+              const alt = boost && boost.scores.length > 1
+                ? boost.scores.find(s => parseScore(s) && cellStr(s) !== cellStr(pv))
+                : null;
+              const altPair = alt ? parseScore(alt) : null;
+              const hit = p => resPair && p && p[0] === resPair[0] && p[1] === resPair[1];
+              const exact = hit(pPair) || hit(altPair);
+              const cls = ['pred', exact ? 'exact' : '', boost ? 'boosted ' + boost.kind : ''].filter(Boolean).join(' ');
+              const tip = boost ? ` title="${escapeHtml(boost.label)}"` : '';
+              const altHtml = alt ? `<span class="dp-alt">${escapeHtml(alt)}</span>` : '';
+              return `<td class="${cls}"${tip}>${escapeHtml(pv || '—')}${altHtml}</td>`;
             }).join('')}
           </tr>`;
         }).join('')}
@@ -1628,8 +1724,9 @@ function renderMatches(data){
   </div>
   <div class="legend">
     <span><span class="chip exact"></span> вгаданий точний рахунок</span>
+    ${usedKinds.map(k => `<span><span class="chip ${k.kind}"></span> ${escapeHtml(k.label)}</span>`).join('')}
   </div>
-  ${renderBoostsBlock(extractBoosts(rows, boostsStart, players), players)}`;
+  ${renderBoostsBlock(boosts, players)}`;
 }
 
 /* ======== GROUP POSITIONS ========
