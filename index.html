@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>BoBet · Fantasy League</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -901,6 +901,174 @@
     .gp-summary-pts{font-size:18px;}
     .flag{width:20px; height:15px;}
     .yn{padding:2px 8px; font-size:10px;}
+  }
+
+  /* ===================================================================
+     ВЕЛИКІ ЕКРАНИ (зовнішні монітори, Studio Display, 4K/5K).
+     Нижче 1800px нічого не змінюється — MacBook Air лишається як був.
+     =================================================================== */
+  @media(min-width:1800px){
+    .wrap{padding:0 64px 90px;}
+    h1{font-size:48px;}
+    .brand-tag{font-size:14px;}
+    nav.tournaments button{font-size:17px; padding:13px 26px;}
+    nav.tabs button{font-size:18px; padding:13px 20px;}
+
+    .board-head{font-size:16px; padding:16px 20px;}
+    .lb-row{padding:18px 24px;}
+    .lb-name{font-size:23px;}
+    .lb-pts{font-size:28px;}
+    .lb-rank .crown{font-size:29px;}
+
+    .gp-summary-cell{padding:16px 18px;}
+    .gp-summary-name{font-size:18px;}
+    .gp-summary-pts{font-size:27px;}
+
+    table.matches{font-size:16px;}
+    table.matches td{padding:16px 12px; font-size:21px;}
+    table.matches thead th.p-name-cell{font-size:21px;}
+    table.matches thead th.meta{font-size:17px;}
+    td.c-game{font-size:22px;}
+    td.c-date{font-size:17px;}
+    td.c-result, .result-pill{font-size:22px;}
+    .result-pill{padding:7px 16px; min-width:76px;}
+    .dp-alt{font-size:14px;}
+    .flag{width:26px; height:19px;}
+    .crest{width:24px; height:24px;}
+
+    table.special th.sb-th-player{font-size:21px;}
+    table.special td.sb-label{font-size:20px;}
+    table.special td.sb-val{font-size:20px;}
+    td.sb-actual .result-pill{font-size:19px;}
+
+    table.gp-table td{font-size:19px;}
+    table.gp-table th.gp-player{font-size:20px;}
+    .gp-actualteam .result-pill{font-size:18px;}
+
+    table.boosts th.boost-player{font-size:19px;}
+    table.boosts td.boost-val, .boost-scores{font-size:17px;}
+
+    table.rules td.c-condition{font-size:20px;}
+    table.rules td.c-points{font-size:22px;}
+    table.rules th.group-head{font-size:15px;}
+    table.rules th.sub-head{font-size:15px;}
+    .yn{font-size:15px; padding:6px 18px;}
+    .rules-note{font-size:17px;}
+    .legend{font-size:14px;}
+  }
+
+  /* 5K / надширокі монітори */
+  @media(min-width:2600px){
+    .wrap{max-width:2560px; padding:0 80px 100px;}
+    h1{font-size:54px;}
+    table.matches td{font-size:23px;}
+    td.c-game{font-size:24px;}
+    td.c-result, .result-pill{font-size:24px;}
+    table.matches thead th.p-name-cell{font-size:23px;}
+    .lb-name{font-size:25px;}
+    .lb-pts{font-size:30px;}
+    .gp-summary-pts{font-size:30px;}
+  }
+
+  /* ===================================================================
+     ПЛАНШЕТИ І ВУЗЬКІ ВІКНА: широкі таблиці не стискаються в кашу,
+     а прокручуються горизонтально всередині своєї картки.
+     =================================================================== */
+  @media(max-width:1100px){
+    .matches-card, .table-card, .gp-block{-webkit-overflow-scrolling:touch;}
+    table.matches{min-width:820px;}
+    table.special{min-width:760px;}
+    table.gp-table{min-width:720px;}
+    table.boosts{min-width:760px;}
+    table.rules{min-width:720px;}
+    table.sheet-table{min-width:640px;}
+  }
+
+  /* ===================================================================
+     iPhone (15 / 16 / 17, у т.ч. Pro Max) — 390-440pt
+     =================================================================== */
+  @media(max-width:640px){
+    .wrap{
+      padding-left:max(12px, env(safe-area-inset-left));
+      padding-right:max(12px, env(safe-area-inset-right));
+      padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    }
+    header{padding-top:max(18px, env(safe-area-inset-top));}
+    h1{font-size:30px; letter-spacing:-0.02em;}
+    .brand-tag{font-size:11px; margin-bottom:6px;}
+    .meta-block{font-size:12px; gap:10px;}
+    #refresh-btn{font-size:13px; padding:10px 14px;}
+
+    nav.tournaments{gap:8px; padding-bottom:16px;}
+    nav.tournaments button{font-size:13px; padding:10px 14px;}
+    nav.tabs button{font-size:14px; padding:11px 12px;}
+
+    /* борди */
+    .board-head{font-size:14px; padding:12px 16px;}
+    .lb-row{padding:12px 14px; gap:12px;}
+    .lb-name{font-size:17px;}
+    .lb-pts{font-size:19px;}
+    .lb-rank{min-width:38px;}
+    .lb-rank .crown{font-size:22px;}
+
+    /* картки очок — по дві-три в ряд, а не стовпчиком */
+    .gp-summary{gap:8px;}
+    .gp-summary-cell{min-width:0; flex:1 1 28%; padding:10px 8px; gap:3px;}
+    .gp-summary-name{font-size:13px;}
+    .gp-summary-pts{font-size:20px;}
+
+    /* таблиці прокручуються вбік, а не стискаються */
+    table.matches{font-size:14px; min-width:700px;}
+    table.matches td{padding:11px 6px; font-size:16px;}
+    table.matches thead th{padding:10px 6px 9px;}
+    table.matches thead th.p-name-cell{font-size:15px;}
+    table.matches thead th.meta{font-size:13px;}
+    td.c-game{font-size:15px;}
+    td.c-date{font-size:12px;}
+    td.c-result, .result-pill{font-size:16px;}
+    .result-pill{min-width:52px; padding:5px 10px;}
+    .dp-alt{font-size:11px;}
+    .flag{width:20px; height:15px;}
+    .crest{width:19px; height:19px;}
+    td.pred.b2x{box-shadow:inset 0 0 0 2px var(--b2x);}
+    td.pred.b3x{box-shadow:inset 0 0 0 2px var(--b3x);}
+    td.pred.bdp{box-shadow:inset 0 0 0 2px var(--bdp);}
+    td.pred.bot{box-shadow:inset 0 0 0 2px var(--bot);}
+
+    table.special{min-width:660px;}
+    table.special td.sb-label, table.special th.sb-th-player{font-size:14px;}
+    table.special td.sb-val{font-size:14px;}
+    td.sb-actual .result-pill{font-size:13px; padding:4px 8px;}
+
+    table.gp-table{min-width:640px; font-size:13px;}
+    table.gp-table td{padding:9px 8px; font-size:14px;}
+    table.gp-table th{padding:8px 8px; font-size:13px;}
+    table.gp-table th.gp-player{font-size:14px;}
+    .gp-actualteam .result-pill{font-size:13px; padding:3px 8px;}
+    .gp-title{font-size:13px;}
+
+    table.boosts{min-width:660px;}
+    table.boosts td.boost-val, .boost-scores{font-size:12px;}
+    table.boosts th.boost-player{font-size:14px;}
+    table.boosts td.boost-label{font-size:13px;}
+
+    table.rules{min-width:660px;}
+    table.rules td.c-condition{font-size:14px; min-width:180px;}
+    table.rules td.c-points{font-size:16px;}
+    table.rules th.group-head{font-size:11px;}
+    table.rules th.sub-head{font-size:11px;}
+    .yn{font-size:11px; padding:4px 10px;}
+    .rules-note{font-size:14px; padding:14px 16px;}
+
+    .legend{font-size:12px; gap:14px;}
+    ::-webkit-scrollbar{height:6px;}
+  }
+
+  /* маленькі iPhone (SE / mini) */
+  @media(max-width:380px){
+    h1{font-size:26px;}
+    nav.tournaments button{font-size:12px; padding:9px 12px;}
+    .gp-summary-cell{flex:1 1 44%;}
   }
 </style>
 </head>
