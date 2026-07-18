@@ -367,8 +367,12 @@
     box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
   }
   .result-pill{
-    display:inline-block;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
     min-width:68px;
+    max-width:100%;
     padding:6px 14px;
     border-radius:8px;
     background:rgba(232,178,60,0.22);
@@ -378,6 +382,8 @@
     font-size:20px;
     letter-spacing:0.03em;
   }
+  .result-pill .team{gap:8px; min-width:0;}
+  .result-pill .team span{overflow:hidden; text-overflow:ellipsis;}
   table.matches thead th.th-result{color:var(--gold);}
   td.pred{position:relative;}
   td.pred.exact{
@@ -489,7 +495,7 @@
   .gp-actual-label{
     font-family:'JetBrains Mono',monospace;
     font-size:13px;
-    color:var(--green);
+    color:var(--gold);
   }
   table.gp-table{
     width:100%;
@@ -516,7 +522,7 @@
     text-transform:none;
   }
   table.gp-table th.gp-seed-h{color:var(--text-dim);}
-  table.gp-table th.gp-actual-h{color:var(--green); font-weight:700; font-size:15px;}
+  table.gp-table th.gp-actual-h{color:var(--gold); font-weight:700; font-size:16px;}
   table.gp-table td{
     padding:11px 16px;
     border-bottom:1px solid var(--line);
@@ -537,10 +543,17 @@
   .gp-seed .team{gap:7px;}
   .gp-seed .flag{width:20px; height:15px;}
   .gp-actualteam{
-    color:var(--green);
     font-weight:600;
-    border-right:2px solid var(--line);
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
   }
+  .gp-actualteam .result-pill{
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    padding:4px 12px;
+    min-width:0;
+  }
+  .gp-actualteam .result-pill .flag{width:20px; height:15px;}
   .gp-actualteam .team, .gp-pred .team{gap:7px;}
   .gp-actualteam .flag, .gp-pred .flag{width:20px; height:15px;}
   .gp-pred{color:var(--text-dim);}
@@ -610,22 +623,16 @@
     white-space:normal;
   }
   table.special td.sb-actual{text-align:center;}
-  .sb-badge{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
+  table.special td.sb-actual{
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
+  }
+  table.special th.sb-th-actual{color:var(--gold);}
+  td.sb-actual .result-pill{
     font-family:'Inter',sans-serif;
     font-size:17px;
-    font-weight:600;
-    color:var(--green);
-    background:var(--green-soft);
-    border:1px solid rgba(76,174,107,0.4);
-    padding:5px 16px;
-    border-radius:20px;
-    white-space:nowrap;
+    min-width:0;
   }
-  .sb-badge .team{gap:7px;}
-  .sb-badge .flag{width:22px; height:16px;}
   table.special td.sb-val{
     text-align:center;
     font-family:'JetBrains Mono',monospace;
@@ -1909,7 +1916,7 @@ function renderGroupPositions(data){
             <tr>
               <td class="gp-rank">${i + 1}</td>
               <td class="gp-seed">${t.seed ? withFlag(t.seed) : ''}</td>
-              <td class="gp-actualteam">${withFlag(t.actual)}</td>
+              <td class="gp-actualteam"><span class="result-pill">${withFlag(t.actual)}</span></td>
               ${t.preds.map(pv => {
                 const correct = pv !== '' && pv === t.actual;
                 return `<td class="gp-pred ${correct ? 'hit' : ''}">${withFlag(pv)}</td>`;
@@ -1994,7 +2001,7 @@ function renderPairWinners(data){
       <thead>
         <tr>
           <th class="meta">Pair</th>
-          <th class="meta">Winner</th>
+          <th class="meta th-result">Winner</th>
           ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
@@ -2002,7 +2009,7 @@ function renderPairWinners(data){
         ${items.map(it => `
           <tr>
             <td class="c-game">${gameWithFlags(it.pair)}</td>
-            <td class="c-result">${it.actual ? withFlag(it.actual) : '—'}</td>
+            <td class="c-result">${it.actual ? `<span class="result-pill">${withFlag(it.actual)}</span>` : '—'}</td>
             ${it.picks.map(pick => {
               const correct = pick !== '' && it.actual !== '' && pick.toLowerCase() === it.actual.toLowerCase();
               return `<td class="pred ${correct ? 'exact' : ''}">${pick ? withFlag(pick) : '—'}</td>`;
@@ -2099,7 +2106,7 @@ function renderSpecialBets(data){
       <thead>
         <tr>
           <th class="sb-th">Question</th>
-          <th class="sb-th" style="text-align:center;">Final Result</th>
+          <th class="sb-th sb-th-actual" style="text-align:center;">Final Result</th>
           ${players.map(p => `<th class="sb-th-player">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
@@ -2107,7 +2114,7 @@ function renderSpecialBets(data){
         ${bets.map(bet => {
           const predRow = `<tr>
             <td class="sb-label">${escapeHtml(bet.label)}</td>
-            <td class="sb-actual">${bet.actual && bet.actual !== '-' ? `<span class="sb-badge">${withFlag(bet.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
+            <td class="sb-actual">${bet.actual && bet.actual !== '-' ? `<span class="result-pill">${withFlag(bet.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
             ${bet.preds.map((v, i) => {
               const hit = isHit(bet, i);
               return `<td class="sb-val ${hit ? 'sb-hit' : ''}">${v ? withFlag(v) : '—'}</td>`;
