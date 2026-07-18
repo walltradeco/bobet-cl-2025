@@ -56,7 +56,7 @@
   }
   .brand-tag{
     font-family:'JetBrains Mono',monospace;
-    font-size:12px;
+    font-size:13px;
     letter-spacing:0.14em;
     text-transform:uppercase;
     color:var(--green);
@@ -65,7 +65,7 @@
   h1{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
-    font-size:34px;
+    font-size:42px;
     line-height:1.05;
     margin:0;
     letter-spacing:-0.01em;
@@ -74,7 +74,7 @@
   .meta-block{
     text-align:right;
     font-family:'JetBrains Mono',monospace;
-    font-size:12px;
+    font-size:13px;
     color:var(--text-dim);
   }
   #refresh-btn{
@@ -82,8 +82,8 @@
     border:1px solid var(--line);
     color:var(--text);
     font-family:'JetBrains Mono',monospace;
-    font-size:12px;
-    padding:8px 14px;
+    font-size:13px;
+    padding:9px 16px;
     border-radius:6px;
     cursor:pointer;
     margin-top:8px;
@@ -104,11 +104,11 @@
     border:1px solid var(--line);
     color:var(--text-dim);
     font-family:'Space Grotesk',sans-serif;
-    font-size:14px;
+    font-size:16px;
     font-weight:700;
     text-transform:uppercase;
     letter-spacing:0.03em;
-    padding:10px 20px;
+    padding:12px 24px;
     border-radius:8px;
     cursor:pointer;
     transition:all .15s;
@@ -135,9 +135,9 @@
     border:none;
     color:var(--text-dim);
     font-family:'Space Grotesk',sans-serif;
-    font-size:15px;
-    font-weight:500;
-    padding:10px 16px;
+    font-size:17px;
+    font-weight:600;
+    padding:12px 18px;
     cursor:pointer;
     white-space:nowrap;
     border-bottom:2px solid transparent;
@@ -363,8 +363,22 @@
     font-weight:700;
     font-size:20px;
     color:var(--gold);
-    background:var(--gold-soft);
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
   }
+  .result-pill{
+    display:inline-block;
+    min-width:68px;
+    padding:6px 14px;
+    border-radius:8px;
+    background:rgba(232,178,60,0.22);
+    border:1px solid rgba(232,178,60,0.55);
+    color:#F5D488;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:0.03em;
+  }
+  table.matches thead th.th-result{color:var(--gold);}
   td.pred{position:relative;}
   td.pred.exact{
     background:rgba(76,174,107,0.45);
@@ -372,6 +386,12 @@
     font-weight:700;
     box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);
   }
+  /* вгаданий результат (перемога/нічия) — без заливки, лише яскравий текст */
+  td.pred.outcome{
+    color:var(--text);
+    font-weight:700;
+  }
+  .chip.outcome{background:rgba(237,239,232,0.9);}
   tr.day-start td{border-top:2px solid var(--panel-3);}
   tr.day-even td.c-date, tr.day-even td.c-game{background:rgba(255,255,255,0.02);}
   /* stage separators (1/8, 1/4, Semifinals, Final) */
@@ -769,8 +789,8 @@
   table.rules th.group-head{
     text-align:center;
     font-family:'Space Grotesk',sans-serif;
-    font-size:11px;
-    letter-spacing:0.08em;
+    font-size:14px;
+    letter-spacing:0.06em;
     text-transform:uppercase;
     color:var(--text);
     background:var(--panel-3);
@@ -780,28 +800,35 @@
   }
   table.rules th.sub-head{
     text-align:center;
+    font-size:14px;
+    color:var(--text);
   }
+  table.rules thead th{padding:14px 14px;}
+  table.rules td{padding:15px 14px;}
   table.rules td{text-align:center;}
   table.rules td.c-condition{
     text-align:left;
     font-family:'Inter',sans-serif;
     font-weight:500;
+    font-size:18px;
+    line-height:1.5;
     white-space:normal;
     min-width:220px;
   }
   table.rules td.c-points{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
+    font-size:20px;
     color:var(--gold);
     background:var(--gold-soft);
   }
   .yn{
     display:inline-block;
     font-family:'JetBrains Mono',monospace;
-    font-size:12px;
+    font-size:14px;
     font-weight:700;
     text-transform:uppercase;
-    padding:3px 12px;
+    padding:5px 16px;
     border-radius:20px;
   }
   .yn.yes{color:var(--green); background:var(--green-soft); border:1px solid rgba(76,174,107,0.4);}
@@ -812,7 +839,7 @@
     background:var(--panel);
     border:1px solid var(--line);
     border-radius:10px;
-    font-size:14px;
+    font-size:16px;
     line-height:1.7;
     color:var(--text-dim);
   }
@@ -898,19 +925,6 @@
 /* ======== CONFIG ======== */
 const TOURNAMENTS = [
   {
-    key:'wc2026',
-    title:'ЧС 2026',
-    sheetId:'1yDjFrJ-vE3ZbHrjzgvB1Z0_Ok-PbgTp4KEHJ-Cj5oRA',
-    tabs:[
-      { sheet:'Leaderboards',                       kind:'leaderboard',  gid:'0' },
-      { sheet:'Knockout phase play-offs',           kind:'auto',         gid:'922722732' },
-      { sheet:'(Knockout phase play-offs) winners', kind:'pairWinners',  gid:'2021317951' },
-      { sheet:'Play-off',                           kind:'auto',         gid:'682618555' },
-      { sheet:'Bonus questions (Play-off)',         kind:'special',      gid:'1945041354' },
-      { sheet:'Rules + Prize pool',                 kind:'rules',        gid:'1147745050' },
-    ]
-  },
-  {
     key:'euro2024',
     title:'Євро 2024',
     sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
@@ -946,6 +960,19 @@ const TOURNAMENTS = [
       { sheet:'Play-off',               kind:'auto',        gid:'682618555' },
       { sheet:'Play-off bonus points',  kind:'special',     gid:'1945041354' },
       { sheet:'Rules + Prize pool',     kind:'rules',       gid:'1147745050' },
+    ]
+  },
+  {
+    key:'wc2026',
+    title:'ЧС 2026',
+    sheetId:'1yDjFrJ-vE3ZbHrjzgvB1Z0_Ok-PbgTp4KEHJ-Cj5oRA',
+    tabs:[
+      { sheet:'Leaderboards',                       kind:'leaderboard',  gid:'0' },
+      { sheet:'Knockout phase play-offs',           kind:'auto',         gid:'922722732' },
+      { sheet:'(Knockout phase play-offs) winners', kind:'pairWinners',  gid:'2021317951' },
+      { sheet:'Play-off',                           kind:'auto',         gid:'682618555' },
+      { sheet:'Bonus questions (Play-off)',         kind:'special',      gid:'1945041354' },
+      { sheet:'Rules + Prize pool',                 kind:'rules',        gid:'1147745050' },
     ]
   },
 ];
@@ -1147,7 +1174,7 @@ const LEADERBOARD_NAMES = {
   clubwc2025: ['Group', 'Play-off', 'General'],
 };
 
-let activeTournament = TOURNAMENTS[0];
+let activeTournament = TOURNAMENTS[TOURNAMENTS.length - 1];
 let activeTabIndex = 0;
 const cache = {};
 
@@ -1748,7 +1775,7 @@ function renderMatches(data){
         <tr>
           ${hasDate ? '<th class="meta">Date</th>' : ''}
           <th class="meta th-game">Game</th>
-          <th class="meta" style="text-align:center;">Result</th>
+          <th class="meta th-result" style="text-align:center;">Result</th>
           ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
         </tr>
       </thead>
@@ -1762,7 +1789,7 @@ function renderMatches(data){
           <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
             ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
             <td class="c-game">${gameWithFlags(row.game)}</td>
-            <td class="c-result">${escapeHtml(row.result || '—')}</td>
+            <td class="c-result">${row.result ? `<span class="result-pill">${escapeHtml(row.result)}</span>` : '—'}</td>
             ${row.preds.map((pv, pi) => {
               const pPair = parseScore(pv);
               const boost = boostMap[players[pi].col + '|' + normGame(row.game)];
@@ -1773,7 +1800,11 @@ function renderMatches(data){
               const altPair = alt ? parseScore(alt) : null;
               const hit = p => resPair && p && p[0] === resPair[0] && p[1] === resPair[1];
               const exact = hit(pPair) || hit(altPair);
-              const cls = ['pred', exact ? 'exact' : '', boost ? 'boosted ' + boost.kind : ''].filter(Boolean).join(' ');
+              // вгаданий лише результат (перемога/нічия/поразка) — 1 бал
+              const sameSide = p => resPair && p && outcomeSign(p) === outcomeSign(resPair);
+              const outcome = !exact && (sameSide(pPair) || sameSide(altPair));
+              const cls = ['pred', exact ? 'exact' : '', outcome ? 'outcome' : '',
+                           boost ? 'boosted ' + boost.kind : ''].filter(Boolean).join(' ');
               const tip = boost ? ` title="${escapeHtml(boost.label)}"` : '';
               const altHtml = alt ? `<span class="dp-alt">${escapeHtml(alt)}</span>` : '';
               return `<td class="${cls}"${tip}>${escapeHtml(pv || '—')}${altHtml}</td>`;
@@ -1785,6 +1816,7 @@ function renderMatches(data){
   </div>
   <div class="legend">
     <span><span class="chip exact"></span> вгаданий точний рахунок</span>
+    <span><span class="chip outcome"></span> вгаданий результат</span>
     ${usedKinds.map(k => `<span><span class="chip ${k.kind}"></span> ${escapeHtml(k.label)}</span>`).join('')}
   </div>
   ${renderBoostsBlock(boosts, players, predMap)}`;
