@@ -1278,8 +1278,22 @@ function findMatchesLayout(rows){
         }
       }
       if(players.length === 0) return null;
-      // totals from the Points row
+      // totals: спершу шукаємо рядок з підписом "Points"…
       let totals = findTotalsRow(rows, players);
+      // …а якщо підпису немає (Group / Play-off / Knockout: числа просто стоять
+      // у рядку над іменами) — беремо найближчий рядок вище з числами в колонках гравців.
+      if(!totals){
+        const namesRow = pr ? pr.rowIdx : ri;
+        for(let up = namesRow - 1; up >= 0 && !totals; up--){
+          const t = {};
+          let hits = 0;
+          players.forEach(p => {
+            const n = toNum(rows[up][p.col]);
+            if(n !== null){ t[p.col] = n; hits++; }
+          });
+          if(hits >= 2) totals = t;
+        }
+      }
       return { headerRow: ri, dateCol, gameCol, resCol, players, totals };
     }
   }
@@ -1569,6 +1583,15 @@ function renderPairWinners(data){
       totals = {};
       players.forEach(p => { const n = toNum(rows[ri][p.col]); if(n !== null) totals[p.col] = n; });
       break;
+    }
+  }
+  // фолбек: рядок з числами над іменами, без підпису "Points"
+  if(!totals){
+    for(let up = prPW.rowIdx - 1; up >= 0 && !totals; up--){
+      const t = {};
+      let hits = 0;
+      players.forEach(p => { const n = toNum(rows[up][p.col]); if(n !== null){ t[p.col] = n; hits++; } });
+      if(hits >= 2) totals = t;
     }
   }
 
