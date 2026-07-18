@@ -624,6 +624,41 @@
   }
   table.special tr.sb-points td.sb-val.scored{color:var(--green);}
 
+  /* ===== BOOSTS ===== */
+  .boosts-card{margin-top:22px;}
+  table.boosts th.boost-head{
+    color:var(--gold);
+    font-size:13px;
+    letter-spacing:0.08em;
+    white-space:nowrap;
+  }
+  table.boosts th.boost-player{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+    text-transform:none;
+    letter-spacing:0.01em;
+  }
+  table.boosts td.boost-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--gold);
+    background:var(--gold-soft);
+    white-space:nowrap;
+  }
+  table.boosts td.boost-val{
+    text-align:center;
+    font-size:13px;
+    color:var(--text-dim);
+    white-space:nowrap;
+    line-height:1.6;
+  }
+  table.boosts td.boost-val .flag, table.boosts td.boost-val .crest{width:18px; height:13px;}
+  table.boosts td.boost-val .crest{height:18px;}
+
   /* ===== GENERIC TABLE ===== */
   .table-card{
     background:var(--panel);
@@ -797,6 +832,19 @@
 /* ======== CONFIG ======== */
 const TOURNAMENTS = [
   {
+    key:'wc2026',
+    title:'ЧС 2026',
+    sheetId:'1yDjFrJ-vE3ZbHrjzgvB1Z0_Ok-PbgTp4KEHJ-Cj5oRA',
+    tabs:[
+      { sheet:'Leaderboards',                       kind:'leaderboard',  gid:'0' },
+      { sheet:'Knockout phase play-offs',           kind:'auto',         gid:'922722732' },
+      { sheet:'(Knockout phase play-offs) winners', kind:'pairWinners',  gid:'2021317951' },
+      { sheet:'Play-off',                           kind:'auto',         gid:'682618555' },
+      { sheet:'Bonus questions (Play-off)',         kind:'special',      gid:'1945041354' },
+      { sheet:'Rules + Prize pool',                 kind:'rules',        gid:'1147745050' },
+    ]
+  },
+  {
     key:'euro2024',
     title:'Євро 2024',
     sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
@@ -862,7 +910,19 @@ const COUNTRY_ISO = {
   'корея':'kr','австралія':'au','марокко':'ma','єгипет':'eg',
   'туніс':'tn','сенегал':'sn','гана':'gh','нігерія':'ng',
   'камерун':'cm','саудівська аравія':'sa','катар':'qa','іран':'ir',
-  'нова зеландія':'nz'
+  'нова зеландія':'nz',
+  /* ===== ЧС 2026 ===== */
+  'парагвай':'py','колумбія':'co','еквадор':'ec','перу':'pe','чилі':'cl',
+  'болівія':'bo','венесуела':'ve','панама':'pa','коста-ріка':'cr','гондурас':'hn',
+  'ямайка':'jm','кюрасао':'cw','гаїті':'ht','сальвадор':'sv','гватемала':'gt',
+  'юар':'za','південна африка':'za','пар':'za',
+  'голландія':'nl','голандія':'nl',
+  "кот-д'івуар":'ci','кот-д’івуар':'ci','кот д\'івуар':'ci','івуар':'ci',
+  'алжир':'dz','кабо-верде':'cv','кабо верде':'cv','конго':'cd','др конго':'cd',
+  'малі':'ml','буркіна-фасо':'bf','кенія':'ke','замбія':'zm','ангола':'ao',
+  'узбекистан':'uz','йорданія':'jo','ірак':'iq','оае':'ae','оман':'om',
+  'китай':'cn','індонезія':'id','в\'єтнам':'vn','таїланд':'th',
+  'нова каледонія':'nc','фіджі':'fj','суринам':'sr'
 };
 
 function isoForName(name){
@@ -983,10 +1043,26 @@ function withFlag(name){
   return icon ? `<span class="team">${icon}<span>${escapeHtml(s)}</span></span>` : escapeHtml(s);
 }
 
+/* Splits "Франція - Марокко" into two team names.
+   Preferred form is a dash surrounded by spaces. Some rows come without spaces
+   ("ЮАР-Канада") — then we try every dash position and keep the split where BOTH
+   halves are recognised teams, so hyphenated names (Кот-д'Івуар, Кабо-Верде)
+   stay intact. */
+function splitGame(s){
+  const spaced = s.split(/\s+[-–—]\s+/);
+  if(spaced.length === 2) return [spaced[0].trim(), spaced[1].trim()];
+  for(let i = 1; i < s.length - 1; i++){
+    if(!'-–—'.includes(s[i])) continue;
+    const a = s.slice(0, i).trim(), b = s.slice(i + 1).trim();
+    if(a && b && teamIcon(a) && teamIcon(b)) return [a, b];
+  }
+  return null;
+}
+
 function gameWithFlags(game){
   const s = cellStr(game);
-  const m = s.split(/\s+[-–—]\s+/);
-  if(m.length === 2){
+  const m = splitGame(s);
+  if(m){
     const a = m[0], b = m[1];
     const ia = teamIcon(a), ib = teamIcon(b);
     if(ia || ib){
@@ -999,6 +1075,7 @@ function gameWithFlags(game){
 // Explicit leaderboard board names per tournament (used when the sheet's own
 // stage titles can't be detected). Order matches the boards left-to-right.
 const LEADERBOARD_NAMES = {
+  wc2026:     ['Knockout phase play-offs', 'Play-off', 'General'],
   euro2024:   ['Group', 'Play-off', 'General'],
   cl2025:     ['Knockout phase play-offs', 'Play-off', 'General'],
   clubwc2025: ['Group', 'Play-off', 'General'],
@@ -1063,9 +1140,36 @@ function cellStr(v){ return v === null || v === undefined ? '' : String(v).trim(
 
 /* Known participant names across all tournaments — used to reliably locate the
    player header row regardless of surrounding structure. */
-const KNOWN_PLAYERS = ['бо','лб','антон','макс','саня','миша','женя','денис'];
+const KNOWN_PLAYERS = ['бо','лб','антон','макс','саня','миша','женя','денис','андрей','андрій'];
 function isKnownPlayer(name){
   return KNOWN_PLAYERS.includes(cellStr(name).toLowerCase());
+}
+
+/* Клітинка вважається "порожньою" для гравця: службові й нульові значення. */
+function isBlankCell(v){
+  const s = cellStr(v);
+  return s === '' || s === '0' || s === '-' || s === '#REF!' ||
+         /^points?$/i.test(s) || /^prediction$/i.test(s) || isPlaceholderName(s);
+}
+
+/* Таблиці мають дубльовані колонки (двічі «Женя») і колонки учасників, які цей
+   турнір не грають (усе порожнє, тотал 0). Прибираємо і те, і те. */
+function filterActivePlayers(rows, players, startRow, totals){
+  const seen = new Set();
+  const kept = [];
+  for(const p of players){
+    const key = cellStr(p.name).toLowerCase();
+    if(seen.has(key)) continue;
+    let hasData = false;
+    for(let ri = startRow; ri < rows.length && !hasData; ri++){
+      if(!isBlankCell(rows[ri][p.col])) hasData = true;
+    }
+    const tot = totals ? toNum(totals[p.col]) : null;
+    if(!hasData && !tot) continue;
+    seen.add(key);
+    kept.push(p);
+  }
+  return kept.length >= 2 ? kept : players;
 }
 // find the row that contains player names and return {rowIdx, players:[{col,name}]}
 function findPlayersRow(rows, minCol){
@@ -1123,21 +1227,45 @@ function renderLeaderboard(data){
   // Find the header row: the one containing "Name" cells. Each "Name" cell marks a board
   // whose columns are [№ | Name | Points] = [ci-1 | ci | ci+1]. The board title sits in
   // the row(s) above, spanning that block.
-  let headerRowIdx = -1;
-  const nameCols = [];
+  // У таблиці буває кілька блоків «№ | Name | Points»: службові копії без
+  // заголовків і справжні борди із заголовком над ними. Збираємо всі рядки-шапки
+  // і далі обираємо той, у якого борди підписані.
+  const candidates = [];
   for(let ri = 0; ri < rows.length; ri++){
     const cols = [];
     for(let ci = 0; ci < nCols; ci++){
       if(/^name$/i.test(cellStr(rows[ri][ci]))) cols.push(ci);
     }
-    if(cols.length > nameCols.length){
-      headerRowIdx = ri;
-      nameCols.length = 0;
-      cols.forEach(c => nameCols.push(c));
+    if(cols.length) candidates.push({ rowIdx: ri, cols });
+  }
+  if(candidates.length === 0) return renderGenericTable(data);
+
+  let best = null;
+  for(const cand of candidates){
+    const built = buildLeaderboardBoards(rows, nCols, cand.rowIdx, cand.cols);
+    const titled = built.filter(b => b.title).length;
+    if(!best || titled > best.titled || (titled === best.titled && built.length > best.boards.length)){
+      best = { titled, boards: built, headerRowIdx: cand.rowIdx };
     }
   }
-  if(headerRowIdx === -1) return renderGenericTable(data);
+  const boards = best.boards;
+  const headerRowIdx = best.headerRowIdx;
 
+  // Keep only boards that have a real stage title. Hidden helper copies have none.
+  const titled = boards.filter(b => b.title);
+  let finalBoards;
+  if(titled.length >= 1){
+    finalBoards = titled;
+  } else {
+    // Fall back to this tournament's explicit board names.
+    const STD = LEADERBOARD_NAMES[activeTournament.key] || ['Group', 'Play-off', 'General'];
+    finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
+  }
+  if(finalBoards.length === 0) return renderGenericTable(data);
+  return renderBoards(finalBoards);
+}
+
+function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
   const boards = [];
   for(const nameCol of nameCols){
     const ptsCol = nameCol + 1;
@@ -1159,21 +1287,13 @@ function renderLeaderboard(data){
       if(pts === null) continue;
       entries.push({ name, pts });
     }
-    if(entries.length) boards.push({ title, entries });
+    // Учасники, які цей турнір не грають, стоять у таблиці з 0. Ховаємо їх, але
+    // лише коли турнір уже стартував (є хоч кілька ненульових результатів).
+    const scored = entries.filter(e => e.pts > 0);
+    const shown = scored.length >= 3 ? scored : entries;
+    if(shown.length) boards.push({ title, entries: shown });
   }
-
-  // Keep only boards that have a real stage title. Hidden helper copies have none.
-  const titled = boards.filter(b => b.title);
-  let finalBoards;
-  if(titled.length >= 1){
-    finalBoards = titled;
-  } else {
-    // Fall back to this tournament's explicit board names.
-    const STD = LEADERBOARD_NAMES[activeTournament.key] || ['Group', 'Play-off', 'General'];
-    finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
-  }
-  if(finalBoards.length === 0) return renderGenericTable(data);
-  return renderBoards(finalBoards);
+  return boards;
 }
 
 function renderBoards(finalBoards){
@@ -1294,6 +1414,8 @@ function findMatchesLayout(rows){
           if(hits >= 2) totals = t;
         }
       }
+      // прибираємо дублі імен і колонки без даних (Денис/Андрій/друга «Женя»)
+      players = filterActivePlayers(rows, players, (pr ? pr.rowIdx : ri) + 1, totals);
       return { headerRow: ri, dateCol, gameCol, resCol, players, totals };
     }
   }
@@ -1341,6 +1463,66 @@ function renderGroupsBlock(groups){
   }).join('')}</div>`;
 }
 
+/* ======== BOOSTS (2х / 3х / Double prediction / Overtime) ========
+   Внизу аркуша Play-off / Knockout лежить блок:
+   [ | Boosts (only 1/8, 1/4,1/2) | ... ]
+   [ | | 2х | <матч Бо> | <матч Лб> | ... ]
+   Підпис буста — остання непорожня клітинка ліворуч від колонок гравців. */
+function findBoostsRow(rows, headerRow, players){
+  const firstPCol = Math.min(...players.map(p => p.col));
+  for(let ri = headerRow + 1; ri < rows.length; ri++){
+    for(let ci = 0; ci < firstPCol; ci++){
+      if(/^boosts\b/i.test(cellStr(rows[ri][ci]))) return ri;
+    }
+  }
+  return -1;
+}
+
+function extractBoosts(rows, startRow, players){
+  if(startRow === -1) return null;
+  const firstPCol = Math.min(...players.map(p => p.col));
+  let title = '';
+  for(let ci = 0; ci < firstPCol; ci++){
+    const v = cellStr(rows[startRow][ci]);
+    if(/^boosts\b/i.test(v)){ title = v; break; }
+  }
+  const items = [];
+  for(let ri = startRow + 1; ri < rows.length; ri++){
+    let label = '';
+    for(let ci = firstPCol - 1; ci >= 0; ci--){
+      const v = cellStr(rows[ri][ci]);
+      if(v !== ''){ label = v; break; }
+    }
+    const vals = players.map(p => cellStr(rows[ri][p.col]));
+    if(label === '' && vals.every(v => v === '')) continue;
+    if(label === '') continue;
+    items.push({ label, vals });
+  }
+  return items.length ? { title: title || 'Boosts', items } : null;
+}
+
+function renderBoostsBlock(boosts, players){
+  if(!boosts) return '';
+  return `
+  <div class="table-card boosts-card">
+    <table class="sheet-table boosts">
+      <thead>
+        <tr>
+          <th class="boost-head">${escapeHtml(boosts.title)}</th>
+          ${players.map(p => `<th class="boost-player">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${boosts.items.map(it => `
+          <tr>
+            <td class="boost-label">${escapeHtml(it.label)}</td>
+            ${it.vals.map(v => `<td class="boost-val">${v ? v.split(/\r?\n/).map(part => cellStr(part)).filter(Boolean).map(part => gameWithFlags(part)).join('<br>') : '—'}</td>`).join('')}
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
 function renderMatches(data){
   const rows = data.rows;
   const layout = findMatchesLayout(rows);
@@ -1348,15 +1530,22 @@ function renderMatches(data){
   const { headerRow, dateCol, gameCol, resCol, players } = layout;
   let totals = layout.totals;
 
+  // Блок бустів іде окремо в кінці аркуша — виносимо його з таблиці матчів.
+  const boostsStart = findBoostsRow(rows, headerRow, players);
+
   const body = [];
   let lastDate = '';
   let filledDate = '';   // last non-empty, date-like value seen (for merge forward-fill)
   let dayIndex = 0;
-  for(let ri = headerRow + 1; ri < rows.length; ri++){
+  const bodyEnd = boostsStart === -1 ? rows.length : boostsStart;
+  for(let ri = headerRow + 1; ri < bodyEnd; ri++){
     const r = rows[ri];
     const game = cellStr(r[gameCol]);
     const rawDate = cellStr(r[dateCol]);
     const preds = players.map(p => cellStr(r[p.col]));
+
+    // рядок тоталів («Points | | | 12 | 10 | …») — не стадія і не матч
+    if(/^points?$/i.test(rawDate) || /^points?$/i.test(game)) continue;
 
     if(game === ''){
       // stage separator (merged "1/8", "Semifinals", "Final" lands in the date column)
@@ -1439,7 +1628,8 @@ function renderMatches(data){
   </div>
   <div class="legend">
     <span><span class="chip exact"></span> вгаданий точний рахунок</span>
-  </div>`;
+  </div>
+  ${renderBoostsBlock(extractBoosts(rows, boostsStart, players), players)}`;
 }
 
 /* ======== GROUP POSITIONS ========
@@ -1473,7 +1663,7 @@ function renderGroupPositions(data){
   // Players row: reliably located by known participant names (to the right of Final result).
   const pr = findPlayersRow(rows, fpCol + 1);
   if(!pr) return null;
-  const players = pr.players;
+  const players = filterActivePlayers(rows, pr.players, pr.rowIdx + 1, null);
   const totalsRow = findTotalsRow(rows, players);
 
   // build points summary (player -> total)
@@ -1574,7 +1764,7 @@ function renderPairWinners(data){
   if(headerRow === -1) return null;
 
   const prPW = findPlayersRow(rows, winnerCol + 1);
-  const players = prPW ? prPW.players : [];
+  const players = prPW ? filterActivePlayers(rows, prPW.players, prPW.rowIdx + 1, null) : [];
   if(players.length === 0) return null;
 
   let totals = null;
@@ -1620,7 +1810,7 @@ function renderPairWinners(data){
       <tbody>
         ${items.map(it => `
           <tr>
-            <td class="c-game">${escapeHtml(it.pair)}</td>
+            <td class="c-game">${gameWithFlags(it.pair)}</td>
             <td class="c-result">${it.actual ? withFlag(it.actual) : '—'}</td>
             ${it.picks.map(pick => {
               const correct = pick !== '' && it.actual !== '' && pick.toLowerCase() === it.actual.toLowerCase();
@@ -1659,7 +1849,7 @@ function renderSpecialBets(data){
   const pr = findPlayersRow(rows, markerCol + 1);
   if(!pr) return null;
   const playersRowIdx = pr.rowIdx;
-  const players = pr.players;
+  const players = filterActivePlayers(rows, pr.players, pr.rowIdx + 1, null);
 
   // Build bets: each bet couples a Prediction row with the following Points row.
   const bets = [];
@@ -1810,6 +2000,10 @@ function renderRules(data){
   for(let ri = condRowIdx + 2; ri < raw.length; ri++){
     if(raw[ri].every(v => v === '')){ endIdx = ri; break; }
     if(raw[ri].some(v => /^(призові|prize pool)$/i.test(v))){ endIdx = ri; break; }
+    // примітка внизу: довгий текст в колонці Condition без очок і без yes/no
+    const cond = cellStr(raw[ri][condCol]);
+    const rest = raw[ri].filter((v, ci) => ci !== condCol && cellStr(v) !== '');
+    if(cond.length > 60 && rest.length === 0){ endIdx = ri; break; }
   }
 
   const h1 = raw[condRowIdx];
@@ -1895,6 +2089,7 @@ function renderTabContent(tab, data){
   if(tab.kind === 'leaderboard') return renderLeaderboard(data);
   if(tab.kind === 'rules') return renderRules(data);
   // explicit renderers (bypass auto-detect to avoid mis-routing)
+  if(tab.kind === 'pairWinners'){ return renderPairWinners(data) || renderGenericTable(data); }
   if(tab.kind === 'special'){ return renderSpecialBets(data) || renderGenericTable(data); }
   if(tab.kind === 'groupPositions'){ return renderGroupPositions(data) || renderGenericTable(data); }
   const pairs = renderPairWinners(data);
