@@ -492,18 +492,13 @@
     text-transform:uppercase;
     color:var(--gold);
   }
-  .gp-actual-label{
-    font-family:'JetBrains Mono',monospace;
-    font-size:13px;
-    color:var(--gold);
-  }
   table.gp-table{
     width:100%;
     border-collapse:collapse;
     font-size:15px;
   }
   table.gp-table th{
-    text-align:left;
+    text-align:center;
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
     font-size:15px;
@@ -528,13 +523,16 @@
     border-bottom:1px solid var(--line);
     white-space:nowrap;
     font-size:17px;
+    text-align:center;
   }
+  table.gp-table .team{justify-content:center;}
   table.gp-table tbody tr:last-child td{border-bottom:none;}
   .gp-rank{
     font-family:'JetBrains Mono',monospace;
     color:var(--text-dim);
-    width:24px;
+    width:44px;
     font-size:15px;
+    text-align:center;
   }
   .gp-seed{
     color:var(--text-dim);
@@ -1900,7 +1898,6 @@ function renderGroupPositions(data){
     <div class="gp-block">
       <div class="gp-head">
         <span class="gp-title">${escapeHtml(b.title)}</span>
-        <span class="gp-actual-label">Final result</span>
       </div>
       <table class="gp-table">
         <thead>
