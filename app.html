@@ -268,6 +268,7 @@ $('btn-send').onclick = async () => {
 
   if (error) {
     // Тригер бази відбиває пошту не зі списку
+    console.error('signInWithOtp:', error);
     const t = /не.*доступ|not allowed|Database error/i.test(error.message)
       ? 'Немає доступу — ця пошта не в списку учасників'
       : error.message;
@@ -286,12 +287,20 @@ $('btn-verify').onclick = async () => {
   if (token.length < 4) return msg($('login-msg'), 'Код закороткий');
   $('btn-verify').disabled = true;
 
-  const { error } = await sb.auth.verifyOtp({
-    email: window.__email, token, type: 'email'
-  });
+  // Перший вхід створює акаунт і шле лист типу signup, повторні — email.
+  // Пробуємо обидва, бо ззовні не видно, який саме випадок.
+  let error = null;
+  for (const type of ['email', 'signup', 'magiclink']) {
+    const res = await sb.auth.verifyOtp({ email: window.__email, token, type });
+    if (!res.error) { error = null; break; }
+    error = res.error;
+  }
   $('btn-verify').disabled = false;
 
-  if (error) return msg($('login-msg'), 'Код не підійшов. Перевір або запроси новий.');
+  if (error) {
+    console.error('verifyOtp:', error);
+    return msg($('login-msg'), 'Не вийшло: ' + (error.message || 'невідома помилка'));
+  }
   boot();
 };
 
