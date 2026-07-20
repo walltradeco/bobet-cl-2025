@@ -631,7 +631,11 @@
     font-family:'Inter',sans-serif;
     font-size:17px;
     min-width:0;
+    padding:6px 10px;
+    max-width:100%;
   }
+  /* назва результату не обрізається трьома крапками — краще трохи менший шрифт */
+  td.sb-actual .result-pill .team span{overflow:visible; text-overflow:clip; white-space:nowrap;}
   table.special td.sb-val{
     text-align:center;
     font-family:'JetBrains Mono',monospace;
@@ -940,7 +944,7 @@
     table.special th.sb-th-player{font-size:21px;}
     table.special td.sb-label{font-size:20px;}
     table.special td.sb-val{font-size:20px;}
-    td.sb-actual .result-pill{font-size:19px;}
+    td.sb-actual .result-pill{font-size:17px; padding:6px 10px;}
 
     table.gp-table td{font-size:19px;}
     table.gp-table th.gp-player{font-size:20px;}
@@ -2671,7 +2675,7 @@ function renderSpecialBets(data){
   ${renderPointsSummary(players, grandTotals)}
   <div class="table-card">
     <table class="sheet-table special">
-      ${colGroup([22, 12], players.length)}
+      ${colGroup([20, 17], players.length)}
       <thead>
         <tr>
           <th class="sb-th">Question</th>
