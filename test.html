@@ -1,0 +1,3011 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>BoBet · Fantasy League</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #0E1410;
+    --panel: #151D17;
+    --panel-2: #1B251D;
+    --panel-3: #212D23;
+    --line: #2A362B;
+    --text: #EDEFE8;
+    --text-dim: #8B9A8C;
+    --gold: #E8B23C;
+    --teal: #6FAFAF;
+    --blue: #5E97D0;
+    --purple: #A98FDB;
+    --purple-soft: rgba(169,143,219,0.12);
+    --green: #4CAE6B;
+    --green-soft: rgba(76,174,107,0.14);
+    --red: #C75C4A;
+    --red-soft: rgba(199,92,74,0.14);
+    --gold-soft: rgba(232,178,60,0.10);
+    --field-line: rgba(237,239,232,0.06);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      repeating-linear-gradient(0deg, var(--field-line) 0px, var(--field-line) 1px, transparent 1px, transparent 64px),
+      var(--bg);
+    color:var(--text);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{max-width:2100px;margin:0 auto;padding:0 48px 80px;}
+
+  /* ===== HEADER ===== */
+  header{
+    padding:36px 0 0;
+    border-bottom:1px solid var(--line);
+    margin-bottom:28px;
+  }
+  .head-top{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    gap:16px;
+    margin-bottom:22px;
+  }
+  .brand-tag{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    letter-spacing:0.14em;
+    text-transform:uppercase;
+    color:var(--green);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:42px;
+    line-height:1.05;
+    margin:0;
+    letter-spacing:-0.01em;
+    text-transform:uppercase;
+  }
+  .meta-block{
+    text-align:right;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:var(--text-dim);
+  }
+  #refresh-btn{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:8px;
+    transition:border-color .15s;
+  }
+  #refresh-btn:hover{border-color:var(--green);}
+  #refresh-btn:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+  #refresh-btn:disabled{opacity:0.6; cursor:wait;}
+
+  nav.tournaments{
+    display:flex;
+    gap:8px;
+    flex-wrap:wrap;
+    padding-bottom:20px;
+  }
+  nav.tournaments button{
+    background:var(--panel);
+    border:1px solid var(--line);
+    color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    padding:12px 24px;
+    border-radius:8px;
+    cursor:pointer;
+    transition:all .15s;
+  }
+  nav.tournaments button:hover{color:var(--text); border-color:var(--green);}
+  nav.tournaments button.active{
+    background:var(--green);
+    border-color:var(--green);
+    color:#0E1410;
+  }
+  nav.tournaments button:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+
+  nav.tabs{
+    display:flex;
+    gap:4px;
+    margin-bottom:28px;
+    overflow-x:auto;
+    border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    background:transparent;
+    border:none;
+    color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;
+    font-size:17px;
+    font-weight:600;
+    padding:12px 18px;
+    cursor:pointer;
+    white-space:nowrap;
+    border-bottom:2px solid transparent;
+    transition:color .15s, border-color .15s;
+  }
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{color:var(--green); border-bottom-color:var(--green);}
+  nav.tabs button:focus-visible{outline:2px solid var(--green); outline-offset:-2px;}
+
+  /* ===== LEADERBOARDS ===== */
+  .boards{
+    display:grid;
+    grid-template-columns:repeat(auto-fit, minmax(300px, 1fr));
+    gap:24px;
+    align-items:start;
+  }
+  .board{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:hidden;
+  }
+  .board-head{
+    padding:14px 18px;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    border-bottom:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--text);
+  }
+  /* stage accents (match the sheet: Group=teal, Play-off=blue, General=gold) */
+  .board.stage-group .board-head{color:var(--teal); box-shadow:inset 0 3px 0 var(--teal);}
+  .board.stage-playoff .board-head{color:var(--blue); box-shadow:inset 0 3px 0 var(--blue);}
+  .board.stage-knockout .board-head{color:#B98FE0; box-shadow:inset 0 3px 0 #B98FE0;}
+  .board.stage-general .board-head{color:var(--gold); box-shadow:inset 0 3px 0 var(--gold);}
+  .lb-row{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:16px 22px;
+    border-bottom:1px solid var(--line);
+    transition:background .12s;
+  }
+  .lb-row:last-child{border-bottom:none;}
+  .lb-row.p1{background:linear-gradient(90deg, rgba(232,178,60,0.16), rgba(232,178,60,0.03));}
+  .lb-row.p2{background:linear-gradient(90deg, rgba(199,205,195,0.14), rgba(199,205,195,0.02));}
+  .lb-row.p3{background:linear-gradient(90deg, rgba(201,123,74,0.14), rgba(201,123,74,0.02));}
+  .lb-rank{
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    font-weight:700;
+    min-width:44px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--text-dim);
+    flex-shrink:0;
+  }
+  .lb-row.p1 .lb-rank{color:var(--gold);}
+  .lb-row.p2 .lb-rank{color:#C7CDC3;}
+  .lb-row.p3 .lb-rank{color:#C97B4A;}
+  .lb-rank .crown{font-size:26px;}
+  .lb-name{
+    flex:1;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:21px;
+    font-weight:500;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .lb-row.p1 .lb-name, .lb-row.p2 .lb-name, .lb-row.p3 .lb-name{font-weight:700;}
+  .lb-pts{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:25px;
+    color:var(--text);
+    flex-shrink:0;
+    font-variant-numeric:tabular-nums;
+  }
+  .lb-row.p1 .lb-pts{color:var(--gold);}
+  .lb-row.p2 .lb-pts{color:#C7CDC3;}
+  .lb-row.p3 .lb-pts{color:#C97B4A;}
+
+  /* ===== MATCHES ===== */
+  .matches-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:auto;
+  }
+  table.matches{
+    width:100%;
+    border-collapse:collapse;
+    font-size:15px;
+    table-layout:fixed;
+  }
+  table.matches thead th{
+    position:sticky;
+    top:0;
+    z-index:2;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--line);
+    padding:12px 12px 10px;
+    text-align:center;
+    vertical-align:bottom;
+  }
+  table.matches thead th.meta{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    padding:12px 12px 10px;
+  }
+  table.matches thead th.meta.th-game{text-align:center;}
+  /* separate Points totals row (gold), above the player-names row */
+  table.matches thead tr.totals-row th{
+    background:var(--gold-soft);
+    padding:8px 12px;
+    border-bottom:1px solid var(--line);
+    text-align:center;
+  }
+  table.matches thead th.totals-label{
+    text-align:right;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:15px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+  }
+  table.matches thead th.totals-val{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:16px;
+    color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+  table.matches thead th.p-name-cell{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--text);
+    padding:12px;
+  }
+  .player-head{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+  }
+  .player-head .p-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    color:var(--text);
+    letter-spacing:0.01em;
+  }
+  .player-head .p-total{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:14px;
+    color:var(--gold);
+    background:var(--gold-soft);
+    padding:3px 12px;
+    border-radius:20px;
+    font-variant-numeric:tabular-nums;
+  }
+  table.matches td{
+    padding:14px 10px;
+    border-bottom:1px solid var(--line);
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:19px;
+    color:var(--text-dim);
+    white-space:nowrap;
+  }
+  table.matches tbody tr:last-child td{border-bottom:none;}
+  td.c-date{
+    text-align:center;
+    font-size:16px;
+    color:var(--text-dim);
+    white-space:normal;
+  }
+  td.c-game{
+    text-align:center;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:20px;
+    color:var(--text);
+    white-space:normal;
+  }
+  .flag{
+    display:inline-block;
+    width:24px;
+    height:18px;
+    border-radius:2px;
+    object-fit:cover;
+    vertical-align:middle;
+    flex-shrink:0;
+    box-shadow:0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .crest{
+    display:inline-block;
+    width:22px;
+    height:22px;
+    object-fit:contain;
+    vertical-align:middle;
+    flex-shrink:0;
+  }
+  .team{display:inline-flex; align-items:center; gap:8px;}
+  .game-teams{display:inline-flex; align-items:center; justify-content:center; gap:7px; flex-wrap:wrap;}
+  .game-teams .vs{color:var(--text-dim); margin:0 2px;}
+  td.c-result{
+    font-weight:700;
+    font-size:20px;
+    color:var(--gold);
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
+  }
+  .result-pill{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:8px;
+    min-width:68px;
+    max-width:100%;
+    padding:6px 14px;
+    border-radius:8px;
+    background:rgba(232,178,60,0.22);
+    border:1px solid rgba(232,178,60,0.55);
+    color:#F5D488;
+    font-weight:700;
+    font-size:20px;
+    letter-spacing:0.03em;
+  }
+  .result-pill .team{gap:8px; min-width:0;}
+  .result-pill .team span{overflow:hidden; text-overflow:ellipsis;}
+  table.matches thead th.th-result{color:var(--gold);}
+  td.pred{position:relative;}
+  td.pred.exact{
+    background:rgba(76,174,107,0.45);
+    color:#EFFAF0;
+    font-weight:700;
+    box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);
+  }
+  /* вгаданий результат (перемога/нічия) — без заливки, лише яскравий текст */
+  td.pred.outcome{
+    color:var(--text);
+    font-weight:700;
+  }
+  .chip.outcome{background:rgba(237,239,232,0.9);}
+  tr.day-start td{border-top:2px solid var(--panel-3);}
+  tr.day-even td.c-date, tr.day-even td.c-game{background:rgba(255,255,255,0.02);}
+  /* stage separators (1/8, 1/4, Semifinals, Final) */
+  tr.sep-row td{
+    background:var(--panel-3);
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:13px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--gold);
+    text-align:center;
+    padding:10px 12px;
+  }
+  .legend{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-top:14px;
+    font-size:12px;
+    color:var(--text-dim);
+  }
+  .legend span{display:inline-flex; align-items:center; gap:7px;}
+  .chip{
+    display:inline-block;
+    width:22px; height:14px;
+    border-radius:3px;
+  }
+  .chip.exact{background:rgba(76,174,107,0.45); box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);}
+
+  /* ===== GROUPS BLOCK (Group A–F team compositions) ===== */
+  .groups-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(160px, 1fr));
+    gap:14px;
+    margin-bottom:24px;
+  }
+  .group-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+  }
+  .group-card .g-head{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:12px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    padding:9px 14px;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--line);
+  }
+  .group-card .g-team{
+    font-size:13px;
+    padding:7px 14px;
+    border-bottom:1px solid var(--line);
+    color:var(--text);
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .group-card .g-team:last-child{border-bottom:none;}
+
+  /* ===== GROUP POSITIONS ===== */
+  .gp-wrap{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:18px;
+    margin-bottom:22px;
+    align-items:start;
+  }
+  .gp-block{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:auto;
+  }
+  .gp-head{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:12px 16px;
+    background:var(--panel-2);
+    border-bottom:1px solid var(--line);
+  }
+  .gp-title{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--gold);
+  }
+  table.gp-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:15px;
+  }
+  table.gp-table th{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:15px;
+    text-transform:uppercase;
+    letter-spacing:0.06em;
+    color:var(--text-dim);
+    padding:9px 14px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  table.gp-table th.gp-player{
+    color:var(--text);
+    font-weight:700;
+    font-size:18px;
+    letter-spacing:0.02em;
+    text-transform:none;
+  }
+  table.gp-table th.gp-seed-h{color:var(--text-dim);}
+  table.gp-table th.gp-actual-h{color:var(--gold); font-weight:700; font-size:16px;}
+  table.gp-table td{
+    padding:11px 16px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+    font-size:17px;
+    text-align:center;
+  }
+  table.gp-table .team{justify-content:center;}
+  table.gp-table tbody tr:last-child td{border-bottom:none;}
+  .gp-rank{
+    font-family:'JetBrains Mono',monospace;
+    color:var(--text-dim);
+    width:44px;
+    font-size:15px;
+    text-align:center;
+  }
+  .gp-seed{
+    color:var(--text-dim);
+    border-right:1px solid var(--line);
+  }
+  .gp-seed .team{gap:7px;}
+  .gp-seed .flag{width:20px; height:15px;}
+  .gp-actualteam{
+    font-weight:600;
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
+  }
+  .gp-actualteam .result-pill{
+    font-family:'Inter',sans-serif;
+    font-size:16px;
+    padding:4px 12px;
+    min-width:0;
+  }
+  .gp-actualteam .result-pill .flag{width:20px; height:15px;}
+  .gp-actualteam .team, .gp-pred .team{gap:7px;}
+  .gp-actualteam .flag, .gp-pred .flag{width:20px; height:15px;}
+  .gp-pred{color:var(--text-dim);}
+  .gp-pred.hit{
+    background:var(--green-soft);
+    color:var(--green);
+    font-weight:700;
+  }
+  /* Points summary on top */
+  .gp-summary{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-bottom:22px;
+  }
+  .gp-summary-cell{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:6px;
+    min-width:96px;
+    flex:1;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .gp-summary-name{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    color:var(--text);
+  }
+  .gp-summary-pts{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:24px;
+    color:var(--gold);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ===== SPECIAL BETS ===== */
+  table.special{table-layout:fixed;}
+  table.special th.sb-th{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:16px;
+    font-weight:700;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+  }
+  table.special th.sb-th-player{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:19px;
+    color:var(--text);
+    text-transform:none;
+    letter-spacing:0.01em;
+  }
+  table.special td.sb-label{
+    text-align:left;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:18px;
+    color:var(--text);
+    white-space:normal;
+  }
+  table.special td.sb-actual{text-align:center;}
+  table.special td.sb-actual{
+    background:rgba(232,178,60,0.07);
+    box-shadow:inset 1px 0 0 rgba(232,178,60,0.28), inset -1px 0 0 rgba(232,178,60,0.28);
+  }
+  table.special th.sb-th-actual{color:var(--gold);}
+  td.sb-actual .result-pill{
+    font-family:'Inter',sans-serif;
+    font-size:17px;
+    min-width:0;
+  }
+  table.special td.sb-val{
+    text-align:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:18px;
+    white-space:normal;
+  }
+  table.special td.sb-val .team{justify-content:center; gap:7px;}
+  table.special td.sb-val.sb-hit{
+    background:rgba(76,174,107,0.45);
+    color:#EFFAF0;
+    font-weight:700;
+    box-shadow:inset 0 0 0 1px rgba(76,174,107,0.7);
+  }
+  table.special tr.sb-points td{
+    background:var(--gold-soft);
+    border-bottom:1px solid var(--line);
+  }
+  table.special tr.sb-points td.sb-label{color:var(--gold);}
+  table.special tr.sb-points td.sb-val{
+    color:var(--gold);
+    font-weight:700;
+  }
+  table.special tr.sb-points td.sb-val.scored{color:var(--green);}
+
+  /* ===== BOOSTS ===== */
+  .boosts-card{margin-top:22px;}
+  table.boosts th.boost-head{
+    color:var(--gold);
+    font-size:13px;
+    letter-spacing:0.08em;
+    white-space:nowrap;
+  }
+  table.boosts th.boost-player{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:17px;
+    color:var(--text);
+    text-transform:none;
+    letter-spacing:0.01em;
+  }
+  table.boosts td.boost-label{
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:700;
+    font-size:16px;
+    color:var(--gold);
+    background:var(--gold-soft);
+    white-space:nowrap;
+  }
+  table.boosts td.boost-val{
+    text-align:center;
+    font-size:15px;
+    color:var(--text-dim);
+    white-space:normal;
+    line-height:1.6;
+    padding:12px 8px;
+  }
+  table.boosts{table-layout:fixed;}
+  .boost-scores{
+    display:block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:15px;
+    margin-top:4px;
+    color:var(--text-dim);
+  }
+  .boost-scores b{color:var(--text); font-weight:700;}
+  table.boosts td.boost-val .flag, table.boosts td.boost-val .crest{width:18px; height:13px;}
+  table.boosts td.boost-val .crest{height:18px;}
+
+  /* ===== BOOST COLOURS (як контури в таблиці) ===== */
+  :root{
+    --b2x: #C2568F;
+    --b3x: #57BE7A;
+    --bdp: #5E97D0;
+    --bot: #E8B23C;
+    --bgen: #A98FDB;
+  }
+  td.pred.boosted{
+    position:relative;
+    border-radius:4px;
+  }
+  td.pred.b2x{box-shadow:inset 0 0 0 3px var(--b2x);}
+  td.pred.b3x{box-shadow:inset 0 0 0 3px var(--b3x);}
+  td.pred.bdp{box-shadow:inset 0 0 0 3px var(--bdp);}
+  td.pred.bot{box-shadow:inset 0 0 0 3px var(--bot);}
+  td.pred.bgen{box-shadow:inset 0 0 0 3px var(--bgen);}
+  /* вгаданий рахунок + буст: лишаємо зелену заливку і контур буста поверх */
+  td.pred.exact.b2x{box-shadow:inset 0 0 0 3px var(--b2x);}
+  td.pred.exact.b3x{box-shadow:inset 0 0 0 3px var(--b3x);}
+  td.pred.exact.bdp{box-shadow:inset 0 0 0 3px var(--bdp);}
+  td.pred.exact.bot{box-shadow:inset 0 0 0 3px var(--bot);}
+  .dp-alt{
+    display:block;
+    font-size:13px;
+    color:var(--text-dim);
+    margin-top:2px;
+  }
+  td.pred.exact .dp-alt{color:rgba(239,250,240,0.75);}
+  .chip.b2x{background:transparent; box-shadow:inset 0 0 0 3px var(--b2x);}
+  .chip.b3x{background:transparent; box-shadow:inset 0 0 0 3px var(--b3x);}
+  .chip.bdp{background:transparent; box-shadow:inset 0 0 0 3px var(--bdp);}
+  .chip.bot{background:transparent; box-shadow:inset 0 0 0 3px var(--bot);}
+  .chip.bgen{background:transparent; box-shadow:inset 0 0 0 3px var(--bgen);}
+  table.boosts td.boost-label.b2x{color:var(--b2x); background:rgba(194,86,143,0.12); box-shadow:inset 3px 0 0 var(--b2x);}
+  table.boosts td.boost-label.b3x{color:var(--b3x); background:rgba(87,190,122,0.12); box-shadow:inset 3px 0 0 var(--b3x);}
+  table.boosts td.boost-label.bdp{color:var(--bdp); background:rgba(94,151,208,0.12); box-shadow:inset 3px 0 0 var(--bdp);}
+  table.boosts td.boost-label.bot{color:var(--bot); background:var(--gold-soft); box-shadow:inset 3px 0 0 var(--bot);}
+
+  /* ===== GENERIC TABLE ===== */
+  .table-card{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:12px;
+    overflow:auto;
+    margin-bottom:24px;
+  }
+  table.sheet-table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:15px;
+  }
+  table.sheet-table th{
+    text-align:left;
+    font-family:'Space Grotesk',sans-serif;
+    font-weight:600;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--text-dim);
+    background:var(--panel-2);
+    padding:11px 14px;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+    position:sticky;
+    top:0;
+  }
+  table.sheet-table td{
+    padding:11px 16px;
+    border-bottom:1px solid var(--line);
+    color:var(--text);
+    white-space:nowrap;
+  }
+  table.sheet-table tbody tr:last-child td{border-bottom:none;}
+  table.sheet-table tbody tr:nth-child(even){background:rgba(255,255,255,0.015);}
+  table.sheet-table tbody tr:hover{background:rgba(76,174,107,0.06);}
+  /* uniform Points highlighting in generic tables */
+  table.sheet-table th.th-points{
+    color:var(--gold);
+    font-weight:700;
+  }
+  table.sheet-table td.td-points{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    color:var(--gold);
+    background:var(--gold-soft);
+    font-variant-numeric:tabular-nums;
+  }
+
+  /* ===== RULES ===== */
+  .rules-block{margin-bottom:26px;}
+  table.rules th.group-head{
+    text-align:center;
+    font-family:'Space Grotesk',sans-serif;
+    font-size:14px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    color:var(--text);
+    background:var(--panel-3);
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    border-left:1px solid var(--line);
+  }
+  table.rules th.sub-head{
+    text-align:center;
+    font-size:14px;
+    color:var(--text);
+  }
+  table.rules thead th{padding:14px 14px;}
+  table.rules td{padding:15px 14px;}
+  table.rules td{text-align:center;}
+  table.rules td.c-condition{
+    text-align:left;
+    font-family:'Inter',sans-serif;
+    font-weight:500;
+    font-size:18px;
+    line-height:1.5;
+    white-space:normal;
+    min-width:220px;
+  }
+  table.rules td.c-points{
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:20px;
+    color:var(--gold);
+    background:var(--gold-soft);
+  }
+  .yn{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-size:14px;
+    font-weight:700;
+    text-transform:uppercase;
+    padding:5px 16px;
+    border-radius:20px;
+  }
+  .yn.yes{color:var(--green); background:var(--green-soft); border:1px solid rgba(76,174,107,0.4);}
+  .yn.no{color:var(--red); background:var(--red-soft); border:1px solid rgba(199,92,74,0.4);}
+  .rules-note{
+    margin-top:16px;
+    padding:16px 20px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    font-size:16px;
+    line-height:1.7;
+    color:var(--text-dim);
+  }
+
+  .status-line{
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    padding:30px 0;
+    text-align:center;
+  }
+  .status-line.err{color:var(--red);}
+
+  ::-webkit-scrollbar{height:8px; width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line); border-radius:4px;}
+
+  /* ===== RESPONSIVE ===== */
+  @media(max-width:1000px){
+    h1{font-size:28px;}
+  }
+  @media(max-width:640px){
+    .wrap{padding:0 12px 60px;}
+    header{padding-top:22px;}
+    .head-top{flex-direction:column; gap:10px; margin-bottom:14px;}
+    .meta-block{text-align:left; display:flex; align-items:center; gap:12px;}
+    #refresh-btn{margin-top:0;}
+    h1{font-size:24px;}
+    nav.tournaments{padding-bottom:14px; gap:6px;}
+    nav.tournaments button{padding:8px 12px; font-size:12px;}
+    nav.tabs{margin-bottom:20px;}
+    nav.tabs button{padding:9px 12px; font-size:13px;}
+    .boards{gap:14px;}
+    .lb-row{padding:10px 14px; gap:10px;}
+    .lb-name{font-size:14px;}
+    .lb-pts{font-size:15px;}
+    .lb-rank{min-width:34px;}
+    table.matches{font-size:13px;}
+    table.matches td{padding:8px 5px; font-size:13px;}
+    table.matches thead th{padding:9px 5px 8px;}
+    table.matches thead th.p-name-cell{font-size:13px;}
+    td.c-game{font-size:13px;}
+    td.c-result{font-size:14px;}
+    td.c-date{font-size:11px;}
+    .dp-alt{font-size:10px;}
+    .player-head .p-name{font-size:12px;}
+    .player-head .p-total{font-size:11px; padding:1px 8px;}
+    table.sheet-table{font-size:13px;}
+    table.sheet-table td{padding:8px 6px;}
+    table.sheet-table th{padding:9px 6px;}
+    table.special td.sb-label, table.special th.sb-th-player{font-size:13px;}
+    table.special td.sb-val{font-size:13px;}
+    table.boosts td.boost-val, .boost-scores{font-size:12px;}
+    .gp-summary-name{font-size:13px;}
+    .gp-summary-pts{font-size:18px;}
+    .flag{width:20px; height:15px;}
+    .yn{padding:2px 8px; font-size:10px;}
+  }
+
+  /* ===================================================================
+     ВЕЛИКІ ЕКРАНИ (зовнішні монітори, Studio Display, 4K/5K).
+     Нижче 1800px нічого не змінюється — MacBook Air лишається як був.
+     =================================================================== */
+  @media(min-width:1800px){
+    .wrap{padding:0 64px 90px;}
+    h1{font-size:48px;}
+    .brand-tag{font-size:14px;}
+    nav.tournaments button{font-size:17px; padding:13px 26px;}
+    nav.tabs button{font-size:18px; padding:13px 20px;}
+
+    .board-head{font-size:16px; padding:16px 20px;}
+    .lb-row{padding:18px 24px;}
+    .lb-name{font-size:23px;}
+    .lb-pts{font-size:28px;}
+    .lb-rank .crown{font-size:29px;}
+
+    .gp-summary-cell{padding:16px 18px;}
+    .gp-summary-name{font-size:18px;}
+    .gp-summary-pts{font-size:27px;}
+
+    table.matches{font-size:16px;}
+    table.matches td{padding:16px 12px; font-size:21px;}
+    table.matches thead th.p-name-cell{font-size:21px;}
+    table.matches thead th.meta{font-size:17px;}
+    td.c-game{font-size:22px;}
+    td.c-date{font-size:17px;}
+    td.c-result, .result-pill{font-size:22px;}
+    .result-pill{padding:7px 16px; min-width:76px;}
+    .dp-alt{font-size:14px;}
+    .flag{width:26px; height:19px;}
+    .crest{width:24px; height:24px;}
+
+    table.special th.sb-th-player{font-size:21px;}
+    table.special td.sb-label{font-size:20px;}
+    table.special td.sb-val{font-size:20px;}
+    td.sb-actual .result-pill{font-size:19px;}
+
+    table.gp-table td{font-size:19px;}
+    table.gp-table th.gp-player{font-size:20px;}
+    .gp-actualteam .result-pill{font-size:18px;}
+
+    table.boosts th.boost-player{font-size:19px;}
+    table.boosts td.boost-val, .boost-scores{font-size:17px;}
+
+    table.rules td.c-condition{font-size:20px;}
+    table.rules td.c-points{font-size:22px;}
+    table.rules th.group-head{font-size:15px;}
+    table.rules th.sub-head{font-size:15px;}
+    .yn{font-size:15px; padding:6px 18px;}
+    .rules-note{font-size:17px;}
+    .legend{font-size:14px;}
+  }
+
+  /* 5K / надширокі монітори */
+  @media(min-width:2600px){
+    .wrap{max-width:2560px; padding:0 80px 100px;}
+    h1{font-size:54px;}
+    table.matches td{font-size:23px;}
+    td.c-game{font-size:24px;}
+    td.c-result, .result-pill{font-size:24px;}
+    table.matches thead th.p-name-cell{font-size:23px;}
+    .lb-name{font-size:25px;}
+    .lb-pts{font-size:30px;}
+    .gp-summary-pts{font-size:30px;}
+  }
+
+  /* ===================================================================
+     ПЛАНШЕТИ І ВУЗЬКІ ВІКНА: широкі таблиці не стискаються в кашу,
+     а прокручуються горизонтально всередині своєї картки.
+     =================================================================== */
+  @media(max-width:1100px){
+    .matches-card, .table-card, .gp-block{-webkit-overflow-scrolling:touch;}
+    table.matches{min-width:820px;}
+    table.special{min-width:760px;}
+    table.gp-table{min-width:720px;}
+    table.boosts{min-width:760px;}
+    table.rules{min-width:720px;}
+    table.sheet-table{min-width:640px;}
+  }
+
+  /* ===================================================================
+     iPhone (15 / 16 / 17, у т.ч. Pro Max) — 390-440pt
+     =================================================================== */
+  @media(max-width:640px){
+    .wrap{
+      padding-left:max(12px, env(safe-area-inset-left));
+      padding-right:max(12px, env(safe-area-inset-right));
+      padding-bottom:calc(60px + env(safe-area-inset-bottom));
+    }
+    header{padding-top:max(18px, env(safe-area-inset-top));}
+    h1{font-size:30px; letter-spacing:-0.02em;}
+    .brand-tag{font-size:11px; margin-bottom:6px;}
+    .meta-block{font-size:12px; gap:10px;}
+    #refresh-btn{font-size:13px; padding:10px 14px;}
+
+    nav.tournaments{gap:8px; padding-bottom:16px;}
+    nav.tournaments button{font-size:13px; padding:10px 14px;}
+    nav.tabs button{font-size:14px; padding:11px 12px;}
+
+    /* борди */
+    .board-head{font-size:14px; padding:12px 16px;}
+    .lb-row{padding:12px 14px; gap:12px;}
+    .lb-name{font-size:17px;}
+    .lb-pts{font-size:19px;}
+    .lb-rank{min-width:38px;}
+    .lb-rank .crown{font-size:22px;}
+
+    /* картки очок — по дві-три в ряд, а не стовпчиком */
+    .gp-summary{gap:8px;}
+    .gp-summary-cell{min-width:0; flex:1 1 28%; padding:10px 8px; gap:3px;}
+    .gp-summary-name{font-size:13px;}
+    .gp-summary-pts{font-size:20px;}
+
+    /* таблиці прокручуються вбік, а не стискаються */
+    table.matches{font-size:14px; min-width:700px;}
+    table.matches td{padding:11px 6px; font-size:16px;}
+    table.matches thead th{padding:10px 6px 9px;}
+    table.matches thead th.p-name-cell{font-size:15px;}
+    table.matches thead th.meta{font-size:13px;}
+    td.c-game{font-size:15px;}
+    td.c-date{font-size:12px;}
+    td.c-result, .result-pill{font-size:16px;}
+    .result-pill{min-width:52px; padding:5px 10px;}
+    .dp-alt{font-size:11px;}
+    .flag{width:20px; height:15px;}
+    .crest{width:19px; height:19px;}
+    td.pred.b2x{box-shadow:inset 0 0 0 2px var(--b2x);}
+    td.pred.b3x{box-shadow:inset 0 0 0 2px var(--b3x);}
+    td.pred.bdp{box-shadow:inset 0 0 0 2px var(--bdp);}
+    td.pred.bot{box-shadow:inset 0 0 0 2px var(--bot);}
+
+    table.special{min-width:660px;}
+    table.special td.sb-label, table.special th.sb-th-player{font-size:14px;}
+    table.special td.sb-val{font-size:14px;}
+    td.sb-actual .result-pill{font-size:13px; padding:4px 8px;}
+
+    table.gp-table{min-width:640px; font-size:13px;}
+    table.gp-table td{padding:9px 8px; font-size:14px;}
+    table.gp-table th{padding:8px 8px; font-size:13px;}
+    table.gp-table th.gp-player{font-size:14px;}
+    .gp-actualteam .result-pill{font-size:13px; padding:3px 8px;}
+    .gp-title{font-size:13px;}
+
+    table.boosts{min-width:660px;}
+    table.boosts td.boost-val, .boost-scores{font-size:12px;}
+    table.boosts th.boost-player{font-size:14px;}
+    table.boosts td.boost-label{font-size:13px;}
+
+    table.rules{min-width:660px;}
+    table.rules td.c-condition{font-size:14px; min-width:180px;}
+    table.rules td.c-points{font-size:16px;}
+    table.rules th.group-head{font-size:11px;}
+    table.rules th.sub-head{font-size:11px;}
+    .yn{font-size:11px; padding:4px 10px;}
+    .rules-note{font-size:14px; padding:14px 16px;}
+
+    .legend{font-size:12px; gap:14px;}
+    ::-webkit-scrollbar{height:6px;}
+  }
+
+  /* маленькі iPhone (SE / mini) */
+  @media(max-width:380px){
+    h1{font-size:26px;}
+    nav.tournaments button{font-size:12px; padding:9px 12px;}
+    .gp-summary-cell{flex:1 1 44%;}
+  }
+
+  /* ===================== КАБІНЕТ (модалка з app.html) ===================== */
+  #cabinet-btn{
+    background:var(--panel-2);
+    border:1px solid var(--gold);
+    color:var(--gold);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:6px;
+    cursor:pointer;
+    margin-top:8px;
+    margin-left:8px;
+    transition:background .15s;
+  }
+  #cabinet-btn:hover{background:var(--gold-soft);}
+  #cabinet-btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+
+  #cabinet-overlay{
+    position:fixed; inset:0; z-index:9000;
+    background:rgba(6,10,7,0.86);
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    display:none;
+    padding:24px 16px;
+  }
+  #cabinet-overlay.open{display:block;}
+  #cabinet-shell{
+    position:relative;
+    max-width:820px; height:100%; margin:0 auto;
+    background:var(--bg);
+    border:1px solid var(--line);
+    border-radius:14px;
+    overflow:hidden;
+    box-shadow:0 20px 60px rgba(0,0,0,0.55);
+    display:flex; flex-direction:column;
+  }
+  #cabinet-bar{
+    flex:0 0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  #cabinet-bar .t{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
+  }
+  #cabinet-bar .t span{color:var(--gold);}
+  #cabinet-close{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    font-family:'JetBrains Mono',monospace; font-size:13px;
+    padding:7px 14px; border-radius:6px; cursor:pointer;
+  }
+  #cabinet-close:hover{border-color:var(--red); color:var(--red);}
+  #cabinet-frame{
+    flex:1 1 auto; width:100%; border:0; display:block; background:var(--bg);
+  }
+  body.cabinet-lock{overflow:hidden;}
+
+  @media (max-width:720px){
+    #cabinet-overlay{padding:0;}
+    #cabinet-shell{border-radius:0; border:0; max-width:none;}
+    #cabinet-btn{margin-left:0;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="head-top">
+      <div>
+        <p class="brand-tag">BoBet · Fantasy League</p>
+        <h1 id="tournament-title"></h1>
+      </div>
+      <div class="meta-block">
+        <div id="updated-at">Завантаження...</div>
+        <button id="refresh-btn">⟳ Оновити дані</button>
+        <button id="cabinet-btn">⚽ Кабінет</button>
+      </div>
+    </div>
+    <nav class="tournaments" id="tournaments"></nav>
+  </header>
+
+  <nav class="tabs" id="tabs"></nav>
+  <div id="content"></div>
+
+</div>
+
+<!-- ===================== КАБІНЕТ ===================== -->
+<div id="cabinet-overlay" role="dialog" aria-modal="true" aria-label="Кабінет учасника">
+  <div id="cabinet-shell">
+    <div id="cabinet-bar">
+      <div class="t">Bo<span>Bet</span> · Кабінет</div>
+      <button id="cabinet-close" type="button">Закрити ✕</button>
+    </div>
+    <iframe id="cabinet-frame" title="Кабінет учасника" allow="clipboard-write"></iframe>
+  </div>
+</div>
+
+<script>
+/* ======== CONFIG ======== */
+const TOURNAMENTS = [
+  {
+    key:'euro2024',
+    title:'Євро 2024',
+    sheetId:'1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc',
+    tabs:[
+      { sheet:'Leaderboards',                 kind:'leaderboard',    gid:'0' },
+      { sheet:'Group',                        kind:'auto',           gid:'922722732' },
+      { sheet:'Group positions',              kind:'groupPositions', gid:'2021317951' },
+      { sheet:'Play-off',                     kind:'auto',           gid:'682618555' },
+      { sheet:'1&2place + Mudryk + Ukraine',  kind:'special',        gid:'1945041354' },
+      { sheet:'Rules + Prize pool',           kind:'rules',          gid:'1147745050' },
+    ]
+  },
+  {
+    key:'cl2025',
+    title:'ЛЧ 2025',
+    sheetId:'1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U',
+    tabs:[
+      { sheet:'Leaderboards',                       kind:'leaderboard', gid:'0' },
+      { sheet:'Play-off',                           kind:'auto',        gid:'682618555' },
+      { sheet:'Knockout phase play-offs',           kind:'auto',        gid:'922722732' },
+      { sheet:'Knockout phase play-offs winners',   kind:'pairWinners', gid:'2021317951' },
+      { sheet:'1&2place + Real + Liverpool',        kind:'special',     gid:'1945041354' },
+      { sheet:'Rules + Prize pool',                 kind:'rules',       gid:'1147745050' },
+    ]
+  },
+  {
+    key:'clubwc2025',
+    title:'Клубний ЧС 2025',
+    sheetId:'1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ',
+    tabs:[
+      { sheet:'Leaderboards',           kind:'leaderboard', gid:'0' },
+      { sheet:'Group',                  kind:'auto',        gid:'922722732' },
+      { sheet:'Play-off',               kind:'auto',        gid:'682618555' },
+      { sheet:'Play-off bonus points',  kind:'special',     gid:'1945041354' },
+      { sheet:'Rules + Prize pool',     kind:'rules',       gid:'1147745050' },
+    ]
+  },
+  {
+    key:'wc2026',
+    title:'ЧС 2026',
+    sheetId:'1yDjFrJ-vE3ZbHrjzgvB1Z0_Ok-PbgTp4KEHJ-Cj5oRA',
+    tabs:[
+      { sheet:'Leaderboards',                       kind:'leaderboard',  gid:'0' },
+      { sheet:'Knockout phase play-offs',           kind:'auto',         gid:'922722732' },
+      { sheet:'(Knockout phase play-offs) winners', kind:'pairWinners',  gid:'2021317951' },
+      { sheet:'Play-off',                           kind:'auto',         gid:'682618555' },
+      { sheet:'Bonus questions (Play-off)',         kind:'special',      gid:'1945041354' },
+      { sheet:'Rules + Prize pool',                 kind:'rules',        gid:'1147745050' },
+    ]
+  },
+  {
+    key:'euroseason2026',
+    title:'EuroSeason 2026',
+    source:'supabase',
+    tabs:[
+      { sheet:'Leaderboards',      kind:'leaderboard', source:'leaderboard' },
+      { sheet:'August',            kind:'auto',    source:'month',   monthKey:'aug2026' },
+      { sheet:'August · Bonus',    kind:'special', source:'special', monthKey:'aug2026' },
+      { sheet:'September',         kind:'auto',    source:'month',   monthKey:'sep2026' },
+      { sheet:'September · Bonus', kind:'special', source:'special', monthKey:'sep2026' },
+      { sheet:'October',           kind:'auto',    source:'month',   monthKey:'oct2026' },
+      { sheet:'October · Bonus',   kind:'special', source:'special', monthKey:'oct2026' },
+      { sheet:'General · Bonus',   kind:'special', source:'special', monthKey:'season2026' },
+    ]
+  },
+];
+
+/* =====================================================================
+   ПЕРЕХІДНИК SUPABASE → СІТКА КЛІТИНОК
+
+   Наявні рендери index.html читають просту таблицю клітинок — таку,
+   якою її віддає Google Sheets. Тут ми будуємо рівно таку саму сітку,
+   але з бази. Завдяки цьому жоден рендер не переписується: сайт не
+   бачить різниці між архівним турніром і живим.
+   ===================================================================== */
+
+const SB_URL = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SB_KEY = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+
+const MONTHS = [
+  { key:'aug2026', label:'August' },
+  { key:'sep2026', label:'September' },
+  { key:'oct2026', label:'October' },
+];
+
+/* Сайт упізнає гравців за вбудованим списком імен. Щоб новий учасник
+   не зник із таблиці мовчки, доповнюємо цей список із бази. */
+function registerPlayers(names){
+  if(typeof KNOWN_PLAYERS === 'undefined') return;
+  names.forEach(n => {
+    const k = String(n).trim().toLowerCase();
+    if(k && !KNOWN_PLAYERS.includes(k)) KNOWN_PLAYERS.push(k);
+  });
+}
+
+async function sbGet(path){
+  const res = await fetch(SB_URL + '/rest/v1/' + path, {
+    headers:{ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+  });
+  if(!res.ok) throw new Error('база відповіла ' + res.status);
+  return res.json();
+}
+
+/* Порожня сітка потрібного розміру */
+function grid(rowCount, colCount){
+  return Array.from({ length: rowCount }, () => Array(colCount).fill(''));
+}
+
+function fmtScore(h, a){
+  return (h === null || h === undefined || a === null || a === undefined)
+    ? '' : h + ':' + a;
+}
+
+function fmtDate(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return p(d.getDate()) + '.' + p(d.getMonth() + 1) + '.' + d.getFullYear();
+}
+
+/* ---------------------------------------------------------------------
+   ЛІДЕРБОРД: чотири борди в ряд — August | September | October | General
+
+   Рендер шукає рядок із клітинками «Name». Кожна така клітинка задає
+   борд із колонок [№ | Name | Points], а назва борда лежить рядком вище
+   над колонкою №. Відтворюємо саме це.
+   --------------------------------------------------------------------- */
+async function buildLeaderboardRows(){
+  const tours = await sbGet(
+    'tournaments?select=id,key,title,status&key=in.(aug2026,sep2026,oct2026)');
+  const byKey = {};
+  tours.forEach(t => { byKey[t.key] = t; });
+
+  const monthly = await sbGet(
+    'leaderboard?select=tournament_id,display_name,total_points,place');
+  const season = await sbGet(
+    'season_leaderboard?select=display_name,total_points,place&order=place.asc');
+
+  // Склад гравців: беремо з будь-якого місяця, який уже видно.
+  const roster = [...new Set(monthly.map(r => r.display_name))];
+  registerPlayers(roster.concat(season.map(r => r.display_name)));
+
+  const boards = [];
+  for(const m of MONTHS){
+    const t = byKey[m.key];
+    const rows = t
+      ? monthly.filter(r => r.tournament_id === t.id).sort((a, b) => a.place - b.place)
+      : [];
+    // Місяць ще не стартував — показуємо борд із нулями, як у таблиці.
+    boards.push({
+      title: m.label,
+      rows: rows.length ? rows
+        : roster.map((n, i) => ({ place: 1, display_name: n, total_points: 0 }))
+    });
+  }
+  boards.push({ title:'General', rows: season });
+
+  const BOARD_W = 4;                       // №, Name, Points, порожня
+  const cols = boards.length * BOARD_W;
+  const depth = Math.max(1, ...boards.map(b => b.rows.length));
+  const out = grid(depth + 2, cols);
+
+  boards.forEach((b, bi) => {
+    const c = bi * BOARD_W;
+    out[0][c]     = b.title;               // назва борда над колонкою №
+    out[1][c]     = '№';
+    out[1][c + 1] = 'Name';
+    out[1][c + 2] = 'Points';
+    b.rows.forEach((r, ri) => {
+      out[ri + 2][c]     = r.place;
+      out[ri + 2][c + 1] = r.display_name;
+      out[ri + 2][c + 2] = r.total_points;
+    });
+  });
+
+  return out;
+}
+
+/* ---------------------------------------------------------------------
+   МІСЯЦЬ: список матчів по вікендах
+
+   Рендер шукає рядок із підписами Game і Result, імена гравців праворуч
+   від Result, а тотали — у рядку з підписом Points вище. Роздільник
+   стадії — рядок, де в колонці дати стоїть текст, а колонка Game порожня.
+   Саме так і робимо «Вікенд 1», «Вікенд 2».
+   --------------------------------------------------------------------- */
+async function buildMonthRows(tournamentKey){
+  const tours = await sbGet(
+    'tournaments?select=id,key&key=eq.' + tournamentKey);
+  if(!tours.length) return [['Цей місяць ще не відкрито']];
+  const tid = tours[0].id;
+
+  const weeks = await sbGet(
+    'gameweek_status?select=gameweek_id,number,title,deadline_at,is_open' +
+    '&tournament_id=eq.' + tid + '&order=number.asc');
+
+  const people = await sbGet(
+    'participants?select=id,display_name&tournament_id=eq.' + tid +
+    '&order=display_name.asc');
+
+  const board = await sbGet(
+    'match_board?select=gameweek_id,position,home_team,away_team,kickoff_at,' +
+    'home_score,away_score,display_name,pred_home,pred_away,' +
+    'pred_home_2,pred_away_2,boost_code');
+
+  const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
+
+  const totals = await sbGet(
+    'leaderboard?select=display_name,total_points&tournament_id=eq.' + tid);
+
+  const names = people.map(p => p.display_name);
+  registerPlayers(names);
+  if(!names.length) return [['У цьому місяці ще немає учасників']];
+
+  const COL_DATE = 0, COL_GAME = 1, COL_RES = 2, COL_FIRST = 4;
+  const cols = COL_FIRST + names.length;
+  const out = [];
+
+  // рядок тоталів
+  const totalRow = Array(cols).fill('');
+  totalRow[COL_DATE] = 'Points';
+  const totalByName = {};
+  totals.forEach(t => { totalByName[t.display_name] = t.total_points; });
+  names.forEach((n, i) => {
+    totalRow[COL_FIRST + i] = (totalByName[n] === undefined ? 0 : totalByName[n]);
+  });
+  out.push(totalRow);
+
+  // рядок шапки з іменами
+  const head = Array(cols).fill('');
+  head[COL_DATE] = 'Date';
+  head[COL_GAME] = 'Game';
+  head[COL_RES]  = 'Result';
+  names.forEach((n, i) => { head[COL_FIRST + i] = n; });
+  out.push(head);
+
+  // тіло: вікенд за вікендом
+  for(const w of weeks){
+    const sep = Array(cols).fill('');
+    sep[COL_DATE] = w.title || ('Вікенд ' + w.number);
+    out.push(sep);
+
+    const inWeek = board.filter(b => b.gameweek_id === w.gameweek_id);
+    const positions = [...new Set(inWeek.map(b => b.position))].sort((a, z) => a - z);
+
+    for(const pos of positions){
+      const cells = inWeek.filter(b => b.position === pos);
+      const first = cells[0];
+      const row = Array(cols).fill('');
+      row[COL_DATE] = fmtDate(first.kickoff_at);
+      row[COL_GAME] = first.home_team + ' — ' + first.away_team;
+      row[COL_RES]  = fmtScore(first.home_score, first.away_score);
+      names.forEach((n, i) => {
+        const c = cells.find(x => x.display_name === n);
+        row[COL_FIRST + i] = c ? fmtScore(c.pred_home, c.pred_away) : '';
+      });
+      out.push(row);
+    }
+  }
+
+  /* ---- блок бустів під таблицею ----
+     Рендер сам підсвітить клітинку матчу, на який поставлено буст: він
+     звіряє назву гри з цього блоку з назвою в таблиці вище. Тобто список
+     унизу й підсвітка робляться цим одним блоком. */
+  const used = board.filter(b => b.boost_code);
+  if(used.length){
+    const titleRow = Array(cols).fill('');
+    titleRow[COL_GAME] = 'Boosts';
+    out.push(titleRow);
+
+    const titleOf = {};
+    boostTypes.forEach(t => { titleOf[t.code] = t.title; });
+    const order = boostTypes.map(t => t.code).filter(c => used.some(u => u.boost_code === c));
+
+    for(const code of order){
+      const ofCode = used.filter(u => u.boost_code === code);
+      const depth = Math.max(...names.map(n =>
+        ofCode.filter(u => u.display_name === n).length));
+
+      for(let k = 0; k < depth; k++){
+        const row = Array(cols).fill('');
+        row[COL_RES] = titleOf[code] || code;
+        names.forEach((n, i) => {
+          const mine = ofCode.filter(u => u.display_name === n);
+          const u = mine[k];
+          if(!u) return;
+          let cell = u.home_team + ' — ' + u.away_team + '\n' +
+                     fmtScore(u.pred_home, u.pred_away);
+          const second = fmtScore(u.pred_home_2, u.pred_away_2);
+          if(second) cell += ' / ' + second;
+          row[COL_FIRST + i] = cell;
+        });
+        out.push(row);
+      }
+    }
+  }
+  return out;
+}
+
+
+/* ---------------------------------------------------------------------
+   БОНУСНІ ПИТАННЯ окремою вкладкою — як «Bonus questions» на ЧС.
+
+   Рендер шукає колонку з підписами Prediction / Points. Ліворуч від неї
+   стоїть правильна відповідь, ще лівіше — текст питання, а імена гравців
+   праворуч. Кожне питання займає два рядки: відповіді й бали.
+   --------------------------------------------------------------------- */
+async function buildSpecialRows(tournamentKey){
+  const tours = await sbGet('tournaments?select=id&key=eq.' + tournamentKey);
+  if(!tours.length) return [['Бонусні питання цього етапу ще не відкриті']];
+  const tid = tours[0].id;
+
+  const bets = await sbGet(
+    'special_bets?select=id,position,question,correct_answer' +
+    '&tournament_id=eq.' + tid + '&order=position.asc');
+  if(!bets.length) return [['Бонусних питань поки немає']];
+
+  const people = await sbGet(
+    'participants?select=id,display_name&tournament_id=eq.' + tid +
+    '&order=display_name.asc');
+  const answers = await sbGet(
+    'special_predictions?select=special_bet_id,participant_id,answer');
+  const points = await sbGet(
+    'special_points?select=special_bet_id,participant_id,points');
+
+  const names = people.map(p => p.display_name);
+  registerPlayers(names);
+
+  const COL_Q = 0, COL_ACTUAL = 1, COL_MARK = 2, COL_FIRST = 3;
+  const cols = COL_FIRST + names.length;
+  const out = [];
+
+  const head = Array(cols).fill('');
+  head[COL_Q] = 'Question';
+  head[COL_ACTUAL] = 'Final Result';
+  names.forEach((n, i) => { head[COL_FIRST + i] = n; });
+  out.push(head);
+
+  for(const b of bets){
+    const rowA = Array(cols).fill('');
+    rowA[COL_Q] = b.question;
+    rowA[COL_ACTUAL] = b.correct_answer || '';
+    rowA[COL_MARK] = 'Prediction';
+
+    const rowB = Array(cols).fill('');
+    rowB[COL_MARK] = 'Points';
+
+    people.forEach((p, i) => {
+      const a = answers.find(x => x.special_bet_id === b.id && x.participant_id === p.id);
+      const pt = points.find(x => x.special_bet_id === b.id && x.participant_id === p.id);
+      rowA[COL_FIRST + i] = a ? a.answer : '';
+      rowB[COL_FIRST + i] = pt ? pt.points : '';
+    });
+    out.push(rowA, rowB);
+  }
+  return out;
+}
+
+/* Точка входу: віддає те саме, що й fetchSheet для архівних турнірів */
+async function fetchSupabaseTab(tab){
+  if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
+  if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
+  if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
+  return { rows: [['Невідома вкладка']] };
+}
+
+
+const MEDALS = ['🥇','🥈','🥉'];
+
+/* ======== FLAGS (national teams) ======== */
+// Ukrainian country name -> ISO 3166-1 alpha-2 code (for flagcdn.com).
+const COUNTRY_ISO = {
+  'німеччина':'de','шотландія':'gb-sct','угорщина':'hu','швейцарія':'ch',
+  'іспанія':'es','хорватія':'hr','італія':'it','албанія':'al',
+  'словенія':'si','данія':'dk','сербія':'rs','англія':'gb-eng',
+  'польща':'pl','нідерланди':'nl','австрія':'at','франція':'fr',
+  'бельгія':'be','словаччина':'sk','румунія':'ro','україна':'ua',
+  'туреччина':'tr','грузія':'ge','португалія':'pt','чехія':'cz',
+  'нідерланди ':'nl','туречина':'tr',
+  // extras that may appear
+  'уельс':'gb-wls','ірландія':'ie','північна ірландія':'gb-nir',
+  'ісландія':'is','швеція':'se','норвегія':'no','фінляндія':'fi',
+  'греція':'gr','болгарія':'bg','росія':'ru','білорусь':'by',
+  'молдова':'md','північна македонія':'mk','македонія':'mk',
+  'боснія':'ba','чорногорія':'me','косово':'xk','сан-марино':'sm',
+  'мальта':'mt','кіпр':'cy','люксембург':'lu','ліхтенштейн':'li',
+  'андорра':'ad','естонія':'ee','латвія':'lv','литва':'lt',
+  'вірменія':'am','азербайджан':'az','казахстан':'kz','ізраїль':'il',
+  'бразилія':'br','аргентина':'ar','уругвай':'uy','мексика':'mx',
+  'сша':'us','канада':'ca','японія':'jp','південна корея':'kr',
+  'корея':'kr','австралія':'au','марокко':'ma','єгипет':'eg',
+  'туніс':'tn','сенегал':'sn','гана':'gh','нігерія':'ng',
+  'камерун':'cm','саудівська аравія':'sa','катар':'qa','іран':'ir',
+  'нова зеландія':'nz',
+  /* ===== ЧС 2026 ===== */
+  'парагвай':'py','колумбія':'co','еквадор':'ec','перу':'pe','чилі':'cl',
+  'болівія':'bo','венесуела':'ve','панама':'pa','коста-ріка':'cr','гондурас':'hn',
+  'ямайка':'jm','кюрасао':'cw','гаїті':'ht','сальвадор':'sv','гватемала':'gt',
+  'юар':'za','південна африка':'za','пар':'za',
+  'голландія':'nl','голандія':'nl',
+  "кот-д'івуар":'ci','кот-д’івуар':'ci','кот д\'івуар':'ci','івуар':'ci',
+  'алжир':'dz','кабо-верде':'cv','кабо верде':'cv','конго':'cd','др конго':'cd',
+  'малі':'ml','буркіна-фасо':'bf','кенія':'ke','замбія':'zm','ангола':'ao',
+  'узбекистан':'uz','йорданія':'jo','ірак':'iq','оае':'ae','оман':'om',
+  'китай':'cn','індонезія':'id','в\'єтнам':'vn','таїланд':'th',
+  'нова каледонія':'nc','фіджі':'fj','суринам':'sr'
+};
+
+function isoForName(name){
+  const key = cellStr(name).toLowerCase().replace(/\s+/g,' ').trim();
+  return COUNTRY_ISO[key] || null;
+}
+
+/* ======== CLUB LOGOS ========
+   Ukrainian club name -> API-Sports football team ID.
+   Logos are served directly from https://media.api-sports.io/football/teams/{id}.png
+   (no API key needed for the media CDN). IDs are stable identifiers from API-Football. */
+const CLUB_ID = {
+  'реал':541, 'реал мадрид':541, 'реал м':541,
+  'барселона':529, 'барса':529,
+  'арсенал':42,
+  'ліверпуль':40,
+  'псж':85, 'парі сен-жермен':85,
+  'челсі':49,
+  'манчестер сіті':50, 'сіті':50, 'ман сіті':50, 'манчестер':50,
+  'манчестер юнайтед':33, 'юнайтед':33,
+  'баварія':157, 'баварія мюнхен':157, 'баварія м':157,
+  'борусія д':165, 'боруссія д':165, 'боруссія дортмунд':165, 'дортмунд':165, 'борусія дортмунд':165,
+  'ювентус':496, 'юве':496,
+  'мілан':489, 'ак мілан':489,
+  'інтер':505, 'інтер мілан':505,
+  'наполі':492,
+  'аталанта':499,
+  'бенфіка':211,
+  'спортинг':228, 'спортінг':228,
+  'порту':212,
+  'аякс':194,
+  'псв':197, 'псв ейндговен':197,
+  'феєнорд':209, 'фейєнорд':209, 'фейенорд':209, 'феєнорд ':209,
+  'брюге':569, 'клуб брюге':569,
+  'селтік':247, 'селтик':247,
+  'монако':91, 'монако фк':91,
+  'брест':106, 'стад брест':106,
+  // Al-Hilal spelling variants
+  'аль-гіляль':2932, 'аль гіляль':2932, 'аль-хіляль':2932, 'аль хіляль':2932, 'аль-хіляр':2932,
+  // Monterrey
+  'монтеррей':2273, 'монтерей':2273, 'монтерррей':2273,
+  'штутгарт':172,
+  'лейпциг':173, 'рб лейпциг':173,
+  'байєр':168, 'баєр':168, 'баєр леверкузен':168, 'леверкузен':168,
+  // Atletico variants (ЛЧ)
+  'атлетіко':530, 'атлетіко мадрид':530, 'атлетіко м':530, 'атлетико':530, 'атлетико мадрид':530, 'атлетико м':530,
+  'севілья':536,
+  'вільярреал':533,
+  'тоттенгем':47, 'тоттенхем':47,
+  'астон вілла':66,
+  'ньюкасл':34,
+  'ліон':80, 'олімпік ліон':80,
+  'марсель':81, 'олімпік марсель':81,
+  'лілль':79,
+  'шахтар':550, 'шахтар донецьк':550,
+  'динамо київ':553, 'динамо':553,
+  'галатасарай':645,
+  'фенербахче':611,
+  'ред булл зальцбург':571, 'зальцбург':571,
+  'славія прага':2003, 'славія':2003,
+
+  /* ===== FIFA Club World Cup 2025 (32 teams) ===== */
+  // UEFA
+  'манчестер сіті ':50, 'ювентус ':496, 'реал мадрид ':541,
+  'зальцбург ':571,
+  // CONMEBOL (South America)
+  'палмейрас':121, 'palmeiras':121,
+  'фламенго':127, 'flamengo':127,
+  'флуміненсе':124, 'флумінензе':124, 'fluminense':124,
+  'рівер плейт':435, 'рівер':435, 'river plate':435,
+  'бока хуніорс':451, 'бока':451, 'бока juniors':451, 'boca juniors':451,
+  'ботафого':120, 'botafogo':120,
+  // CONCACAF
+  'монтеррей':2273, 'monterrey':2273,
+  'сіетл саундерс':1595, 'сіетл':1595,
+  'пачука':2288, 'pachuca':2288,
+  'лос-анджелес':1616, 'лафк':1616, 'lafc':1616, 'los angeles fc':1616,
+  'інтер маямі':9568, 'інтер майамі':9568, 'inter miami':9568, 'маямі':9568,
+  // CAF (Africa)
+  'аль-ахлі':1024, 'аль ахлі':1024, 'al ahly':1024,
+  'вайдад':1043, 'вайдад касабланка':1043,
+  'есперанс':2724, 'есперанс туніс':2724, 'esperance':2724,
+  'мамелоді сандаунз':2769, 'мамелоді':2769, 'mamelodi sundowns':2769,
+  // AFC (Asia)
+  'аль-хіляль':2932, 'аль хіляль':2932, 'al hilal':2932,
+  'аль-айн':2933, 'аль айн':2933, 'al ain':2933,
+  'ульсан':2748, 'ульсан хеде':2748, 'ulsan':2748,
+  'урава':1608, 'урава ред дайамондс':1608, 'urawa':1608,
+  // OFC
+  'окленд сіті':4644, 'окленд':4644, 'auckland city':4644,
+  // more CWC UEFA
+  'ред булл зальцбург ':571,
+};
+
+function clubLogo(name){
+  const key = cellStr(name).toLowerCase().replace(/\s+/g,' ').trim();
+  const id = CLUB_ID[key];
+  if(!id) return '';
+  return `<img class="crest" src="https://media.api-sports.io/football/teams/${id}.png" alt="" loading="lazy" width="20" height="20">`;
+}
+
+// icon for any team: flag if it's a country, crest if it's a known club, else nothing
+function teamIcon(name){
+  return flagImg(name) || clubLogo(name);
+}
+
+// returns an <img> flag tag for a country name, or '' if not a known country
+function flagImg(name){
+  const iso = isoForName(name);
+  if(!iso) return '';
+  return `<img class="flag" src="https://flagcdn.com/24x18/${iso}.png" srcset="https://flagcdn.com/48x36/${iso}.png 2x" alt="" loading="lazy" width="24" height="18">`;
+}
+
+// wraps a single team name with its icon (flag or club crest, if known).
+function withFlag(name){
+  const s = cellStr(name);
+  const icon = teamIcon(s);
+  return icon ? `<span class="team">${icon}<span>${escapeHtml(s)}</span></span>` : escapeHtml(s);
+}
+
+/* Splits "Франція - Марокко" into two team names.
+   Preferred form is a dash surrounded by spaces. Some rows come without spaces
+   ("ЮАР-Канада") — then we try every dash position and keep the split where BOTH
+   halves are recognised teams, so hyphenated names (Кот-д'Івуар, Кабо-Верде)
+   stay intact. */
+function splitGame(s){
+  const spaced = s.split(/\s+[-–—]\s+/);
+  if(spaced.length === 2) return [spaced[0].trim(), spaced[1].trim()];
+  for(let i = 1; i < s.length - 1; i++){
+    if(!'-–—'.includes(s[i])) continue;
+    const a = s.slice(0, i).trim(), b = s.slice(i + 1).trim();
+    if(a && b && teamIcon(a) && teamIcon(b)) return [a, b];
+  }
+  return null;
+}
+
+function gameWithFlags(game){
+  const s = cellStr(game);
+  const m = splitGame(s);
+  if(m){
+    const a = m[0], b = m[1];
+    const ia = teamIcon(a), ib = teamIcon(b);
+    if(ia || ib){
+      return `<span class="game-teams">${ia}<span>${escapeHtml(a)}</span><span class="vs">–</span>${ib}<span>${escapeHtml(b)}</span></span>`;
+    }
+  }
+  return escapeHtml(s);
+}
+
+// Explicit leaderboard board names per tournament (used when the sheet's own
+// stage titles can't be detected). Order matches the boards left-to-right.
+const LEADERBOARD_NAMES = {
+  wc2026:     ['Knockout phase play-offs', 'Play-off', 'General'],
+  euro2024:   ['Group', 'Play-off', 'General'],
+  cl2025:     ['Knockout phase play-offs', 'Play-off', 'General'],
+  clubwc2025: ['Group', 'Play-off', 'General'],
+  euroseason2026: ['August', 'September', 'October', 'General'],
+};
+
+let activeTournament = TOURNAMENTS[TOURNAMENTS.length - 1];
+let activeTabIndex = 0;
+const cache = {};
+
+/* ======== DATA (CSV — no type coercion, all cells come as displayed text) ========
+   Two sources:
+   - gviz (by sheet name): CORS-friendly, but coerces number-dominant columns to
+     numeric and DROPS text cells in them (breaks tabs like Play-off bonus points).
+   - /export?format=csv&gid=: exact WYSIWYG, no coercion. Used where a gid is set. */
+function buildUrl(sheetId, sheetName, gid){
+  if(gid !== undefined && gid !== null && gid !== ''){
+    return `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv&gid=${gid}`;
+  }
+  return `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(sheetName)}`;
+}
+
+function parseCSV(text){
+  const rows = [];
+  let row = [], cur = '', inQ = false;
+  for(let i = 0; i < text.length; i++){
+    const ch = text[i];
+    if(inQ){
+      if(ch === '"'){
+        if(text[i+1] === '"'){ cur += '"'; i++; }
+        else inQ = false;
+      } else cur += ch;
+    } else {
+      if(ch === '"') inQ = true;
+      else if(ch === ','){ row.push(cur); cur = ''; }
+      else if(ch === '\n'){ row.push(cur); rows.push(row); row = []; cur = ''; }
+      else if(ch === '\r'){ /* skip */ }
+      else cur += ch;
+    }
+  }
+  row.push(cur);
+  rows.push(row);
+  return rows;
+}
+
+/* ======== ЗАМОРОЖЕНИЙ АРХІВ ========
+   Дані чотирьох завершених турнірів вшиті у файл і більше не тягнуться
+   з Google Sheets. Ключ — sheetId, всередині — за gid вкладки.
+   Сітка клітинок ідентична тій, що віддавав Google CSV, тож рендери
+   не змінювалися. Джерело: експорт .xlsx з обчисленими значеннями. */
+const FROZEN = {"1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc":{"0":[["№","Name","Points","","№","Name","Points","","№","Name","Points","Group","","","","Play-off","","","","General","",""],["1","Бо","42","","1","Бо","6","","","Бо","48","№","Name","Points","","№","Name","Points","","№","Name","Points"],["2","Лб","33","","2","Антон","9","","","Лб","42","1&2","Бо","42","","1","Саня","12","","","Антон","51"],["3","Антон","42","","3","Лб","9","","","Антон","51","1&2","Антон","42","","2","Макс","11","","","Бо","48"],["4","Макс","24","","4","Макс","11","","4","Макс","35","3","Миша","34","","3","Антон","9","","","Саня","44"],["5","Саня","32","","5","Саня","12","","5","Саня","44","4","Лб","33","","4","Лб","9","","4","Лб","42"],["6","Миша","34","","6","Миша","8","","6","Миша","42","5","Саня","32","","5","Миша","8","","5","Миша","42"],["7","№7","0","","7","№7","4","","7","№7","4","6","Макс","24","","6","Бо","6","","6","Макс","35"],["8","№8","0","","8","№8","4","","8","№8","4","7","№7","0","","7","№7","4","","7","№7","4"],["9","№9","0","","9","№9","4","","9","№9","4","8","№8","0","","8","№8","4","","8","№8","4"],["10","№10","0","","10","№10","4","","10","№10","4","9","№9","0","","9","№9","4","","9","№9","4"],["11","№11","0","","11","№11","4","","11","№11","4","10","№10","0","","10","№10","4","","10","№10","4"],["12","№12","0","","12","№12","0","","12","№12","0","11","№11","0","","11","№11","4","","11","№11","4"],["13","№13","0","","13","№13","4","","13","№13","4","12","№12","0","","12","№13","4","","12","№13","4"],["14","№14","0","","14","№14","4","","14","№14","4","13","№13","0","","13","№14","4","","13","№14","4"],["15","№15","0","","15","№15","4","","15","№15","4","14","№14","0","","14","№15","4","","14","№15","4"],["16","№16","0","","16","№16","4","","16","№16","4","15","№15","0","","15","№16","4","","15","№16","4"],["17","№17","0","","17","№17","4","","17","№17","4","16","№16","0","","16","№17","4","","16","№17","4"],["18","№18","0","","18","№18","4","","18","№18","4","17","№17","0","","17","№18","4","","17","№18","4"],["19","№19","0","","19","№19","4","","19","№19","4","18","№18","0","","18","№19","4","","18","№19","4"],["20","№20","0","","20","№20","4","","20","№20","4","19","№19","0","","19","№20","4","","19","№20","4"],["","","","","","","","","","","","20","№20","0","","20","№12","0","","20","№12","0"]],"922722732":[["Points","","","30","21","30","17","23","22","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Date","Game","Result","Бо","Лб","Антон","Макс","Саня","Миша","№7","№8","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["14.06.2024","Німеччина - Шотландія","5:1","2:0","2:1","2:0","3:1","2:0","2:0","","","","","","","","","","","","","",""],["15.06.2024","Угорщина - Швейцарія","1:3","2:1","2:1","1:2","1:1","1:2","1:0","","","","","","","","","","","","","",""],["","Іспанія - Хорватія","3:0","2:1","3:1","1:1","2:0","2:1","2:2","","","","","","","","","","","","","",""],["","Італія - Албанія","2:1","2:0","1:0","2:0","3:0","3:0","1:0","","","","","","","","","","","","","",""],["16.06.2024","Словенія - Данія","1:1","1:2","0:2","1:3","1:2","1:2","0:2","","","","","","","","","","","","","",""],["","Сербія - Англія","0:1","0:3","1:4","0:3","0:3","0:2","0:3","","","","","","","","","","","","","",""],["","Польща - Нідерланди","1:2","1:2","0:3","1:3","0:2","0:2","1:2","","","","","","","","","","","","","",""],["17.06.2024","Австрія - Франція","0:1","1:2","1:2","1:3","0:3","1:2","1:3","","","","","","","","","","","","","",""],["","Румунія - Україна","3:0","1:2","0:2","0:2","1:2","1:1","0:2","","","","","","","","","","","","","",""],["","Бельгія - Словаччина ","0:1","2:0","3:1","2:0","2:0","2:0","1:0","","","","","","","","","","","","","",""],["18.06.2024","Туреччина — Грузія","3:1","2:1","2:1","1:0","2:1","2:0","1:1","","","","","","","","","","","","","",""],["","Португалія — Чехія","2:1","2:0","3:0","2:1","2:0","2:0","2:0","","","","","","","","","","","","","",""],["19.06.2024","Німеччина — Угорщина","2:0","2:0","","2:0","3:0","2:0","2:0","","","","","","","","","","","","","",""],["","Шотландія — Швейцарія","1:1","1:2","","1:2","1:2","0:1","0:1","","","","","","","","","","","","","",""],["","Хорватія — Албанія","2:2","2:0","","2:0","2:0","1:0","2:1","","","","","","","","","","","","","",""],["20.06.2024","Іспанія — Італія","1:0","1:1","0:1","2:1","1:2","2:1","2:1","","","","","","","","","","","","","",""],["","Словенія — Сербія","1:1","2:1","0:2","0:2","2:1","1:2","1:1","","","","","","","","","","","","","",""],["","Данія — Англія","1:1","1:2","1:2","0:2","0:2","1:2","0:2","","","","","","","","","","","","","",""],["21.06.2024","Польща — Австрія","1:3","1:2","2:2","1:2","2:1","1:2","1:2","","","","","","","","","","","","","",""],["","Нідерланди — Франція","0:0","1:2","0:1","1:3","1:2","1:1","1:2","","","","","","","","","","","","","",""],["","Словаччина — Україна","1:2","1:2","1:2","0:1","1:2","1:2","1:3","","","","","","","","","","","","","",""],["22.06.2024","Бельгія — Румунія","2:0","2:0","4:0","2:0","2:0","2:1","1:2","","","","","","","","","","","","","",""],["","Грузія — Чехія","1:1","1:2","1:3","1:1","0:2","1:2","2:2","","","","","","","","","","","","","",""],["","Туреччина — Португалія","0:3","1:2","0:3","1:3","1:3","1:2","1:2","","","","","","","","","","","","","",""],["23.06.2024","Швейцарія — Німеччина","1:1","1:2","1:2","0:2","0:2","1:2","1:3","","","","","","","","","","","","","",""],["","Шотландія — Угорщина","0:1","1:2","1:2","0:0","1:1","2:1","1:2","","","","","","","","","","","","","",""],["24.06.2024","Албанія — Іспанія","0:1","1:2","0:2","0:2","0:2","0:3","1:2","","","","","","","","","","","","","",""],["","Хорватія — Італія","1:1","1:1","1:1","2:1","1:2","0:2","2:2","","","","","","","","","","","","","",""],["25.06.2024","Англія — Словенія","0:0","2:0","1:0","3:0","2:0","2:0","2:0","","","","","","","","","","","","","",""],["","Данія — Сербія","0:0","2:1","1:0","2:1","1:0","2:1","2:1","","","","","","","","","","","","","",""],["","Нідерланди — Австрія","2:3","2:1","2:2","3:2","1:1","1:1","2:1","","","","","","","","","","","","","",""],["","Франція — Польща","1:1","2:0","2:0","2:0","2:1","2:0","3:1","","","","","","","","","","","","","",""],["26.06.2024","Словаччина — Румунія","1:1","1:1","0:0","1:1","","0:0","0:2","","","","","","","","","","","","","",""],["","Україна — Бельгія","0:0","1:1","2:1","1:0","","1:1","2:1","","","","","","","","","","","","","",""],["","Грузія — Португалія","2:0","1:2","1:4","1:2","","0:2","1:2","","","","","","","","","","","","","",""],["","Чехія — Туреччина","1:2","1:1","2:2","1:2","","1:1","1:1","","","","","","","","","","","","","",""]],"2021317951":[["Points","","","","12","12","12","7","9","12","","","","","","","","","","","","","",""],["","","","","Бо","Лб","Антон","Макс","Саня","Миша","","","","","","","","","","","","","",""],["Group A","","Final result","","","","","","","","№7","№8","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Німеччина","","Німеччина","","Німеччина","Німеччина","Німеччина","Німеччина","Німеччина","Німеччина","","","","","","","","","","","","","",""],["Шотландія","","Швейцарія","","Угорщина","Шотландія","Швейцарія","Шотландія","Швейцарія","Угорщина","","","","","","","","","","","","","",""],["Угорщина","","Угорщина","","Швейцарія","Угорщина","Шотландія","Швейцарія","Шотландія","Швейцарія","","","","","","","","","","","","","",""],["Швейцарія","","Шотландія","","Шотландія","Швейцарія","Угорщина","Угорщина","Угорщина","Шотландія","","","","","","","","","","","","","",""],["Group B","","Final result","","","","","","","","","","","","","","","","","","","","",""],["Іспанія","","Іспанія","","Іспанія","Іспанія","Іспанія","Італія","Іспанія","Італія","","","","","","","","","","","","","",""],["Хорватія","","Італія","","Італія","Італія","Хорватія","Іспанія","Хорватія","Іспанія","","","","","","","","","","","","","",""],["Італія","","Хорватія","","Хорватія","Хорватія","Італія","Хорватія","Італія","Хорватія","","","","","","","","","","","","","",""],["Албанія","","Албанія","","Албанія","Албанія","Албанія","Албанія","Албанія","Албанія","","","","","","","","","","","","","",""],["Group С","","Final result","","","","","","","","","","","","","","","","","","","","",""],["Словенія","","Англія","","Англія","Англія","Англія","Англія","Англія","Англія","","","","","","","","","","","","","",""],["Данія","","Данія","","Данія","Сербія","Данія","Сербія","Данія","Данія","","","","","","","","","","","","","",""],["Сербія","","Словенія","","Сербія","Словенія","Словенія","Данія","Сербія","Словенія","","","","","","","","","","","","","",""],["Англія","","Сербія","","Словенія","Данія","Сербія","Словенія","Словенія","Сербія","","","","","","","","","","","","","",""],["Group D","","Final result","","","","","","","","","","","","","","","","","","","","",""],["Польща","","Австрія","","Франція","Франція","Франція","Нідерланди","Франція","Франція","","","","","","","","","","","","","",""],["Нідерланди","","Франція","","Нідерланди","Нідерланди","Нідерланди","Франція","Нідерланди","Нідерланди","","","","","","","","","","","","","",""],["Австрія","","Нідерланди","","Австрія","Австрія","Австрія","Польща","Польща","Австрія","","","","","","","","","","","","","",""],["Франція","","Польща","","Польща","Польща","Польща","Австрія","Австрія","Польща","","","","","","","","","","","","","",""],["Group E","","Final result","","","","","","","","","","","","","","","","","","","","",""],["Бельгія","","Румунія","","Бельгія","Україна","Бельгія","Бельгія","Бельгія","Україна","","","","","","","","","","","","","",""],["Словаччина","","Бельгія","","Україна","Бельгія","Україна","Україна","Україна","Бельгія","","","","","","","","","","","","","",""],["Румунія","","Словаччина","","Словаччина","Румунія","Словаччина","Словаччина","Словаччина","Румунія","","","","","","","","","","","","","",""],["Україна","","Україна","","Румунія","Словаччина","Румунія","Румунія","Румунія","Словаччина","","","","","","","","","","","","","",""],["Group F","","Final result","","","","","","","","","","","","","","","","","","","","",""],["Туреччина","","Португалія","","Португалія","Португалія","Португалія","Португалія","Португалія","Португалія","","","","","","","","","","","","","",""],["Грузія","","Туреччина","","Туреччина","Туреччина","Туреччина","Чехія","Туреччина","Грузія","","","","","","","","","","","","","",""],["Португалія","","Грузія","","Чехія","Чехія","Чехія","Туреччина","Чехія","Туреччина","","","","","","","","","","","","","",""],["Чехія","","Чехія","","Грузія","Грузія","Грузія","Грузія","Грузія","Чехія","","","","","","","","","","","","","",""],["Points","","","","12","12","12","7","9","12","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]],"682618555":[["Points","","","6","5","9","11","12","8","","","","","","","","","","","","","",""],["Date","Game","Result","Бо","Лб","Антон","Макс","Саня","Миша","№7","№8","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1/8","","","","","","","","","","","","","","","","","","","","","",""],["29.06.2024","Швейцарія - Італія","2:0","1:2","1:1","1:1","0:1","1:1","1:2","","","","","","","","","","","","","",""],["","Німеччина - Данія","2:0","2:1","3:1","2:1","2:0","2:1","3:1","","","","","","","","","","","","","",""],["30.06.2024","Англія - Словаччина","1:1","1:0","1:0","1:0","2:0","1:0","3:1","","","","","","","","","","","","","",""],["","Іспанія - Грузія","4:1","2:0","3:1","3:0","2:0","2:0","2:1","","","","","","","","","","","","","",""],["01.07.2024","Франція - Бельгія","1:0","2:1","1:1","2:1","2:1","1:0","2:1","","","","","","","","","","","","","",""],["","Португалія - Словенія","0:0","2:0","3:0","3:0","2:0","1:0","3:0","","","","","","","","","","","","","",""],["02.07.2024","Румунія - Нідерланди","0:3","0:2","0:2","0:2","0:1","0:1","0:2","","","","","","","","","","","","","",""],["","Австрія - Туреччина ","1:2","2:1","2:0","2:1","0:0","2:1","2:1","","","","","","","","","","","","","",""],["1/4","","","","","","","","","","","","","","","","","","","","","",""],["05.07.2024","Іспанія - Німеччина","1:1","1:2","2:1","1:2","1:2","2:2","1:2","","","","","","","","","","","","","",""],["","Португалія - Франція","0:0","1:1","1:0","1:0","1:1","1:1","2:3","","","","","","","","","","","","","",""],["06.07.2024","Англія - Швейцарія ","1:1","1:0","0:1","0:1","0:1","1:0","1:0","","","","","","","","","","","","","",""],["","Нідерланди - Турція","2:1","2:0","2:2","1:0","1:0","2:0","3:1","","","","","","","","","","","","","",""],["01.02","","","","","","","","","","","","","","","","","","","","","",""],["09.07.2024","Іспанія - Франція","2:1","1:1","1:0","1:0","1:1","1:2","2:1","","","","","","","","","","","","","",""],["10.07.2024","Нідерланди - Англія","1:2","1:1","0:1","2:1","2:1","1:1","1:1","","","","","","","","","","","","","",""],["Final","","","","","","","","","","","","","","","","","","","","","",""],["14.07.2024","Іспанія - Англія","2:1","1:1","1:2","2:1","2:1","2:1","1:2","","","","","","","","","","","","","",""]],"1945041354":[["Question","Final Result","","Бо","Лб","Антон","Макс","Саня","Миша","№7","№8","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1 place","Іспанія ","Prediction","Франція","Португалія","Німеччина","Німеччина","Франція","Англія","","","","","","","","","","","","","",""],["2 place","Англія","Prediction","Німеччина","Англія","Франція","Іспанія ","Португалія","Німеччина","","","","","","","","","","","","","",""],["","","Points","0","4","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Mudryk","0","Prediction","1","2","1","3","2","3","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","4","4","4","4","4","4","4","4","4","4","4","4","4","4"],["Ukraine","Group","Prediction","01.08","01.02","01.04","01.08","01.08","01.02","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]],"1147745050":[["Condition","Points","Condition is valid at following stages","","Condition is valid for leaderboards","",""],["","","Group","Play-off","Group","Play-off","General"],["Вгаданий результата матчу (перемога/нічия)","1","yes","yes","yes","yes","yes"],["Правильно вгадане місце команди в групі","1","yes","no","yes","no","yes"],["Вгаданий рахунок матчу","3","yes","yes","yes","yes","yes"],["Результат України (стадія: група,1/8,1/4,1/2, Фінал)","3","no","yes","no","yes","yes"],["2 місце (фіналіст)","4","no","yes","no","yes","yes"],["Скільки голів забьє Мудрик","4","no","yes","no","yes","yes"],["Переможець турніру","5","no","yes","no","yes","yes"],["","","","","","",""],["Призові","","","","","",""],["Group","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["Play-off","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["General table","0.2","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""]]},"1a27j0Qn-2dHB5CzMXti6P70aJnBxJwWLkOKJ2Vn_j_U":{"0":[["№","Name","Points","","№","Name","Points","","№","Name","Points","Knockout phase play-offs","","","","Play-off","","","","General","",""],["1","Бо","10","","1","Бо","25","","","Бо","35","№","Name","Points","","№","Name","Points","","№","Name","Points"],["2","Лб","13","","2","Лб","20","","","Лб","33","1","Денис","19","","1","Женя","29","","","Денис","41"],["3","Антон","10","","3","Антон","25","","","Антон","35","2&3","Лб","13","","2&3","Бо","25","","","Женя","37"],["4","Макс","13","","4","Макс","16","","4","Макс","29","2&3","Макс","13","","2&3","Антон","25","","","Бо","35"],["5","Саня","9","","5","Саня","20","","5","Саня","29","4&5","Бо","10","","4","Денис","22","","","Антон","35"],["6","Миша","9","","6","Миша","21","","6","Миша","30","4&5","Антон","10","","5","Миша","21","","5","Лб","33"],["7","Женя","8","","7","Женя","29","","7","Женя","37","6&7","Саня","9","","6&7","Лб","20","","6","Миша","30"],["8","Денис","19","","8","Денис","22","","8","Денис","41","6&7","Миша","9","","6&7","Саня","20","","7&8","Макс","29"],["9","№9","0","","9","№9","0","","9","№9","0","8","Женя","8","","8","Макс","16","","7&8","Саня","29"],["10","№10","0","","10","№10","0","","10","№10","0","9","№9","0","","9","№9","0","","9","№9","0"],["11","№11","0","","11","№11","0","","11","№11","0","10","№10","0","","10","№10","0","","10","№10","0"],["12","№12","0","","12","№12","0","","12","№12","0","11","№11","0","","11","№11","0","","11","№11","0"],["13","№13","0","","13","№13","0","","13","№13","0","12","№12","0","","12","№12","0","","12","№12","0"],["14","№14","0","","14","№14","0","","14","№14","0","13","№13","0","","13","№13","0","","13","№13","0"],["15","№15","0","","15","№15","0","","15","№15","0","14","№14","0","","14","№14","0","","14","№14","0"],["16","№16","0","","16","№16","0","","16","№16","0","15","№15","0","","15","№15","0","","15","№15","0"],["17","№17","0","","17","№17","0","","17","№17","0","16","№16","0","","16","№16","0","","16","№16","0"],["18","№18","0","","18","№18","0","","18","№18","0","17","№17","0","","17","№17","0","","17","№17","0"],["19","№19","0","","19","№19","0","","19","№19","0","18","№18","0","","18","№18","0","","18","№18","0"],["20","№20","0","","20","№20","0","","20","№20","0","19","№19","0","","19","№19","0","","19","№19","0"],["","","","","","","","","","","","20","№20","0","","20","№20","0","","20","№20","0"]],"682618555":[["Points","","","23","18","23","14","18","19","27","20","","","","","","","","","","","",""],["Date","Game","Result","Бо","Лб","Антон","Макс","Саня","Миша","Женя","Денис","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1/8","","","","","","","","","","","","","","","","","","","","","",""],["04.02.2025","Брюге - Астон Вілла","1:3","1:2","1:1","1:1","2:1","1:1","1:2","1:2","1:1","","","","","","","","","","","",""],["12.02.2025","Астон Вілла - Брюге ","3:0","2:1","2:1","3:0","2:1","1:0","1:0","2:1","2:0","","","","","","","","","","","",""],["04.02.2025","Реал - Атлетіко М","2:1","1:1","2:0","1:0","2:2","1:1","1:0","2:1","2:1","","","","","","","","","","","",""],["12.02.2025","Атлетіко М - Реал","1:0","2:1","0:2","1:2","1:2","1:2","1:2","1:2","2:3","","","","","","","","","","","",""],["04.02.2025","ПСВ - Арсенал","1:7","1:2","1:3","0:2","0:2","1:2","1:3","0:1","1:2","","","","","","","","","","","",""],["12.02.2025","Арсенал - ПСВ","2:2","2:1","3:0","4:0","5:0","1:0","3:1","3:0","3:0","","","","","","","","","","","",""],["04.02.2025","Боруссія Д - Лілль","1:1","2:1","2:0","1:0","2:1","2:0","3:0","1:0","3:0","","","","","","","","","","","",""],["12.02.2025","Лілль - Боруссія Д","1:2","1:1","1:2","1:0","1:3","1:2","1:2","0:3","2:1","","","","","","","","","","","",""],["05.02.2025","Феєнорд - Інтер","0:2","0:2","0:2","0:2","1:2","1:2","1:2","0:2","0:2","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!"],["11.02.2025","Інтер - Феєнорд","2:1","1:0","2:1","3:0","2:0","1:1","1:0","2:0","2:0","","","","","","","","","","","",""],["05.02.2025","Баварія - Баєр","3:0","1:1","1:2","0:0","1:1","2:1","1:1","1:0","1:0","","","","","","","","","","","",""],["11.02.2025","Баєр - Баварія","0:2","1:1","2:0","0:2","0:2","1:2","2:1","1:2","2:1","","","","","","","","","","","",""],["05.02.2025","Бенфіка - Барселона","0:1","1:3","0:2","1:2","0:3","1:3","1:3","1:3","1:3","","","","","","","","","","","",""],["11.02.2025","Барселона - Бенфіка","3:1","3:1","4:1","3:1","2:0","2:0","1:1","2:1","4:1","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!"],["05.02.2025","ПСЖ - Ліверпуль","0:1","1:2","1:3","2:1","2:3","2:2","1:2","1:3","1:2","","","","","","","","","","","",""],["11.02.2025","Ліверпуль - ПСЖ","0:1","2:1","2:1","2:2","1:2","1:1","1:2","1:0","2:0","","","","","","","","","","","",""],["1/4","","","","","","","","","","","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!"],["08.04.2025","Баварія - Інтер","1:2","0:1","1:1","2:0","2:1","2:1","2:1","1:2","2:1","","","","","","","","","","","",""],["16.04.2025","Інтер - Баварія","2:2","1:1","2:2","2:0","1:2","2:1","2:1","2:1","2:1","","","","","","","","","","","",""],["08.04.2025","Арсенал - Реал","3:0","1:1","1:1","1:0","2:3","2:1","2:2","2:1","2:2","","","","","","","","","","","",""],["16.04.2025","Реал - Арсенал","1:2","2:1","3:2","4:0","2:2","2:1","0:1","1:2","2:0","","","","","","","","","","","",""],["09.04.2025","Барселона - Боруссія Д","4:0","3:1","","3:1","3:1","3:1","3:1","3:1","4:1","","","","","","","","","","","",""],["15.04.2025","Боруссія Д - Барселона","3:1","1:2","2:2","1:2","1:3","1:3","1:2","1:3","1:3","","","","","","","","","","","",""],["09.04.2025","ПСЖ - Астон Вілла","3:1","3:1","","3:0","2:0","2:0","2:0","2:0","3:1","","","","","","","","","","","",""],["15.04.2025","Астон Вілла - ПСЖ","3:2","1:2","2:2","0:2","0:2","0:2","1:1","2:2","1:2","","","","","","","","","","","",""],["1/2","","","","","","","","","","","","","","","","","","","","","",""],["29.04.2025","Арсенал - ПСЖ","0:1","1:1","2:2","0:2","3:2","1:2","2:1","1:1","1:1","","","","","","","","","","","",""],["07.05.2025","ПСЖ - Арсенал","2:1","2:1","1:1","2:0","1:1","2:1","2:1","2:0","2:1","","","","","","","","","","","",""],["30.04.2025","Барселона - Інтер","3:3","2:1","3:0","1:1","2:1","1:2","2:0","3:1","3:1","","","","","","","","","","","",""],["06.05.2025","Інтер - Барселона","3:3","1:2","2:1","1:3","1:3","2:2","1:2","2:3","2:4","","","","","","","","","","","",""],["Final","","","","","","","","","","","","","","","","","","","","","",""],["31.05.2025","Інтер - ПСЖ","0:5","1:2","2:2","1:3","","3:2","2:3","1:2","2:2","","","","","","","","","","","",""]],"922722732":[["Points","","","6","8","6","7","6","6","5","14","0","0","0","0","0","0","0","0","0","0","0","0"],["Date","Game","Result","Бо","Лб","Антон","Макс","Саня","Миша","Женя","Денис","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["11.02.2025","Брест - ПСЖ","0:3","1:3","0:3","1:3","1:2","0:2","0:2","0:1","1:3","","","","","","","","","","","",""],["19.02.2025","ПСЖ - Брест","7:0","2:1","4:0","3:0","2:0","3:0","2:0","2:1","2:1","","","","","","","","","","","",""],["11.02.2025","Сіті - Реал","2:3","2:2","0:4","2:2","1:2","1:2","1:1","1:2","2:3","","","","","","","","","","","",""],["19.02.2025","Реал - Сіті","3:1","2:2","3:3","2:1","2:2","1:2","2:1","2:1","3:1","","","","","","","","","","","",""],["11.02.2025","Спортинг - Борусія Д","0:3","2:1","2:2","2:0","0:2","1:2","2:1","2:1","1:1","","","","","","","","","","","",""],["19.02.2025","Борусія Д - Спортинг","0:0","2:1","2:1","2:0","2:1","2:0","2:0","2:1","2:1","","","","","","","","","","","",""],["11.02.2025","Ювентус - ПСВ","2:1","2:1","1:0","1:0","2:0","1:1","1:0","1:1","2:1","","","","","","","","","","","",""],["19.02.2025","ПСВ - Ювентус","2:1","1:2","1:1","1:2","0:1","1:2","0:1","0:1","2:0","","","","","","","","","","","",""],["12.02.2025","Брюге - Аталанта","2:1","0:2","1:2","1:2","0:1","1:1","0:2","0:2","0:3","","","","","","","","","","","",""],["18.02.2025","Аталанта - Брюге","1:3","2:1","3:1","1:1","0:1","2:1","2:1","2:1","2:1","","","","","","","","","","","",""],["12.02.2025","Селтік - Баварія","1:2","1:3","0:4","1:4","0:2","0:3","1:3","1:4","0:3","","","","","","","","","","","",""],["18.02.2025","Баварія - Селтік","1:1","2:1","5:0","3:0","3:1","3:0","3:0","2:1","2:0","","","","","","","","","","","",""],["12.02.2025","Монако - Бенфіка","0:1","1:1","1:2","2:3","1:1","1:1","1:2","1:0","0:2","","","","","","","","","","","",""],["18.02.2025","Бенфіка - Монако","3:3","2:1","3:1","2:0","2:0","1:1","2:0","1:2","3:1","","","","","","","","","","","",""],["12.02.2025","Фейенорд - Мілан","1:0","1:2","0:2","1:1","1:2","0:2","1:2","1:3","2:3","","","","","","","","","","","",""],["18.02.2025","Мілан - Фейенорд","1:1","2:0","3:1","1:0","1:0","2:0","3:1","1:0","2:1","","","","","","","","","","","",""]],"2021317951":[["Points","","","4","5","4","6","3","3","3","5","","","","","","","","","","","",""],["Pair","","Pair winner","Бо","Лб","Антон","Макс","Саня","Миша","Женя","Денис","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Брест/ПСЖ","","Псж","Псж","Псж","Псж","Псж","Псж","Псж","Псж","Псж","","","","","","","","","","","",""],["Сіті/Реал","","Реал","Реал","Реал","Реал","Реал","Сіті","Сіті","Реал","Реал","","","","","","","","","","","",""],["Монако/Бенфіка","","Бенфіка","Бенфіка","Бенфіка","Бенфіка","Бенфіка","Бенфіка","Бенфіка","Монако","Бенфіка","","","","","","","","","","","",""],["Селтік/Баварія","","Баварія","Баварія","Баварія","Баварія","Баварія","Баварія","Баварія","Баварія","Баварія","","","","","","","","","","","",""],["Брюге/Аталанта","","Брюге","Аталанта","Аталанта","Аталанта","Брюге","Аталанта","Аталанта","Аталанта","Аталанта","","","","","","","","","","","",""],["Ювентус/ПСВ","","ПСВ","Ювентус","Ювентус","Ювентус","Ювентус","Ювентус","Ювентус","Ювентус","Ювентус","","","","","","","","","","","",""],["Спортинг/Борусія Д","","Борусія Д","Спортинг","Борусія Д","Спортинг","Борусія Д","Спортинг","Спортинг","Спортинг","Борусія Д","","","","","","","","","","","",""],["Фейенорд/Мілан","","Фейенорд","Мілан","Мілан","Мілан","Мілан","Мілан","Мілан","Мілан","Мілан","","","","","","","","","","","",""],["Points","","","4","5","4","6","3","3","3","5","0","0","0","0","0","0","0","0","0","0","0","0"]],"1945041354":[["QUESTION","Final result","","Бо","Лб","Антон","Макс","Саня","Миша","Женя","Денис","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1 place","Псж","Prediction","Ліверпуль","Ліверпуль","Ліверпуль","Барселона","Барселона","Барселона","Барселона","Барселона","","","","","","","","","","","",""],["2 place","Інтер","Prediction","Барселона","Арсенал","Арсенал","Ліверпуль","Ліверпуль","Ліверпуль","Ліверпуль","Ліверпуль","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Real UCL","Ні","Prediction","Ні","Ні","Ні","Ні","Ні","Ні","Ні","Ні","","","","","","","","","","","",""],["","","Points","2","2","2","2","2","2","2","2","0","0","0","0","0","0","0","0","0","0","0","0"],["Liverpool stage","01.08","Prediction","Фінал","Фінал","Фінал","Фінал","01.02","Фінал","Фінал","Фінал","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]],"1147745050":[["Condition","Points","Condition is valid at following stages","","Condition is valid for leaderboards","",""],["","","Knockout phase play-offs","Play-off","Knockout phase play-offs","Play-off","General"],["Вгаданий результата матчу (перемога/нічия)","1","yes","yes","yes","yes","yes"],["Правильно вгадана команда що пройшла в 1/8","1","yes","no","yes","no","yes"],["Вгаданий рахунок матчу","3","yes","yes","yes","yes","yes"],["Ліверпуль (стадія: 1/8,1/4,1/2, Фінал)","2","no","yes","no","yes","yes"],["Реал виграє ЛЧ (так/ні)","2","no","yes","no","yes","yes"],["2 місце (фіналіст)","3","no","yes","no","yes","yes"],["Переможець турніру","4","no","yes","no","yes","yes"],["Прогноз робимо лише на - Основний час. \nЯкщо в декількох учасників однакова кількість очок - призові сумуються та діляться між учасниками, в таблиці вказується cпільне місце (додаткових показників - немає). ","","","","","",""],["Призові","","","","","",""],["Knockout phase play-offs","0.3","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""],["Play-off","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["General table","0.3","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""]]},"1sO_M9-uaIDls4sy6kP3EZ-kMuXSuYrlgbyScuegRsRQ":{"0":[["№","Name","Points","","№","Name","Points","","№","Name","Points","Group","","","","Play-off","","","","General","",""],["1","Бо","37","","1","Бо","14","","","Бо","51","№","Name","Points","","№","Name","Points","","№","Name","Points"],["2","Лб","30","","2","Лб","19","","","Лб","49","1","Антон","38","","1","Лб","19","","","Антон","52"],["3","Антон","38","","3","Антон","14","","","Антон","52","2&3","Бо","37","","2&3","Бо","14","","","Бо","51"],["4","Макс","37","","4","Макс","13","","4","Макс","50","2&3","Макс","37","","2&3","Антон","14","","","Макс","50"],["5","Женя","35","","5","Женя","12","","5","Женя","47","4","Женя","35","","4","Макс","13","","4","Лб","49"],["6","№6","0","","6","№6","0","","6","№6","0","5","Лб","30","","5","Женя","12","","5","Женя","47"],["7","№7","0","","7","№7","0","","7","№7","0","6","№6","0","","6","№6","0","","6","№6","0"],["8","№8","0","","8","№8","0","","8","№8","0","7","№7","0","","7","№7","0","","7","№7","0"],["9","№9","0","","9","№9","0","","9","№9","0","8","№8","0","","8","№8","0","","8","№8","0"],["10","№10","0","","10","№10","0","","10","№10","0","9","№9","0","","9","№9","0","","9","№9","0"],["11","№11","0","","11","№11","0","","11","№11","0","10","№10","0","","10","№10","0","","10","№10","0"],["12","№12","0","","12","№12","0","","12","№12","0","11","№11","0","","11","№11","0","","11","№11","0"],["13","№13","0","","13","№13","0","","13","№13","0","12","№12","0","","12","№12","0","","12","№12","0"],["14","№14","0","","14","№14","0","","14","№14","0","13","№13","0","","13","№13","0","","13","№13","0"],["15","№15","0","","15","№15","0","","15","№15","0","14","№14","0","","14","№14","0","","14","№14","0"],["16","№16","0","","16","№16","0","","16","№16","0","15","№15","0","","15","№15","0","","15","№15","0"],["17","№17","0","","17","№17","0","","17","№17","0","16","№16","0","","16","№16","0","","16","№16","0"],["18","№18","0","","18","№18","0","","18","№18","0","17","№17","0","","17","№17","0","","17","№17","0"],["19","№19","0","","19","№19","0","","19","№19","0","18","№18","0","","18","№18","0","","18","№18","0"],["20","№20","0","","20","№20","0","","20","№20","0","19","№19","0","","19","№19","0","","19","№19","0"],["","","","","","","","","","","","20","№20","0","","20","№20","0","","20","№20","0"]],"922722732":[["Points","","","37","30","38","37","35","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Date","Game","Result","Бо","Лб","Антон","Макс","Женя","","","","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["15.06.2025","Аль-Аглі - Інтер Маямі","0:0","1:2","0:3","1:3","0:2","1:2","","","","","","","","","","","","","","",""],["","Баварія - Окленд Сіті","10:0","4:0","4:0","3:0","3:1","3:0","","","","","","","","","","","","","","",""],["","ПСЖ - Атлетіко М","4:0","2:1","2:0","2:0","2:1","3:1","","","","","","","","","","","","","","",""],["16.06.2025","Палмейрас - Порту","0:0","2:1","2:0","0:2","0:2","1:1","","","","","","","","","","","","","","",""],["","Ботафого - Сіетл Саундерз","2:1","2:1","1:1","3:1","1:0","2:0","","","","","","","","","","","","","","",""],["","Челсі - Лос-Анджелес","2:0","3:1","3:0","4:1","3:0","1:0","","","","","","","","","","","","","","",""],["17.06.2025","Бока Хуніорс - Бенфіка","2:2","1:1","2:3","0:1","0:2","1:2","","","","","","","","","","","","","","",""],["","Фламенго - Есперанс","2:0","2:0","3:0","2:0","2:0","3:1","","","","","","","","","","","","","","",""],["","Флуміненсе - Боруссія Д","0:0","1:3","1:3","0:2","0:4","1:2","","","","","","","","","","","","","","",""],["","Рівер Плейт - Урава Ред Даймондс","3:1","2:1","3:1","1:0","0:0","2:0","","","","","","","","","","","","","","",""],["18.06.2025","Ульсан Хьонде - Мамелоди Сандаунз","0:1","1:1","1:2","0:1","1:2","0:0","","","","","","","","","","","","","","",""],["","Монтеррей - Інтер","1:1","0:2","0:1","0:2","0:3","0:2","","","","","","","","","","","","","","",""],["","Манчестер Сіті - Відад","2:0","4:0","5:0","3:1","2:0","3:0","","","","","","","","","","","","","","",""],["","Реал М - Аль-Гіляль","1:1","2:1","4:1","2:1","3:0","4:1","","","","","","","","","","","","","","",""],["19.06.2025","Пачука - Ред Булл Зальцбург","1:2","0:2","1:4","0:2","0:2","1:1","","","","","","","","","","","","","","",""],["","Аль-Айн - Ювентус","0:5","0:2","0:1","2:3","0:1","0:2","","","","","","","","","","","","","","",""],["","Палмейрас - Аль-Аглі","2:0","3:1","4:1","1:1","1:0","3:0","","","","","","","","","","","","","","",""],["","Інтер Маямі - Порту","2:1","1:2","2:4","0:1","1:2","1:2","","","","","","","","","","","","","","",""],["20.06.2025","Сіетл Саундерз - Атлетіко М","1:3","0:3","0:3","0:3","0:2","0:3","","","","","","","","","","","","","","",""],["","ПСЖ - Ботафого","0:1","4:0","4:1","3:0","4:0","4:0","","","","","","","","","","","","","","",""],["","Бенфіка - Окленд Сіті","6:0","4:0","6:0","3:1","3:0","6:1","","","","","","","","","","","","","","",""],["","Фламенго - Челсі","3:1","1:3","1:3","1:2","0:2","0:2","","","","","","","","","","","","","","",""],["21.06.2025","Лос-Анджелес - Есперанс","0:1","2:1","3:2","2:0","0:1","2:0","","","","","","","","","","","","","","",""],["","Баварія - Бока Хуніорс        ","2:1","3:1","5:2","3:1","5:0","4:1","","","","","","","","","","","","","","",""],["","Мамелоди Сандаунз - Боруссія Д","3:4","0:3","0:4","0:2","0:2","1:1","","","","","","","","","","","","","","",""],["","Інтер - Урава Ред Даймондс","2:1","3:0","3:0","3:0","2:0","3:0","","","","","","","","","","","","","","",""],["22.06.2025","Флуміненсе - Ульсан Хьонде","4:2","2:0","3:0","3:0","1:0","1:0","","","","","","","","","","","","","","",""],["","Рівер Плейт - Монтеррей","0:0","1:1","3:2","2:1","0:2","0:2","","","","","","","","","","","","","","",""],["","Ювентус - Відад","4:1","3:0","5:0","2:0","2:1","1:0","","","","","","","","","","","","","","",""],["","Реал М - Пачука","3:1","3:0","6:0","3:0","2:0","2:1","","","","","","","","","","","","","","",""],["23.06.2025","Ред Булл Зальцбург - Аль-Гіляль","0:0","1:2","4:1","2:2","1:2","0:2","","","","","","","","","","","","","","",""],["","Манчестер Сіті - Аль-Айн","6:0","4:0","7:1","3:1","2:0","0:0","","","","","","","","","","","","","","",""],["","Сіетл Саундерз - ПСЖ","0:2","0:4","0:5","0:3","0:2","0:3","","","","","","","","","","","","","","",""],["","Атлетіко М - Ботафого","1:0","2:1","1:1","1:0","2:0","1:2","","","","","","","","","","","","","","",""],["24.06.2025","Порту - Аль-Аглі","4:4","2:1","2:0","2:1","1:0","1:1","","","","","","","","","","","","","","",""],["","Інтер Маямі - Палмейрас","2:2","1:1","2:4","1:0","1:2","1:2","","","","","","","","","","","","","","",""],["","Окленд Сіті - Бока Хуніорс","1:1","0:3","0:3","0:3","0:1","1:4","","","","","","","","","","","","","","",""],["","Бенфіка - Баварія","1:0","1:2","1:3","0:2","1:3","1:2","","","","","","","","","","","","","","",""],["25.06.2025","Есперанс - Челсі","0:3","1:3","1:2","0:3","0:2","0:1","","","","","","","","","","","","","","",""],["","Лос-Анджелес - Фламенго","1:1","0:2","0:3","1:3","0:2","1:2","","","","","","","","","","","","","","",""],["","Боруссія Д - Ульсан Хьонде","1:0","3:0","4:0","2:0","2:0","1:0","","","","","","","","","","","","","","",""],["","Мамелоди Сандаунз - Флуміненсе","0:0","1:2","0:4","1:2","1:0","0:3","","","","","","","","","","","","","","",""],["26.06.2025","Урава Ред Даймондс - Монтеррей","0:4","1:2","1:3","0:2","0:1","0:1","","","","","","","","","","","","","","",""],["","Інтер - Рівер Плейт","2:0","2:1","1:1","3:1","1:0","2:0","","","","","","","","","","","","","","",""],["","Ювентус - Манчестер Сіті        ","1:5","1:2","0:2","2:3","0:2","1:2","","","","","","","","","","","","","","",""],["","Відад - Аль-Айн","1:2","1:1","1:4","0:2","1:0","1:2","","","","","","","","","","","","","","",""],["27.06.2025","Аль-Гіляль - Пачука","2:0","2:0","1:1","3:1","1:0","2:0","","","","","","","","","","","","","","",""],["","Ред Булл Зальцбург - Реал М","0:3","1:3","2:3","2:3","1:2","1:2","","","","","","","","","","","","","","",""]],"682618555":[["Points","","","14","13","11","10","9","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Date","Game","Result","Бо","Лб","Антон","Макс","Женя","","","","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1/8","","","","","","","","","","","","","","","","","","","","","",""],["28.06.2025","Палмейрас - Ботафого","0:0","1:1","3:2","1:0","2:1","2:1","","","","","","","","","","","","","","",""],["","Бенфіка - Челсі","1:1","1:2","2:2","1:3","1:3","2:1","","","","","","","","","","","","","","",""],["29.06.2025","ПСЖ - Інтер Маямі","4:0","3:0","4:0","3:1","3:1","3:2","","","","","","","","","","","","","","",""],["","Фламенго - Баварія","2:4","0:2","1:2","1:2","0:2","0:2","","","","","","","","","","","","","","",""],["30.06.2025","Інтер - Флуміненсе","0:2","2:0","3:1","2:0","1:0","1:0","","","","","","","","","","","","","","",""],["01.07.2025","Сіті - Аль-Гіляль","3:4","3:0","3:0","3:0","2:1","4:1","","","","","","","","","","","","","","",""],["","Реал М - Ювентус","1:0","2:1","3:0","3:1","3:0","3:1","","","","","","","","","","","","","","",""],["02.07.2025","Боруссія Д - Монтерей","2:1","2:1","2:1","2:1","2:0","2:0","","","","","","","","","","","","","","",""],["1/4","","","","","","","","","","","","","","","","","","","","","",""],["04.07.2025","Флуміненсе - Аль-Гіляль","2:1","1:2","1:2","1:2","1:2","2:2","","","","","","","","","","","","","","",""],["05.07.2025","Палмейрас - Челсі","1:2","1:2","1:0","0:2","1:2","0:2","","","","","","","","","","","","","","",""],["","ПСЖ - Баварія","2:0","2:1","2:2","3:2","2:2","3:2","","","","","","","","","","","","","","",""],["","Реал М - Боруссія Д","3:2","2:1","3:2","3:1","2:1","2:1","","","","","","","","","","","","","","",""],["01.02","","","","","","","","","","","","","","","","","","","","","",""],["08.07.2025","Флуміненсе - Челсі","0:2","1:2","1:2","1:3","2:3","1:2","","","","","","","","","","","","","","",""],["09.07.2025","ПСЖ - Реал М","4:0","2:1","1:1","2:0","4:2","3:1","","","","","","","","","","","","","","",""],["Final","","","","","","","","","","","","","","","","","","","","","",""],["13.07.2025","Челсі - ПСЖ","3:0","1:2","1:3","0:2","1:3","0:3","","","","","","","","","","","","","","",""]],"1945041354":[["Question","Final Result","","Бо","Лб","Антон","Макс","Женя","Денис","","","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["1 place","Челсі","Prediction","Псж","Баварія","Псж","Псж","Псж","","","","","","","","","","","","","","",""],["2 place","Псж","Prediction","Сіті","Псж","Баварія","Реал","Реал","","","","","","","","","","","","","","",""],["","","Points","0","3","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Teams not from Europe in 1/4","3","Prediction","0","0","0","2","1","","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Chelsea stage","Фінал","Prediction","01.04","01.04","01.04","01.02","01.08","","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["PSG stage","Фінал","Prediction","Півфінал","Фінал","Фінал","Фінал","Фінал","","","","","","","","","","","","","","",""],["","","Points","0","3","3","3","3","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Messi goals","1","Prediction","3","3","2","4","6","","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"]],"1147745050":[["Condition","Points","Condition is valid at following stages","","Condition is valid for leaderboards","",""],["","","Group","Play-off","Group","Play-off","General"],["Вгаданий результата матчу (перемога/нічия)","1","yes","yes","yes","yes","yes"],["Вгаданий рахунок матчу","3","yes","yes","yes","yes","yes"],["Стадія Челсі (група,1/8,1/4,1/2, Фінал)","3","no","yes","no","yes","yes"],["Стадія ПСЖ (група,1/8,1/4,1/2, Фінал)","3","no","yes","no","yes","yes"],["Голів Мессі","3","no","yes","no","yes","yes"],["Кількість команд не з Європи в 1/4","3","no","yes","no","yes","yes"],["2 місце (фіналіст)","3","no","yes","no","yes","yes"],["Переможець турніру","4","no","yes","no","yes","yes"],["Прогноз робимо лише на - Основний час. \nЯкщо в декількох учасників однакова кількість очок - призові сумуються та діляться між учасниками, в таблиці вказується cпільне місце (додаткових показників - немає). \nДедлайн надання прогнозів на матчі наступного дня - 15:00 поточного дня (приклад: якщо матчі 16.06, до 15:00 15.06 прогнози мають бути надалі, якщо матчі 17.06, до 15:00 16.06 і т.д )","","","","","",""],["","","","","","",""],["Призові","","","","","",""],["Group","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["Play-off","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["General table","0.2","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""]]},"1yDjFrJ-vE3ZbHrjzgvB1Z0_Ok-PbgTp4KEHJ-Cj5oRA":{"0":[["№","Name","Points","","№","Name","Points","","№","Name","Points","Knockout phase play-offs","","","","Play-off","","","","General","",""],["1","Бо","36","","1","Бо","26","","","Бо","62","№","Name","Points","","№","Name","Points","","№","Name","Points"],["2","Лб","29","","2","Лб","15","","","Лб","44","1","Саня","39","","1","Женя","34","","","Саня","71"],["3","Антон","38","","3","Антон","21","","","Антон","59","2","Антон","38","","2","Саня","32","","","Женя","63"],["4","Андрей","28","","4","Андрей","29","","4","Андрей","57","3","Бо","36","","3","Андрей","29","","","Бо","62"],["5","Саня","39","","5","Саня","32","","5","Саня","71","4&5","Лб","29","","4","Бо","26","","4","Антон","59"],["6","Женя","29","","6","Женя","34","","6","Женя","63","4&5","Женя","29","","5","Антон","21","","5","Андрей","57"],["7","Миша","0","","7","Миша","0","","7","Миша","0","6","Андрей","28","","6","Лб","15","","6","Лб","44"],["8","Денис","0","","8","Денис","0","","8","Денис","0","7","Миша","0","","7","Миша","0","","7","Миша","0"],["9","Андрій","0","","9","Андрій","0","","9","Андрій","0","8","Денис","0","","8","Денис","0","","8","Денис","0"],["10","№10","#REF!","","10","№10","0","","10","№10","#REF!","9","Андрій","0","","9","Андрій","0","","9","Андрій","0"],["11","№11","#REF!","","11","№11","0","","11","№11","#REF!","10","№10","","","10","№10","0","","10","№10",""],["12","№12","#REF!","","12","№12","0","","12","№12","#REF!","11","№11","","","11","№11","0","","11","№11",""],["13","№13","#REF!","","13","№13","0","","13","№13","#REF!","12","№12","","","12","№12","0","","12","№12",""],["14","№14","#REF!","","14","№14","0","","14","№14","#REF!","13","№13","","","13","№13","0","","13","№13",""],["15","№15","#REF!","","15","№15","0","","15","№15","#REF!","14","№14","","","14","№14","0","","14","№14",""],["16","№16","#REF!","","16","№16","0","","16","№16","#REF!","15","№15","","","15","№15","0","","15","№15",""],["17","№17","#REF!","","17","№17","0","","17","№17","#REF!","16","№16","","","16","№16","0","","16","№16",""],["18","№18","#REF!","","18","№18","0","","18","№18","#REF!","17","№17","","","17","№17","0","","17","№17",""],["19","№19","#REF!","","19","№19","0","","19","№19","#REF!","18","№18","","","18","№18","0","","18","№18",""],["20","№20","#REF!","","20","№20","0","","20","№20","#REF!","19","№19","","","19","№19","0","","19","№19",""],["","","","","","","","","","","","20","№20","","","20","№20","0","","20","№20",""]],"922722732":[["Date","Game","Result","Бо","Лб","Антон","Андрей","Саня","Женя","Женя","Денис","№9","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Points","","","22","15","24","15","25","18","0","0","","","","","","","","","","","",""],["28.06.2026","ЮАР-Канада","0:1","1:2","1:3","0:2","0:2","0:1","2:1","","","","","","","","","","","","","",""],["29.06.2026","Бразилія - Японія","2:1","2:1","3:0","3:1","2:1","2:1","2:1","","","","","","","","","","","","","",""],["29.06.2026","Німеччина - Парагвай","1:1","3:1","5:1","1:0","2:0","2:0","4:0","","","","","","","","","","","","","",""],["30.06.2026","Марокко - Голландія","1:1","1:2","1:2","2:2 ","2:3","1:2","2:3","","","","","","","","","","","","","",""],["30.06.2026","Кот-д'Івуар - Норвегія","1:2","1:3","0:2","0:4","2:2","1:2","0:2","","","","","","","","","","","","","",""],["30.06.2026","Франція - Швеція ","3:0","3:0","3:0","3:0","3:1","2:0","3:1","","","","","","","","","","","","","",""],["01.07.2026","Мексика - Еквадор","2:0","1:1","1:1","2:1","1:0","2:1","2:1","","","","","","","","","","","","","",""],["01.07.2026","Англія - Конго","2:1","2:0","4:0","2:0","2:0","2:0","2:0","","","","","","","","","","","","","",""],["01.07.2026","Бельгія - Сенегал","2:2","2:1","2:1","1:2","1:2","2:2","2:1","","","","","","","","","","","","","",""],["02.07.2026","США - Боснія ","2:0","2:1","1:2","2:0","2:1","2:0","3:1","","","","","","","","","","","","","",""],["02.07.2026","Іспанія - Австрія","3:0","2:0","3:1","2:1","2:0","2:0","2:0","","","","","","","","","","","","","",""],["03.07.2026","Швейцарія - Алжир","2:0","2:1","1:1","2:1","1:1","2:1","1:2","","","","","","","","","","","","","",""],["03.07.2026","Португалія - Хорватія","2:1","2:1","1:0","1:1","2:1","2:1","2:1","","","","","","","","","","","","","",""],["03.07.2026","Австралія - Єгипет","1:1","1:2","1:1","1:1","0:1","0:1","1:2","","","","","","","","","","","","","",""],["04.07.2026","Аргентина - Кабо-Верде","1:1","2:0","3:0","3:0","3:0","3:0","2:0","","","","","","","","","","","","","",""],["04.07.2026","Колумбія - Гана","1:0","2:1","2:1 ","2:0","1:0","3:1","1:2","","","","","","","","","","","","","",""],["","","Boosts ","","","","","","","","","","","","","","","","","","","",""],["","","2х","Франція - Швеція","Бельгія - Сенегал","Аргентина - Кабо-Верде","Німеччина - Парагвай","Франція - Швеція","Бразилія - Японія","","","","","","","","","","","","","",""],["","","3х","Іспанія - Австрія","Португалія - Хорватія","Франція - Швеція","Аргентина - Кабо-Верде","Аргентина - Кабо-Верде","Іспанія - Австрія","","","","","","","","","","","","","",""],["","","Double prediction","Португалія - Хорватія \n2:1 / 1:1","Колумбія - Гана\n2:1 / 2:2","Марокко - Голландія\n2:2 / 3:2","Португалія - Хорватія \n2:1 / 1:1","Португалія - Хорватія \n2:1 / 1:1","Аргентина - Кабо-Верде\n2:0 / 3:0","","","","","","","","","","","","","",""],["","","Overtime","Бельгія - Сенегал","США - Боснія","Бельгія - Сенегал","Швейцарія - Алжир","Мексика - Еквадор","Бельгія - Сенегал","","","","","","","","","","","","","",""]],"2021317951":[["Pair ","Pair winner","Бо","Лб","Антон","Андрей","Саня","Женя","Женя","Денис","Андрій","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Points","","14","14","14","13","14","11","0","0","0","","","","","","","","","","",""],["ЮАР - Канада","Канада","Канада","Канада","Канада","Канада","Канада","ЮАР","","","","","","","","","","","","","",""],["Бразилія - Японія","Бразилія","Бразилія","Бразилія","Бразилія","Бразилія","Бразилія","Бразилія","","","","","","","","","","","","","",""],["Німеччина - Парагвай","Парагвай","Німеччина","Німеччина","Німеччина","Німеччина","Німеччина","Німеччина","","","","","","","","","","","","","",""],["Марокко - Голландія","Марокко","Голландія","Голландія","Марокко","Голландія","Голландія","Голландія","","","","","","","","","","","","","",""],["Кот-д'Івуар - Норвегія","Норвегія","Норвегія","Норвегія","Норвегія","Норвегія","Норвегія","Норвегія","","","","","","","","","","","","","",""],["Франція - Швеція ","Франція","Франція","Франція","Франція","Франція","Франція","Франція","","","","","","","","","","","","","",""],["Мексика - Еквадор","Мексика","Мексика","Мексика","Мексика","Мексика","Мексика","Мексика","","","","","","","","","","","","","",""],["Англія - Конго","Англія","Англія","Англія","Англія","Англія","Англія","Англія","","","","","","","","","","","","","",""],["Бельгія - Сенегал","Бельгія","Бельгія","Бельгія","Сенегал","Сенегал","Бельгія","Бельгія","","","","","","","","","","","","","",""],["США - Боснія ","США","США","США","США","США","США","США","","","","","","","","","","","","","",""],["Іспанія - Австрія","Іспанія","Іспанія","Іспанія","Іспанія","Іспанія","Іспанія","Іспанія","","","","","","","","","","","","","",""],["Швейцарія - Алжир","Швейцарія","Швейцарія","Швейцарія","Швейцарія","Швейцарія","Швейцарія","Алжир","","","","","","","","","","","","","",""],["Австралія - Єгипет","Єгипет","Єгипет","Єгипет","Єгипет","Єгипет","Єгипет","Єгипет","","","","","","","","","","","","","",""],["Португалія - Хорватія","Португалія","Португалія","Португалія","Португалія","Португалія","Португалія","Португалія","","","","","","","","","","","","","",""],["Аргентина - Кабо-Верде","Аргентина","Аргентина","Аргентина","Аргентина","Аргентина","Аргентина","Аргентина","","","","","","","","","","","","","",""],["Колумбія - Гана","Колумбія","Колумбія","Колумбія","Колумбія","Колумбія","Колумбія","Гана","","","","","","","","","","","","","",""]],"682618555":[["Date","Game","Result","Бо","Лб","Антон","Андрей","Саня","Женя","Женя","Денис","Андрій","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Points","","","13","11","14","14","16","22","0","0","0","","","","","","","","","","",""],["1/8","","","","","","","","","","","","","","","","","","","","","",""],["04.08.2026","Канада - Марокко","0:3","1:2","1:1","1:3","1:2","0:1 ","1:2","","","","","","","","","","","","","",""],["05.08.2026","Парагвай - Франція ","0:1","0:3","0:3","0:3","0:2","0:3","0:3","","","","","","","","","","","","","",""],["05.08.2026","Бразилія - Норвегія","1:2","1:1","1:2","2:1","3:2","2:1","1:2","","","","","","","","","","","","","",""],["06.08.2026","Мексика - Англія","2:3","1:2","0:2","1:1","1:2","1:1","1:2","","","","","","","","","","","","","",""],["06.08.2026","Португалія - Іспанія","0:1","1:2","2:2","1:2","0:2","1:2","2:3","","","","","","","","","","","","","",""],["07.08.2026","США - Бельгія","1:4","1:2","1:1","1:2","2:2","2:1","1:2","","","","","","","","","","","","","",""],["07.08.2026","Аргентина - Єгипет","3:2","2:0","2:1","3:1","3:1","2:0","2:1","","","","","","","","","","","","","",""],["07.08.2026","Швейцарія - Колумбія","0:0","1:1","1:2","1:1","1:1","1:1","3:1","","","","","","","","","","","","","",""],["1/4","","","","","","","","","","","","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!"],["09.07.2026","Франція - Марокко","2:0","2:1","3:1","2:1","2:1","2:1","2:1","","","","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!","#REF!"],["10.07.2026","Іспанія - Бельгія","2:1","2:0","2:0","1:0","2:1","2:1","2:1","","","","","","","","","","","","","",""],["11.07.2026","Норвегія - Англія","1:1","1:2","2:2","2:3","1:2","1:2","2:2","","","","","","","","","","","","","",""],["12.07.2026","Аргентина - Швейцарія","1:1","2:1","1:0","3:2","2:1","1:0","3:1","","","","","","","","","","","","","",""],["1/2","","","","","","","","","","","","","","","","","","","","","",""],["14.07.2026","Франція - Іспанія","0:2","1:1","3:0","2:0","2:1","2:1","2:3","","","","","","","","","","","","","",""],["15.07.2026","Англія - Аргентина","1:2","1:1","2:1","2:2","1:1","1:2","2:2","","","","","","","","","","","","","",""],["Third place","","","","","","","","","","","","","","","","","","","","","",""],["18.07.2026","Англія - Франція","6:4","1:1","3:4","2:3","1:2","1:2","2:3","","","","","","","","","","","","","",""],["Final","","","","","","","","","","","","","","","","","","","","","",""],["19.07.2026","Аргентина - Іспанія","0:0","1:1","1:1","0:0","1:2","1:1","11:11:00","","","","","","","","","","","","","",""],["","Boosts (only 1/8, 1/4,1/2)","","","","","","","","","","","","","","","","","","","","",""],["","","2х","Парагвай - Франція","Франція - Марокко","Аргентина - Єгипет","Аргентина - Єгипет","Аргентина - Єгипет","Аргентина - Швейцарія","","","","","","","","","","","","","",""],["","","3х","Іспанія - Бельгія","Франція - Іспанія","Парагвай - Франція","Парагвай - Франція","Парагвай - Франція","Іспанія - Бельгія","","","","","","","","","","","","","",""],["","","Double prediction","Англія - Аргентина\n2:1 / 1:1 ","Норвегія - Англія\n2:2 / 1:2","США - Бельгія\n2:1 / 1:2","Мексика - Англія\n1:1 / 1:2","Канада - Марокко\n0:1 / 1:1","Бразилія - Норвегія\n2:1 / 1:2","","","","","","","","","","","","","",""],["","","Overtime","Португалія - Іспанія","Англія - Аргентина","Бразилія - Норвегія","Аргентина - Швейцарія","Португалія - Іспанія","Португалія - Іспанія","","","","","","","","","","","","","",""]],"1945041354":[["Question","Final Result","","Бо","Лб","Антон","Андрей","Саня","Женя","Женя","Денис","Андрій","№10","№11","№12","№13","№14","№15","№16","№17","№18","№19","№20"],["Champions","Іспанія","Prediction","Франція","Голландія","Франція","Франція","Іспанія","Аргентина","","","","","","","","","","","","","",""],["2 place","Аргентина","Prediction","Аргентина","Англія","Бразилія","Англія","Аргентина","Іспанія","","","","","","","","","","","","","",""],["3 place","Англія","Prediction","Іспанія","Португалія","Аргентина","Іспанія","Франція","Франція","","","","","","","","","","","","","",""],["4 place","Франція","Prediction","Англія","Аргентина","Іспанія","Аргентина","Англія","Норвегія","","","","","","","","","","","","","",""],["","","Points","2","0","0","0","4","0","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Champions Argentina ","No","Prediction","No","No","No","No","No","Yes","","","","","","","","","","","","","",""],["","","Points","2","2","2","2","2","0","0","0","0","","","","","","","","","","",""],["Spain in final","Yes","Prediction","No","No","No","No","Yes","Yes","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","2","2","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Portugal stage","01.08","Prediction","01.08","01.02","01.08","01.08","01.08","01.08","","","","","","","","","","","","","",""],["","","Points","2","0","2","2","2","2","0","0","0","0","0","0","0","0","0","0","0","0","0","0"],["Top scorer","Mbappe","Prediction","Messi","Messi","Messi","Messi","Messi","Messi","","","","01.08","Prediction","Фінал","Фінал","Фінал","Фінал","01.02","Фінал","Фінал","Фінал",""],["","","Points","0","0","0","0","0","0","0","0","0","","Points","0","0","0","0","0","0","0","0",""],["Best Player ","Rodri","Prediction","Messi","Kane","Mbappe","Mbappe","Messi","Messi","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","0","0","0","0","","","","","","","","","","",""],["Will Ronaldo score more than 1 goals (2 or more, from 1/16)","No","Prediction","No","Yes","No","No","No","Yes","","","","","","","","","","","","","",""],["","","Points","3","0","3","3","3","0","0","0","0","","","","","","","","","","",""],["Teams not from Europe in 1/4","2","Prediction","3","3","5","3","4","2","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","2","0","0","0","","","","","","","","","","",""],["Messi goals (from 1/16)","2","Prediction","4","7","4","2","5","8","","","","","","","","","","","","","",""],["","","Points","0","0","0","4","0","0","0","0","0","","","","","","","","","","",""],["Will Neymar score at least 1 goal (from 1/16)? ","Yes","Prediction","No","No","No","No","No","Yes","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","0","3","0","0","0","","","","","","","","","","",""],["Either Germany or Brazil will reach the semi-finals","No","Prediction","No","Yes","Yes","No","Yes","No","","","","","","","","","","","","","",""],["","","Points","2","0","0","2","0","2","0","0","0","","","","","","","","","","",""],["Mbappe score in final","No","Prediction","Yes","Yes","Yes","Yes","No","No","","","","","","","","","","","","","",""],["","","Points","0","0","0","0","1","1","0","0","0","","","","","","","","","","",""],["England won't reach semi-finals \n(knocked out early)","No","Prediction","No","No","Yes","No","No","Yes","","","","","","","","","","","","","",""],["","","Points","2","2","0","2","2","0","0","0","0","","","","","","","","","","",""]],"1147745050":[["Condition","Points","Condition is valid at following stages","","Condition is valid for leaderboards","",""],["","","Knockout phase play-offs","Play-off","Knockout phase play-offs","Play-off","General"],["Вгаданий результата матчу (перемога/нічия)","1","yes","yes","yes","yes","yes"],["Правильно вгадана команда що пройшла в 1/8","1","yes","no","yes","no","yes"],["Вгаданий рахунок матчу","3","yes","yes","yes","yes","yes"],["Всі бонусні питання (окрім Неймара, Мбаппе, Роналду, Мессі)","2","no","yes","no","yes","yes"],["Will Neymar score at least 1 goal (from 1/16)? \nMbappe score in final\nWill Ronaldo score more than 1 goals (2 or more, from 1/16)","yes - 3\nno - 1","no","yes","no","yes","yes"],["Messi goals (from 1/16)","4","no","yes","no","yes","yes"],["Прогноз робимо лише на - Основний час. \nЯкщо в декількох учасників однакова кількість очок - призові сумуються та діляться між учасниками, в таблиці вказується cпільне місце (додаткових показників - немає). \nБусти (2х , 3х, Double prediction) розподілені окремо для Knockout phase play-offs та для Play-off\n- Бусти (2х , 3х, Double prediction) для Knockout phase play-offsможна використати лише в 1/16\n- Бусти (2х , 3х, Double prediction) для Play-off можна використати лише в 1/8,1/4,1/2 - В матчі за 3е місце та Фіналі бусти не можна використати","","","","","",""],["Призові","","","","","",""],["Knockout phase play-offs","0.3","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""],["Play-off","0.4","","","","",""],["","1 place","0.5","","","",""],["","2 place","0.3","","","",""],["","3 place","0.2","","","",""],["General table","0.3","","","","",""],["","1 place","0.4","","","",""],["","2 place","0.35","","","",""],["","3 place","0.25","","","",""]]}};
+
+async function fetchSheet(sheetId, sheetName, gid){
+  // заморожений архів: віддаємо вшиті дані, мережа не потрібна
+  if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
+    const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
+    if(rows) return { rows };
+  }
+  const cacheKey = sheetId + '::' + sheetName + '::' + (gid || '');
+  if(cache[cacheKey]) return cache[cacheKey];
+  const res = await fetch(buildUrl(sheetId, sheetName, gid));
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  const rows = parseCSV(text).map(r => r.map(v => (v === null || v === undefined ? '' : String(v).trim())));
+  const data = { rows };
+  cache[cacheKey] = data;
+  return data;
+}
+
+/* ======== HELPERS ======== */
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+function cellStr(v){ return v === null || v === undefined ? '' : String(v).trim(); }
+
+/* Known participant names across all tournaments — used to reliably locate the
+   player header row regardless of surrounding structure. */
+const KNOWN_PLAYERS = ['бо','лб','антон','макс','саня','миша','женя','денис','андрей','андрій'];
+function isKnownPlayer(name){
+  return KNOWN_PLAYERS.includes(cellStr(name).toLowerCase());
+}
+
+/* Клітинка вважається "порожньою" для гравця: службові й нульові значення. */
+function isBlankCell(v){
+  const s = cellStr(v);
+  return s === '' || s === '0' || s === '-' || s === '#REF!' ||
+         /^points?$/i.test(s) || /^prediction$/i.test(s) || isPlaceholderName(s);
+}
+
+/* Таблиці мають дубльовані колонки (двічі «Женя») і колонки учасників, які цей
+   турнір не грають (усе порожнє, тотал 0). Прибираємо і те, і те. */
+function filterActivePlayers(rows, players, startRow, totals){
+  const seen = new Set();
+  const kept = [];
+  for(const p of players){
+    const key = cellStr(p.name).toLowerCase();
+    if(seen.has(key)) continue;
+    let hasData = false;
+    for(let ri = startRow; ri < rows.length && !hasData; ri++){
+      if(!isBlankCell(rows[ri][p.col])) hasData = true;
+    }
+    const tot = totals ? toNum(totals[p.col]) : null;
+    if(!hasData && !tot) continue;
+    seen.add(key);
+    kept.push(p);
+  }
+  return kept.length >= 2 ? kept : players;
+}
+// find the row that contains player names and return {rowIdx, players:[{col,name}]}
+function findPlayersRow(rows, minCol){
+  minCol = minCol || 0;
+  for(let ri = 0; ri < rows.length; ri++){
+    const cand = [];
+    for(let ci = minCol; ci < rows[ri].length; ci++){
+      if(isKnownPlayer(rows[ri][ci])) cand.push({ col: ci, name: cellStr(rows[ri][ci]) });
+    }
+    if(cand.length >= 2) return { rowIdx: ri, players: cand };
+  }
+  return null;
+}
+// find the Points totals row: has "Points" label and numbers in player columns
+function findTotalsRow(rows, players){
+  for(let ri = 0; ri < rows.length; ri++){
+    if(rows[ri].some(v => /^points$/i.test(cellStr(v))) &&
+       players.some(p => toNum(rows[ri][p.col]) !== null)){
+      const t = {};
+      players.forEach(p => { const n = toNum(rows[ri][p.col]); if(n !== null) t[p.col] = n; });
+      return t;
+    }
+  }
+  return null;
+}
+function isPlaceholderName(name){
+  return /^№\s*\d+$/.test(name.trim());
+}
+function toNum(v){
+  const n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+function parseScore(s){
+  const m = cellStr(s).match(/^(\d+)\s*[:\-–]\s*(\d+)$/);
+  if(!m) return null;
+  return [Number(m[1]), Number(m[2])];
+}
+function outcomeSign(pair){
+  return pair[0] > pair[1] ? 1 : pair[0] < pair[1] ? -1 : 0;
+}
+function stageClass(title){
+  const t = title.toLowerCase();
+  if(t.includes('general')) return 'stage-general';
+  if(t.includes('knockout')) return 'stage-knockout';
+  if(t.includes('play')) return 'stage-playoff';
+  if(t.includes('group')) return 'stage-group';
+  return '';
+}
+
+/* ======== LEADERBOARDS ======== */
+function renderLeaderboard(data){
+  const rows = data.rows;
+  const nCols = Math.max(0, ...rows.map(r => r.length));
+
+  // Find the header row: the one containing "Name" cells. Each "Name" cell marks a board
+  // whose columns are [№ | Name | Points] = [ci-1 | ci | ci+1]. The board title sits in
+  // the row(s) above, spanning that block.
+  // У таблиці буває кілька блоків «№ | Name | Points»: службові копії без
+  // заголовків і справжні борди із заголовком над ними. Збираємо всі рядки-шапки
+  // і далі обираємо той, у якого борди підписані.
+  const candidates = [];
+  for(let ri = 0; ri < rows.length; ri++){
+    const cols = [];
+    for(let ci = 0; ci < nCols; ci++){
+      if(/^name$/i.test(cellStr(rows[ri][ci]))) cols.push(ci);
+    }
+    if(cols.length) candidates.push({ rowIdx: ri, cols });
+  }
+  if(candidates.length === 0) return renderGenericTable(data);
+
+  let best = null;
+  for(const cand of candidates){
+    const built = buildLeaderboardBoards(rows, nCols, cand.rowIdx, cand.cols);
+    const titled = built.filter(b => b.title).length;
+    if(!best || titled > best.titled || (titled === best.titled && built.length > best.boards.length)){
+      best = { titled, boards: built, headerRowIdx: cand.rowIdx };
+    }
+  }
+  const boards = best.boards;
+  const headerRowIdx = best.headerRowIdx;
+
+  // Keep only boards that have a real stage title. Hidden helper copies have none.
+  const titled = boards.filter(b => b.title);
+  let finalBoards;
+  if(titled.length >= 1){
+    finalBoards = titled;
+  } else {
+    // Fall back to this tournament's explicit board names.
+    const STD = LEADERBOARD_NAMES[activeTournament.key] || ['Group', 'Play-off', 'General'];
+    finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
+  }
+  if(finalBoards.length === 0) return renderGenericTable(data);
+  return renderBoards(finalBoards);
+}
+
+function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
+  const boards = [];
+  for(const nameCol of nameCols){
+    const ptsCol = nameCol + 1;
+    // title: nearest non-empty text above this board. Merged stage titles in CSV land
+    // in the leftmost cell of the merged range, so scan a few columns left of Name too.
+    let title = '';
+    for(let up = 1; up <= 5 && headerRowIdx - up >= 0 && title === ''; up++){
+      for(const tc of [nameCol - 1, nameCol, nameCol - 2, nameCol - 3, ptsCol]){
+        if(tc < 0 || tc >= nCols) continue;
+        const t = cellStr(rows[headerRowIdx - up][tc]);
+        if(t !== '' && !/^(№|#|name|points?)$/i.test(t) && toNum(t) === null && !parseScore(t)){ title = t; break; }
+      }
+    }
+    const entries = [];
+    for(let di = headerRowIdx + 1; di < rows.length; di++){
+      const name = cellStr(rows[di][nameCol]);
+      const pts = toNum(rows[di][ptsCol]);
+      if(name === '' || isPlaceholderName(name)) continue;
+      if(pts === null) continue;
+      entries.push({ name, pts });
+    }
+    // Учасники, які цей турнір не грають, стоять у таблиці з 0. Ховаємо їх, але
+    // лише коли турнір уже стартував (є хоч кілька ненульових результатів).
+    const scored = entries.filter(e => e.pts > 0);
+    const shown = scored.length >= 3 ? scored : entries;
+    if(shown.length) boards.push({ title, entries: shown });
+  }
+  return boards;
+}
+
+function renderBoards(finalBoards){
+
+  return `<div class="boards">${finalBoards.map(b => {
+    const sorted = [...b.entries].sort((a, z) => z.pts - a.pts);
+    // tie-aware: assign each entry a "place" (1-based). Tied entries share the same place.
+    const labels = [];
+    const places = []; // best place index for coloring (0-based rank)
+    let pos = 1, k = 0;
+    while(k < sorted.length){
+      let j = k;
+      while(j + 1 < sorted.length && sorted[j+1].pts === sorted[k].pts) j++;
+      const size = j - k + 1;
+      const label = size === 1 ? String(pos) : Array.from({length:size}, (_, q) => pos + q).join('&');
+      for(let q = k; q <= j; q++){ labels[q] = label; places[q] = pos - 1; }
+      pos += size;
+      k = j + 1;
+    }
+    return `
+    <div class="board ${stageClass(b.title)}">
+      <div class="board-head">${escapeHtml(b.title)}</div>
+      ${sorted.map((e, idx) => {
+        const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
+        const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
+        // podium places show ONLY a medal (shared across ties); others show the numeric place
+        const rankInner = place < 3
+          ? `<span class="crown">${MEDALS[place]}</span>`
+          : escapeHtml(labels[idx]);
+        return `
+        <div class="lb-row ${placeCls}">
+          <div class="lb-rank">${rankInner}</div>
+          <div class="lb-name">${escapeHtml(e.name)}</div>
+          <div class="lb-pts">${e.pts}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ======== POINTS SUMMARY (спільний блок карток над будь-якою вкладкою) ========
+   players: [{col,name}], totals: {col: number} або масив чисел у порядку players. */
+function renderPointsSummary(players, totals){
+  if(!players || !players.length || !totals) return '';
+  const val = (p, i) => {
+    if(Array.isArray(totals)) return totals[i];
+    return totals[p.col];
+  };
+  if(players.every((p, i) => val(p, i) === undefined || val(p, i) === null || val(p, i) === '')) return '';
+  return `
+    <div class="gp-summary">
+      ${players.map((p, i) => {
+        const v = val(p, i);
+        return `
+        <div class="gp-summary-cell">
+          <span class="gp-summary-name">${escapeHtml(p.name)}</span>
+          <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+
+/* ======== MATCHES ======== */
+const GROUP_PALETTE = ['#E8944A','#9AA5A8','#A98FDB','#5FB3B3','#7CC47F','#D9C79A','#D07777','#5E97D0'];
+
+function isDateLike(s){
+  return /\d{1,2}\.\d{1,2}(\.\d{2,4})?/.test(s);
+}
+
+function findMatchesLayout(rows){
+  for(let ri = 0; ri < Math.min(rows.length, 12); ri++){
+    const r = rows[ri];
+    let dateCol = -1, gameCol = -1, resCol = -1;
+    r.forEach((v, ci) => {
+      const s = cellStr(v).toLowerCase();
+      if(s === 'date' && dateCol === -1) dateCol = ci;
+      if((s === 'game' || s === 'match') && gameCol === -1) gameCol = ci;
+      if((s === 'result' || s === 'score') && resCol === -1) resCol = ci;
+    });
+    // Game + Result are required; Date is optional (Knockout tabs may omit it)
+    if(gameCol !== -1 && resCol !== -1){
+      // If no explicit "Date" header found, check the column to the left of Game:
+      // if body rows there hold date-like values, it's the date column.
+      if(dateCol === -1 && gameCol - 1 >= 0){
+        let dateHits = 0;
+        for(let bi = ri + 1; bi < Math.min(rows.length, ri + 12); bi++){
+          if(isDateLike(cellStr(rows[bi][gameCol - 1]))) dateHits++;
+        }
+        if(dateHits >= 1) dateCol = gameCol - 1;
+      }
+      // Locate players reliably by known names (works for both old and new layouts).
+      let players = [];
+      const pr = findPlayersRow(rows, resCol + 1);
+      if(pr) players = pr.players;
+      // fallback: any text cells to the right of Result on the header row
+      if(players.length === 0){
+        for(let ci = resCol + 1; ci < r.length; ci++){
+          const name = cellStr(r[ci]);
+          if(name !== '' && !isPlaceholderName(name) && toNum(name) === null){
+            players.push({ col: ci, name });
+          }
+        }
+      }
+      if(players.length === 0) return null;
+      // totals: спершу шукаємо рядок з підписом "Points"…
+      let totals = findTotalsRow(rows, players);
+      // …а якщо підпису немає (Group / Play-off / Knockout: числа просто стоять
+      // у рядку над іменами) — беремо найближчий рядок вище з числами в колонках гравців.
+      if(!totals){
+        const namesRow = pr ? pr.rowIdx : ri;
+        for(let up = namesRow - 1; up >= 0 && !totals; up--){
+          const t = {};
+          let hits = 0;
+          players.forEach(p => {
+            const n = toNum(rows[up][p.col]);
+            if(n !== null){ t[p.col] = n; hits++; }
+          });
+          if(hits >= 2) totals = t;
+        }
+      }
+      // прибираємо дублі імен і колонки без даних (Денис/Андрій/друга «Женя»)
+      players = filterActivePlayers(rows, players, (pr ? pr.rowIdx : ri) + 1, totals);
+      return { headerRow: ri, dateCol, gameCol, resCol, players, totals };
+    }
+  }
+  return null;
+}
+
+/* Group compositions block (Group A ... Group F with team lists) */
+function extractGroupsBlock(rows, headerRow, minCol, maxCol){
+  const groups = [];
+  const seen = new Set();
+  const searchLimit = Math.max(0, headerRow - 1);
+  for(let ri = 0; ri < searchLimit; ri++){
+    const r = rows[ri];
+    for(let ci = 0; ci <= Math.min(r.length - 1, maxCol); ci++){
+      const v = cellStr(r[ci]);
+      if(/^group\s+\S+$/i.test(v)){
+        const key = v.toLowerCase();
+        if(seen.has(key)) continue; // hidden duplicates repeat the same titles
+        const teams = [];
+        for(let di = ri + 1; di < headerRow; di++){
+          const t = cellStr(rows[di][ci]);
+          if(t === '' || toNum(t) !== null || /^points?$/i.test(t)) break;
+          teams.push(t);
+        }
+        if(teams.length){
+          seen.add(key);
+          groups.push({ title: v, teams });
+        }
+      }
+    }
+    if(groups.length) break; // group titles all live on one row
+  }
+  return groups;
+}
+
+function renderGroupsBlock(groups){
+  if(!groups.length) return '';
+  return `<div class="groups-grid">${groups.map((g, i) => {
+    const color = GROUP_PALETTE[i % GROUP_PALETTE.length];
+    return `
+    <div class="group-card">
+      <div class="g-head" style="color:${color}; box-shadow:inset 0 3px 0 ${color};">${escapeHtml(g.title)}</div>
+      ${g.teams.map(t => `<div class="g-team">${withFlag(t)}</div>`).join('')}
+    </div>`;
+  }).join('')}</div>`;
+}
+
+/* ======== BOOSTS (2х / 3х / Double prediction / Overtime) ========
+   Внизу аркуша Play-off / Knockout лежить блок:
+   [ | Boosts (only 1/8, 1/4,1/2) | ... ]
+   [ | | 2х | <матч Бо> | <матч Лб> | ... ]
+   Підпис буста — остання непорожня клітинка ліворуч від колонок гравців. */
+function findBoostsRow(rows, headerRow, players){
+  const firstPCol = Math.min(...players.map(p => p.col));
+  for(let ri = headerRow + 1; ri < rows.length; ri++){
+    for(let ci = 0; ci < firstPCol; ci++){
+      if(/^boosts\b/i.test(cellStr(rows[ri][ci]))) return ri;
+    }
+  }
+  return -1;
+}
+
+function extractBoosts(rows, startRow, players){
+  if(startRow === -1) return null;
+  const firstPCol = Math.min(...players.map(p => p.col));
+  let title = '';
+  for(let ci = 0; ci < firstPCol; ci++){
+    const v = cellStr(rows[startRow][ci]);
+    if(/^boosts\b/i.test(v)){ title = v; break; }
+  }
+  const items = [];
+  for(let ri = startRow + 1; ri < rows.length; ri++){
+    let label = '';
+    for(let ci = firstPCol - 1; ci >= 0; ci--){
+      const v = cellStr(rows[ri][ci]);
+      if(v !== ''){ label = v; break; }
+    }
+    const vals = players.map(p => cellStr(rows[ri][p.col]));
+    if(label === '' && vals.every(v => v === '')) continue;
+    if(label === '') continue;
+    items.push({ label, vals });
+  }
+  return items.length ? { title: title || 'Boosts', items } : null;
+}
+
+function renderBoostsBlock(boosts, players, predMap){
+  if(!boosts) return '';
+  predMap = predMap || {};
+  return `
+  <div class="table-card boosts-card">
+    <table class="sheet-table boosts">
+      ${colGroup([14], players.length)}
+      <thead>
+        <tr>
+          <th class="boost-head">${escapeHtml(boosts.title)}</th>
+          ${players.map(p => `<th class="boost-player">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${boosts.items.map(it => `
+          <tr>
+            <td class="boost-label ${boostKind(it.label)}">${escapeHtml(it.label)}</td>
+            ${it.vals.map((v, i) => {
+              const lines = cellStr(v).split(/\r?\n/).map(cellStr).filter(Boolean);
+              if(!lines.length) return '<td class="boost-val">—</td>';
+              const game = lines[0];
+              const scores = lines.slice(1).join(' ').split('/').map(cellStr).filter(Boolean);
+              // жирним — той рахунок, який реально стоїть у таблиці матчів
+              const counted = cellStr(predMap[players[i].col + '|' + normGame(game)]);
+              const scoreHtml = scores.length
+                ? `<span class="boost-scores">${scores.map(sc =>
+                    counted && sc === counted ? `<b>${escapeHtml(sc)}</b>` : escapeHtml(sc)).join(' / ')}</span>`
+                : '';
+              return `<td class="boost-val">${gameWithFlags(game)}${scoreHtml}</td>`;
+            }).join('')}
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>`;
+}
+
+/* Тип буста за підписом у таблиці. Кольори повторюють контури в Google Sheets. */
+function boostKind(label){
+  const s = cellStr(label).toLowerCase();
+  if(/^2\s*[хx]/.test(s)) return 'b2x';
+  if(/^3\s*[хx]/.test(s)) return 'b3x';
+  if(/double/.test(s)) return 'bdp';
+  if(/overtime|овертайм|додатков/.test(s)) return 'bot';
+  return 'bgen';
+}
+
+/* Нормалізація назви матчу, щоб «Франція - Швеція » з блоку бустів збіглася
+   з «Франція - Швеція» у таблиці матчів. */
+function normGame(s){
+  return cellStr(s).toLowerCase().replace(/[–—]/g, '-').replace(/\s*-\s*/g, '-').replace(/\s+/g, ' ').trim();
+}
+
+/* key: "<колонка гравця>|<матч>" -> { kind, label, scores:[...] } */
+function buildBoostMap(boosts, players){
+  const map = {};
+  if(!boosts) return map;
+  for(const item of boosts.items){
+    const kind = boostKind(item.label);
+    item.vals.forEach((val, i) => {
+      const lines = cellStr(val).split(/\r?\n/).map(cellStr).filter(Boolean);
+      if(!lines.length) return;
+      const game = lines[0];
+      const scores = [];
+      lines.slice(1).join(' ').split('/').forEach(part => {
+        const p = cellStr(part);
+        if(parseScore(p)) scores.push(p);
+      });
+      map[players[i].col + '|' + normGame(game)] = { kind, label: item.label, scores };
+    });
+  }
+  return map;
+}
+
+/* Рівномірна сітка колонок: службові колонки мають фіксовану частку, всі
+   колонки гравців — однакову. Без цього довші імена (Антон, Андрей) розтягують
+   свою колонку більше за решту. */
+function colGroup(metaWidths, playerCount){
+  const meta = metaWidths.reduce((a, b) => a + b, 0);
+  const per = playerCount ? Math.min(11, (100 - meta) / playerCount) : 0;
+  const used = meta + per * playerCount;
+  // залишок віддаємо першій «широкій» колонці (Game / Question)
+  const extra = 100 - used;
+  const extraIdx = Math.max(0, metaWidths.length - 2);
+  return `<colgroup>${metaWidths.map((w, i) =>
+      `<col style="width:${(i === extraIdx ? w + extra : w).toFixed(2)}%">`).join('')
+    }${Array.from({length: playerCount}, () => `<col style="width:${per.toFixed(2)}%">`).join('')}</colgroup>`;
+}
+
+function renderMatches(data){
+  const rows = data.rows;
+  const layout = findMatchesLayout(rows);
+  if(!layout) return null;
+  const { headerRow, dateCol, gameCol, resCol, players } = layout;
+  let totals = layout.totals;
+
+  // Блок бустів іде окремо в кінці аркуша — виносимо його з таблиці матчів.
+  const boostsStart = findBoostsRow(rows, headerRow, players);
+
+  const body = [];
+  const predMap = {};
+  let lastDate = '';
+  let filledDate = '';   // last non-empty, date-like value seen (for merge forward-fill)
+  let dayIndex = 0;
+  const bodyEnd = boostsStart === -1 ? rows.length : boostsStart;
+  for(let ri = headerRow + 1; ri < bodyEnd; ri++){
+    const r = rows[ri];
+    const game = cellStr(r[gameCol]);
+    const rawDate = cellStr(r[dateCol]);
+    const preds = players.map(p => cellStr(r[p.col]));
+
+    // рядок тоталів («Points | | | 12 | 10 | …») — не стадія і не матч
+    if(/^points?$/i.test(rawDate) || /^points?$/i.test(game)) continue;
+
+    if(game === ''){
+      // stage separator (merged "1/8", "Semifinals", "Final" lands in the date column)
+      if(rawDate !== '' && !isDateLike(rawDate)){
+        // this row may carry the totals (Play-off layout)
+        if(!totals){
+          const t = {};
+          let any = false;
+          players.forEach((p, pi) => {
+            const n = toNum(preds[pi]);
+            if(n !== null){ t[p.col] = n; any = true; }
+          });
+          if(any) totals = t;
+        }
+        body.push({ sep: true, label: rawDate });
+      }
+      continue;
+    }
+    // a stage label can also land in the game column
+    if(cellStr(r[resCol]) === '' && !isDateLike(rawDate) && rawDate === '' && preds.every(v => v === '' || toNum(v) !== null) && !parseScore(game) && preds.some(v => toNum(v) !== null)){
+      if(!totals){
+        const t = {};
+        players.forEach((p, pi) => {
+          const n = toNum(preds[pi]);
+          if(n !== null) t[p.col] = n;
+        });
+        totals = t;
+      }
+      body.push({ sep: true, label: game });
+      continue;
+    }
+    // рядок-стадія, у якого підпис лежить у колонці Game, а прогнози порожні
+    // ("1/8", "1/4", "Фінал" у старих турнірах)
+    if(cellStr(r[resCol]) === '' && !parseScore(game) && !splitGame(game) && preds.every(v => v === '') &&
+       (rawDate === '' || !isDateLike(rawDate)) && game.length <= 40){
+      body.push({ sep: true, label: game });
+      continue;
+    }
+
+    // forward-fill so every match row carries its date.
+    if(rawDate !== '' && isDateLike(rawDate)) filledDate = rawDate;
+    const dateVal = filledDate;
+    const isDayStart = dateVal !== '' && dateVal !== lastDate;
+    if(isDayStart){ lastDate = dateVal; dayIndex++; }
+    body.push({ date: dateVal, isDayStart, dayIndex, game, result: cellStr(r[resCol]), preds });
+    players.forEach((p, pi) => {
+      if(preds[pi] !== '') predMap[p.col + '|' + normGame(game)] = preds[pi];
+    });
+  }
+  if(body.filter(b => !b.sep).length === 0) return null;
+
+  const groups = extractGroupsBlock(rows, headerRow, Math.min(...players.map(p => p.col)), Math.max(...players.map(p => p.col)));
+  const boosts = extractBoosts(rows, boostsStart, players);
+  const boostMap = buildBoostMap(boosts, players);
+  const usedKinds = [...new Set(Object.values(boostMap).map(b => b.kind + '\u0000' + b.label))]
+    .map(s => ({ kind: s.split('\u0000')[0], label: s.split('\u0000')[1] }));
+  const hasDate = dateCol !== -1;
+  const nCols = (hasDate ? 3 : 2) + players.length;
+
+  return `
+  ${renderPointsSummary(players, totals)}
+  ${renderGroupsBlock(groups)}
+  <div class="matches-card">
+    <table class="matches">
+      ${colGroup(hasDate ? [9, 26, 9] : [26, 9], players.length)}
+      <thead>
+        <tr>
+          ${hasDate ? '<th class="meta">Date</th>' : ''}
+          <th class="meta th-game">Game</th>
+          <th class="meta th-result" style="text-align:center;">Result</th>
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${body.map(row => {
+          if(row.sep){
+            return `<tr class="sep-row"><td colspan="${nCols}">${escapeHtml(row.label)}</td></tr>`;
+          }
+          const resPair = parseScore(row.result);
+          return `
+          <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
+            ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
+            <td class="c-game">${gameWithFlags(row.game)}</td>
+            <td class="c-result">${row.result ? `<span class="result-pill">${escapeHtml(row.result)}</span>` : '—'}</td>
+            ${row.preds.map((pv, pi) => {
+              const pPair = parseScore(pv);
+              const boost = boostMap[players[pi].col + '|' + normGame(row.game)];
+              // Double prediction: у блоці бустів лежать обидва рахунки, у таблиці — зарахований.
+              const alt = boost && boost.scores.length > 1
+                ? boost.scores.find(s => parseScore(s) && cellStr(s) !== cellStr(pv))
+                : null;
+              const altPair = alt ? parseScore(alt) : null;
+              const hit = p => resPair && p && p[0] === resPair[0] && p[1] === resPair[1];
+              const exact = hit(pPair) || hit(altPair);
+              // вгаданий лише результат (перемога/нічия/поразка) — 1 бал
+              const sameSide = p => resPair && p && outcomeSign(p) === outcomeSign(resPair);
+              const outcome = !exact && (sameSide(pPair) || sameSide(altPair));
+              const cls = ['pred', exact ? 'exact' : '', outcome ? 'outcome' : '',
+                           boost ? 'boosted ' + boost.kind : ''].filter(Boolean).join(' ');
+              const tip = boost ? ` title="${escapeHtml(boost.label)}"` : '';
+              const altHtml = alt ? `<span class="dp-alt">${escapeHtml(alt)}</span>` : '';
+              return `<td class="${cls}"${tip}>${escapeHtml(pv || '—')}${altHtml}</td>`;
+            }).join('')}
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="legend">
+    <span><span class="chip exact"></span> вгаданий точний рахунок</span>
+    <span><span class="chip outcome"></span> вгаданий результат</span>
+    ${usedKinds.map(k => `<span><span class="chip ${k.kind}"></span> ${escapeHtml(k.label)}</span>`).join('')}
+  </div>
+  ${renderBoostsBlock(boosts, players, predMap)}`;
+}
+
+/* ======== GROUP POSITIONS ========
+   Layout per group block:
+   [Group X | Final positions |  | P1 | P2 | ... ]  <- header-ish
+   [team    | actualTeam      |  | predTeam | ...  ]  x4 teams
+   Groups stacked vertically, separated by a "-" spacer row.
+   A trailing "Points" row holds each player's score. */
+function renderGroupPositions(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+  const nCols = Math.max(0, ...rows.map(r => r.length));
+
+  // "Final result" column — holds the actual final standings.
+  let fpCol = -1;
+  for(let ri = 0; ri < rows.length; ri++){
+    const ci = rows[ri].findIndex(v => /^final (result|positions?)$/i.test(v));
+    if(ci !== -1){ fpCol = ci; break; }
+  }
+  if(fpCol === -1) return null;
+
+  // "Group X" title column (the seeded/composition column). Confirmed structure:
+  // col0 = seed list + "Group X" title, then a spacer, fpCol = Final result, spacer, players.
+  let seedCol = -1;
+  for(let ri = 0; ri < rows.length && seedCol === -1; ri++){
+    for(let ci = 0; ci < fpCol; ci++){
+      if(/^group\s+\S+/i.test(cellStr(rows[ri][ci]))){ seedCol = ci; break; }
+    }
+  }
+  if(seedCol === -1) seedCol = 0;
+
+  // Players row: reliably located by known participant names (to the right of Final result).
+  const pr = findPlayersRow(rows, fpCol + 1);
+  if(!pr) return null;
+  const players = filterActivePlayers(rows, pr.players, pr.rowIdx + 1, null);
+  const totalsRow = findTotalsRow(rows, players);
+
+  // build points summary (player -> total)
+  let pointsRow = null;
+  if(totalsRow){
+    pointsRow = players.map(p => totalsRow[p.col] !== undefined ? String(totalsRow[p.col]) : '0');
+  }
+
+  // walk rows building group blocks
+  const blocks = [];
+  let cur = null;
+  for(let ri = 0; ri < rows.length; ri++){
+    const r = rows[ri];
+    const gcell = cellStr(r[seedCol]);
+    const fpHeader = /^final (result|positions?)$/i.test(cellStr(r[fpCol]));
+
+    if(/^group\s+\S+/i.test(gcell) && fpHeader){
+      if(cur && cur.teams.length) blocks.push(cur);
+      cur = { title: gcell, teams: [] };
+      continue;
+    }
+    if(cur){
+      const seed = cellStr(r[seedCol]);          // composition (col 0)
+      const actual = cellStr(r[fpCol]);          // final standing
+      const preds = players.map(p => cellStr(r[p.col]));
+      if(actual !== '' && actual !== '-'){
+        cur.teams.push({ seed, actual, preds });
+      } else if(seed === '' && actual === '' && preds.every(v => v === '')){
+        if(cur.teams.length){ blocks.push(cur); cur = null; }
+      }
+    }
+  }
+  if(cur && cur.teams.length) blocks.push(cur);
+  if(blocks.length === 0) return null;
+
+  const body = blocks.map(b => `
+    <div class="gp-block">
+      <div class="gp-head">
+        <span class="gp-title">${escapeHtml(b.title)}</span>
+      </div>
+      <table class="gp-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th class="gp-seed-h">Склад</th>
+            <th class="gp-actual-h">Final result</th>
+            ${players.map(p => `<th class="gp-player">${escapeHtml(p.name)}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${b.teams.map((t, i) => `
+            <tr>
+              <td class="gp-rank">${i + 1}</td>
+              <td class="gp-seed">${t.seed ? withFlag(t.seed) : ''}</td>
+              <td class="gp-actualteam"><span class="result-pill">${withFlag(t.actual)}</span></td>
+              ${t.preds.map(pv => {
+                const correct = pv !== '' && pv === t.actual;
+                return `<td class="gp-pred ${correct ? 'hit' : ''}">${withFlag(pv)}</td>`;
+              }).join('')}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`).join('');
+
+  // Points summary on TOP (like the totals badges in other tabs)
+  const pointsHeader = pointsRow ? `
+    <div class="gp-summary">
+      ${players.map((p, i) => `
+        <div class="gp-summary-cell">
+          <span class="gp-summary-name">${escapeHtml(p.name)}</span>
+          <span class="gp-summary-pts">${escapeHtml(pointsRow[i] || '0')}</span>
+        </div>`).join('')}
+    </div>` : '';
+
+  return `${pointsHeader}<div class="gp-wrap">${body}</div>
+  <div class="legend"><span><span class="chip exact"></span> correct position</span></div>`;
+}
+
+/* ======== PAIR WINNERS (Knockout phase play-offs winners) ========
+   Layout: row1 = Points + totals, row2 = "Pair | Pair winner | Бо | Лб | ...",
+   then rows = "Брест/ПСЖ | Псж(actual) | Псж | Псж | ...".
+   Highlight a player's pick green when it equals the actual pair winner. */
+function renderPairWinners(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+
+  let headerRow = -1, pairCol = -1, winnerCol = -1;
+  for(let ri = 0; ri < rows.length; ri++){
+    const wi = rows[ri].findIndex(v => /^pair winner$/i.test(v));
+    if(wi !== -1){
+      headerRow = ri;
+      winnerCol = wi;
+      const pi = rows[ri].findIndex(v => /^pair$/i.test(v));
+      pairCol = pi !== -1 ? pi : 0;
+      break;
+    }
+  }
+  if(headerRow === -1) return null;
+
+  const prPW = findPlayersRow(rows, winnerCol + 1);
+  const players = prPW ? filterActivePlayers(rows, prPW.players, prPW.rowIdx + 1, null) : [];
+  if(players.length === 0) return null;
+
+  let totals = null;
+  for(let ri = 0; ri < rows.length; ri++){
+    if(rows[ri].some(v => /^points$/i.test(v)) && players.some(p => toNum(rows[ri][p.col]) !== null)){
+      totals = {};
+      players.forEach(p => { const n = toNum(rows[ri][p.col]); if(n !== null) totals[p.col] = n; });
+      break;
+    }
+  }
+  // фолбек: рядок з числами над іменами, без підпису "Points"
+  if(!totals){
+    for(let up = prPW.rowIdx - 1; up >= 0 && !totals; up--){
+      const t = {};
+      let hits = 0;
+      players.forEach(p => { const n = toNum(rows[up][p.col]); if(n !== null){ t[p.col] = n; hits++; } });
+      if(hits >= 2) totals = t;
+    }
+  }
+
+  const items = [];
+  for(let ri = headerRow + 1; ri < rows.length; ri++){
+    const r = rows[ri];
+    const pair = cellStr(r[pairCol]);
+    const actual = cellStr(r[winnerCol]);
+    if(pair === '' && actual === '') continue;
+    if(/^points$/i.test(pair)) continue;
+    items.push({ pair, actual, picks: players.map(p => cellStr(r[p.col])) });
+  }
+  if(items.length === 0) return null;
+
+  return `
+  ${renderPointsSummary(players, totals)}
+  <div class="table-card">
+    <table class="matches">
+      ${colGroup([24, 12], players.length)}
+      <thead>
+        <tr>
+          <th class="meta">Pair</th>
+          <th class="meta th-result">Winner</th>
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${items.map(it => `
+          <tr>
+            <td class="c-game">${gameWithFlags(it.pair)}</td>
+            <td class="c-result">${it.actual ? `<span class="result-pill">${withFlag(it.actual)}</span>` : '—'}</td>
+            ${it.picks.map(pick => {
+              const correct = pick !== '' && it.actual !== '' && pick.toLowerCase() === it.actual.toLowerCase();
+              return `<td class="pred ${correct ? 'exact' : ''}">${pick ? withFlag(pick) : '—'}</td>`;
+            }).join('')}
+          </tr>`).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span><span class="chip exact"></span> вгаданий переможець пари</span></div>`;
+}
+
+/* ======== SPECIAL BETS (1&2place + ... tabs) ========
+   Layout (screenshot-confirmed):
+   [Question | Final Result | (marker) | Бо | Лб | ...]   header row
+   [1 place  | Іспанія      | Prediction | Франція | ...]  a bet's predictions
+   [         |              | Points     | 0 | 4 | ...]    that bet's points
+   [Mudryk   | -            | Prediction | 1 | 2 | ...]     numeric bets: Final Result "-"
+   [         |              | Points     | 0 | 0 | ...]
+   A player's prediction is highlighted green when it matches the Final Result
+   (text bets), or — when Final Result is "-" — when that player's Points > 0. */
+function renderSpecialBets(data){
+  const rows = data.rows.map(r => r.map(cellStr));
+
+  // marker column: the one containing "Prediction" / "Points" labels
+  let markerCol = -1;
+  for(const r of rows){
+    for(let ci = 0; ci < r.length; ci++){
+      if(/^prediction$/i.test(r[ci])){ markerCol = ci; break; }
+    }
+    if(markerCol !== -1) break;
+  }
+  if(markerCol === -1) return null;
+
+  // player header row: reliably located by known participant names (right of marker)
+  const pr = findPlayersRow(rows, markerCol + 1);
+  if(!pr) return null;
+  const playersRowIdx = pr.rowIdx;
+  const players = filterActivePlayers(rows, pr.players, pr.rowIdx + 1, null);
+
+  // Build bets: each bet couples a Prediction row with the following Points row.
+  const bets = [];
+  let carryLabel = '';
+  let cur = null;
+  for(let ri = playersRowIdx + 1; ri < rows.length; ri++){
+    const r = rows[ri];
+    const marker = cellStr(r[markerCol]);
+    if(/^prediction$/i.test(marker)){
+      // flush a dangling prediction with no points row
+      if(cur) bets.push(cur);
+      let label = '';
+      for(let ci = 0; ci < markerCol - 1; ci++){
+        if(cellStr(r[ci]) !== ''){ label = cellStr(r[ci]); break; }
+      }
+      if(label !== '') carryLabel = label;
+      const actual = markerCol - 1 >= 0 ? cellStr(r[markerCol - 1]) : '';
+      cur = {
+        label: label || carryLabel,
+        actual,
+        preds: players.map(p => cellStr(r[p.col])),
+        points: players.map(() => '')
+      };
+    } else if(/^points?$/i.test(marker)){
+      if(cur){
+        cur.points = players.map(p => cellStr(r[p.col]));
+        bets.push(cur);
+        cur = null;
+      }
+    }
+  }
+  if(cur) bets.push(cur);
+  if(bets.length === 0) return null;
+
+  // decide green highlight per player for a bet
+  function isHit(bet, i){
+    const pred = cellStr(bet.preds[i]);
+    if(pred === '' || pred === '-') return false;
+    const actual = cellStr(bet.actual);
+    if(actual !== '' && actual !== '-'){
+      return pred.toLowerCase() === actual.toLowerCase();  // text bet: match Final Result
+    }
+    const pts = toNum(bet.points[i]);                       // numeric bet: scored points
+    return pts !== null && pts > 0;
+  }
+
+  // загальні Points = сума всіх Points-рядків по кожному гравцю
+  const grandTotals = players.map((p, i) =>
+    bets.reduce((acc, b) => { const n = toNum(b.points[i]); return acc + (n === null ? 0 : n); }, 0));
+
+  return `
+  ${renderPointsSummary(players, grandTotals)}
+  <div class="table-card">
+    <table class="sheet-table special">
+      ${colGroup([22, 12], players.length)}
+      <thead>
+        <tr>
+          <th class="sb-th">Question</th>
+          <th class="sb-th sb-th-actual" style="text-align:center;">Final Result</th>
+          ${players.map(p => `<th class="sb-th-player">${escapeHtml(p.name)}</th>`).join('')}
+        </tr>
+      </thead>
+      <tbody>
+        ${bets.map(bet => {
+          const predRow = `<tr>
+            <td class="sb-label">${escapeHtml(bet.label)}</td>
+            <td class="sb-actual">${bet.actual && bet.actual !== '-' ? `<span class="result-pill">${withFlag(bet.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
+            ${bet.preds.map((v, i) => {
+              const hit = isHit(bet, i);
+              return `<td class="sb-val ${hit ? 'sb-hit' : ''}">${v ? withFlag(v) : '—'}</td>`;
+            }).join('')}
+          </tr>`;
+          const hasPoints = bet.points.some(v => cellStr(v) !== '');
+          const pointsRow = hasPoints ? `<tr class="sb-points">
+            <td class="sb-label">Points</td>
+            <td></td>
+            ${bet.points.map(v => {
+              const n = toNum(v);
+              return `<td class="sb-val ${n !== null && n > 0 ? 'scored' : ''}">${escapeHtml(v || '—')}</td>`;
+            }).join('')}
+          </tr>` : '';
+          return predRow + pointsRow;
+        }).join('')}
+      </tbody>
+    </table>
+  </div>
+  <div class="legend"><span><span class="chip exact"></span> вгаданий прогноз</span></div>`;
+}
+
+/* ======== GENERIC TABLE ======== */
+function renderGenericTable(data){
+  let rows = data.rows.map(r => r.map(cellStr));
+
+  rows = rows.filter(r => r.some(v => v !== ''));
+  rows = rows.filter(r => {
+    const filled = r.filter(v => v !== '');
+    if(filled.length === 0) return false;
+    return !filled.every(v => v === '0' || isPlaceholderName(v));
+  });
+
+  if(rows.length === 0) return '<div class="status-line">Немає даних для відображення.</div>';
+
+  const colCount = Math.max(...rows.map(r => r.length));
+  const keepCols = [];
+  for(let ci = 0; ci < colCount; ci++){
+    const vals = rows.map(r => cellStr(r[ci])).filter(v => v !== '');
+    if(vals.length === 0) continue; // fully empty column
+    // junk column: every value is 0 / №N placeholder (hidden helper columns)
+    const junk = vals.every(v => v === '0' || isPlaceholderName(v));
+    if(!junk) keepCols.push(ci);
+  }
+  rows = rows.map(r => keepCols.map(ci => cellStr(r[ci])));
+
+  const headerRow = rows[0];
+  const bodyRows = rows.slice(1);
+
+  // detect a "Points" column (header cell equals Points/Очки) to gold-highlight it
+  const pointsColIdx = headerRow.findIndex(c => /^(points?|очк[иі]|бали?)$/i.test(cellStr(c)));
+
+  return `
+    <div class="table-card">
+      <table class="sheet-table">
+        <thead><tr>${headerRow.map((c, ci) =>
+          `<th class="${ci === pointsColIdx ? 'th-points' : ''}">${escapeHtml(c)}</th>`
+        ).join('')}</tr></thead>
+        <tbody>
+          ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) =>
+            `<td class="${ci === pointsColIdx ? 'td-points' : ''}">${escapeHtml(r[ci] ?? '')}</td>`
+          ).join('')}</tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+/* ======== RULES + PRIZE POOL ======== */
+function renderRules(data){
+  const raw = data.rows.map(r => r.map(cellStr));
+
+  // find the "Condition" header row
+  let condRowIdx = -1, condCol = -1;
+  for(let ri = 0; ri < raw.length; ri++){
+    const ci = raw[ri].findIndex(v => /^condition$/i.test(v));
+    if(ci !== -1){ condRowIdx = ri; condCol = ci; break; }
+  }
+  if(condRowIdx === -1) return renderGenericTable(data);
+
+  // table ends at first fully-empty row (Prize pool block follows — dropped)
+  let endIdx = raw.length;
+  for(let ri = condRowIdx + 2; ri < raw.length; ri++){
+    if(raw[ri].every(v => v === '')){ endIdx = ri; break; }
+    if(raw[ri].some(v => /^(призові|prize pool)$/i.test(v))){ endIdx = ri; break; }
+    // примітка внизу: довгий текст в колонці Condition без очок і без yes/no
+    const cond = cellStr(raw[ri][condCol]);
+    const rest = raw[ri].filter((v, ci) => ci !== condCol && cellStr(v) !== '');
+    if(cond.length > 60 && rest.length === 0){ endIdx = ri; break; }
+  }
+
+  const h1 = raw[condRowIdx];
+  const h2 = raw[condRowIdx + 1] || [];
+  const bodyRows = raw.slice(condRowIdx + 2, endIdx).filter(r => r.some(v => v !== ''));
+
+  let pointsCol = h1.findIndex(v => /^points?$/i.test(v));
+  if(pointsCol === -1){
+    // підпис міг загубитись — шукаємо першу колонку праворуч від Condition,
+    // де в тілі таблиці стоять числа, а не yes/no
+    for(let ci = condCol + 1; ci < Math.max(h1.length, h2.length) && pointsCol === -1; ci++){
+      const vals = bodyRows.map(r => cellStr(r[ci])).filter(v => v !== '');
+      if(vals.length && vals.every(v => toNum(v) !== null || /^yes\s*-|no\s*-/i.test(v))) pointsCol = ci;
+    }
+  }
+
+  // yes/no columns = every column at/after (pointsCol+1) that has a sub-header (h2)
+  // or yes/no body values. Collect them in order.
+  const nCols = Math.max(h1.length, h2.length, ...bodyRows.map(r => r.length));
+  const ynCols = [];
+  for(let ci = Math.max(pointsCol + 1, condCol + 1); ci < nCols; ci++){
+    const sub = cellStr(h2[ci]);
+    const bodyHasYN = bodyRows.some(r => /^(yes|no)$/i.test(cellStr(r[ci])));
+    if(sub !== '' || bodyHasYN) ynCols.push(ci);
+  }
+
+  // group the yn columns by their h1 top-label (carry-forward across empty h1 cells)
+  const groups = [];
+  let curLabel = null;
+  for(const ci of ynCols){
+    let top = cellStr(h1[ci]);
+    if(top === ''){
+      // carry forward: search left until a non-empty h1 within the yn region
+      for(let k = ci - 1; k > pointsCol; k--){
+        if(cellStr(h1[k]) !== ''){ top = cellStr(h1[k]); break; }
+      }
+    }
+    if(groups.length === 0 || groups[groups.length-1].label !== top){
+      groups.push({ label: top, cols: [ci] });
+      curLabel = top;
+    } else {
+      groups[groups.length-1].cols.push(ci);
+    }
+  }
+
+  const hasGroups = groups.some(g => g.label !== '');
+
+  const topHeader = `
+    <tr>
+      <th class="c-condition" rowspan="2">Condition</th>
+      <th rowspan="2" style="text-align:center;">Points</th>
+      ${groups.map(g => `<th class="group-head" colspan="${g.cols.length}">${escapeHtml(g.label)}</th>`).join('')}
+    </tr>
+    <tr>
+      ${ynCols.map(ci => `<th class="sub-head">${escapeHtml(cellStr(h2[ci]))}</th>`).join('')}
+    </tr>`;
+
+  const body = bodyRows.map(r => `
+    <tr>
+      <td class="c-condition">${escapeHtml(cellStr(r[condCol]))}</td>
+      <td class="c-points">${escapeHtml(cellStr(r[pointsCol]))}</td>
+      ${ynCols.map(ci => `<td>${formatYesNo(cellStr(r[ci]))}</td>`).join('')}
+    </tr>`).join('');
+
+  // footnote (the "Прогноз робимо лише..." paragraph)
+  let footnote = '';
+  for(let ri = endIdx; ri < raw.length; ri++){
+    const text = raw[ri].map(cellStr).filter(v => v !== '').join(' ');
+    if(text.length > 40 && !/^(група|group|play|general|\d+%)/i.test(text)){ footnote = text; break; }
+  }
+  const note = footnote ? `<div class="rules-note">${escapeHtml(footnote)}</div>` : '';
+
+  return `
+  <div class="rules-block table-card">
+    <table class="sheet-table rules">
+      <thead>${topHeader}</thead>
+      <tbody>${body}</tbody>
+    </table>
+  </div>${note}`;
+}
+
+function formatYesNo(v){
+  const s = cellStr(v);
+  if(/^yes$/i.test(s)) return '<span class="yn yes">yes</span>';
+  if(/^no$/i.test(s)) return '<span class="yn no">no</span>';
+  return escapeHtml(s);
+}
+
+/* ======== DISPATCH ======== */
+function renderTabContent(tab, data){
+  if(tab.kind === 'leaderboard') return renderLeaderboard(data);
+  if(tab.kind === 'rules') return renderRules(data);
+  // explicit renderers (bypass auto-detect to avoid mis-routing)
+  if(tab.kind === 'pairWinners'){ return renderPairWinners(data) || renderGenericTable(data); }
+  if(tab.kind === 'special'){ return renderSpecialBets(data) || renderGenericTable(data); }
+  if(tab.kind === 'groupPositions'){ return renderGroupPositions(data) || renderGenericTable(data); }
+  const pairs = renderPairWinners(data);
+  if(pairs) return pairs;
+  const matches = renderMatches(data);
+  if(matches) return matches;
+  const positions = renderGroupPositions(data);
+  if(positions) return positions;
+  const special = renderSpecialBets(data);
+  if(special) return special;
+  return renderGenericTable(data);
+}
+
+/* ======== UI ======== */
+async function loadActiveTab(){
+  const tab = activeTournament.tabs[activeTabIndex];
+  const content = document.getElementById('content');
+  const fromDb = activeTournament.source === 'supabase';
+  content.innerHTML = '<div class="status-line">Завантаження даних' +
+    (fromDb ? '...' : ' з Google Sheets...') + '</div>';
+  try{
+    const data = fromDb
+      ? await fetchSupabaseTab(tab)
+      : await fetchSheet(activeTournament.sheetId, tab.sheet, tab.gid);
+    if(activeTournament.tabs[activeTabIndex] !== tab) return;
+    content.innerHTML = renderTabContent(tab, data);
+  }catch(err){
+    content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.sheet)}»: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function renderTabs(){
+  const nav = document.getElementById('tabs');
+  nav.innerHTML = activeTournament.tabs.map((t, idx) =>
+    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.sheet)}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      activeTabIndex = Number(btn.dataset.idx);
+      nav.querySelectorAll('button').forEach(b => b.classList.toggle('active', b === btn));
+      loadActiveTab();
+    });
+  });
+}
+
+function renderTournaments(){
+  const nav = document.getElementById('tournaments');
+  nav.innerHTML = TOURNAMENTS.map(t =>
+    `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}</button>`
+  ).join('');
+  nav.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => setTournament(btn.dataset.key));
+  });
+}
+
+function setTournament(key){
+  const t = TOURNAMENTS.find(x => x.key === key);
+  if(!t) return;
+  activeTournament = t;
+  activeTabIndex = 0;
+  document.getElementById('tournament-title').textContent = t.title;
+  document.querySelectorAll('nav.tournaments button').forEach(b =>
+    b.classList.toggle('active', b.dataset.key === key));
+  renderTabs();
+  loadActiveTab();
+  updateTimestamp();
+}
+
+function updateTimestamp(){
+  document.getElementById('updated-at').textContent =
+    'Оновлено: ' + new Date().toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+async function refreshAll(){
+  const btn = document.getElementById('refresh-btn');
+  btn.disabled = true;
+  Object.keys(cache).forEach(k => delete cache[k]);
+  await loadActiveTab();
+  updateTimestamp();
+  btn.disabled = false;
+}
+
+document.getElementById('refresh-btn').addEventListener('click', refreshAll);
+
+/* ======== КАБІНЕТ (модалка з app.html) ======== */
+(function(){
+  const overlay = document.getElementById('cabinet-overlay');
+  const frame   = document.getElementById('cabinet-frame');
+  const btn     = document.getElementById('cabinet-btn');
+  const closeBtn= document.getElementById('cabinet-close');
+
+  // Чи є жива сесія Supabase — щоб підписати кнопку
+  function signedIn(){
+    try{
+      for (let i = 0; i < localStorage.length; i++){
+        const k = localStorage.key(i);
+        if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) return true;
+      }
+    }catch(e){}
+    return false;
+  }
+  function labelBtn(){
+    btn.textContent = signedIn() ? '⚽ Мій кабінет' : '⚽ Увійти';
+  }
+  labelBtn();
+
+  function open(){
+    // iframe вантажиться лише при першому відкритті
+    if (!frame.getAttribute('src')) frame.setAttribute('src', 'app.html');
+    overlay.classList.add('open');
+    document.body.classList.add('cabinet-lock');
+  }
+  function close(){
+    overlay.classList.remove('open');
+    document.body.classList.remove('cabinet-lock');
+    labelBtn();
+  }
+
+  btn.addEventListener('click', open);
+  closeBtn.addEventListener('click', close);
+  overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && overlay.classList.contains('open')) close();
+  });
+
+  // app.html може попросити закритись: parent.postMessage('bobet:close','*')
+  window.addEventListener('message', e => {
+    if (e.data === 'bobet:close') close();
+  });
+
+  // #cabinet у посиланні одразу відкриває кабінет
+  if (location.hash === '#cabinet') open();
+})();
+
+/* ======== INIT ======== */
+renderTournaments();
+setTournament(activeTournament.key);
+setInterval(() => {
+  if (!document.getElementById('cabinet-overlay').classList.contains('open')) refreshAll();
+}, 60000);
+</script>
+</body>
+</html>
