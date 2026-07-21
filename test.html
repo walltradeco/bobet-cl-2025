@@ -1241,6 +1241,7 @@ const TOURNAMENTS = [
       { sheet:'October',           kind:'auto',    source:'month',   monthKey:'oct2026' },
       { sheet:'October · Bonus',   kind:'special', source:'special', monthKey:'oct2026' },
       { sheet:'General · Bonus',   kind:'special', source:'special', monthKey:'season2026' },
+      { sheet:'Rules',             kind:'rules',   source:'rules' },
     ]
   },
 ];
@@ -1374,8 +1375,13 @@ async function buildMonthRows(tournamentKey){
     'gameweek_status?select=gameweek_id,number,title,deadline_at,is_open' +
     '&tournament_id=eq.' + tid + '&order=number.asc');
 
+  // Учасники — весь сезонний склад (серпень+вересень+жовтень), щоб усі три
+  // місяці показували однакові колонки гравців. Інакше місяць, у якому ще
+  // ніхто не зареєстрований, лишався б без колонок і таблиця ламалась.
+  const seasonTours = await sbGet('tournaments?select=id&key=in.(aug2026,sep2026,oct2026)');
+  const seasonIds = seasonTours.map(t => t.id).join(',');
   const people = await sbGet(
-    'participants?select=id,display_name&tournament_id=eq.' + tid +
+    'participants?select=display_name&tournament_id=in.(' + seasonIds + ')' +
     '&order=display_name.asc');
 
   const board = await sbGet(
@@ -1388,11 +1394,10 @@ async function buildMonthRows(tournamentKey){
   const totals = await sbGet(
     'leaderboard?select=display_name,total_points&tournament_id=eq.' + tid);
 
-  const names = people.map(p => p.display_name);
+  const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
-  // Матчі — відкрита інформація: показуємо розклад завжди, навіть коли
-  // учасників ще немає (колонки гравців просто порожні). Ховаються лише
-  // прогнози, а не сам список ігор.
+  // Матчі — відкрита інформація: показуємо розклад завжди. Прогнози
+  // ховаються окремо, тут лишаються порожні клітинки до дедлайну.
 
   const COL_DATE = 0, COL_GAME = 1, COL_RES = 2, COL_FIRST = 4;
   const cols = COL_FIRST + names.length;
@@ -1543,7 +1548,24 @@ async function fetchSupabaseTab(tab){
   if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
+  if(tab.source === 'rules')       return { rows: buildRulesRows() };
   return { rows: [['Невідома вкладка']] };
+}
+
+// Правила нарахування EuroSeason. Статичний текст у форматі
+// Condition | Points, який розуміє renderRules.
+function buildRulesRows(){
+  return [
+    ['Condition', 'Points'],
+    ['', ''],
+    ['Вгаданий результат матчу (перемога / нічия / поразка)', '1'],
+    ['Вгаданий точний рахунок матчу', '3'],
+    ['Бонусне питання — вгадав YES', '3'],
+    ['Бонусне питання — вгадав NO', '1'],
+    ['Barca виграє всі матчі (серп.–жовт.) — вгадав YES', '4'],
+    ['Barca виграє всі матчі (серп.–жовт.) — вгадав NO', '2'],
+    ["Ballon d'Or 2026 — вгадав переможця", '5'],
+  ];
 }
 
 
@@ -2695,15 +2717,14 @@ function renderSpecialBets(data){
               return `<td class="sb-val ${hit ? 'sb-hit' : ''}">${v ? withFlag(v) : '—'}</td>`;
             }).join('')}
           </tr>`;
-          const hasPoints = bet.points.some(v => cellStr(v) !== '');
-          const pointsRow = hasPoints ? `<tr class="sb-points">
+          const pointsRow = `<tr class="sb-points">
             <td class="sb-label">Points</td>
             <td></td>
             ${bet.points.map(v => {
               const n = toNum(v);
               return `<td class="sb-val ${n !== null && n > 0 ? 'scored' : ''}">${escapeHtml(v || '—')}</td>`;
             }).join('')}
-          </tr>` : '';
+          </tr>`;
           return predRow + pointsRow;
         }).join('')}
       </tbody>
@@ -2978,15 +2999,23 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   }
   labelBtn();
 
-  function open(){
-    // iframe вантажиться лише при першому відкритті
-    // на test.html вантажимо тестовий кабінет, на бойовій сторінці — робочий
-    if (!frame.getAttribute('src')){
-      const appSrc = /(^|\/)test\.html$/.test(location.pathname) ? 'app-test.html' : 'app.html';
-      frame.setAttribute('src', appSrc);
-    }
+  async function open(){
+    // Модалку показуємо одразу
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
+    // iframe вантажиться лише при першому відкритті
+    if (!frame.getAttribute('src')){
+      let appSrc = 'app.html';
+      // На test.html пробуємо тестовий кабінет; якщо його не залито —
+      // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
+      if (/(^|\/)test\.html$/.test(location.pathname)){
+        try {
+          const r = await fetch('app-test.html', { method: 'HEAD' });
+          if (r.ok) appSrc = 'app-test.html';
+        } catch(e) {}
+      }
+      frame.setAttribute('src', appSrc);
+    }
   }
   function close(){
     overlay.classList.remove('open');
