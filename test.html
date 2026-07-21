@@ -1098,12 +1098,12 @@
     background:rgba(6,10,7,0.86);
     -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
     display:none;
-    padding:24px 16px;
+    padding:16px;
   }
   #cabinet-overlay.open{display:block;}
   #cabinet-shell{
     position:relative;
-    max-width:820px; height:100%; margin:0 auto;
+    max-width:1200px; height:100%; margin:0 auto;
     background:var(--bg);
     border:1px solid var(--line);
     border-radius:14px;
@@ -1390,7 +1390,9 @@ async function buildMonthRows(tournamentKey){
 
   const names = people.map(p => p.display_name);
   registerPlayers(names);
-  if(!names.length) return [['У цьому місяці ще немає учасників']];
+  // Матчі — відкрита інформація: показуємо розклад завжди, навіть коли
+  // учасників ще немає (колонки гравців просто порожні). Ховаються лише
+  // прогнози, а не сам список ігор.
 
   const COL_DATE = 0, COL_GAME = 1, COL_RES = 2, COL_FIRST = 4;
   const cols = COL_FIRST + names.length;
@@ -2978,7 +2980,11 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
   function open(){
     // iframe вантажиться лише при першому відкритті
-    if (!frame.getAttribute('src')) frame.setAttribute('src', 'app.html');
+    // на test.html вантажимо тестовий кабінет, на бойовій сторінці — робочий
+    if (!frame.getAttribute('src')){
+      const appSrc = /(^|\/)test\.html$/.test(location.pathname) ? 'app-test.html' : 'app.html';
+      frame.setAttribute('src', appSrc);
+    }
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
   }
