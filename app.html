@@ -1284,21 +1284,44 @@ async function viewLog(){
 }
 
 // =====================================================================
-//  АДМІНКА (U-12): один екран на весь вікенд
+//  АДМІНКА (U-12 + US-5): усе, що адмін робить у межах вибраного етапу
+//
+//  Екран складається з блоків двох сортів:
+//    • блоки вікенда — результати, імпорт матчів, зсув дедлайну,
+//      доступ до чужого прогнозу. Показуються, лише коли в етапі
+//      є гейміки. На General їх немає, і раніше через це весь екран
+//      вивалювався з написом «Вікендів немає».
+//    • блоки етапу — бонусні питання і склад. Показуються завжди.
+//
+//  Бюджет і прайс ховаємо на General: бустів там немає.
+//  Усе, що робиться на цьому екрані, стосується етапу, вибраного
+//  перемикачем угорі. Виняток — додавання в склад: там етапи
+//  позначаються галочками окремо.
 // =====================================================================
+const AINP = "width:100%;padding:11px;background:var(--panel-3);border:1px solid var(--line);"
+           + "border-radius:9px;color:var(--text);font-size:15px";
+
 async function viewAdmin(){
   if (!S.me.is_admin) return;
-  if (!S.gw) S.gw = S.gameweeks[0];
-  if (!S.gw) { $('view').innerHTML = '<div class="card"><p class="dim">Вікендів немає</p></div>'; return; }
 
-  const { data: rows } = await sb.from('match_board').select('*')
-    .eq('gameweek_id', S.gw.gameweek_id);
+  // Гейміки належать етапу. Після перемикання етапу старий S.gw
+  // може бути з іншого турніру — тоді беремо перший тутешній.
+  const hasGw = !!(S.gameweeks && S.gameweeks.length);
+  if (hasGw && (!S.gw || !S.gameweeks.some(g => g.gameweek_id === S.gw.gameweek_id))) {
+    S.gw = S.gameweeks[0];
+  }
 
-  const seen = new Map();
-  for (const r of (rows || [])) if (!seen.has(r.match_id)) seen.set(r.match_id, r);
-  const list = [...seen.values()].sort((a, b) => a.position - b.position);
+  let list = [];
+  if (hasGw) {
+    const { data: rows } = await sb.from('match_board').select('*')
+      .eq('gameweek_id', S.gw.gameweek_id);
+    const seen = new Map();
+    for (const r of (rows || [])) if (!seen.has(r.match_id)) seen.set(r.match_id, r);
+    list = [...seen.values()].sort((a, b) => a.position - b.position);
+  }
 
-  $('view').innerHTML = `
+  // ---------- блоки вікенда ----------
+  const gwBlocks = !hasGw ? '' : `
     <div class="boost-row" style="margin-bottom:14px">
       ${S.gameweeks.map(g => `<button class="boost-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
         data-agw="${g.gameweek_id}">${esc(g.title || ('Вікенд ' + g.number))}</button>`).join('')}
@@ -1335,11 +1358,9 @@ async function viewAdmin(){
       <h2>Зсув дедлайну</h2>
       <p class="dim" style="margin-bottom:10px">
         Лише при реальному перенесенні гри. Причина обов'язкова — її бачать усі.</p>
-      <input type="datetime-local" id="dl-new" style="width:100%;padding:11px;background:var(--panel-3);
-        border:1px solid var(--line);border-radius:9px;color:var(--text);font-size:15px;margin-bottom:8px">
+      <input type="datetime-local" id="dl-new" style="${AINP};margin-bottom:8px">
       <input type="text" id="dl-why" placeholder="причина, напр. «матч Барси перенесли на понеділок»"
-        style="width:100%;padding:11px;background:var(--panel-3);border:1px solid var(--line);
-        border-radius:9px;color:var(--text);font-size:15px">
+        style="${AINP}">
       <button class="ghost" id="btn-deadline" style="margin-top:10px;width:100%">Зсунути</button>
     </div>
 
@@ -1348,168 +1369,375 @@ async function viewAdmin(){
       <p class="dim" style="margin-bottom:10px">
         Аварійний випадок. Кожне відкриття одразу потрапляє в журнал, видимий усім —
         зокрема тому, чий прогноз ти дивишся.</p>
-      <select id="ap-who" style="width:100%;padding:11px;background:var(--panel-3);
-        border:1px solid var(--line);border-radius:9px;color:var(--text);font-size:15px;margin-bottom:8px">
+      <select id="ap-who" style="${AINP};margin-bottom:8px">
         <option value="">— обери учасника —</option>
       </select>
-      <input type="text" id="ap-why" placeholder="навіщо (піде в журнал)"
-        style="width:100%;padding:11px;background:var(--panel-3);border:1px solid var(--line);
-        border-radius:9px;color:var(--text);font-size:15px">
+      <input type="text" id="ap-why" placeholder="навіщо (піде в журнал)" style="${AINP}">
       <button class="ghost" id="btn-open" style="margin-top:10px;width:100%">Відкрити із записом у журнал</button>
       <div id="open-result"></div>
-    </div>
+    </div>`;
 
+  // ---------- бюджет і прайс: тільки там, де є бусти ----------
+  const priceBlock = S.stage.bonusOnly ? '' : `
     <div class="card">
       <h2>Бюджет і прайс</h2>
       <div id="prices"></div>
       <button class="ghost" id="btn-prices" style="margin-top:10px;width:100%">Зберегти</button>
+    </div>`;
+
+  $('view').innerHTML = `
+    <div class="card" style="padding:12px 16px">
+      <p class="dim" style="margin:0">Етап: <b style="color:var(--text)">${esc(S.stage.title)}</b>${
+        hasGw ? '' : ' · вікендів у цьому етапі немає, тому блоки матчів приховані'}</p>
+    </div>
+
+    ${gwBlocks}
+    ${priceBlock}
+
+    <div class="card">
+      <h2>Бонусні питання</h2>
+      <p class="dim" style="margin-bottom:12px">
+        Відповідь вноситься по одному питанню. Бали перераховуються одразу,
+        і внизу показується, хто скільки отримав.</p>
+      <div id="bonus-admin"></div>
     </div>
 
     <div class="card">
-      <h2>Спецставки</h2>
-      <p class="dim" style="margin-bottom:10px">Впиши правильні відповіді — бали порахуються самі.</p>
-      <div id="specials"></div>
-      <button class="ghost" id="btn-specials" style="margin-top:10px;width:100%">Зберегти підсумки</button>
+      <h2>Нове бонусне питання</h2>
+      <p class="dim" style="margin-bottom:10px">Додається в етап «${esc(S.stage.title)}».</p>
+      <input type="text" id="q-text" placeholder="текст питання" style="${AINP};margin-bottom:8px">
+      <select id="q-type" style="${AINP};margin-bottom:8px">
+        <option value="yesno">YES / NO</option>
+        <option value="text">відповідь-ім'я (вписати назву чи прізвище)</option>
+      </select>
+      <div class="rev-line"><span id="q-pts-label">Балів за правильний YES</span>
+        <input type="number" id="q-pts" value="3" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <div class="rev-line" id="q-no-row"><span>Балів за правильний NO</span>
+        <input type="number" id="q-ptsno" value="1" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <button class="ghost" id="btn-qadd" style="margin-top:10px;width:100%">Додати питання</button>
+      <div id="qadd-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Склад етапу «${esc(S.stage.title)}»</h2>
+      <div id="roster-admin"></div>
+      <h2 style="margin-top:18px">Додати учасника</h2>
+      <p class="dim" style="margin-bottom:10px">
+        Позначені етапи — куди його додати. General відкривається сам разом
+        із будь-яким місяцем: інакше новачок не встиг би відповісти
+        на питання сезону.</p>
+      <input type="email" id="r-mail" placeholder="пошта" style="${AINP};margin-bottom:8px">
+      <input type="text" id="r-name" placeholder="ім'я, як у таблиці" style="${AINP};margin-bottom:10px">
+      <div class="boost-row" style="margin-bottom:10px">
+        ${STAGES.map(s => `<label class="boost-chip" style="cursor:pointer">
+          <input type="checkbox" data-rstage="${s.key}" ${s.key === S.stage.key ? 'checked' : ''}
+            style="margin-right:6px;vertical-align:middle">${esc(s.title)}</label>`).join('')}
+      </div>
+      <label class="dim" style="display:block;margin-bottom:10px;font-size:13px;cursor:pointer">
+        <input type="checkbox" id="r-admin" style="margin-right:6px;vertical-align:middle">права адміна</label>
+      <button class="ghost" id="btn-radd" style="width:100%">Додати в склад</button>
+      <div id="radd-result"></div>
     </div>`;
 
   await renderAdminExtras();
+  await renderAdminBonus();
+  await renderAdminRoster();
 
-  $('view').querySelectorAll('[data-agw]').forEach(b => b.onclick = () => {
-    S.gw = S.gameweeks.find(g => g.gameweek_id === b.dataset.agw);
-    go('admin');
-  });
+  if (hasGw) {
+    $('view').querySelectorAll('[data-agw]').forEach(b => b.onclick = () => {
+      S.gw = S.gameweeks.find(g => g.gameweek_id === b.dataset.agw);
+      go('admin');
+    });
 
-  $('btn-results').onclick = async () => {
-    const results = [];
-    $('view').querySelectorAll('[data-am]').forEach(card => {
-      const h = card.querySelector('.rs-h').value;
-      const a = card.querySelector('.rs-a').value;
-      if (h !== '' && a !== '') {
-        results.push({ match_id: card.dataset.am, home: Number(h), away: Number(a) });
+    $('btn-results').onclick = async () => {
+      const results = [];
+      $('view').querySelectorAll('[data-am]').forEach(card => {
+        const h = card.querySelector('.rs-h').value;
+        const a = card.querySelector('.rs-a').value;
+        if (h !== '' && a !== '') {
+          results.push({ match_id: card.dataset.am, home: Number(h), away: Number(a) });
+        }
+      });
+      if (!results.length) return alert('Нема що зберігати');
+      const { error } = await sb.rpc('admin_save_results', {
+        p_gameweek: S.gw.gameweek_id, p_results: results
+      });
+      if (error) return alert('Помилка: ' + error.message);
+      alert(`Збережено ${results.length}. Бали перераховано.`);
+      go('admin');
+    };
+
+    $('btn-import').onclick = async () => {
+      const lines = $('imp').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const matches = [];
+      for (const l of lines) {
+        const parts = l.split(/\s+[-–—]\s+/);
+        if (parts.length !== 2) return alert('Не розібрав рядок: ' + l);
+        matches.push({ home: parts[0].trim(), away: parts[1].trim(), kickoff: null });
       }
-    });
-    if (!results.length) return alert('Нема що зберігати');
-    const { error } = await sb.rpc('admin_save_results', {
-      p_gameweek: S.gw.gameweek_id, p_results: results
-    });
-    if (error) return alert('Помилка: ' + error.message);
-    alert(`Збережено ${results.length}. Бали перераховано.`);
-    go('admin');
+      if (!matches.length) return alert('Порожньо');
+      const { data, error } = await sb.rpc('admin_import_matches', {
+        p_gameweek: S.gw.gameweek_id, p_matches: matches
+      });
+      if (error) return alert('Помилка: ' + error.message);
+      alert(`Додано матчів: ${data}`);
+      go('admin');
+    };
+  }
+
+  // тип питання перемикає підписи балів
+  $('q-type').onchange = () => {
+    const yn = $('q-type').value === 'yesno';
+    $('q-pts-label').textContent = yn ? 'Балів за правильний YES' : 'Балів за влучну відповідь';
+    $('q-no-row').style.display = yn ? '' : 'none';
+    $('q-pts').value = yn ? 3 : 5;
   };
 
-  $('btn-import').onclick = async () => {
-    const lines = $('imp').value.split('\n').map(s => s.trim()).filter(Boolean);
-    const matches = [];
-    for (const l of lines) {
-      const parts = l.split(/\s+[-–—]\s+/);
-      if (parts.length !== 2) return alert('Не розібрав рядок: ' + l);
-      matches.push({ home: parts[0].trim(), away: parts[1].trim(), kickoff: null });
-    }
-    if (!matches.length) return alert('Порожньо');
-    const { data, error } = await sb.rpc('admin_import_matches', {
-      p_gameweek: S.gw.gameweek_id, p_matches: matches
+  $('btn-qadd').onclick = async () => {
+    const q = $('q-text').value.trim();
+    if (!q) return alert('Текст питання порожній');
+    const type = $('q-type').value;
+    const pts  = Number($('q-pts').value);
+    const ptsNo = type === 'yesno' ? Number($('q-ptsno').value) : null;
+    if (!pts) return alert('Вкажи бали');
+    if (!confirm(`Додати в «${S.stage.title}» питання:\n${q}\n${
+      type === 'yesno' ? `YES ${pts} / NO ${ptsNo}` : `відповідь-ім'я, ${pts} оч.`}`)) return;
+
+    const { data, error } = await sb.rpc('admin_bonus_add', {
+      p_month: S.stage.key, p_question: q, p_type: type,
+      p_points: pts, p_points_no: ptsNo
     });
     if (error) return alert('Помилка: ' + error.message);
-    alert(`Додано матчів: ${data}`);
-    go('admin');
+    $('qadd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(data)}</div>`;
+    $('q-text').value = '';
+    await renderAdminBonus();
+  };
+
+  $('btn-radd').onclick = async () => {
+    const mail = $('r-mail').value.trim();
+    const name = $('r-name').value.trim();
+    const asAdmin = $('r-admin').checked;
+    const stages = [...$('view').querySelectorAll('[data-rstage]')]
+      .filter(c => c.checked).map(c => c.dataset.rstage);
+
+    if (!mail) return alert('Потрібна пошта');
+    if (!name) return alert('Потрібне ім\'я');
+    if (!stages.length) return alert('Познач хоча б один етап');
+
+    const titles = stages.map(k => (STAGES.find(s => s.key === k) || {}).title || k);
+    if (!confirm(`Додати ${name} (${mail})\nв етапи: ${titles.join(', ')}${
+      asAdmin ? '\nз правами адміна' : ''}?`)) return;
+
+    const out = [];
+    for (const k of stages) {
+      const { data, error } = await sb.rpc('roster_add_stage', {
+        p_email: mail, p_name: name, p_stage: k, p_admin: asAdmin
+      });
+      out.push(error ? `⚠ ${k}: ${error.message}` : data);
+    }
+    $('radd-result').innerHTML = out.map(t =>
+      `<div class="msg ${t.startsWith('⚠') ? 'err' : 'ok'}" style="margin-top:10px">${esc(t)}</div>`).join('');
+    $('r-mail').value = ''; $('r-name').value = '';
+    await renderAdminRoster();
   };
 }
 
 // ---------------------------------------------------------------------
-//  Адмінські екрани: дедлайн, доступ до прогнозу, прайс, спецставки
+//  Бонусні питання етапу: внести правильну відповідь
+// ---------------------------------------------------------------------
+async function renderAdminBonus(){
+  const host = $('bonus-admin');
+  if (!host) return;
+
+  const { data: bets, error } = await sb.from('special_bets').select('*')
+    .eq('tournament_id', TOURNAMENT_ID).order('position');
+  if (error) { host.innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
+
+  S.adminBets = bets || [];
+  if (!S.adminBets.length) {
+    host.innerHTML = '<p class="dim">У цьому етапі бонусних питань ще немає.</p>';
+    return;
+  }
+
+  // Тип питання визначається наявністю points_yes: заповнене — YES/NO,
+  // порожнє — відповідь-ім'я. Окремої колонки «тип» у базі немає.
+  host.innerHTML = S.adminBets.map((b, i) => {
+    const yn  = b.points_yes !== null && b.points_yes !== undefined;
+    const cur = (b.correct_answer || '').trim();
+    const ctrl = yn
+      ? `<div class="boost-row">
+           <button class="boost-chip ${cur.toLowerCase() === 'yes' ? 'on' : ''}"
+             data-yn="${i}" data-val="YES">YES · ${b.points_yes}</button>
+           <button class="boost-chip ${cur.toLowerCase() === 'no' ? 'on' : ''}"
+             data-yn="${i}" data-val="NO">NO · ${b.points_no}</button>
+         </div>`
+      : `<input type="text" data-atext="${i}" value="${esc(cur)}"
+           placeholder="правильна відповідь" style="${AINP}">`;
+
+    return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)">
+      <div style="font-size:14px;margin-bottom:5px">${esc(b.question)}</div>
+      <div class="dim" style="font-size:12px;margin-bottom:9px">
+        ${yn ? 'YES/NO' : 'відповідь-ім\'я · ' + b.points_if_correct + ' оч.'}
+        · <span data-astate="${i}">${cur ? 'зараз: ' + esc(cur) : 'відповіді ще немає'}</span></div>
+      ${ctrl}
+      <button class="ghost" data-asave="${i}" style="margin-top:9px;width:100%">Внести відповідь</button>
+      <div data-ares="${i}"></div>
+    </div>`;
+  }).join('');
+
+  host.querySelectorAll('[data-yn]').forEach(btn => btn.onclick = () => {
+    const i = btn.dataset.yn;
+    host.querySelectorAll(`[data-yn="${i}"]`).forEach(x => x.classList.remove('on'));
+    btn.classList.add('on');
+    S.adminBets[i].__pick = btn.dataset.val;
+  });
+
+  host.querySelectorAll('[data-asave]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.asave);
+    const b = S.adminBets[i];
+    const yn = b.points_yes !== null && b.points_yes !== undefined;
+    const val = yn
+      ? (b.__pick || (b.correct_answer || '').toUpperCase())
+      : (host.querySelector(`[data-atext="${i}"]`).value || '').trim();
+
+    if (!val) return alert('Спершу вкажи відповідь');
+    if (!confirm(`${b.question}\nПравильна відповідь: ${val}\n\nБали перерахуються одразу. Вносимо?`)) return;
+
+    btn.disabled = true; btn.textContent = 'вношу…';
+    const { data, error } = await sb.rpc('admin_bonus_answer', {
+      p_month: S.stage.key, p_question_like: b.question, p_answer: val
+    });
+    btn.disabled = false; btn.textContent = 'Внести відповідь';
+    if (error) return alert('Помилка: ' + error.message);
+
+    // Перемальовувати список тут не можна — звіт одразу б зник.
+    // Оновлюємо лише те, що змінилось.
+    b.correct_answer = val;
+    const st = host.querySelector(`[data-astate="${i}"]`);
+    if (st) st.textContent = 'зараз: ' + val;
+
+    const res = host.querySelector(`[data-ares="${i}"]`);
+    res.innerHTML = `<div class="msg ok" style="margin-top:10px">Внесено: ${esc(val)}</div>` +
+      (data || []).map(r => `<div class="rev-line">
+        <span>${esc(r['учасник'])}</span>
+        <span class="s">${esc(r['відповів'])} · ${r['очок']} оч.</span></div>`).join('');
+  });
+}
+
+// ---------------------------------------------------------------------
+//  Склад етапу: хто зараз, кого прибрати
+// ---------------------------------------------------------------------
+async function renderAdminRoster(){
+  const host = $('roster-admin');
+  if (!host) return;
+
+  const { data: parts, error } = await sb.from('participants').select('*')
+    .eq('tournament_id', TOURNAMENT_ID).order('display_name');
+  if (error) { host.innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
+
+  host.innerHTML = !parts || !parts.length
+    ? '<p class="dim">У цьому етапі складу немає.</p>'
+    : parts.map(p => `<div class="rev-line">
+        <span>${esc(p.display_name)}${p.is_admin ? ' · адмін' : ''}</span>
+        <button class="ghost" data-rrm="${esc(p.display_name)}"
+          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></div>`).join('');
+
+  host.querySelectorAll('[data-rrm]').forEach(btn => btn.onclick = async () => {
+    const name = btn.dataset.rrm;
+    if (!confirm(`Прибрати ${name} з етапу «${S.stage.title}»?\n\n` +
+                 'Людину, у якої вже є прогнози або нараховані бали, база не віддасть — ' +
+                 'спершу треба вирішити, що робити з її результатами.')) return;
+    const { data, error } = await sb.rpc('roster_remove_stage', {
+      p_name: name, p_stage: S.stage.key
+    });
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+    await renderAdminRoster();
+  });
+}
+
+// ---------------------------------------------------------------------
+//  Адмінські екрани вікенда: дедлайн, доступ до прогнозу, прайс
+//  Кожен блок може бути відсутній на екрані — тому перевіряємо.
 // ---------------------------------------------------------------------
 async function renderAdminExtras(){
   // --- U-11: зсув дедлайну
-  $('btn-deadline').onclick = async () => {
-    const when = $('dl-new').value;
-    const why  = $('dl-why').value.trim();
-    if (!when) return alert('Вкажи нову дату');
-    if (!why)  return alert('Причина обов\'язкова — її бачать усі учасники');
-    const { error } = await sb.rpc('admin_shift_deadline', {
-      p_gameweek: S.gw.gameweek_id,
-      p_new: new Date(when).toISOString(),
-      p_reason: why
-    });
-    if (error) return alert('Помилка: ' + error.message);
-    alert('Дедлайн зсунуто, причина показана всім');
-    await loadRefs(); go('admin');
-  };
-
-  // --- U-17: доступ до чужого прогнозу через журнал
-  const { data: parts } = await sb.from('participants').select('*')
-    .eq('tournament_id', TOURNAMENT_ID);
-  const sel = $('ap-who');
-  for (const p of (parts || [])) {
-    if (p.id === S.me.participant_id) continue;
-    const o = document.createElement('option');
-    o.value = p.id; o.textContent = p.display_name;
-    sel.appendChild(o);
+  if ($('btn-deadline')) {
+    $('btn-deadline').onclick = async () => {
+      const when = $('dl-new').value;
+      const why  = $('dl-why').value.trim();
+      if (!when) return alert('Вкажи нову дату');
+      if (!why)  return alert('Причина обов\'язкова — її бачать усі учасники');
+      const { error } = await sb.rpc('admin_shift_deadline', {
+        p_gameweek: S.gw.gameweek_id,
+        p_new: new Date(when).toISOString(),
+        p_reason: why
+      });
+      if (error) return alert('Помилка: ' + error.message);
+      alert('Дедлайн зсунуто, причина показана всім');
+      await loadRefs(); go('admin');
+    };
   }
 
-  $('btn-open').onclick = async () => {
-    if (!sel.value) return alert('Обери учасника');
-    if (!confirm('Це запишеться в журнал, який бачать усі. Продовжити?')) return;
-    const { data, error } = await sb.rpc('admin_open_predictions', {
-      p_gameweek: S.gw.gameweek_id,
-      p_target: sel.value,
-      p_reason: $('ap-why').value.trim() || null
-    });
-    if (error) return alert('Помилка: ' + error.message);
-    $('open-result').innerHTML = `<div class="msg ok" style="margin-top:12px">
-      Записано в журнал</div>` + (data || []).map(r =>
-      `<div class="rev-line"><span>${esc(r.boost_code || '')}</span>
-       <span class="s">${r.home_score ?? '—'}:${r.away_score ?? '—'}</span></div>`).join('');
-  };
+  // --- U-17: доступ до чужого прогнозу через журнал
+  if ($('ap-who')) {
+    const { data: parts } = await sb.from('participants').select('*')
+      .eq('tournament_id', TOURNAMENT_ID);
+    const sel = $('ap-who');
+    for (const p of (parts || [])) {
+      if (p.id === S.me.participant_id) continue;
+      const o = document.createElement('option');
+      o.value = p.id; o.textContent = p.display_name;
+      sel.appendChild(o);
+    }
+
+    $('btn-open').onclick = async () => {
+      if (!sel.value) return alert('Обери учасника');
+      if (!confirm('Це запишеться в журнал, який бачать усі. Продовжити?')) return;
+      const { data, error } = await sb.rpc('admin_open_predictions', {
+        p_gameweek: S.gw.gameweek_id,
+        p_target: sel.value,
+        p_reason: $('ap-why').value.trim() || null
+      });
+      if (error) return alert('Помилка: ' + error.message);
+      $('open-result').innerHTML = `<div class="msg ok" style="margin-top:12px">
+        Записано в журнал</div>` + (data || []).map(r =>
+        `<div class="rev-line"><span>${esc(r.boost_code || '')}</span>
+         <span class="s">${r.home_score ?? '—'}:${r.away_score ?? '—'}</span></div>`).join('');
+    };
+  }
 
   // --- U-8c: бюджет і прайс
-  const { data: t } = await sb.from('tournaments').select('*').eq('id', TOURNAMENT_ID).single();
-  $('prices').innerHTML = `
-    <div class="rev-line"><span><b>Бюджет турніру</b></span>
-      <input type="number" id="pr-budget" value="${t.budget}" style="width:90px;padding:7px;
-        background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-        color:var(--gold);font-family:'JetBrains Mono',monospace;text-align:right;font-weight:700"></div>` +
-    S.boostTypes.map(b => `<div class="rev-line"><span>${esc(b.title)}</span>
-      <input type="number" data-price="${b.code}" value="${priceOf(b.code)}" style="width:90px;padding:7px;
-        background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-        color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>`).join('');
+  if ($('prices')) {
+    const { data: t } = await sb.from('tournaments').select('*').eq('id', TOURNAMENT_ID).single();
+    $('prices').innerHTML = `
+      <div class="rev-line"><span><b>Бюджет турніру</b></span>
+        <input type="number" id="pr-budget" value="${t.budget}" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--gold);font-family:'JetBrains Mono',monospace;text-align:right;font-weight:700"></div>` +
+      S.boostTypes.map(b => `<div class="rev-line"><span>${esc(b.title)}</span>
+        <input type="number" data-price="${b.code}" value="${priceOf(b.code)}" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>`).join('');
 
-  $('btn-prices').onclick = async () => {
-    const b = Number($('pr-budget').value);
-    const { error: e1 } = await sb.from('tournaments').update({ budget: b }).eq('id', TOURNAMENT_ID);
-    if (e1) return alert('Помилка: ' + e1.message);
-    for (const inp of $('view').querySelectorAll('[data-price]')) {
-      await sb.from('boost_prices')
-        .update({ price: Number(inp.value) })
-        .eq('tournament_id', TOURNAMENT_ID)
-        .eq('boost_code', inp.dataset.price);
-    }
-    alert('Збережено');
-    await loadRefs(); go('admin');
-  };
-
-  // --- U-15: підсумки спецставок
-  const { data: bets } = await sb.from('special_bets').select('*')
-    .eq('tournament_id', TOURNAMENT_ID).order('position');
-
-  $('specials').innerHTML = !bets || !bets.length
-    ? '<p class="dim">Спецставок у цьому турнірі немає.</p>'
-    : bets.map(b => `<div style="margin-bottom:10px">
-        <div style="font-size:14px;margin-bottom:5px">${esc(b.question)}</div>
-        <input type="text" data-bet="${b.id}" value="${esc(b.correct_answer || '')}"
-          placeholder="правильна відповідь" style="width:100%;padding:9px;
-          background:var(--panel-3);border:1px solid var(--line);border-radius:8px;
-          color:var(--text);font-size:14px"></div>`).join('');
-
-  $('btn-specials').onclick = async () => {
-    for (const inp of $('view').querySelectorAll('[data-bet]')) {
-      await sb.from('special_bets')
-        .update({ correct_answer: inp.value.trim() || null })
-        .eq('id', inp.dataset.bet);
-    }
-    const { error } = await sb.rpc('recalculate_special_bets', { p_tournament: TOURNAMENT_ID });
-    if (error) return alert('Помилка: ' + error.message);
-    alert('Підсумки збережено, бали перераховано');
-  };
+    $('btn-prices').onclick = async () => {
+      const b = Number($('pr-budget').value);
+      const { error: e1 } = await sb.from('tournaments').update({ budget: b }).eq('id', TOURNAMENT_ID);
+      if (e1) return alert('Помилка: ' + e1.message);
+      for (const inp of $('view').querySelectorAll('[data-price]')) {
+        await sb.from('boost_prices')
+          .update({ price: Number(inp.value) })
+          .eq('tournament_id', TOURNAMENT_ID)
+          .eq('boost_code', inp.dataset.price);
+      }
+      alert('Збережено');
+      await loadRefs(); go('admin');
+    };
+  }
 }
 
 // =====================================================================
