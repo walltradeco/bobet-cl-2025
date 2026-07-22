@@ -398,6 +398,16 @@ async function boot(){
     return;
   }
 
+  // Самолікування прив'язки (файл 43). Людину могли додати в новий
+  // етап уже після того, як вона створила акаунт — тоді рядок учасника
+  // лишається без profile_id і база її в цьому етапі не впізнає.
+  // bind_me() дописує зв'язок за поштою того, хто зайшов.
+  // Помилку ковтаємо навмисно: якщо не спрацює, гірше не стане.
+  try {
+    const { error } = await sb.rpc('bind_me');
+    if (error) console.warn('bind_me:', error.message);
+  } catch (e) { console.warn('bind_me:', e); }
+
   // Профіль шукаємо спершу в поточному етапі, а як там немає —
   // у General: у нього склад найповніший, тож кабінет відкриється
   // навіть якщо учасник пропускає місяць.
@@ -504,6 +514,40 @@ function priceOf(code){
 }
 function typeOf(code){
   return S.boostTypes.find(x => x.code === code) || { title: code, description: '' };
+}
+
+// ---------------------------------------------------------------------
+//  КОЛЬОРИ БУСТІВ
+//
+//  Один буст — один колір, скрізь однаковий: підсвітка клітинки матчу,
+//  список під таблицею, вкладка Boosts. Сім помітно різних тонів;
+//  міняти тут, а не по місцях використання.
+//  Такий самий словник лежить у test.html — правити треба обидва.
+// ---------------------------------------------------------------------
+const BOOST_COLORS = {
+  double_predict: '#40c4ff',   // блакитний
+  goal_diff:      '#b388ff',   // бузковий
+  x2:             '#ffd740',   // жовтий
+  total35:        '#69f0ae',   // зелений
+  autopilot:      '#ff9100',   // помаранчевий
+  btts:           '#ff4081',   // рожевий
+  x3:             '#ff5252'    // червоний
+};
+function boostColor(code){
+  return BOOST_COLORS[code] || 'var(--purple)';
+}
+// Плашка буста в його кольорі
+function boostChip(code, label, dim){
+  const c = boostColor(code);
+  return `<span class="boost-chip" style="border-color:${c};color:${c};`
+       + `background:${c}1a;${dim ? 'opacity:0.4;text-decoration:line-through;' : ''}">`
+       + esc(label) + '</span>';
+}
+function fmtWhen(iso){
+  try {
+    return new Date(iso).toLocaleString('uk-UA',
+      { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+  } catch (e) { return ''; }
 }
 
 // =====================================================================
@@ -635,8 +679,13 @@ async function viewMatches(){
     const p = S.myPred[m.match_id] || {};
     const isAp = S.ap.picks.includes(m.match_id);
     const cls = (p.boost === 'autopilot' || isAp) ? 'autopilot' : (p.boost ? 'boosted' : '');
+    // Картка матчу з бустом підсвічується кольором самого буста,
+    // щоб не читати назву (BOOST_COLORS — один словник на весь кабінет)
+    const tint = p.boost
+      ? ` style="border-left:4px solid ${boostColor(p.boost)}"`
+      : '';
     html += `
-    <div class="match ${cls}" data-match="${m.match_id}">
+    <div class="match ${cls}" data-match="${m.match_id}"${tint}>
       ${isAp ? '<div class="ap-tag">Автопілот · кандидат</div>' : ''}
       ${p.boost === 'autopilot' ? '<div class="ap-tag">Автопілот спрацював</div>' : ''}
       <div class="match-teams">
@@ -825,7 +874,11 @@ function renderBoostPickers(){
       if (code === 'autopilot') continue;   // Автопілот ставиться окремо
       const t = typeOf(code);
       const on = cur === code;
-      chips += `<button class="boost-chip ${on ? 'on' : ''}"
+      const c  = boostColor(code);
+      // Обраний буст заливається своїм кольором, необраний — лише обвід
+      const st = on ? `border-color:${c};color:#0b0b0f;background:${c};font-weight:700;`
+                    : `border-color:${c}80;color:${c};`;
+      chips += `<button class="boost-chip" style="${st}"
         data-set-boost="${m.match_id}" data-code="${code}"
         title="${esc(t.description)}">${esc(t.title)} ×${byCode[code].length}</button>`;
     }
@@ -888,7 +941,7 @@ function reviewAndSave(){
     const p = S.myPred[m.match_id];
     return `<div class="rev-line">
       <span>${esc(m.home_team)} — ${esc(m.away_team)}
-        ${p.boost ? `<span style="color:var(--purple)">· ${esc(typeOf(p.boost).title)}</span>` : ''}</span>
+        ${p.boost ? `<span style="color:${boostColor(p.boost)}">· ${esc(typeOf(p.boost).title)}</span>` : ''}</span>
       <span class="s">${p.home}:${p.away}${
         p.boost === 'double_predict' && p.home2 != null
           ? ` / ${p.home2}:${p.away2}` : ''}</span></div>`;
@@ -962,7 +1015,16 @@ async function viewDraft(){
   const { data: stock } = await sb.from('my_boost_stock').select('*')
     .eq('participant_id', S.me.participant_id);
 
-  const closed = new Date(t.draft_deadline) <= new Date();
+  // Чи вже зафіксовано склад (файл 45). Свій рядок драфту учасник
+  // читає завжди, тож окремої функції для цього не треба.
+  const { data: ds } = await sb.from('draft_submissions')
+    .select('confirmed_at,total_spent')
+    .eq('tournament_id', TOURNAMENT_ID)
+    .eq('participant_id', S.me.participant_id)
+    .maybeSingle();
+  const lockedAt = ds && ds.confirmed_at ? ds.confirmed_at : null;
+
+  const closed = new Date(t.draft_deadline) <= new Date() || !!lockedAt;
   const cur = {};
   for (const u of (stock || [])) cur[u.boost_code] = (cur[u.boost_code] || 0) + 1;
 
@@ -988,12 +1050,15 @@ async function viewDraft(){
         <div class="bar"><div class="fill ${left < 0 ? 'over' : ''}" style="width:${pct}%"></div></div>
         <div class="dim" style="margin-top:6px">Залишок: <b class="mono">${left}</b> рексів</div>
       </div>
-      ${closed ? '<div class="msg err">Драфт закрито, склад зафіксовано</div>' : ''}
+      ${lockedAt
+        ? `<div class="msg ok">Склад зафіксовано ${fmtWhen(lockedAt)}. Змінити вже не можна —
+             якщо це помилка, потрібен адмін.</div>`
+        : (closed ? '<div class="msg err">Драфт закрито, склад зафіксовано</div>' : '')}
       ${S.boostTypes.map(b => `
-        <div class="card tight">
+        <div class="card tight" style="border-left:3px solid ${boostColor(b.code)}">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
             <div style="flex:1">
-              <div style="font-weight:700;font-size:15px">${esc(b.title)}
+              <div style="font-weight:700;font-size:15px;color:${boostColor(b.code)}">${esc(b.title)}
                 <span class="mono" style="color:var(--gold);font-size:13px">${priceOf(b.code)}р</span></div>
               <div class="dim" style="margin-top:4px">${esc(b.description)}</div>
             </div>
@@ -1004,10 +1069,12 @@ async function viewDraft(){
             </div>
           </div>
         </div>`).join('')}
-      <button class="primary" id="btn-draft" ${closed || left < 0 || sp === 0 ? 'disabled' : ''}>
-        ${left < 0 ? 'Перевитрата' : 'Підтверджую склад'}</button>
+      ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${closed || left < 0 || sp === 0 ? 'disabled' : ''}>
+        ${left < 0 ? 'Перевитрата' : 'Підтвердити склад'}</button>`}
       <p class="dim" style="text-align:center;margin-top:10px">
-        До старту турніру склад можна переграти скільки завгодно.</p>`;
+        ${lockedAt
+          ? 'Розфіксувати склад може лише адмін.'
+          : 'Підтвердити можна один раз. Після цього склад не змінюється.'}</p>`;
 
     $('view').querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
       state[b.dataset.p] = (state[b.dataset.p] || 0) + 1; draw();
@@ -1025,15 +1092,25 @@ async function viewDraft(){
         `<div class="rev-line" style="border:none;margin-top:8px">
           <span><b>Разом</b></span><span class="s">${spent()} з ${budget}</span></div>`;
 
-      showModal('Твій склад бустів', body, async () => {
+      showModal('Підтвердити склад бустів', body + `
+        <p class="dim" style="margin-top:12px;color:var(--red)">
+          Це остаточно. Після підтвердження змінити склад
+          не можна — тільки через адміна.</p>`, async () => {
         const { error } = await sb.rpc('submit_draft', {
           p_tournament: TOURNAMENT_ID,
           p_items: items.map(([code, qty]) => ({ code, qty }))
         });
         if (error) throw new Error(error.message);
+
+        // Друга дія — власне замок (файл 45)
+        const { data: msg, error: e2 } = await sb.rpc('confirm_draft', {
+          p_tournament: TOURNAMENT_ID
+        });
+        if (e2) throw new Error(e2.message);
+
         closeModal();
         await go('draft');
-        alert('Склад збережено');
+        alert(msg || 'Склад зафіксовано');
       });
     };
   }
@@ -1044,39 +1121,51 @@ async function viewDraft(){
 //  СКЛАДИ ВСІХ (U-8b, U-8d)
 // =====================================================================
 async function viewStock(){
-  const { data } = await sb.from('my_boost_stock').select('*').eq('tournament_id', TOURNAMENT_ID);
-  const { data: parts } = await sb.from('participants').select('*').eq('tournament_id', TOURNAMENT_ID);
+  // boost_board (файл 45) замість my_boost_stock: «використаний»
+  // тут береться з призначення на матч, а RLS вирішує, чиє видно.
+  const [board, parts, allRes] = await Promise.all([
+    sb.from('boost_board').select('*').eq('tournament_id', TOURNAMENT_ID),
+    sb.from('participants').select('*').eq('tournament_id', TOURNAMENT_ID),
+    sb.rpc('drafts_all_confirmed', { p_tournament: TOURNAMENT_ID })
+  ]);
+  const data  = board.data || [];
+  const allOk = allRes && allRes.data === true;
 
   const byP = {};
-  for (const u of (data || [])) (byP[u.participant_id] ||= []).push(u);
+  for (const u of data) (byP[u.participant_id] ||= []).push(u);
 
-  let html = '';
-  for (const p of (parts || []).sort((a, b) => a.display_name.localeCompare(b.display_name, 'uk'))) {
+  let html = allOk
+    ? `<div class="msg ok">Підтвердили всі — склади відкриті.
+         Використані бусти з'являються, щойно відкривається вікенд.</div>`
+    : `<div class="msg">Чужі склади закриті, доки склад не підтвердять усі.</div>`;
+
+  for (const p of (parts.data || []).sort((a, b) =>
+        a.display_name.localeCompare(b.display_name, 'uk'))) {
     const units = byP[p.id] || [];
     const isMe = p.id === S.me.participant_id;
 
     if (!units.length) {
       html += `<div class="card tight"><b>${esc(p.display_name)}</b>
-        <span class="dim"> — склад закритий до старту турніру</span></div>`;
+        <span class="dim"> — склад ще закритий</span></div>`;
       continue;
     }
+    // Рахуємо окремо використані й вільні
     const counts = {};
     for (const u of units) {
-      const k = u.boost_code + '|' + u.status;
+      const k = u.boost_code + '|' + (u.used ? '1' : '0');
       counts[k] = (counts[k] || 0) + 1;
     }
     html += `<div class="card tight">
       <b style="color:${isMe ? 'var(--gold)' : 'var(--purple)'}">${esc(p.display_name)}</b>
       <div class="boost-row" style="margin-top:8px">
         ${Object.entries(counts).map(([k, n]) => {
-          const [code, st] = k.split('|');
-          const done = st === 'spent';
-          return `<span class="boost-chip" style="${done ? 'opacity:0.45;text-decoration:line-through' : ''}">
-            ${esc(typeOf(code).title)} ×${n}</span>`;
+          const [code, used] = k.split('|');
+          const label = typeOf(code).title + ' ×' + n + (used === '1' ? ' — використано' : '');
+          return boostChip(code, label, used === '1');
         }).join('')}
       </div></div>`;
   }
-  $('view').innerHTML = html || '<div class="card"><p class="dim">Складів ще немає</p></div>';
+  $('view').innerHTML = html;
 }
 
 // =====================================================================
@@ -1098,11 +1187,13 @@ async function viewBoard(){
     <div class="card">
     <h2>${season ? 'Загальний залік сезону' : 'Серпень 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
-    <table><thead><tr><th>№</th><th>Учасник</th><th>Точних</th><th style="text-align:right">Бали</th></tr></thead>
+    <table><thead><tr><th>№</th><th>Учасник</th><th>Точних</th><th class="n">Матчі</th><th class="n">Бонуси</th><th style="text-align:right">Разом</th></tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       <td class="n" style="color:var(--green)">${r.exact_count}</td>
+      <td class="n dim">${r.match_points ?? 0}</td>
+      <td class="n dim">${r.bonus_points ?? 0}</td>
       <td class="n" style="text-align:right;color:var(--gold);font-size:16px">${r.total_points}</td>
     </tr>`).join('')}</tbody></table>`}</div>`;
 
@@ -1643,8 +1734,25 @@ async function renderAdminRoster(){
     ? '<p class="dim">У цьому етапі складу немає.</p>'
     : parts.map(p => `<div class="rev-line">
         <span>${esc(p.display_name)}${p.is_admin ? ' · адмін' : ''}</span>
+        <span style="display:flex;gap:6px">
+        <button class="ghost" data-runlock="${esc(p.display_name)}"
+          style="width:auto;padding:6px 10px;font-size:13px">розфіксувати бусти</button>
         <button class="ghost" data-rrm="${esc(p.display_name)}"
-          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></div>`).join('');
+          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></span></div>`).join('');
+
+  // Розфіксація складу бустів (файл 45). База сама відмовить, якщо
+  // бусти вже розставлені по матчах — тоді спершу треба зняти їх.
+  host.querySelectorAll('[data-runlock]').forEach(btn => btn.onclick = async () => {
+    const name = btn.dataset.runlock;
+    if (!confirm(`Розфіксувати склад бустів «${name}» в етапі «${S.stage.title}»?\n\n` +
+                 'Людина зможе обрати бусти наново. Якщо вона вже поставила ' +
+                 'бусти на матчі, база відмовить.')) return;
+    const { data, error } = await sb.rpc('admin_unlock_draft', {
+      p_tournament: TOURNAMENT_ID, p_name: name
+    });
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+  });
 
   host.querySelectorAll('[data-rrm]').forEach(btn => btn.onclick = async () => {
     const name = btn.dataset.rrm;
