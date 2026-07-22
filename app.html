@@ -44,6 +44,44 @@
   }
   nav.tabs button.on{background:var(--panel-3);color:var(--text);border-color:var(--gold);}
 
+  /* ---------- ПЕРЕМИКАЧ ЕТАПІВ ---------- */
+  nav.stages{display:flex;gap:5px;overflow-x:auto;margin:12px 0 0;padding-bottom:3px;
+    -webkit-overflow-scrolling:touch;}
+  nav.stages button{
+    flex:1 1 0;background:transparent;border:1px solid var(--line);color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em;
+    text-transform:uppercase;padding:8px 6px;border-radius:8px;white-space:nowrap;cursor:pointer;
+  }
+  nav.stages button.on{background:var(--gold-soft);color:var(--gold);border-color:var(--gold);}
+  nav.stages button:disabled{opacity:0.35;cursor:not-allowed;}
+
+  /* ---------- BONUS ---------- */
+  .bq{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px;
+    background:var(--panel-2);}
+  .bq.locked{background:var(--panel);border-style:dashed;}
+  .bq .q{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:4px;}
+  .bq .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+    margin-bottom:10px;}
+  .yn{display:flex;gap:8px;}
+  .yn button{
+    flex:1;background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;
+    padding:12px;border-radius:9px;cursor:pointer;
+  }
+  .yn button.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
+  .yn button:disabled{opacity:0.4;cursor:not-allowed;}
+  .bq input.txt{
+    width:100%;box-sizing:border-box;background:var(--panel-3);border:1px solid var(--line);
+    border-radius:9px;color:var(--text);font-size:15px;padding:12px;
+    font-family:'Inter',sans-serif;
+  }
+  .bq input.txt:focus{outline:none;border-color:var(--gold);}
+  .bq input.txt:disabled{opacity:0.6;}
+  .bq .res{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:9px;}
+  .bq .res.ok{color:var(--teal);}
+  .bq .res.no{color:var(--red);}
+  .bq .res.wait{color:var(--text-dim);}
+
   /* ---------- CARDS ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
   .card.tight{padding:12px;}
@@ -193,6 +231,7 @@
         <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:11px;margin-top:5px">вийти</button>
       </div>
     </div>
+    <nav class="stages" id="stages"></nav>
     <nav class="tabs" id="tabs"></nav>
   </header>
   <div id="view"><div class="spin">завантаження…</div></div>
@@ -209,7 +248,33 @@
 // =====================================================================
 const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
-const TOURNAMENT_ID = '11111111-1111-1111-1111-111111111111';
+
+// Етапи EuroSeason 2026. UUID фіксовані у базі (файл 05_seed.sql),
+// тому список статичний — зайвого запиту на старті не робимо.
+// bonusOnly: у General немає ні матчів, ні бустів, лише бонусні питання.
+const STAGES = [
+  { key: 'season2026', id: '44444444-4444-4444-4444-444444444444', title: 'General',  bonusOnly: true  },
+  { key: 'aug2026',    id: '11111111-1111-1111-1111-111111111111', title: 'Серпень',  bonusOnly: false },
+  { key: 'sep2026',    id: '22222222-2222-2222-2222-222222222222', title: 'Вересень', bonusOnly: false },
+  { key: 'oct2026',    id: '33333333-3333-3333-3333-333333333333', title: 'Жовтень',  bonusOnly: false },
+];
+
+// Кабінет відкривається на поточному місяці. До 1 серпня — на серпні,
+// бо це найближчий етап. Після жовтня лишаємось на жовтні.
+function currentStageKey(){
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;   // 1..12
+  if (y < 2026) return 'aug2026';
+  if (y > 2026) return 'oct2026';
+  if (m <= 8)  return 'aug2026';
+  if (m === 9) return 'sep2026';
+  return 'oct2026';
+}
+
+// Змінна, а не константа: перемикач етапів її переписує.
+// Весь наявний код читає TOURNAMENT_ID як раніше, правити його не треба.
+let TOURNAMENT_ID = STAGES.find(s => s.key === currentStageKey()).id;
 
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
@@ -219,7 +284,10 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 // =====================================================================
 const S = {
   me: null,
+  stage: STAGES.find(s => s.key === currentStageKey()),
   tab: 'matches',
+  bonus: [],         // бонусні питання поточного етапу
+  bonusDraft: {},    // питання_id -> незбережена відповідь
   gameweeks: [],
   gw: null,          // поточний вікенд
   matches: [],
@@ -330,12 +398,22 @@ async function boot(){
     return;
   }
 
-  const { data: meRows, error } = await sb.rpc('me', { p_tournament: TOURNAMENT_ID });
-  if (error || !meRows || !meRows.length) {
-    $('screen-login').classList.remove('hide');
-    return msg($('login-msg'), 'Профіль не знайдено в цьому турнірі');
+  // Профіль шукаємо спершу в поточному етапі, а як там немає —
+  // у General: у нього склад найповніший, тож кабінет відкриється
+  // навіть якщо учасник пропускає місяць.
+  let ok = await loadMe(S.stage);
+  if (!ok) {
+    const gen = STAGES.find(s => s.bonusOnly);
+    if (gen && gen.key !== S.stage.key) {
+      S.stage = gen;
+      TOURNAMENT_ID = gen.id;
+      ok = await loadMe(gen);
+    }
   }
-  S.me = meRows[0];
+  if (!ok) {
+    $('screen-login').classList.remove('hide');
+    return msg($('login-msg'), 'Профіль не знайдено в жодному етапі');
+  }
 
   $('screen-login').classList.add('hide');
   $('screen-app').classList.remove('hide');
@@ -343,8 +421,67 @@ async function boot(){
   $('my-email').textContent = S.me.email || '';
 
   await loadRefs();
+  renderStages();
   renderTabs();
-  await go(S.tab);
+  await go(defaultTab());
+}
+
+// Профіль у межах одного етапу. false — учасника в цьому етапі немає.
+async function loadMe(stage){
+  const { data, error } = await sb.rpc('me', { p_tournament: stage.id });
+  if (error || !data || !data.length) return false;
+  S.me = data[0];
+  return true;
+}
+
+// =====================================================================
+//  Перемикач етапів
+// =====================================================================
+function renderStages(){
+  $('stages').innerHTML = STAGES.map(s =>
+    `<button data-stage="${s.key}" class="${S.stage.key === s.key ? 'on' : ''}">${esc(s.title)}</button>`
+  ).join('');
+  $('stages').querySelectorAll('button').forEach(b => {
+    b.onclick = () => setStage(b.dataset.stage);
+  });
+}
+
+async function setStage(key){
+  const st = STAGES.find(s => s.key === key);
+  if (!st || st.key === S.stage.key) return;
+
+  const prev = S.stage;
+  S.stage = st;
+  TOURNAMENT_ID = st.id;
+  $('view').innerHTML = '<div class="spin">завантаження…</div>';
+
+  if (!await loadMe(st)) {
+    // учасника не додано до цього етапу — вертаємось назад
+    S.stage = prev;
+    TOURNAMENT_ID = prev.id;
+    await loadMe(prev);
+    renderStages();
+    $('view').innerHTML =
+      `<div class="card"><h2>${esc(st.title)}</h2>
+       <p class="dim">Тебе ще не додано до складу цього етапу.
+       Склад заводить адмін.</p></div>`;
+    return;
+  }
+
+  // скидаємо все, що прив'язане до попереднього етапу
+  S.gw = null; S.matches = []; S.myPred = {}; S.stock = [];
+  S.ap = { unit: null, picks: [] };
+  S.bonus = []; S.bonusDraft = {};
+
+  await loadRefs();
+  renderStages();
+  await go(defaultTab());
+}
+
+// На General матчів і бустів немає, там відкриваємо одразу Bonus.
+function defaultTab(){
+  if (S.stage.bonusOnly) return 'bonus';
+  return (S.tab === 'bonus' || S.tab === 'log' || S.tab === 'admin') ? S.tab : 'matches';
 }
 
 async function loadRefs(){
@@ -373,12 +510,15 @@ function typeOf(code){
 //  Вкладки
 // =====================================================================
 function renderTabs(){
-  const tabs = [
-    ['matches', 'Матчі'],
-    ['draft',   'Драфт'],
-    ['stock',   'Склади'],
-    ['log',     'Журнал'],
-  ];
+  // На General немає ні матчів, ні бустів, ні журналу — лише Bonus.
+  const tabs = S.stage.bonusOnly
+    ? [['bonus', 'Bonus']]
+    : [
+        ['boosts',  'Boosts'],
+        ['matches', 'Матчі'],
+        ['bonus',   'Bonus'],
+        ['log',     'Журнал'],
+      ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
   $('tabs').innerHTML = tabs.map(([k, t]) =>
@@ -391,13 +531,18 @@ function renderTabs(){
 }
 
 async function go(tab){
+  // Старі маршрути draft/stock тепер одна вкладка Boosts.
+  // Наявний код усередині екранів кличе go('draft') для перемалювання —
+  // завдяки цьому рядку він далі працює без правок.
+  if (tab === 'draft' || tab === 'stock') tab = 'boosts';
+
   S.tab = tab;
   renderTabs();
   $('view').innerHTML = '<div class="spin">завантаження…</div>';
   try {
     if (tab === 'matches') await viewMatches();
-    else if (tab === 'draft') await viewDraft();
-    else if (tab === 'stock') await viewStock();
+    else if (tab === 'boosts') await viewBoosts();
+    else if (tab === 'bonus') await viewBonus();
     else if (tab === 'board') await viewBoard();
     else if (tab === 'log')   await viewLog();
     else if (tab === 'admin') await viewAdmin();
@@ -781,6 +926,35 @@ function reviewAndSave(){
 }
 
 // =====================================================================
+//  BOOSTS — драфт і склади в одній вкладці
+//
+//  viewDraft і viewStock написані так, що самі пишуть у #view.
+//  Щоб не переписувати їх, тимчасово перевішуємо id="view"
+//  на потрібний контейнер: функція малює туди, а потім id
+//  повертається на місце. Так обидва екрани лишаються цілими.
+// =====================================================================
+async function renderInto(hostId, fn){
+  const outer = $('view');
+  const host  = $(hostId);
+  if (!host) return fn();
+  outer.id = 'view-outer';
+  host.id  = 'view';
+  try   { await fn(); }
+  finally {
+    // host міг бути перемальований усередині fn, шукаємо по новому id
+    const cur = document.getElementById('view');
+    if (cur && cur !== outer) cur.id = hostId;
+    outer.id = 'view';
+  }
+}
+
+async function viewBoosts(){
+  $('view').innerHTML = '<div id="pane-draft"></div><div id="pane-stock"></div>';
+  await renderInto('pane-draft', viewDraft);
+  await renderInto('pane-stock', viewStock);
+}
+
+// =====================================================================
 //  ДРАФТ БУСТІВ (U-8a)
 // =====================================================================
 async function viewDraft(){
@@ -934,6 +1108,158 @@ async function viewBoard(){
 
   $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
   $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
+}
+
+// =====================================================================
+//  BONUS — бонусні питання етапу (US-3, US-4)
+//
+//  Тип питання визначає база: 'yesno' — дві кнопки, 'text' —
+//  поле для назви команди чи гравця. Відповідь зберігається одразу,
+//  фіксація окремою кнопкою з перепитуванням. Після фіксації
+//  все замкнено, а коли адмін внесе правильну відповідь —
+//  показуються бали.
+// =====================================================================
+async function viewBonus(){
+  const { data, error } = await sb.from('my_bonus_questions').select('*');
+  if (error) throw error;
+
+  // Фільтруємо на клієнті: рядків одиниці, а кириличні назви колонок
+  // у фільтрах PostgREST — зайвий ризик.
+  S.bonus = (data || [])
+    .filter(q => q['етап'] === S.stage.key)
+    .sort((a, b) => a['поз'] - b['поз']);
+
+  if (!S.bonus.length){
+    $('view').innerHTML = `<div class="card"><h2>Bonus</h2>
+      <p class="dim">Для етапу «${esc(S.stage.title)}» бонусних питань ще немає.</p></div>`;
+    return;
+  }
+
+  const locked  = S.bonus.some(q => q['зафіксовано']);
+  const dl      = S.bonus[0]['дедлайн'];
+  const left    = dl ? countdown(dl) : null;
+  const expired = dl ? !left : false;
+
+  let html = '';
+
+  if (locked){
+    html += `<div class="deadline closed"><span>Відповіді зафіксовано</span>
+             <span class="t">замкнено</span></div>`;
+  } else if (expired){
+    html += `<div class="deadline closed"><span>Час вийшов</span>
+             <span class="t">дедлайн минув</span></div>`;
+  } else {
+    html += `<div class="deadline"><span>До дедлайну</span>
+             <span class="t">${esc(left)}</span></div>`;
+  }
+
+  const ro = locked || expired;
+
+  html += S.bonus.map(q => {
+    const id      = q['питання_id'];
+    const type    = q['тип'];
+    const mine    = q['моя_відповідь'];
+    const correct = q['правильна'];
+    const pts     = q['мої_бали'];
+    const max     = q['максимум'];
+
+    let control;
+    if (type === 'yesno'){
+      const on = (v) => (String(mine || '').toLowerCase() === v ? ' on' : '');
+      control = `<div class="yn">
+        <button data-yn="yes" data-bet="${id}" class="${on('yes').trim()}" ${ro ? 'disabled' : ''}>YES</button>
+        <button data-yn="no"  data-bet="${id}" class="${on('no').trim()}"  ${ro ? 'disabled' : ''}>NO</button>
+      </div>`;
+    } else {
+      control = `<input class="txt" data-txt="${id}" value="${esc(mine || '')}"
+                 placeholder="назва команди або гравця" ${ro ? 'disabled' : ''}>`;
+    }
+
+    // Результат показуємо лише після фіксації і лише коли адмін
+    // вніс правильну відповідь.
+    let res = '';
+    if (locked){
+      if (correct == null || correct === ''){
+        res = `<div class="res wait">результат ще не внесено</div>`;
+      } else {
+        const hit = String(mine || '').trim().toLowerCase()
+                 === String(correct).trim().toLowerCase();
+        res = `<div class="res ${hit ? 'ok' : 'no'}">
+                 правильно: ${esc(correct)} · ${hit ? 'влучив' : 'мимо'}
+                 ${pts == null ? '' : ' · ' + pts + ' б'}
+               </div>`;
+      }
+    }
+
+    const cost = type === 'yesno'
+      ? `YES ${q['очок_за_yes']} б · NO ${q['очок_за_no']} б`
+      : `${max} б за влучну назву`;
+
+    return `<div class="bq${ro ? ' locked' : ''}">
+      <div class="q">${esc(q['питання'])}</div>
+      <div class="meta">${cost}</div>
+      ${control}
+      ${res}
+    </div>`;
+  }).join('');
+
+  if (!ro){
+    html += `<button class="primary" id="b-confirm" style="margin-top:14px">
+             Зафіксувати відповіді</button>
+             <p class="dim" style="margin-top:8px">Після фіксації змінити не вийде.</p>`;
+  }
+
+  $('view').innerHTML = `<div class="card"><h2>Bonus · ${esc(S.stage.title)}</h2></div>` + html;
+
+  if (ro) return;
+
+  // YES / NO
+  $('view').querySelectorAll('[data-yn]').forEach(b => {
+    b.onclick = async () => {
+      const bet = b.dataset.bet, val = b.dataset.yn;
+      b.parentElement.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      const { error } = await sb.rpc('save_special_answer', { p_bet: bet, p_answer: val });
+      if (error) { alert('Не збереглось: ' + error.message); await viewBonus(); }
+      else { const q = S.bonus.find(x => x['питання_id'] === bet); if (q) q['моя_відповідь'] = val; }
+    };
+  });
+
+  // Текстова відповідь — зберігаємо, коли поле втрачає фокус
+  $('view').querySelectorAll('[data-txt]').forEach(inp => {
+    inp.onblur = async () => {
+      const bet = inp.dataset.txt;
+      const val = inp.value.trim();
+      const q = S.bonus.find(x => x['питання_id'] === bet);
+      if (q && String(q['моя_відповідь'] || '') === val) return;
+      if (!val) return;
+      const { error } = await sb.rpc('save_special_answer', { p_bet: bet, p_answer: val });
+      if (error) { alert('Не збереглось: ' + error.message); await viewBonus(); }
+      else if (q) q['моя_відповідь'] = val;
+    };
+  });
+
+  // Фіксація
+  $('b-confirm').onclick = async () => {
+    // спершу дозберігаємо те, що в полі, але фокус ще не втрачено
+    const act = document.activeElement;
+    if (act && act.dataset && act.dataset.txt) { act.blur(); await new Promise(r => setTimeout(r, 250)); }
+
+    const missing = S.bonus.filter(q => !String(q['моя_відповідь'] || '').trim());
+    const body = S.bonus.map(q =>
+      `<div class="rev-line"><span>${esc(q['питання'])}</span>
+       <span class="s">${esc(q['моя_відповідь'] || '—')}</span></div>`
+    ).join('') + (missing.length
+      ? `<div class="msg err" style="margin-top:12px">Без відповіді: ${missing.length}.
+         Ці питання підуть як пропущені. Точно фіксуєш?</div>` : '');
+
+    showModal('Фіксуємо відповіді', body, async () => {
+      const { error } = await sb.rpc('confirm_special', { p_month: S.stage.key });
+      closeModal();
+      if (error) return alert('Не вийшло: ' + error.message);
+      await viewBonus();
+    });
+  };
 }
 
 // =====================================================================
