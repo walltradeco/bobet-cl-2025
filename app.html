@@ -1726,19 +1726,54 @@ async function renderAdminRoster(){
   const host = $('roster-admin');
   if (!host) return;
 
-  const { data: parts, error } = await sb.from('participants').select('*')
-    .eq('tournament_id', TOURNAMENT_ID).order('display_name');
+  // Пошти лежать в allowed_emails, читати її напряму кабінет не може —
+  // гранта немає навмисно. Тому окрема функція (файл 52).
+  const { data: parts, error } = await sb.rpc('admin_email_list', {
+    p_tournament: TOURNAMENT_ID
+  });
   if (error) { host.innerHTML = `<div class="msg err">${esc(error.message)}</div>`; return; }
 
   host.innerHTML = !parts || !parts.length
     ? '<p class="dim">У цьому етапі складу немає.</p>'
-    : parts.map(p => `<div class="rev-line">
-        <span>${esc(p.display_name)}${p.is_admin ? ' · адмін' : ''}</span>
+    : parts.map(p => {
+        const nm = p["ім'я"], em = p['пошта'] || '';
+        return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
+        <div class="rev-line" style="border:0;padding:0">
+        <span>${esc(nm)}${p['адмін'] ? ' · адмін' : ''}${
+          p['заходив'] ? '' : '<span class="dim" style="font-size:12px"> · ще не заходив</span>'}</span>
         <span style="display:flex;gap:6px">
-        <button class="ghost" data-runlock="${esc(p.display_name)}"
+        <button class="ghost" data-runlock="${esc(nm)}"
           style="width:auto;padding:6px 10px;font-size:13px">розфіксувати бусти</button>
-        <button class="ghost" data-rrm="${esc(p.display_name)}"
-          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></span></div>`).join('');
+        <button class="ghost" data-rrm="${esc(nm)}"
+          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></span></div>
+        <div style="display:flex;gap:6px;margin-top:7px">
+        <input type="email" data-em="${esc(nm)}" value="${esc(em)}"
+          placeholder="пошти немає" style="${AINP};flex:1">
+        <button class="ghost" data-emsave="${esc(nm)}"
+          style="width:auto;padding:6px 12px;font-size:13px;white-space:nowrap">зберегти</button>
+        </div></div>`;
+      }).join('');
+
+  // Пошта пишеться одразу в усі етапи сезону — так обрано навмисно,
+  // щоб людина не опинилась допущеною до половини етапів.
+  host.querySelectorAll('[data-emsave]').forEach(btn => btn.onclick = async () => {
+    const name = btn.dataset.emsave;
+    const inp  = host.querySelector(`[data-em="${CSS.escape(name)}"]`);
+    const val  = (inp?.value || '').trim();
+    if (!val) return alert('Порожня пошта. Щоб прибрати людину — кнопка «прибрати».');
+    if (!confirm(`Пошта «${name}» → ${val}\n\n` +
+                 'Запишеться в УСІ етапи сезону. Якщо стара пошта була ' +
+                 'і людина під нею заходила — прив’язку буде замінено. ' +
+                 'Прогнози, бали й бусти лишаться на місці.')) return;
+    btn.disabled = true;
+    const { data, error } = await sb.rpc('admin_set_email', {
+      p_name: name, p_email: val
+    });
+    btn.disabled = false;
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+    await renderAdminRoster();
+  });
 
   // Розфіксація складу бустів (файл 45). База сама відмовить, якщо
   // бусти вже розставлені по матчах — тоді спершу треба зняти їх.
