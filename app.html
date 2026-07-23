@@ -949,7 +949,7 @@ function renderBoostPickers(){
     if (cur && cur !== 'autopilot') {
       chips += `<button class="boost-chip" data-set-boost="${m.match_id}" data-code="">зняти</button>`;
     }
-    host.innerHTML = chips || '<span class="dim" style="font-size:12px">бустів у складі немає</span>';
+    host.innerHTML = chips || '<span class="dim" style="font-size:12px">вільних Boosts немає</span>';
   }
 
   $('view').querySelectorAll('[data-set-boost]').forEach(b => {
@@ -1036,7 +1036,7 @@ function reviewAndSave(){
           : (pool[p.boost] || []).shift() || null;
         if (!unit) {
           throw new Error('Не вистачає буста «' + typeOf(p.boost).title +
-            '» у складі — зніми його з якогось матчу');
+            '» серед куплених Boosts — зніми його з якогось матчу');
         }
       }
       const { error } = await sb.rpc('save_prediction', {
@@ -1116,6 +1116,19 @@ async function viewDraft(){
   }
 
   function draw(){
+    // Після фіксації калькулятор зникає: міняти вже нічого не можна,
+    // а кнопки ± лише плутають. Лишається сам факт фіксації, а нижче
+    // на цьому ж екрані — блок чужих складів.
+    // Це гілка від стану, а не «сховати назавжди»: після
+    // admin_unlock_draft lockedAt стає порожнім і калькулятор
+    // повертається сам.
+    if (lockedAt) {
+      $('view').innerHTML = `<div class="msg ok">Boosts зафіксовано ${fmtWhen(lockedAt)}
+        · витрачено <b class="mono">${ds.total_spent}</b> з <b class="mono">${budget}</b> рексів.
+        Змінити вже не можна — якщо це помилка, потрібен адмін.</div>`;
+      return;
+    }
+
     const sp = spent();
     const left = budget - sp;
     const pct = Math.min(100, sp / budget * 100);
@@ -1130,10 +1143,7 @@ async function viewDraft(){
         <div class="bar"><div class="fill ${left < 0 ? 'over' : ''}" style="width:${pct}%"></div></div>
         <div class="dim" style="margin-top:6px">Залишок: <b class="mono">${left}</b> рексів</div>
       </div>
-      ${lockedAt
-        ? `<div class="msg ok">Склад зафіксовано ${fmtWhen(lockedAt)}. Змінити вже не можна —
-             якщо це помилка, потрібен адмін.</div>`
-        : (closed ? '<div class="msg err">Драфт закрито, склад зафіксовано</div>' : '')}
+      ${closed ? '<div class="msg err">Драфт закрито — Boosts більше не змінити</div>' : ''}
       ${S.boostTypes.map(b => `
         <div class="card tight" style="border-left:3px solid ${boostColor(b.code)}">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
@@ -1150,11 +1160,11 @@ async function viewDraft(){
           </div>
         </div>`).join('')}
       ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${closed || left < 0 || sp === 0 ? 'disabled' : ''}>
-        ${left < 0 ? 'Перевитрата' : 'Підтвердити склад'}</button>`}
+        ${left < 0 ? 'Перевитрата' : 'Підтвердити Boosts'}</button>`}
       <p class="dim" style="text-align:center;margin-top:10px">
         ${lockedAt
-          ? 'Розфіксувати склад може лише адмін.'
-          : 'Підтвердити можна один раз. Після цього склад не змінюється.'}</p>`;
+          ? 'Розфіксувати Boosts може лише адмін.'
+          : 'Підтвердити можна один раз. Після цього Boosts не змінюються.'}</p>`;
 
     $('view').querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
       state[b.dataset.p] = (state[b.dataset.p] || 0) + 1; draw();
@@ -1172,9 +1182,9 @@ async function viewDraft(){
         `<div class="rev-line" style="border:none;margin-top:8px">
           <span><b>Разом</b></span><span class="s">${spent()} з ${budget}</span></div>`;
 
-      showModal('Підтвердити склад бустів', body + `
+      showModal('Підтвердити Boosts', body + `
         <p class="dim" style="margin-top:12px;color:var(--red)">
-          Це остаточно. Після підтвердження змінити склад
+          Це остаточно. Після підтвердження змінити Boosts
           не можна — тільки через адміна.</p>`, async () => {
         const { error } = await sb.rpc('submit_draft', {
           p_tournament: TOURNAMENT_ID,
@@ -1190,7 +1200,7 @@ async function viewDraft(){
 
         closeModal();
         await go('draft');
-        alert(msg || 'Склад зафіксовано');
+        alert(msg || 'Boosts зафіксовано');
       });
     };
   }
@@ -1215,9 +1225,9 @@ async function viewStock(){
   for (const u of data) (byP[u.participant_id] ||= []).push(u);
 
   let html = allOk
-    ? `<div class="msg ok">Підтвердили всі — склади відкриті.
+    ? `<div class="msg ok">Підтвердили всі — чужі Boosts відкриті.
          Використані бусти з'являються, щойно відкривається вікенд.</div>`
-    : `<div class="msg">Чужі склади закриті, доки склад не підтвердять усі.</div>`;
+    : `<div class="msg">Чужі Boosts закриті, доки їх не підтвердять усі.</div>`;
 
   for (const p of (parts.data || []).sort((a, b) =>
         a.display_name.localeCompare(b.display_name, 'uk'))) {
@@ -1226,7 +1236,7 @@ async function viewStock(){
 
     if (!units.length) {
       html += `<div class="card tight"><b>${esc(p.display_name)}</b>
-        <span class="dim"> — склад ще закритий</span></div>`;
+        <span class="dim"> — Boosts ще закриті</span></div>`;
       continue;
     }
     // Рахуємо окремо використані й вільні
@@ -1330,6 +1340,34 @@ async function viewBonus(){
     html += `<div class="deadline"><span>До дедлайну</span>
              <span class="t">${esc(left)}</span></div>`;
   }
+
+  // Хто вже здав бонуси (пункт 13). Показується всім, не лише адміну:
+  // видно тільки факт «здав / не здав», самі відповіді лишаються
+  // закритими, доки не здадуть усі. Лічильник і список беруться
+  // з special_status і special_confirmation_board (файл 61) — вони
+  // рахують запрошених однаково для всіх, а не правами того,
+  // хто дивиться.
+  try {
+    const [stRes, cbRes] = await Promise.all([
+      sb.from('special_status').select('*').eq('tournament_id', TOURNAMENT_ID).maybeSingle(),
+      sb.from('special_confirmation_board').select('*').eq('tournament_id', TOURNAMENT_ID)
+    ]);
+    const bChecks = (cbRes && cbRes.data) || [];
+    if (bChecks.length) {
+      const bs = stRes && stRes.data;
+      const done  = bs ? bs.confirmed_count   : bChecks.filter(c => c.confirmed).length;
+      const total = bs ? bs.participant_count : bChecks.length;
+      html += `<div class="card tight">
+        <div class="dim" style="margin-bottom:8px">Відповіли ${done} з ${total}</div>
+        <div class="checks">${bChecks
+          .sort((a, b) => Number(b.confirmed) - Number(a.confirmed))
+          .map(c => `<div class="chk ${c.confirmed ? 'yes' : 'no'}">
+            ${c.confirmed ? '✓' : '○'} ${esc(c.display_name)}</div>`).join('')}</div>
+        <div class="dim" style="font-size:12px;margin-top:8px">
+          Видно лише, хто вже здав. Чужі відповіді відкриються всім,
+          коли відповідять усі.</div></div>`;
+    }
+  } catch (e) { /* блок необовʼязковий: без нього вкладка має працювати */ }
 
   html += S.bonus.map(q => {
     const ro      = isRO(q);
@@ -1526,6 +1564,32 @@ async function viewAdmin(){
     </div>
 
     <div class="card">
+      <h2>Матчі вікенда</h2>
+      <p class="dim" style="margin-bottom:12px">
+        Час, перенесення в інший вікенд, скасування, видалення.
+        Скасування нічого ні в кого не знімає — витрачені бусти база повертає сама.
+        Додавання й перенесення знімають фіксацію в постраждалих вікендах,
+        але лише там, де дедлайн ще не минув.</p>
+      <div id="match-admin"></div>
+    </div>
+
+    <div class="card">
+      <h2>Додати матч</h2>
+      <p class="dim" style="margin-bottom:10px">
+        Команди шукаються за повною або скороченою назвою. Матч стає
+        останнім у вікенді.</p>
+      <input type="text" id="m-home" placeholder="господарі" style="${AINP};margin-bottom:8px">
+      <input type="text" id="m-away" placeholder="гості" style="${AINP};margin-bottom:8px">
+      <input type="datetime-local" id="m-when" style="${AINP};margin-bottom:8px">
+      <select id="m-comp" style="${AINP}">
+        <option value="league">чемпіонат</option>
+        <option value="cup">кубок</option>
+      </select>
+      <button class="ghost" id="btn-madd" style="margin-top:10px;width:100%">Додати матч у вікенд</button>
+      <div id="madd-result"></div>
+    </div>
+
+    <div class="card">
       <h2>Імпорт матчів</h2>
       <p class="dim" style="margin-bottom:10px">
         По рядку на матч, через тире: <span class="mono">Барселона - Реал Мадрид</span></p>
@@ -1565,6 +1629,28 @@ async function viewAdmin(){
       <button class="ghost" id="btn-prices" style="margin-top:10px;width:100%">Зберегти</button>
     </div>`;
 
+  // ---------- вікенди етапу: показуємо навіть коли їх ще нема ----------
+  const weekBlock = S.stage.bonusOnly ? '' : `
+    <div class="card">
+      <h2>Вікенди етапу</h2>
+      <p class="dim" style="margin-bottom:12px">
+        Назва, дедлайн, видалення. Дедлайн тут ставиться без причини — це для
+        розкладу, який ще не почався. Для реального перенесення гри є окремий
+        блок «Зсув дедлайну»: він показує причину всім учасникам.</p>
+      <div id="week-admin"></div>
+
+      <h2 style="margin-top:18px">Новий вікенд</h2>
+      <div class="rev-line"><span>Номер</span>
+        <input type="number" id="w-num" min="1" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <input type="datetime-local" id="w-dl" style="${AINP};margin:8px 0">
+      <input type="text" id="w-title" placeholder="назва, напр. «Вікенд 4» (можна лишити порожнім)"
+        style="${AINP}">
+      <button class="ghost" id="btn-wadd" style="margin-top:10px;width:100%">Додати вікенд</button>
+      <div id="wadd-result"></div>
+    </div>`;
+
   $('view').innerHTML = `
     <div class="card" style="padding:12px 16px">
       <p class="dim" style="margin:0">Етап: <b style="color:var(--text)">${esc(S.stage.title)}</b>${
@@ -1572,6 +1658,7 @@ async function viewAdmin(){
     </div>
 
     ${gwBlocks}
+    ${weekBlock}
     ${priceBlock}
 
     <div class="card">
@@ -1621,9 +1708,26 @@ async function viewAdmin(){
         <input type="checkbox" id="r-admin" style="margin-right:6px;vertical-align:middle">права адміна</label>
       <button class="ghost" id="btn-radd" style="width:100%">Додати в склад</button>
       <div id="radd-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Перейменувати учасника</h2>
+      <p class="dim" style="margin-bottom:10px">
+        Ім'я міняється одразу в усіх етапах: сезонна таблиця зшиває серпень,
+        вересень і жовтень саме по імені, тож перейменувати в одному місяці
+        не можна.</p>
+      <select id="pr-old" style="${AINP};margin-bottom:8px">
+        <option value="">— кого перейменувати —</option>
+      </select>
+      <input type="text" id="pr-new" placeholder="нове ім'я" style="${AINP}">
+      <button class="ghost" id="btn-prename" style="margin-top:10px;width:100%">Перейменувати</button>
+      <div id="prename-result"></div>
     </div>`;
 
   await renderAdminExtras();
+  await renderAdminMatches();
+  await renderAdminWeeks();
+  await renderAdminRename();
   await renderAdminBonus();
   await renderAdminRoster();
 
@@ -1727,6 +1831,289 @@ async function viewAdmin(){
 }
 
 // ---------------------------------------------------------------------
+//  Дрібні помічники адмінки
+// ---------------------------------------------------------------------
+
+// Один виклик функції бази з однаковим показом помилки.
+// Повертає текст відповіді або null, якщо база відмовила.
+async function adminRpc(fn, args){
+  const { data, error } = await sb.rpc(fn, args);
+  if (error) { alert('Помилка: ' + error.message); return null; }
+  return data;
+}
+
+// ISO-час у формат, який розуміє <input type="datetime-local">.
+// Через toISOString робити не можна: воно віддає UTC, і поле
+// показало б час на три години раніше.
+function toLocalInput(iso){
+  if (!iso) return '';
+  const d = new Date(iso);
+  const p = n => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`
+       + `T${p(d.getHours())}:${p(d.getMinutes())}`;
+}
+
+const ANUM = "width:100%;padding:8px;background:var(--panel-3);border:1px solid var(--line);"
+           + "border-radius:7px;color:var(--text);font-size:14px";
+
+// ---------------------------------------------------------------------
+//  Матчі вікенда: час, перенесення, скасування, видалення
+//
+//  Позиції матчів після видалення чи перенесення перенумеровуються
+//  базою, тому після кожної дії список перечитуємо повністю.
+// ---------------------------------------------------------------------
+async function renderAdminMatches(){
+  const host = $('match-admin');
+  if (!host) return;
+
+  const rows = await adminRpc('admin_match_list', {
+    p_month: S.stage.key, p_gameweek: S.gw.number
+  });
+  if (rows === null) { host.innerHTML = '<p class="dim">Список не прочитався.</p>'; return; }
+  if (!rows.length)  { host.innerHTML = '<p class="dim">У цьому вікенді матчів немає.</p>'; }
+
+  // Форма «додати матч» живе в іншій картці, тож її треба підключити
+  // навіть коли список порожній.
+  const others = (S.gameweeks || []).filter(g => g.number !== S.gw.number);
+
+  const again = async () => { await loadRefs(); await renderAdminMatches(); };
+
+  if (rows.length) host.innerHTML = rows.map(r => {
+    const pos  = r['матч'];
+    const st   = r['статус'];
+    const dead = st === 'СКАСОВАНО';
+    const when = r['початок']
+      ? new Date(r['початок']).toLocaleString('uk-UA',
+          { day:'2-digit', month:'2-digit', hour:'2-digit', minute:'2-digit' })
+      : 'час не вказано';
+
+    return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);
+      ${dead ? 'opacity:.55' : ''}">
+      <div style="font-size:14px;margin-bottom:4px">
+        <span class="mono dim">№${pos}</span> ${esc(r['пара'])}</div>
+      <div class="dim" style="font-size:12px;margin-bottom:9px">
+        ${esc(when)} · ${esc(st)} · рахунок ${esc(r['рахунок'])}</div>
+
+      <div style="display:flex;gap:7px;margin-bottom:7px">
+        <input type="datetime-local" data-mtime="${pos}"
+          value="${toLocalInput(r['початок'])}" style="${ANUM}">
+        <button class="boost-chip" data-mtimego="${pos}" style="white-space:nowrap">Час</button>
+      </div>
+
+      ${others.length ? `<div style="display:flex;gap:7px;margin-bottom:7px">
+        <select data-mto="${pos}" style="${ANUM}">
+          ${others.map(g => `<option value="${g.number}">${
+            esc(g.title || ('Вікенд ' + g.number))}</option>`).join('')}
+        </select>
+        <button class="boost-chip" data-mmove="${pos}" style="white-space:nowrap">Перенести</button>
+      </div>` : ''}
+
+      <div class="boost-row">
+        ${dead
+          ? `<button class="boost-chip" data-mrestore="${pos}">Відновити</button>`
+          : `<button class="boost-chip" data-mcancel="${pos}">Скасувати</button>`}
+        <button class="boost-chip" data-mclear="${pos}">Стерти рахунок</button>
+        <button class="boost-chip" data-mdel="${pos}">Видалити</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const arg = pos => ({ p_month: S.stage.key, p_gameweek: S.gw.number, p_position: Number(pos) });
+
+  host.querySelectorAll('[data-mtimego]').forEach(b => b.onclick = async () => {
+    const pos = b.dataset.mtimego;
+    const v = host.querySelector(`[data-mtime="${pos}"]`).value;
+    if (!v) return alert('Вкажи час');
+    const out = await adminRpc('admin_match_time',
+      { ...arg(pos), p_kickoff: new Date(v).toISOString() });
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-mmove]').forEach(b => b.onclick = async () => {
+    const pos = b.dataset.mmove;
+    const to  = host.querySelector(`[data-mto="${pos}"]`).value;
+    if (!confirm(`Перенести матч №${pos} у вікенд ${to}?\n\n` +
+                 'З обох вікендів зніметься фіксація — там, де дедлайн ще не минув.')) return;
+    const out = await adminRpc('admin_match_move', { ...arg(pos), p_to: Number(to) });
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-mcancel]').forEach(b => b.onclick = async () => {
+    const pos = b.dataset.mcancel;
+    if (!confirm(`Скасувати матч №${pos}?\n\n` +
+                 'Прогнози лишаються, балів за нього не буде, ' +
+                 'а витрачені на нього бусти база поверне сама.')) return;
+    const out = await adminRpc('admin_match_cancel', arg(pos));
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-mrestore]').forEach(b => b.onclick = async () => {
+    const out = await adminRpc('admin_match_restore', arg(b.dataset.mrestore));
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-mclear]').forEach(b => b.onclick = async () => {
+    const pos = b.dataset.mclear;
+    if (!confirm(`Стерти рахунок матчу №${pos}? Бали перерахуються.`)) return;
+    const out = await adminRpc('admin_match_clear_result', arg(pos));
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-mdel]').forEach(b => b.onclick = async () => {
+    const pos = b.dataset.mdel;
+    if (!confirm(`ВИДАЛИТИ матч №${pos} назовсім?\n\n` +
+                 'Якщо на нього вже є прогнози, база відмовить — ' +
+                 'тоді правильніше «Скасувати».')) return;
+    const out = await adminRpc('admin_match_delete', arg(pos));
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  // --- додати матч у цей вікенд
+  if ($('btn-madd')) {
+    $('btn-madd').onclick = async () => {
+      const h = $('m-home').value.trim();
+      const a = $('m-away').value.trim();
+      if (!h || !a) return alert('Потрібні обидві команди');
+      const when = $('m-when').value;
+      const out = await adminRpc('admin_match_add', {
+        p_month: S.stage.key, p_gameweek: S.gw.number,
+        p_home: h, p_away: a,
+        p_kickoff: when ? new Date(when).toISOString() : null,
+        p_competition: $('m-comp').value
+      });
+      if (out === null) return;
+      $('madd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(out)}</div>`;
+      $('m-home').value = ''; $('m-away').value = '';
+      await again();
+    };
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Вікенди етапу: назва, дедлайн, видалення, додавання
+// ---------------------------------------------------------------------
+async function renderAdminWeeks(){
+  const host = $('week-admin');
+  if (!host) return;
+
+  const weeks = S.gameweeks || [];
+  host.innerHTML = !weeks.length
+    ? '<p class="dim">У цьому етапі вікендів ще немає.</p>'
+    : weeks.map(g => `
+      <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)">
+        <div style="font-size:14px;margin-bottom:7px">
+          <span class="mono dim">№${g.number}</span> ${esc(g.title || ('Вікенд ' + g.number))}</div>
+        <div style="display:flex;gap:7px;margin-bottom:7px">
+          <input type="text" data-wt="${g.number}" value="${esc(g.title || '')}"
+            placeholder="назва" style="${ANUM}">
+          <button class="boost-chip" data-wtgo="${g.number}" style="white-space:nowrap">Назва</button>
+        </div>
+        <div style="display:flex;gap:7px;margin-bottom:7px">
+          <input type="datetime-local" data-wd="${g.number}"
+            value="${toLocalInput(g.deadline_at)}" style="${ANUM}">
+          <button class="boost-chip" data-wdgo="${g.number}" style="white-space:nowrap">Дедлайн</button>
+        </div>
+        <div class="boost-row">
+          <button class="boost-chip" data-wdel="${g.number}">Видалити вікенд</button>
+        </div>
+      </div>`).join('');
+
+  const again = async () => { await loadRefs(); go('admin'); };
+
+  host.querySelectorAll('[data-wtgo]').forEach(b => b.onclick = async () => {
+    const n = b.dataset.wtgo;
+    const t = host.querySelector(`[data-wt="${n}"]`).value.trim();
+    if (!t) return alert('Назва порожня');
+    const out = await adminRpc('admin_gameweek_rename',
+      { p_month: S.stage.key, p_number: Number(n), p_title: t });
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  host.querySelectorAll('[data-wdgo]').forEach(b => b.onclick = async () => {
+    const n = b.dataset.wdgo;
+    const v = host.querySelector(`[data-wd="${n}"]`).value;
+    if (!v) return alert('Вкажи дату');
+    const why = prompt('Причина зсуву — її побачать усі учасники:', '');
+    if (why === null) return;
+    if (!why.trim()) return alert('Причина обов\'язкова');
+    const out = await adminRpc('admin_gameweek_deadline',
+      { p_month: S.stage.key, p_number: Number(n),
+        p_new: new Date(v).toISOString(), p_reason: why.trim() });
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  // Видалення вікенда. Другого заходу з p_force = true тут немає
+  // НАВМИСНО: форс зносить разом із вікендом усі матчі, прогнози
+  // й підтвердження, і відкотити це нічим. Реальний випадок
+  // «тур скасували» правильно закривається скасуванням матчів —
+  // там історія лишається, а бусти база повертає сама.
+  host.querySelectorAll('[data-wdel]').forEach(b => b.onclick = async () => {
+    const n = b.dataset.wdel;
+    if (!confirm(`Видалити вікенд №${n}?\n\n` +
+                 'Порожній вікенд зникне одразу. Якщо в ньому вже є матчі ' +
+                 'або прогнози — база відмовить і скаже, що саме там лежить.')) return;
+    const { data, error } = await sb.rpc('admin_gameweek_delete',
+      { p_month: S.stage.key, p_number: Number(n), p_force: false });
+    if (!error) { alert(data); await again(); return; }
+    alert('База не віддала вікенд.\n\n' + error.message +
+      '\n\nЩо робити замість цього:\n' +
+      '• тур скасували — скасуй матчі в блоці «Матчі вікенда». ' +
+      'Прогнози й історія лишаться, бали за них не нарахуються, ' +
+      'а витрачені бусти повернуться самі.\n' +
+      '• вікенд заведений помилково — спершу видали з нього матчі, ' +
+      'тоді він прибереться звичайною кнопкою.\n\n' +
+      'Видалення разом із чужими прогнозами навмисно лишене ' +
+      'тільки для SQL-редактора: відкотити його вже нічим.');
+  });
+
+  if ($('btn-wadd')) {
+    $('btn-wadd').onclick = async () => {
+      const n = Number($('w-num').value);
+      const d = $('w-dl').value;
+      if (!n) return alert('Вкажи номер вікенда');
+      if (!d) return alert('Вкажи дедлайн');
+      const out = await adminRpc('admin_gameweek_add', {
+        p_month: S.stage.key, p_number: n,
+        p_deadline: new Date(d).toISOString(),
+        p_title: $('w-title').value.trim() || null
+      });
+      if (out === null) return;
+      $('wadd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(out)}</div>`;
+      await loadRefs(); go('admin');
+    };
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Перейменування учасника: одразу в усіх етапах
+// ---------------------------------------------------------------------
+async function renderAdminRename(){
+  const sel = $('pr-old');
+  if (!sel) return;
+
+  const { data: parts } = await sb.from('participants')
+    .select('display_name').eq('tournament_id', TOURNAMENT_ID).order('display_name');
+  for (const p of (parts || [])) {
+    const o = document.createElement('option');
+    o.value = p.display_name; o.textContent = p.display_name;
+    sel.appendChild(o);
+  }
+
+  $('btn-prename').onclick = async () => {
+    const from = sel.value;
+    const to   = $('pr-new').value.trim();
+    if (!from) return alert('Обери, кого перейменувати');
+    if (!to)   return alert('Вкажи нове ім\'я');
+    if (!confirm(`Перейменувати «${from}» на «${to}» в усіх етапах?`)) return;
+    const out = await adminRpc('admin_rename_participant', { p_old: from, p_new: to });
+    if (out === null) return;
+    $('prename-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(out)}</div>`;
+    $('pr-new').value = '';
+    await loadRefs(); go('admin');
+  };
+}
+
+// ---------------------------------------------------------------------
 //  Бонусні питання етапу: внести правильну відповідь
 // ---------------------------------------------------------------------
 async function renderAdminBonus(){
@@ -1766,8 +2153,91 @@ async function renderAdminBonus(){
       ${ctrl}
       <button class="ghost" data-asave="${i}" style="margin-top:9px;width:100%">Внести відповідь</button>
       <div data-ares="${i}"></div>
+
+      <details style="margin-top:10px">
+        <summary class="dim" style="cursor:pointer;font-size:12px">правки самого питання</summary>
+        <div style="margin-top:9px">
+          <input type="text" data-btext="${i}" value="${esc(b.question)}"
+            placeholder="текст питання" style="${AINP};margin-bottom:7px">
+          <div class="rev-line"><span>Балів ${yn ? 'за правильний YES' : 'за влучну відповідь'}</span>
+            <input type="number" data-bpts="${i}" value="${yn ? b.points_yes : b.points_if_correct}"
+              style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
+              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          ${yn ? `<div class="rev-line"><span>Балів за правильний NO</span>
+            <input type="number" data-bptsno="${i}" value="${b.points_no}"
+              style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
+              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>` : ''}
+          <p class="dim" style="font-size:12px;margin:7px 0">
+            Текст правиться завжди. Бали — тільки поки на питання ще ніхто не відповів.</p>
+          <button class="ghost" data-bsave="${i}" style="width:100%">Зберегти правку</button>
+
+          <div style="display:flex;gap:7px;margin-top:9px">
+            <input type="datetime-local" data-bdl="${i}" value="${toLocalInput(b.deadline_at)}"
+              style="${ANUM}">
+            <button class="boost-chip" data-bdlgo="${i}" style="white-space:nowrap">Дедлайн</button>
+          </div>
+
+          <div class="boost-row" style="margin-top:9px">
+            <button class="boost-chip" data-bdel="${i}">Видалити питання</button>
+          </div>
+        </div>
+      </details>
     </div>`;
   }).join('');
+
+  // --- правки питання: текст і бали
+  host.querySelectorAll('[data-bsave]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.bsave);
+    const b = S.adminBets[i];
+    const yn = b.points_yes !== null && b.points_yes !== undefined;
+    const txt = host.querySelector(`[data-btext="${i}"]`).value.trim();
+    if (!txt) return alert('Текст порожній');
+    // Бали шлемо ТІЛЬКИ якщо їх справді змінили. Інакше база
+    // відмовить у правці тексту на питанні, де вже є відповіді:
+    // вона не розрізняє «прислали те саме число» і «хочуть змінити».
+    const ptsNow = Number(host.querySelector(`[data-bpts="${i}"]`).value);
+    const noNow  = yn ? Number(host.querySelector(`[data-bptsno="${i}"]`).value) : null;
+    const ptsWas = yn ? b.points_yes : b.points_if_correct;
+    const pts = ptsNow === ptsWas ? null : ptsNow;
+    const no  = (!yn || noNow === b.points_no) ? null : noNow;
+    if (pts === null && no === null && txt === b.question) return alert('Нічого не змінилось');
+    if (!confirm(`Зберегти правку питання?\n\n${txt}`)) return;
+    const out = await adminRpc('admin_bonus_edit', {
+      p_month: S.stage.key, p_question_like: b.question,
+      p_new_text: txt === b.question ? null : txt,
+      p_points: pts, p_points_no: no
+    });
+    if (out !== null) { alert(out); await renderAdminBonus(); }
+  });
+
+  // --- дедлайн питання
+  host.querySelectorAll('[data-bdlgo]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.bdlgo);
+    const v = host.querySelector(`[data-bdl="${i}"]`).value;
+    if (!v) return alert('Вкажи дату');
+    const out = await adminRpc('admin_bonus_deadline', {
+      p_month: S.stage.key, p_question_like: S.adminBets[i].question,
+      p_new: new Date(v).toISOString()
+    });
+    if (out !== null) { alert(out); await renderAdminBonus(); }
+  });
+
+  // --- видалення питання. Перший захід без force: якщо на питання вже
+  //     відповідали, база відмовить, і аж тоді питаємо вдруге.
+  host.querySelectorAll('[data-bdel]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.bdel);
+    const q = S.adminBets[i].question;
+    if (!confirm(`Видалити питання?\n\n${q}`)) return;
+    const { data, error } = await sb.rpc('admin_bonus_delete', {
+      p_month: S.stage.key, p_question_like: q, p_force: false
+    });
+    if (!error) { alert(data); await renderAdminBonus(); return; }
+    if (!confirm('База відмовила:\n' + error.message +
+                 '\n\nВидалити разом з усіма відповідями й балами?')) return;
+    const out = await adminRpc('admin_bonus_delete',
+      { p_month: S.stage.key, p_question_like: q, p_force: true });
+    if (out !== null) { alert(out); await renderAdminBonus(); }
+  });
 
   host.querySelectorAll('[data-yn]').forEach(btn => btn.onclick = () => {
     const i = btn.dataset.yn;
@@ -1868,7 +2338,7 @@ async function renderAdminRoster(){
   // бусти вже розставлені по матчах — тоді спершу треба зняти їх.
   host.querySelectorAll('[data-runlock]').forEach(btn => btn.onclick = async () => {
     const name = btn.dataset.runlock;
-    if (!confirm(`Розфіксувати склад бустів «${name}» в етапі «${S.stage.title}»?\n\n` +
+    if (!confirm(`Розфіксувати Boosts «${name}» в етапі «${S.stage.title}»?\n\n` +
                  'Людина зможе обрати бусти наново. Якщо вона вже поставила ' +
                  'бусти на матчі, база відмовить.')) return;
     const { data, error } = await sb.rpc('admin_unlock_draft', {
