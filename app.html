@@ -1261,11 +1261,11 @@ async function viewBoard(){
   const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
   $('view').innerHTML = `
     <div class="boost-row" style="margin-bottom:14px">
-      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">Серпень</button>
+      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(S.stage.title)}</button>
       <button class="boost-chip ${season ? 'on' : ''}" id="lb-season">Сезон</button>
     </div>
     <div class="card">
-    <h2>${season ? 'Загальний залік сезону' : 'Серпень 2026'}</h2>
+    <h2>${season ? 'Загальний залік сезону' : esc(S.stage.title) + ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
     <table><thead><tr><th>№</th><th>Учасник</th><th>Точних</th><th class="n">Матчі</th><th class="n">Бонуси</th><th style="text-align:right">Разом</th></tr></thead>
     <tbody>${data.map(r => `<tr>
@@ -1306,17 +1306,24 @@ async function viewBonus(){
     return;
   }
 
-  const locked  = S.bonus.some(q => q['зафіксовано']);
-  const dl      = S.bonus[0]['дедлайн'];
-  const left    = dl ? countdown(dl) : null;
-  const expired = dl ? !left : false;
+  // Фіксація тепер поштучна. Питання, додане адміном ПІСЛЯ мого
+  // підтвердження, лишається відкритим — на нього відповідають
+  // і фіксують окремо, а старі відповіді не чіпаються.
+  const isRO   = (q) => q['зафіксовано'] || !countdown(q['дедлайн']);
+  const openQ  = S.bonus.filter(q => !isRO(q));
+  const locked = S.bonus.every(q => q['зафіксовано']);
+
+  const dl   = openQ.length
+    ? openQ.map(q => q['дедлайн']).sort()[0]
+    : S.bonus[0]['дедлайн'];
+  const left = dl ? countdown(dl) : null;
 
   let html = '';
 
-  if (locked){
+  if (!openQ.length && locked){
     html += `<div class="deadline closed"><span>Відповіді зафіксовано</span>
              <span class="t">замкнено</span></div>`;
-  } else if (expired){
+  } else if (!openQ.length){
     html += `<div class="deadline closed"><span>Час вийшов</span>
              <span class="t">дедлайн минув</span></div>`;
   } else {
@@ -1324,9 +1331,8 @@ async function viewBonus(){
              <span class="t">${esc(left)}</span></div>`;
   }
 
-  const ro = locked || expired;
-
   html += S.bonus.map(q => {
+    const ro      = isRO(q);
     const id      = q['питання_id'];
     const type    = q['тип'];
     const mine    = q['моя_відповідь'];
@@ -1349,7 +1355,7 @@ async function viewBonus(){
     // Результат показуємо лише після фіксації і лише коли адмін
     // вніс правильну відповідь.
     let res = '';
-    if (locked){
+    if (ro){
       if (correct == null || correct === ''){
         res = `<div class="res wait">результат ще не внесено</div>`;
       } else {
@@ -1367,22 +1373,25 @@ async function viewBonus(){
       : `${max} б за влучну назву`;
 
     return `<div class="bq${ro ? ' locked' : ''}">
-      <div class="q">${esc(q['питання'])}</div>
+      <div class="q">${q['нове'] ? '<span style="color:var(--gold)">нове · </span>' : ''}${esc(q['питання'])}</div>
       <div class="meta">${cost}</div>
       ${control}
       ${res}
     </div>`;
   }).join('');
 
-  if (!ro){
+  if (openQ.length){
+    const some = openQ.length < S.bonus.length;
     html += `<button class="primary" id="b-confirm" style="margin-top:14px">
-             Зафіксувати відповіді</button>
-             <p class="dim" style="margin-top:8px">Після фіксації змінити не вийде.</p>`;
+             ${some ? 'Зафіксувати нові відповіді' : 'Зафіксувати відповіді'}</button>
+             <p class="dim" style="margin-top:8px">${some
+               ? 'Фіксуються лише відкриті питання. Раніше підтверджені лишаються як є.'
+               : 'Після фіксації змінити не вийде.'}</p>`;
   }
 
   $('view').innerHTML = `<div class="card"><h2>Bonus · ${esc(S.stage.title)}</h2></div>` + html;
 
-  if (ro) return;
+  if (!openQ.length) return;
 
   // YES / NO
   $('view').querySelectorAll('[data-yn]').forEach(b => {
@@ -1416,8 +1425,8 @@ async function viewBonus(){
     const act = document.activeElement;
     if (act && act.dataset && act.dataset.txt) { act.blur(); await new Promise(r => setTimeout(r, 250)); }
 
-    const missing = S.bonus.filter(q => !String(q['моя_відповідь'] || '').trim());
-    const body = S.bonus.map(q =>
+    const missing = openQ.filter(q => !String(q['моя_відповідь'] || '').trim());
+    const body = openQ.map(q =>
       `<div class="rev-line"><span>${esc(q['питання'])}</span>
        <span class="s">${esc(q['моя_відповідь'] || '—')}</span></div>`
     ).join('') + (missing.length
@@ -1598,13 +1607,13 @@ async function viewAdmin(){
       <div id="roster-admin"></div>
       <h2 style="margin-top:18px">Додати учасника</h2>
       <p class="dim" style="margin-bottom:10px">
-        Позначені етапи — куди його додати. General відкривається сам разом
-        із будь-яким місяцем: інакше новачок не встиг би відповісти
-        на питання сезону.</p>
+        Познач місяці, у які його додати. В етап General він потрапляє
+        автоматично разом із будь-яким місяцем — окремо позначати не треба,
+        інакше новачок не встиг би відповісти на питання сезону.</p>
       <input type="email" id="r-mail" placeholder="пошта" style="${AINP};margin-bottom:8px">
       <input type="text" id="r-name" placeholder="ім'я, як у таблиці" style="${AINP};margin-bottom:10px">
       <div class="boost-row" style="margin-bottom:10px">
-        ${STAGES.map(s => `<label class="boost-chip" style="cursor:pointer">
+        ${STAGES.filter(s => !s.bonusOnly).map(s => `<label class="boost-chip" style="cursor:pointer">
           <input type="checkbox" data-rstage="${s.key}" ${s.key === S.stage.key ? 'checked' : ''}
             style="margin-right:6px;vertical-align:middle">${esc(s.title)}</label>`).join('')}
       </div>
