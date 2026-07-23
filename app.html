@@ -296,6 +296,8 @@ const S = {
   prices: [],
   boostTypes: [],
   ap: { unit: null, picks: [] },   // Автопілот: юніт і два матчі-кандидати
+  checks: [],        // хто підтвердив цей вікенд
+  iConfirmed: false, // чи підтвердив Я — це і є замок власних прогнозів
 };
 
 const $ = (id) => document.getElementById(id);
@@ -599,13 +601,21 @@ async function go(tab){
 //  МАТЧІ — внесення прогнозів (U-4, U-5, U-6, U-8)
 // =====================================================================
 async function loadGameweek(gwId){
-  const [mb, st] = await Promise.all([
+  const [mb, st, cf] = await Promise.all([
     sb.from('match_board').select('*').eq('gameweek_id', gwId),
     sb.from('my_boost_stock').select('*').eq('participant_id', S.me.participant_id),
+    sb.from('confirmation_board').select('*').eq('gameweek_id', gwId),
   ]);
 
   const rows = mb.data || [];
   S.stock = st.data || [];
+
+  // Власна фіксація. Вікенд «відкритий» і «я підтвердив» — це два
+  // різні стани: перший настає, коли підтвердили всі, другий —
+  // одразу від мого підтвердження. Замок власних полів — саме другий.
+  S.checks = cf.data || [];
+  S.iConfirmed = S.checks.some(
+    c => c.participant_id === S.me.participant_id && c.confirmed);
 
   // Унікальні матчі
   const seen = new Map();
@@ -643,7 +653,8 @@ async function viewMatches(){
   await loadGameweek(S.gw.gameweek_id);
 
   const left = countdown(S.gw.deadline_at);
-  const open = S.gw.is_open;
+  const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
+  const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
 
   const gwPicker = S.gameweeks.map(g =>
     `<button class="boost-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
@@ -668,6 +679,12 @@ async function viewMatches(){
 
   if (S.gw.deadline_note) {
     html += `<div class="msg ok">Дедлайн зсунуто: ${esc(S.gw.deadline_note)}</div>`;
+  }
+
+  if (S.iConfirmed && !open) {
+    html += `<div class="msg ok">Твої прогнози зафіксовані. Чекаємо решту —
+      коли підтвердять усі, вікенд відкриється і стануть видні чужі прогнози.
+      Поправити тепер може тільки адмін.</div>`;
   }
 
   html += `<div class="card tight">
@@ -695,30 +712,30 @@ async function viewMatches(){
       </div>
       <div class="score-in">
         <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
-               class="sc-h" value="${p.home ?? ''}" ${open ? 'disabled' : ''}>
+               class="sc-h" value="${p.home ?? ''}" ${locked ? 'disabled' : ''}>
         <span class="sep">:</span>
         <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
-               class="sc-a" value="${p.away ?? ''}" ${open ? 'disabled' : ''}>
+               class="sc-a" value="${p.away ?? ''}" ${locked ? 'disabled' : ''}>
       </div>
       <div class="dp-wrap ${p.boost === 'double_predict' || p.home2 != null ? '' : 'hide'}">
         <div class="dim" style="text-align:center;margin:8px 0 4px;font-size:12px">
           другий рахунок</div>
         <div class="score-in">
           <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
-                 class="sc-h2" value="${p.home2 ?? ''}" ${open ? 'disabled' : ''}
+                 class="sc-h2" value="${p.home2 ?? ''}" ${locked ? 'disabled' : ''}
                  style="height:44px;font-size:20px">
           <span class="sep">:</span>
           <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
-                 class="sc-a2" value="${p.away2 ?? ''}" ${open ? 'disabled' : ''}
+                 class="sc-a2" value="${p.away2 ?? ''}" ${locked ? 'disabled' : ''}
                  style="height:44px;font-size:20px">
         </div>
       </div>
       ${m.status === 'played' ? renderBreakdown(m, p) : ''}
-      ${open ? '' : `<div class="boost-row" data-boosts="${m.match_id}"></div>`}
+      ${locked ? '' : `<div class="boost-row" data-boosts="${m.match_id}"></div>`}
     </div>`;
   }
 
-  if (!open) {
+  if (!locked) {
     html += `<button class="primary" id="btn-confirm" style="margin-top:14px">Підтверджую</button>
       <p class="dim" style="text-align:center;margin-top:10px">
       Перед збереженням покажемо, що саме ти обрав.</p>`;
@@ -731,12 +748,14 @@ async function viewMatches(){
     b.onclick = () => {
       S.gw = S.gameweeks.find(g => g.gameweek_id === b.dataset.gw);
       S.myPred = {};
+      // Автопілот живе в межах одного вікенда — стан не тягнемо далі
+      S.ap = { unit: null, picks: [] };
       go('matches');
     };
   });
 
   await renderChecks();
-  if (!open) { renderBoostPickers(); renderAutopilotBar(); }
+  if (!locked) { renderBoostPickers(); renderAutopilotBar(); }
   const cb = $('btn-confirm');
   if (cb) cb.onclick = reviewAndSave;
 }
@@ -766,11 +785,20 @@ function renderAutopilotBar(){
   const host = $('ap-bar');
   if (!host) return;
 
-  // юніти Автопілота: вільні або вже розкладені на цей вікенд
-  const units = S.stock.filter(u => u.boost_code === 'autopilot');
+  // Юніт Автопілота підходить сюди, тільки якщо він або ще вільний,
+  // або вже розкладений саме на матчі ЦЬОГО вікенда. Витрачений
+  // у минулому вікенді юніт більше не пропонуємо — раніше він
+  // пролізав через запасний варіант «|| units[0]» і блок оживав.
+  const here = (id) => S.matches.some(m => m.match_id === id);
+  const mine = (u) => (u.autopilot_candidates || []).some(here);
+
+  const units = S.stock.filter(u =>
+    u.boost_code === 'autopilot' && (u.status === 'in_stock' || mine(u)));
   if (!units.length) { host.innerHTML = ''; return; }
 
-  const unit = S.ap.unit || units.find(u => u.status === 'in_stock') || units[0];
+  const unit = (S.ap.unit && units.some(u => u.boost_unit_id === S.ap.unit.boost_unit_id))
+    ? S.ap.unit
+    : (units.find(mine) || units.find(u => u.status === 'in_stock') || units[0]);
   S.ap.unit = unit;
 
   // якщо кандидати вже збережені — підтягуємо
@@ -846,11 +874,11 @@ async function saveAutopilot(){
 }
 
 async function renderChecks(){
-  const { data } = await sb.from('confirmation_board').select('*')
-    .eq('gameweek_id', S.gw.gameweek_id);
+  // Дані вже прийшли в loadGameweek — другий запит лише плодив би
+  // розбіжність між замком і галочками.
   const host = $('checks');
   if (!host) return;
-  host.innerHTML = (data || [])
+  host.innerHTML = (S.checks || [])
     .sort((a, b) => Number(b.confirmed) - Number(a.confirmed))
     .map(c => `<div class="chk ${c.confirmed ? 'yes' : 'no'}">
       ${c.confirmed ? '✓' : '○'} ${esc(c.display_name)}
@@ -858,11 +886,42 @@ async function renderChecks(){
     </div>`).join('');
 }
 
+// Склад бустів у розрізі цього вікенда.
+//   free   — код -> вільні юніти, які ще можна кудись покласти
+//   heldBy — match_id -> юніт, уже прикріплений до матчу цього вікенда
+// Юніт, що стоїть на матчі, лишається за ним і у вільні не рахується.
+function boostPool(){
+  const free = {}, heldBy = {};
+  for (const u of S.stock) {
+    if (u.boost_code === 'autopilot') continue;
+    if (u.match_id && S.matches.some(m => m.match_id === u.match_id)) {
+      heldBy[u.match_id] = u;
+    } else if (u.status === 'in_stock') {
+      (free[u.boost_code] ||= []).push(u);
+    }
+  }
+  return { free, heldBy };
+}
+
 // Бусти: показуємо лише те, що є в складі і ще не витрачено
 function renderBoostPickers(){
-  const free = S.stock.filter(u => u.status === 'in_stock');
-  const byCode = {};
-  for (const u of free) (byCode[u.boost_code] ||= []).push(u);
+  const { free, heldBy } = boostPool();
+
+  // Скільки юнітів кожного коду вже розкладено по матчах прямо зараз.
+  // Саме цього не було: вибір буста не зменшував залишок, і один
+  // юніт лягав на скільки завгодно матчів.
+  const used = {};
+  for (const m of S.matches) {
+    const b = S.myPred[m.match_id]?.boost;
+    if (!b || b === 'autopilot') continue;
+    if (heldBy[m.match_id]?.boost_code === b) continue;  // юніт уже за цим матчем
+    used[b] = (used[b] || 0) + 1;
+  }
+
+  const codes = new Set([
+    ...Object.keys(free),
+    ...Object.values(heldBy).map(u => u.boost_code),
+  ]);
 
   for (const m of S.matches) {
     const host = $('view').querySelector(`[data-boosts="${m.match_id}"]`);
@@ -870,17 +929,22 @@ function renderBoostPickers(){
     const cur = S.myPred[m.match_id]?.boost;
 
     let chips = '';
-    for (const code of Object.keys(byCode)) {
+    for (const code of codes) {
       if (code === 'autopilot') continue;   // Автопілот ставиться окремо
       const t = typeOf(code);
       const on = cur === code;
       const c  = boostColor(code);
-      // Обраний буст заливається своїм кольором, необраний — лише обвід
-      const st = on ? `border-color:${c};color:#0b0b0f;background:${c};font-weight:700;`
-                    : `border-color:${c}80;color:${c};`;
+      const leftN = (free[code]?.length || 0) - (used[code] || 0);
+      const out = !on && leftN <= 0;        // більше нема чого класти
+      // Обраний буст заливається своїм кольором, необраний — лише обвід,
+      // а той, що скінчився, гасне і не натискається
+      const st = on
+        ? `border-color:${c};color:#0b0b0f;background:${c};font-weight:700;`
+        : out ? `border-color:#3a3a45;color:#6b6b78;opacity:0.5;cursor:not-allowed;`
+              : `border-color:${c}80;color:${c};`;
       chips += `<button class="boost-chip" style="${st}"
-        data-set-boost="${m.match_id}" data-code="${code}"
-        title="${esc(t.description)}">${esc(t.title)} ×${byCode[code].length}</button>`;
+        ${out ? 'data-out="1"' : `data-set-boost="${m.match_id}" data-code="${code}"`}
+        title="${esc(t.description)}">${esc(t.title)}${on ? '' : ' ×' + Math.max(leftN, 0)}</button>`;
     }
     if (cur && cur !== 'autopilot') {
       chips += `<button class="boost-chip" data-set-boost="${m.match_id}" data-code="">зняти</button>`;
@@ -954,11 +1018,27 @@ function reviewAndSave(){
   }
 
   showModal('Перевір, що обрав', body, async () => {
+    // Кожному матчу — власний юніт. Раніше тут для всіх матчів
+    // знаходився ОДИН і той самий вільний юніт (база його не пускала
+    // двічі), а вже збережений буст не знаходився взагалі, бо мав
+    // статус assigned — і тоді save_prediction його мовчки знімав.
+    const { free, heldBy } = boostPool();
+    const pool = {};
+    for (const code of Object.keys(free)) pool[code] = free[code].slice();
+
     for (const m of filled) {
       const p = S.myPred[m.match_id];
-      const unit = p.boost
-        ? S.stock.find(u => u.boost_code === p.boost && u.status === 'in_stock')
-        : null;
+      let unit = null;
+      if (p.boost && p.boost !== 'autopilot') {
+        const held = heldBy[m.match_id];
+        unit = (held && held.boost_code === p.boost)
+          ? held
+          : (pool[p.boost] || []).shift() || null;
+        if (!unit) {
+          throw new Error('Не вистачає буста «' + typeOf(p.boost).title +
+            '» у складі — зніми його з якогось матчу');
+        }
+      }
       const { error } = await sb.rpc('save_prediction', {
         p_match: m.match_id, p_home: p.home, p_away: p.away,
         p_home_2: p.boost === 'double_predict' ? (p.home2 ?? null) : null,
