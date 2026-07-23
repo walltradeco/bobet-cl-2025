@@ -296,6 +296,7 @@ const S = {
   prices: [],
   boostTypes: [],
   ap: { unit: null, picks: [] },   // Автопілот: юніт і два матчі-кандидати
+  pending: null,     // рахунки, набрані в полях і ще не збережені в базу
   checks: [],        // хто підтвердив цей вікенд
   iConfirmed: false, // чи підтвердив Я — це і є замок власних прогнозів
 };
@@ -483,6 +484,7 @@ async function setStage(key){
   // скидаємо все, що прив'язане до попереднього етапу
   S.gw = null; S.matches = []; S.myPred = {}; S.stock = [];
   S.ap = { unit: null, picks: [] };
+  S.pending = null;
   S.bonus = []; S.bonusDraft = {};
 
   await loadRefs();
@@ -641,6 +643,22 @@ async function loadGameweek(gwId){
     }
   }
   S.matches = [...seen.values()].sort((a, b) => a.position - b.position);
+
+  // Повертаємо те, що людина набрала в полях, але ще не підтвердила.
+  // Без цього будь-яке перемальовування екрана (наприклад після
+  // заявки Автопілота) стирало рахунки: у базі їх ще немає,
+  // а в DOM вони вже не переживають перезбирання HTML.
+  if (S.pending) {
+    for (const [id, v] of Object.entries(S.pending)) {
+      const cur = S.myPred[id] || {};
+      S.myPred[id] = { ...cur,
+        home:  v.home,  away:  v.away,
+        home2: v.home2, away2: v.away2,
+        // буст із бази має перевагу: він уже збережений
+        boost: cur.boost || v.boost || null };
+    }
+    S.pending = null;
+  }
 }
 
 async function viewMatches(){
@@ -748,6 +766,7 @@ async function viewMatches(){
     b.onclick = () => {
       S.gw = S.gameweeks.find(g => g.gameweek_id === b.dataset.gw);
       S.myPred = {};
+      S.pending = null;
       // Автопілот живе в межах одного вікенда — стан не тягнемо далі
       S.ap = { unit: null, picks: [] };
       go('matches');
@@ -808,6 +827,12 @@ function renderAutopilotBar(){
   }
 
   const n = S.ap.picks.length;
+  // Заявка вже лежить у базі, якщо обидва кандидати збережені
+  // саме за цим юнітом. Від цього залежить, чи достатньо стерти
+  // місцевий вибір, чи треба ходити в базу.
+  const savedIds = (unit.autopilot_candidates || []).filter(here);
+  const saved = savedIds.length === 2;
+
   host.innerHTML = `
     <div class="card tight" style="border-color:var(--gold);background:var(--gold-soft)">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:10px">
@@ -820,6 +845,8 @@ function renderAutopilotBar(){
       </div>
       <button class="ghost" id="ap-toggle" style="width:100%;margin-top:10px">
         ${S.ap.on ? 'Готово' : (n ? 'Змінити кандидатів' : 'Обрати кандидатів')}</button>
+      ${(n || saved) ? `<button class="ghost" id="ap-off" style="width:100%;margin-top:8px">
+        Зняти Автопілот</button>` : ''}
     </div>`;
 
   $('ap-toggle').onclick = () => {
@@ -827,6 +854,34 @@ function renderAutopilotBar(){
     S.ap.on = !S.ap.on;
     paintAutopilotTargets();
     renderAutopilotBar();
+  };
+
+  // Пункт 8: третя дія — відмовитись. Юніт повертається у склад
+  // вільним, і його можна заявити в іншому вікенді етапу.
+  if ($('ap-off')) $('ap-off').onclick = async () => {
+    if (!confirm('Зняти Автопілот?\n\n' +
+                 'Юніт повернеться у склад вільним — його можна буде ' +
+                 'заявити в іншому вікенді.')) return;
+
+    if (!saved) {                       // у базі нічого немає, досить стерти вибір
+      S.ap.picks = [];
+      S.ap.on = false;
+      paintAutopilotTargets();
+      renderAutopilotBar();
+      return;
+    }
+
+    collectScores();
+    const typed = S.myPred;
+    const { data, error } = await sb.rpc('clear_autopilot', {
+      p_boost_unit: unit.boost_unit_id
+    });
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+    S.ap = { unit: null, picks: [] };
+    S.pending = typed;
+    S.myPred = {};
+    go('matches');
   };
 
   paintAutopilotTargets();
@@ -861,6 +916,12 @@ function paintAutopilotTargets(){
 }
 
 async function saveAutopilot(){
+  // Спершу знімаємо все, що набрано в полях. Далі йде go('matches'),
+  // який перечитує прогнози з бази — а там цих рахунків ще немає,
+  // бо вони зберігаються тільки кнопкою «Підтверджую».
+  collectScores();
+  const typed = S.myPred;
+
   const { error } = await sb.rpc('set_autopilot', {
     p_boost_unit: S.ap.unit.boost_unit_id,
     p_match_a: S.ap.picks[0],
@@ -869,6 +930,7 @@ async function saveAutopilot(){
   if (error) return alert('Помилка: ' + error.message);
   S.ap.on = false;
   alert('Автопілот заявлено на два матчі');
+  S.pending = typed;
   S.myPred = {};
   go('matches');
 }
@@ -955,6 +1017,23 @@ function renderBoostPickers(){
   $('view').querySelectorAll('[data-set-boost]').forEach(b => {
     b.onclick = () => {
       const id = b.dataset.setBoost;
+
+      // Пункт 7. Матч, уже обраний кандидатом Автопілота, не має
+      // мовчки приймати інший буст. Якщо заявка вже в базі, її
+      // все одно не пустить тригер boost_assignments_exclusive
+      // (файл 02) — краще сказати це зараз, ніж на збереженні.
+      if (b.dataset.code && S.ap.picks.includes(id)) {
+        const savedHere = ((S.ap.unit && S.ap.unit.autopilot_candidates) || []).includes(id);
+        if (savedHere) {
+          alert('Цей матч — уже заявлений кандидат Автопілота.\n\n' +
+                'Спершу зніми Автопілот або зміни кандидатів. ' +
+                'Інакше база все одно не прийме другий буст на цей матч.');
+          return;
+        }
+        if (!confirm('Цей матч обраний кандидатом Автопілота.\n\n' +
+                     'Поставити сюди інший буст? Кандидатуру буде знято.')) return;
+      }
+
       S.myPred[id] = S.myPred[id] || {};
       S.myPred[id].boost = b.dataset.code || null;
       collectScores();
@@ -1001,11 +1080,25 @@ function reviewAndSave(){
   });
   const skipped = S.matches.length - filled.length;
 
+  // Стан Автопілота на момент підтвердження. Кандидати живуть
+  // окремо від бустів: у p.boost вони не потрапляють, доки матч
+  // не зіграний, тому в модалці їх треба підписувати самим.
+  const apPicks   = S.ap.picks || [];
+  const apSavedIds = ((S.ap.unit && S.ap.unit.autopilot_candidates) || [])
+    .filter(id => S.matches.some(m => m.match_id === id));
+  const apSaved = apSavedIds.length === 2 && apPicks.length === 2 &&
+    apPicks.every(id => apSavedIds.includes(id));
+
   let body = filled.map(m => {
     const p = S.myPred[m.match_id];
+    const apHere = apPicks.includes(m.match_id);
+    const mark = p.boost
+      ? `<span style="color:${boostColor(p.boost)}">· ${esc(typeOf(p.boost).title)}</span>`
+      : (apHere
+          ? `<span style="color:${boostColor('autopilot')}">· Автопілот · кандидат</span>`
+          : '');
     return `<div class="rev-line">
-      <span>${esc(m.home_team)} — ${esc(m.away_team)}
-        ${p.boost ? `<span style="color:${boostColor(p.boost)}">· ${esc(typeOf(p.boost).title)}</span>` : ''}</span>
+      <span>${esc(m.home_team)} — ${esc(m.away_team)} ${mark}</span>
       <span class="s">${p.home}:${p.away}${
         p.boost === 'double_predict' && p.home2 != null
           ? ` / ${p.home2}:${p.away2}` : ''}</span></div>`;
@@ -1015,6 +1108,24 @@ function reviewAndSave(){
     body += `<div class="msg err" style="margin-top:12px">
       У тебе ${skipped} ${skipped === 1 ? 'матч' : 'матчі'} без прогнозу — за них буде нуль.
       Точно підтверджуєш?</div>`;
+  }
+
+  // Пункт 6: Автопілот увімкнений, але недороблений
+  if (apPicks.length === 1) {
+    body += `<div class="msg err" style="margin-top:12px">
+      Автопілот обрано лише на один матч. Йому потрібні два —
+      інакше він не спрацює, а юніт лишиться витраченим даремно.</div>`;
+  }
+  if (apPicks.length === 2 && !apSaved) {
+    body += `<div class="msg err" style="margin-top:12px">
+      Кандидати Автопілота обрані, але ще не заявлені. Закрий це вікно
+      й натисни «Готово» у блоці Автопілота — інакше він не спрацює.</div>`;
+  }
+  const apNoScore = apPicks.filter(id => !filled.some(m => m.match_id === id));
+  if (apNoScore.length) {
+    body += `<div class="msg err" style="margin-top:12px">
+      ${apNoScore.length === 1 ? 'Кандидат Автопілота без прогнозу' :
+        'Кандидати Автопілота без прогнозу'} — подвоювати буде нічого.</div>`;
   }
 
   showModal('Перевір, що обрав', body, async () => {
@@ -1590,15 +1701,6 @@ async function viewAdmin(){
     </div>
 
     <div class="card">
-      <h2>Імпорт матчів</h2>
-      <p class="dim" style="margin-bottom:10px">
-        По рядку на матч, через тире: <span class="mono">Барселона - Реал Мадрид</span></p>
-      <textarea id="imp" rows="8" style="width:100%;background:var(--panel-3);border:1px solid var(--line);
-        border-radius:9px;color:var(--text);padding:11px;font-family:'JetBrains Mono',monospace;font-size:13px"></textarea>
-      <button class="ghost" id="btn-import" style="margin-top:10px;width:100%">Імпортувати у вікенд</button>
-    </div>
-
-    <div class="card">
       <h2>Зсув дедлайну</h2>
       <p class="dim" style="margin-bottom:10px">
         Лише при реальному перенесенні гри. Причина обов'язкова — її бачать усі.</p>
@@ -1755,22 +1857,6 @@ async function viewAdmin(){
       go('admin');
     };
 
-    $('btn-import').onclick = async () => {
-      const lines = $('imp').value.split('\n').map(s => s.trim()).filter(Boolean);
-      const matches = [];
-      for (const l of lines) {
-        const parts = l.split(/\s+[-–—]\s+/);
-        if (parts.length !== 2) return alert('Не розібрав рядок: ' + l);
-        matches.push({ home: parts[0].trim(), away: parts[1].trim(), kickoff: null });
-      }
-      if (!matches.length) return alert('Порожньо');
-      const { data, error } = await sb.rpc('admin_import_matches', {
-        p_gameweek: S.gw.gameweek_id, p_matches: matches
-      });
-      if (error) return alert('Помилка: ' + error.message);
-      alert(`Додано матчів: ${data}`);
-      go('admin');
-    };
   }
 
   // тип питання перемикає підписи балів
@@ -2013,6 +2099,11 @@ async function renderAdminWeeks(){
             value="${toLocalInput(g.deadline_at)}" style="${ANUM}">
           <button class="boost-chip" data-wdgo="${g.number}" style="white-space:nowrap">Дедлайн</button>
         </div>
+        <div style="display:flex;gap:7px;margin-bottom:7px">
+          <input type="number" data-wn="${g.number}" min="1" value="${g.number}"
+            placeholder="місце" style="${ANUM}">
+          <button class="boost-chip" data-wngo="${g.number}" style="white-space:nowrap">Місце</button>
+        </div>
         <div class="boost-row">
           <button class="boost-chip" data-wdel="${g.number}">Видалити вікенд</button>
         </div>
@@ -2039,6 +2130,22 @@ async function renderAdminWeeks(){
     const out = await adminRpc('admin_gameweek_deadline',
       { p_month: S.stage.key, p_number: Number(n),
         p_new: new Date(v).toISOString(), p_reason: why.trim() });
+    if (out !== null) { alert(out); await again(); }
+  });
+
+  // Переставити вікенд на інше місце (файл 62). Матчі, прогнози
+  // й бусти прив'язані до id вікенда, а не до номера, тож їдуть
+  // разом. Назва лишається старою — база про це нагадує.
+  host.querySelectorAll('[data-wngo]').forEach(b => b.onclick = async () => {
+    const n  = Number(b.dataset.wngo);
+    const to = Number(host.querySelector(`[data-wn="${n}"]`).value);
+    if (!to) return alert('Вкажи, яким за рахунком має стати вікенд');
+    if (to === n) return alert('Він і так на цьому місці');
+    if (!confirm(`Поставити вікенд №${n} на місце ${to}?\n\n` +
+                 'Решта вікендів зсунеться. Назви не міняються — ' +
+                 'якщо в назві є номер, поправ її кнопкою «Назва».')) return;
+    const out = await adminRpc('admin_gameweek_move',
+      { p_month: S.stage.key, p_number: n, p_to: to });
     if (out !== null) { alert(out); await again(); }
   });
 
