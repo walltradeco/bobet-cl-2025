@@ -1824,12 +1824,25 @@ async function viewAdmin(){
       <input type="text" id="pr-new" placeholder="нове ім'я" style="${AINP}">
       <button class="ghost" id="btn-prename" style="margin-top:10px;width:100%">Перейменувати</button>
       <div id="prename-result"></div>
+    </div>
+
+    <div class="card">
+      <h2>Резервна копія</h2>
+      <p class="dim" style="margin-bottom:10px">
+        Знімок усього: склади, прогнози, бусти, бали, бонусні відповіді.
+        Завантажується файлом — клади куди завгодно.
+        Це не кнопка «повернути як було»: відновлювати доведеться руками,
+        але з файлу принаймні видно, що саме було.
+        Роби перед кожною ризикованою правкою.</p>
+      <button class="ghost" id="btn-backup" style="width:100%">Завантажити копію</button>
+      <div id="backup-result"></div>
     </div>`;
 
   await renderAdminExtras();
   await renderAdminMatches();
   await renderAdminWeeks();
   await renderAdminRename();
+  await renderAdminBackup();
   await renderAdminBonus();
   await renderAdminRoster();
 
@@ -1913,6 +1926,34 @@ async function viewAdmin(){
       `<div class="msg ${t.startsWith('⚠') ? 'err' : 'ok'}" style="margin-top:10px">${esc(t)}</div>`).join('');
     $('r-mail').value = ''; $('r-name').value = '';
     await renderAdminRoster();
+  };
+}
+
+// ---------------------------------------------------------------------
+//  Резервна копія: RPC віддає JSON, браузер зберігає його файлом
+// ---------------------------------------------------------------------
+async function renderAdminBackup(){
+  if (!$('btn-backup')) return;
+  $('btn-backup').onclick = async () => {
+    $('backup-result').innerHTML = '<p class="dim" style="margin-top:10px">Збираю…</p>';
+    const { data, error } = await sb.rpc('backup_json');
+    if (error) {
+      $('backup-result').innerHTML =
+        `<div class="msg err" style="margin-top:12px">${esc(error.message)}</div>`;
+      return;
+    }
+    const text = JSON.stringify(data, null, 1);
+    const name = 'bobet-' + new Date().toISOString().slice(0, 10) + '.json';
+    const url  = URL.createObjectURL(new Blob([text], { type: 'application/json' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    $('backup-result').innerHTML =
+      `<div class="msg ok" style="margin-top:12px">Збережено: ${esc(name)} ·
+       ${Math.round(text.length / 1024)} КБ</div>`;
   };
 }
 
