@@ -295,7 +295,7 @@ const S = {
   stock: [],         // мій склад бустів
   prices: [],
   boostTypes: [],
-  ap: { unit: null, picks: [] },   // Автопілот: юніт і два матчі-кандидати
+  ap: { unit: null, picks: [], touched: false },   // Автопілот: юніт і два матчі-кандидати
   pending: null,     // рахунки, набрані в полях і ще не збережені в базу
   checks: [],        // хто підтвердив цей вікенд
   iConfirmed: false, // чи підтвердив Я — це і є замок власних прогнозів
@@ -483,7 +483,7 @@ async function setStage(key){
 
   // скидаємо все, що прив'язане до попереднього етапу
   S.gw = null; S.matches = []; S.myPred = {}; S.stock = [];
-  S.ap = { unit: null, picks: [] };
+  S.ap = { unit: null, picks: [], touched: false };
   S.pending = null;
   S.bonus = []; S.bonusDraft = {};
 
@@ -721,8 +721,12 @@ async function viewMatches(){
       : '';
     html += `
     <div class="match ${cls}" data-match="${m.match_id}"${tint}>
-      ${isAp ? '<div class="ap-tag">Автопілот · кандидат</div>' : ''}
-      ${p.boost === 'autopilot' ? '<div class="ap-tag">Автопілот спрацював</div>' : ''}
+      ${isAp && !(p.boost === 'autopilot' && m.home_score != null)
+        ? '<div class="ap-tag">Автопілот · кандидат</div>' : ''}
+      ${p.boost === 'autopilot' && m.home_score != null
+        ? '<div class="ap-tag">Автопілот спрацював</div>' : ''}
+      ${p.boost === 'autopilot' && m.home_score == null && !isAp
+        ? '<div class="ap-tag">Автопілот · кандидат</div>' : ''}
       <div class="match-teams">
         <div class="team">${esc(m.home_team)}</div>
         <div class="vs">—</div>
@@ -768,7 +772,7 @@ async function viewMatches(){
       S.myPred = {};
       S.pending = null;
       // Автопілот живе в межах одного вікенда — стан не тягнемо далі
-      S.ap = { unit: null, picks: [] };
+      S.ap = { unit: null, picks: [], touched: false };
       go('matches');
     };
   });
@@ -815,13 +819,21 @@ function renderAutopilotBar(){
     u.boost_code === 'autopilot' && (u.status === 'in_stock' || mine(u)));
   if (!units.length) { host.innerHTML = ''; return; }
 
-  const unit = (S.ap.unit && units.some(u => u.boost_unit_id === S.ap.unit.boost_unit_id))
-    ? S.ap.unit
-    : (units.find(mine) || units.find(u => u.status === 'in_stock') || units[0]);
+  // Юніт беремо ЗАВЖДИ свіжий зі складу. Раніше тут лишався старий
+  // знімок S.ap.unit, у якому autopilot_candidates ще порожні — через
+  // це модалка казала «не заявлені» після успішного «Готово», а кнопка
+  // «Зняти Автопілот» стирала вибір лише на екрані й до бази не йшла.
+  const unit = (S.ap.unit &&
+                units.find(u => u.boost_unit_id === S.ap.unit.boost_unit_id))
+    || units.find(mine)
+    || units.find(u => u.status === 'in_stock')
+    || units[0];
   S.ap.unit = unit;
 
-  // якщо кандидати вже збережені — підтягуємо
-  if (!S.ap.picks.length && unit.autopilot_candidates) {
+  // Кандидати з бази підтягуємо, лише поки людина сама нічого не чіпала.
+  // Інакше зняття обох кандидатів руками одразу ж скасовувалось:
+  // picks порожні -> перемалювання -> знову підтягнулись із бази.
+  if (!S.ap.touched && !S.ap.picks.length && unit.autopilot_candidates) {
     S.ap.picks = unit.autopilot_candidates.filter(
       id => S.matches.some(m => m.match_id === id));
   }
@@ -866,6 +878,7 @@ function renderAutopilotBar(){
     if (!saved) {                       // у базі нічого немає, досить стерти вибір
       S.ap.picks = [];
       S.ap.on = false;
+      S.ap.touched = true;
       paintAutopilotTargets();
       renderAutopilotBar();
       return;
@@ -878,7 +891,7 @@ function renderAutopilotBar(){
     });
     if (error) return alert('Помилка: ' + error.message);
     alert(data);
-    S.ap = { unit: null, picks: [] };
+    S.ap = { unit: null, picks: [], touched: false };
     S.pending = typed;
     S.myPred = {};
     go('matches');
@@ -910,6 +923,7 @@ function paintAutopilotTargets(){
       if (i >= 0) S.ap.picks.splice(i, 1);
       else if (S.ap.picks.length < 2) S.ap.picks.push(m.match_id);
       else { alert('Уже обрано два матчі. Зніми один, щоб додати інший.'); return; }
+      S.ap.touched = true;
       renderAutopilotBar();
     };
   }
@@ -1092,10 +1106,10 @@ function reviewAndSave(){
   let body = filled.map(m => {
     const p = S.myPred[m.match_id];
     const apHere = apPicks.includes(m.match_id);
-    const mark = p.boost
-      ? `<span style="color:${boostColor(p.boost)}">· ${esc(typeOf(p.boost).title)}</span>`
-      : (apHere
-          ? `<span style="color:${boostColor('autopilot')}">· Автопілот · кандидат</span>`
+    const mark = (apHere || p.boost === 'autopilot')
+      ? `<span style="color:${boostColor('autopilot')}">· Автопілот · кандидат</span>`
+      : (p.boost
+          ? `<span style="color:${boostColor(p.boost)}">· ${esc(typeOf(p.boost).title)}</span>`
           : '');
     return `<div class="rev-line">
       <span>${esc(m.home_team)} — ${esc(m.away_team)} ${mark}</span>
@@ -1110,16 +1124,14 @@ function reviewAndSave(){
       Точно підтверджуєш?</div>`;
   }
 
-  // Пункт 6: Автопілот увімкнений, але недороблений
+  // Автопілот увімкнений, але недороблений. Раніше тут же стояло
+  // попередження «обрані, але не заявлені» — воно більше не потрібне:
+  // заявка робиться сама, нижче, у момент підтвердження.
   if (apPicks.length === 1) {
     body += `<div class="msg err" style="margin-top:12px">
       Автопілот обрано лише на один матч. Йому потрібні два —
-      інакше він не спрацює, а юніт лишиться витраченим даремно.</div>`;
-  }
-  if (apPicks.length === 2 && !apSaved) {
-    body += `<div class="msg err" style="margin-top:12px">
-      Кандидати Автопілота обрані, але ще не заявлені. Закрий це вікно
-      й натисни «Готово» у блоці Автопілота — інакше він не спрацює.</div>`;
+      якщо підтвердиш так, Автопілот не спрацює, а юніт лишиться
+      вільним для іншого вікенда.</div>`;
   }
   const apNoScore = apPicks.filter(id => !filled.some(m => m.match_id === id));
   if (apNoScore.length) {
@@ -1129,6 +1141,24 @@ function reviewAndSave(){
   }
 
   showModal('Перевір, що обрав', body, async () => {
+    // ---- Автопілот вирішується саме тут ----
+    // Кнопка «Готово» лишається робочою, але перестала бути
+    // обов'язковою. Правило просте: два підсвічені матчі на момент
+    // підтвердження — Автопілот заявлено; не два — не використано,
+    // юніт повертається у склад вільним і доступний в іншому вікенді.
+    //
+    // Стару заявку знімаємо ДО збереження прогнозів: звільнений
+    // з-під Автопілота матч може одразу отримати звичайний буст,
+    // а тригер boost_assignments_exclusive не пускає їх на один матч.
+    const apUnitId  = S.ap.unit && S.ap.unit.boost_unit_id;
+    const apWantsTwo = apPicks.length === 2;
+    const apSame     = apWantsTwo && apSaved;   // у базі вже рівно це
+
+    if (apUnitId && apSavedIds.length && !apSame) {
+      const { error } = await sb.rpc('clear_autopilot', { p_boost_unit: apUnitId });
+      if (error) throw new Error(error.message);
+    }
+
     // Кожному матчу — власний юніт. Раніше тут для всіх матчів
     // знаходився ОДИН і той самий вільний юніт (база його не пускала
     // двічі), а вже збережений буст не знаходився взагалі, бо мав
@@ -1158,9 +1188,21 @@ function reviewAndSave(){
       });
       if (error) throw new Error(error.message);
     }
+    // Заявка Автопілота — після прогнозів, щоб бусти вже стояли
+    // на своїх матчах і тригер бачив справжню картину.
+    if (apUnitId && apWantsTwo && !apSame) {
+      const { error } = await sb.rpc('set_autopilot', {
+        p_boost_unit: apUnitId,
+        p_match_a: apPicks[0],
+        p_match_b: apPicks[1]
+      });
+      if (error) throw new Error(error.message);
+    }
+
     const { data, error } = await sb.rpc('confirm_gameweek', { p_gameweek: S.gw.gameweek_id });
     if (error) throw new Error(error.message);
     closeModal();
+    S.ap = { unit: null, picks: [], touched: false };
     await loadRefs();
     await go('matches');
     alert(data.opened
