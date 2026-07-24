@@ -732,23 +732,23 @@
     position:relative;
     border-radius:4px;
   }
-  td.pred.b2x{box-shadow:inset 0 0 0 3px var(--b2x);}
-  td.pred.b3x{box-shadow:inset 0 0 0 3px var(--b3x);}
-  td.pred.bdp{box-shadow:inset 0 0 0 3px var(--bdp);}
-  td.pred.bot{box-shadow:inset 0 0 0 3px var(--bot);}
-  td.pred.lbdp{box-shadow:inset 0 0 0 3px var(--lbdp);}
-  td.pred.lbgd{box-shadow:inset 0 0 0 3px var(--lbgd);}
-  td.pred.lb2x{box-shadow:inset 0 0 0 3px var(--lb2x);}
-  td.pred.lbtot{box-shadow:inset 0 0 0 3px var(--lbtot);}
-  td.pred.lbap{box-shadow:inset 0 0 0 3px var(--lbap);}
-  td.pred.lbbt{box-shadow:inset 0 0 0 3px var(--lbbt);}
-  td.pred.lb3x{box-shadow:inset 0 0 0 3px var(--lb3x);}
-  td.pred.bgen{box-shadow:inset 0 0 0 3px var(--bgen);}
+  td.pred.b2x{box-shadow:inset 0 0 0 5px var(--b2x);}
+  td.pred.b3x{box-shadow:inset 0 0 0 5px var(--b3x);}
+  td.pred.bdp{box-shadow:inset 0 0 0 5px var(--bdp);}
+  td.pred.bot{box-shadow:inset 0 0 0 5px var(--bot);}
+  td.pred.lbdp{box-shadow:inset 0 0 0 5px var(--lbdp);}
+  td.pred.lbgd{box-shadow:inset 0 0 0 5px var(--lbgd);}
+  td.pred.lb2x{box-shadow:inset 0 0 0 5px var(--lb2x);}
+  td.pred.lbtot{box-shadow:inset 0 0 0 5px var(--lbtot);}
+  td.pred.lbap{box-shadow:inset 0 0 0 5px var(--lbap);}
+  td.pred.lbbt{box-shadow:inset 0 0 0 5px var(--lbbt);}
+  td.pred.lb3x{box-shadow:inset 0 0 0 5px var(--lb3x);}
+  td.pred.bgen{box-shadow:inset 0 0 0 5px var(--bgen);}
   /* вгаданий рахунок + буст: лишаємо зелену заливку і контур буста поверх */
-  td.pred.exact.b2x{box-shadow:inset 0 0 0 3px var(--b2x);}
-  td.pred.exact.b3x{box-shadow:inset 0 0 0 3px var(--b3x);}
-  td.pred.exact.bdp{box-shadow:inset 0 0 0 3px var(--bdp);}
-  td.pred.exact.bot{box-shadow:inset 0 0 0 3px var(--bot);}
+  td.pred.exact.b2x{box-shadow:inset 0 0 0 5px var(--b2x);}
+  td.pred.exact.b3x{box-shadow:inset 0 0 0 5px var(--b3x);}
+  td.pred.exact.bdp{box-shadow:inset 0 0 0 5px var(--bdp);}
+  td.pred.exact.bot{box-shadow:inset 0 0 0 5px var(--bot);}
   .dp-alt{
     display:block;
     font-size:13px;
@@ -756,18 +756,27 @@
     margin-top:2px;
   }
   td.pred.exact .dp-alt{color:rgba(239,250,240,0.75);}
-  .chip.b2x{background:transparent; box-shadow:inset 0 0 0 3px var(--b2x);}
-  .chip.b3x{background:transparent; box-shadow:inset 0 0 0 3px var(--b3x);}
-  .chip.bdp{background:transparent; box-shadow:inset 0 0 0 3px var(--bdp);}
-  .chip.bot{background:transparent; box-shadow:inset 0 0 0 3px var(--bot);}
-  .chip.bgen{background:transparent; box-shadow:inset 0 0 0 3px var(--bgen);}
-  .chip.lbdp{background:transparent; box-shadow:inset 0 0 0 3px var(--lbdp);}
-  .chip.lbgd{background:transparent; box-shadow:inset 0 0 0 3px var(--lbgd);}
-  .chip.lb2x{background:transparent; box-shadow:inset 0 0 0 3px var(--lb2x);}
-  .chip.lbtot{background:transparent; box-shadow:inset 0 0 0 3px var(--lbtot);}
-  .chip.lbap{background:transparent; box-shadow:inset 0 0 0 3px var(--lbap);}
-  .chip.lbbt{background:transparent; box-shadow:inset 0 0 0 3px var(--lbbt);}
-  .chip.lb3x{background:transparent; box-shadow:inset 0 0 0 3px var(--lb3x);}
+  /* Double Predict до внесення результату: жоден із двох рахунків
+     не головний, тому другий не приглушуємо. Два класи в селекторі —
+     щоб перебити .dp-alt із медіазапитів незалежно від порядку. */
+  .dp-alt.dp-even{
+    font-size:inherit;
+    font-weight:inherit;
+    color:inherit;
+    opacity:1;
+  }
+  .chip.b2x{background:transparent; box-shadow:inset 0 0 0 5px var(--b2x);}
+  .chip.b3x{background:transparent; box-shadow:inset 0 0 0 5px var(--b3x);}
+  .chip.bdp{background:transparent; box-shadow:inset 0 0 0 5px var(--bdp);}
+  .chip.bot{background:transparent; box-shadow:inset 0 0 0 5px var(--bot);}
+  .chip.bgen{background:transparent; box-shadow:inset 0 0 0 5px var(--bgen);}
+  .chip.lbdp{background:transparent; box-shadow:inset 0 0 0 5px var(--lbdp);}
+  .chip.lbgd{background:transparent; box-shadow:inset 0 0 0 5px var(--lbgd);}
+  .chip.lb2x{background:transparent; box-shadow:inset 0 0 0 5px var(--lb2x);}
+  .chip.lbtot{background:transparent; box-shadow:inset 0 0 0 5px var(--lbtot);}
+  .chip.lbap{background:transparent; box-shadow:inset 0 0 0 5px var(--lbap);}
+  .chip.lbbt{background:transparent; box-shadow:inset 0 0 0 5px var(--lbbt);}
+  .chip.lb3x{background:transparent; box-shadow:inset 0 0 0 5px var(--lb3x);}
   table.boosts td.boost-label.lbdp{color:var(--lbdp); box-shadow:inset 3px 0 0 var(--lbdp);}
   table.boosts td.boost-label.lbgd{color:var(--lbgd); box-shadow:inset 3px 0 0 var(--lbgd);}
   table.boosts td.boost-label.lb2x{color:var(--lb2x); box-shadow:inset 3px 0 0 var(--lb2x);}
@@ -1071,10 +1080,10 @@
     .dp-alt{font-size:11px;}
     .flag{width:20px; height:15px;}
     .crest{width:19px; height:19px;}
-    td.pred.b2x{box-shadow:inset 0 0 0 2px var(--b2x);}
-    td.pred.b3x{box-shadow:inset 0 0 0 2px var(--b3x);}
-    td.pred.bdp{box-shadow:inset 0 0 0 2px var(--bdp);}
-    td.pred.bot{box-shadow:inset 0 0 0 2px var(--bot);}
+    td.pred.b2x{box-shadow:inset 0 0 0 4px var(--b2x);}
+    td.pred.b3x{box-shadow:inset 0 0 0 4px var(--b3x);}
+    td.pred.bdp{box-shadow:inset 0 0 0 4px var(--bdp);}
+    td.pred.bot{box-shadow:inset 0 0 0 4px var(--bot);}
 
     table.special{min-width:660px;}
     table.special td.sb-label, table.special th.sb-th-player{font-size:14px;}
@@ -2475,8 +2484,23 @@ function renderMatches(data){
               const cls = ['pred', exact ? 'exact' : '', outcome ? 'outcome' : '',
                            boost ? 'boosted ' + boost.kind : ''].filter(Boolean).join(' ');
               const tip = boost ? ` title="${escapeHtml(boost.label)}"` : '';
-              const altHtml = alt ? `<span class="dp-alt">${escapeHtml(alt)}</span>` : '';
-              return `<td class="${cls}"${tip}>${escapeHtml(pv || '—')}${altHtml}</td>`;
+
+              // Double Predict. Доки результату немає, жоден із двох
+              // рахунків не головний — показуємо їх однаково. Щойно
+              // результат внесено, нагору йде той, що приніс більше:
+              // точний рахунок > вгаданий результат > нічого.
+              // Раніше нагорі завжди стояв перший введений, навіть
+              // якщо зарахувався другий.
+              let main = pv, second = alt;
+              if(alt && resPair){
+                const rank = p => hit(p) ? 2 : (sameSide(p) ? 1 : 0);
+                if(rank(altPair) > rank(pPair)){ main = alt; second = pv; }
+              }
+              const dpEven = !!alt && !resPair;
+              const altHtml = second
+                ? `<span class="dp-alt${dpEven ? ' dp-even' : ''}">${escapeHtml(second)}</span>`
+                : '';
+              return `<td class="${cls}"${tip}>${escapeHtml(main || '—')}${altHtml}</td>`;
             }).join('')}
           </tr>`;
         }).join('')}
