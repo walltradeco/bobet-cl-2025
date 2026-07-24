@@ -1795,6 +1795,28 @@ async function viewAdmin(){
       <div id="wadd-result"></div>
     </div>`;
 
+  // ---------- зняти помилкове підтвердження вікенда ----------
+  // admin_unconfirm живе в базі з файлу 66, але кнопки на неї не було —
+  // запустити можна було тільки з SQL-редактора. Правило видимості це
+  // не міняє: вікенд відкривається, коли підтвердили всі. Тут лише
+  // зворотна дія на помилкове натискання.
+  const unconfirmBlock = S.stage.bonusOnly ? '' : `
+    <div class="card">
+      <h2>Зняти підтвердження вікенда</h2>
+      <p class="dim" style="margin-bottom:10px">
+        Для того, хто натиснув «Підтверджую» зарано. Поля прогнозів у нього
+        відкриються назад, а вікенд, якщо вже встиг відкритись, закриється
+        до наступного повного збору.</p>
+      <select id="uc-name" style="${AINP};margin-bottom:8px">
+        <option value="">— кому зняти —</option>
+      </select>
+      <select id="uc-gw" style="${AINP}">
+        <option value="">— який вікенд —</option>
+      </select>
+      <button class="ghost" id="btn-unconf" style="margin-top:10px;width:100%">Зняти підтвердження</button>
+      <div id="unconf-result"></div>
+    </div>`;
+
   $('view').innerHTML = `
     <div class="card" style="padding:12px 16px">
       <p class="dim" style="margin:0">Етап: <b style="color:var(--text)">${esc(S.stage.title)}</b>${
@@ -1854,6 +1876,8 @@ async function viewAdmin(){
       <div id="radd-result"></div>
     </div>
 
+    ${unconfirmBlock}
+
     <div class="card">
       <h2>Перейменувати учасника</h2>
       <p class="dim" style="margin-bottom:10px">
@@ -1883,6 +1907,7 @@ async function viewAdmin(){
   await renderAdminExtras();
   await renderAdminMatches();
   await renderAdminWeeks();
+  await renderAdminUnconfirm();
   await renderAdminRename();
   await renderAdminBackup();
   await renderAdminBonus();
@@ -2277,6 +2302,47 @@ async function renderAdminWeeks(){
 // ---------------------------------------------------------------------
 //  Перейменування учасника: одразу в усіх етапах
 // ---------------------------------------------------------------------
+async function renderAdminUnconfirm(){
+  const selName = $('uc-name'), selGw = $('uc-gw');
+  if (!selName || !selGw) return;   // етап General — вікендів немає
+
+  const { data: parts } = await sb.from('participants')
+    .select('display_name').eq('tournament_id', TOURNAMENT_ID).order('display_name');
+  for (const p of (parts || [])) {
+    const o = document.createElement('option');
+    o.value = p.display_name; o.textContent = p.display_name;
+    selName.appendChild(o);
+  }
+
+  for (const g of (S.gameweeks || [])) {
+    const o = document.createElement('option');
+    o.value = g.number;
+    o.textContent = g.title || ('Вікенд ' + g.number);
+    selGw.appendChild(o);
+  }
+
+  $('btn-unconf').onclick = async () => {
+    const who = selName.value;
+    const gw  = selGw.value;
+    if (!who) return alert('Обери, кому зняти підтвердження');
+    if (!gw)  return alert('Обери вікенд');
+    if (!confirm(`Зняти підтвердження вікенда «${selGw.selectedOptions[0].textContent}» ` +
+                 `в учасника «${who}»?\n\n` +
+                 'Його прогнози лишаються на місці, але поля відкриються ' +
+                 'назад і він зможе їх переробити.')) return;
+
+    // p_month — назва етапу словом: stage_key розуміє «Серпень»,
+    // «Вересень», «Жовтень» (файл 37).
+    const out = await adminRpc('admin_unconfirm', {
+      p_month: S.stage.title, p_name: who, p_gameweek: Number(gw)
+    });
+    if (out === null) return;
+    $('unconf-result').innerHTML =
+      `<div class="msg ok" style="margin-top:12px">${esc(out)}</div>`;
+    await loadRefs(); go('admin');
+  };
+}
+
 async function renderAdminRename(){
   const sel = $('pr-old');
   if (!sel) return;
