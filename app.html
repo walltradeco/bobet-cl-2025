@@ -687,9 +687,10 @@ async function viewMatches(){
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
   const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
-  // Rivals 2.0: суперника можна міняти аж до реального дедлайну вікенда,
-  // незалежно від власного підтвердження — окремий, пізніший лок.
-  const rivalsLocked = Date.now() >= new Date(S.gw.deadline_at).getTime();
+  // Rivals 2.0: жорсткий дедлайн вікенда — абсолютна межа для зміни
+  // суперника (окремо від ліміту «1 зміна після відкриття», який
+  // рахується всередині renderRivalBox з rival_board.post_open_used).
+  const deadlinePassed = Date.now() >= new Date(S.gw.deadline_at).getTime();
 
   const gwPicker = S.gameweeks.map(g =>
     `<button class="boost-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
@@ -841,7 +842,7 @@ async function viewMatches(){
   });
 
   await renderChecks();
-  renderRivalBox(rivalsLocked, open);
+  renderRivalBox(deadlinePassed, open);
   if (!locked) { renderBoostPickers(); renderAutopilotBar(); }
   const cb = $('btn-confirm');
   if (cb) cb.onclick = reviewAndSave;
@@ -850,30 +851,34 @@ async function viewMatches(){
 // ---------------------------------------------------------------------
 //  RIVALS 2.0 — дуель на вікенд, стратегічна зміна суперника
 //
-//  До дедлайну вікенда (не rivalsLocked): вибір або зміна суперника —
-//  НЕЗАЛЕЖНО від власного підтвердження. Список — учасники етапу, крім
-//  мене і крім тих, кого я вже брав цього місяця («раз за етап»).
-//  Дедлайн — реальний deadline_at вікенда (00:00), не підтвердження.
+//  ДО відкриття вікенда (не всі підтвердили): вибір/зміна суперника —
+//  без обмежень, як і раніше.
 //
-//  Після дедлайну (rivalsLocked): суперника видно, але вже read-only.
+//  ПІСЛЯ відкриття (всі підтвердили, прогнози видно всім): дозволена
+//  РІВНО ОДНА стратегічна зміна (rival_board.post_open_used). Після
+//  неї форма закривається — так само, як закриваються прогнози.
 //
-//  Коли вікенд відкрито (підтвердили всі АБО настав дедлайн) — під
-//  вибором показуємо всі пари вікенда зі значком ⚔️: сірий доки немає
-//  результатів, зелений — хто виграв, «нічия» — рівно. RLS до відкриття
-//  чужі пари не віддає, тож список наповнюється рівно тоді, коли треба.
+//  Дедлайн (deadline_at, той самий 00:00) — абсолютна межа зверху:
+//  після нього не можна навіть цю одну зміну.
+//
+//  Список усіх пар показуємо, коли вікенд відкрито — з бейджем ⚔️ і
+//  балами (переміг +2 / нічия +1 / поразка +0 / очікує).
 // ---------------------------------------------------------------------
-function rivalStatusMark(status){
-  if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг</span>`;
-  if (status === 'draw') return `<span class="dim">⚔️ нічия</span>`;
-  if (status === 'loss') return `<span class="dim">⚔️ поразка</span>`;
+function rivalStatusMark(status, points){
+  if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг +${points}</span>`;
+  if (status === 'draw') return `<span class="dim">⚔️ нічия +${points}</span>`;
+  if (status === 'loss') return `<span class="dim">⚔️ поразка +0</span>`;
   return `<span class="dim">⚔️ очікує</span>`;  // pending
 }
 
-function renderRivalBox(rivalsLocked, open){
+function renderRivalBox(deadlinePassed, open){
   const box = $('rival-box');
   if (!box) return;
 
   const myPick = S.rivalPairs.find(r => r.chooser_id === S.me.participant_id);
+  // Стратегічну зміну вже використано: вікенд відкрито І я нею скористався.
+  const usedUp = open && myPick && myPick.post_open_used;
+  const locked = deadlinePassed || usedUp;
 
   // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я,
   // мінус ті, кого я вже брав в ІНШИХ вікендах цього етапу.
@@ -887,17 +892,23 @@ function renderRivalBox(rivalsLocked, open){
 
   let inner = '';
 
-  if (rivalsLocked) {
+  if (locked) {
     // Read-only: мій суперник (якщо був)
-    inner += myPick
+    const why = usedUp
+      ? '<div class="dim" style="margin-top:4px;font-size:12px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
+      : '';
+    inner += (myPick
       ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
-      : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`;
+      : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`) + why;
   } else {
     // Форма вибору / зміни
     const opts = ['<option value="">— обери суперника —</option>']
       .concat(candidates.map(n =>
         `<option value="${esc(n)}" ${myPick && myPick.rival_name === n ? 'selected' : ''}>${esc(n)}</option>`))
       .join('');
+    const hint = open
+      ? 'Вікенд відкрито — це твоя ОСТАННЯ можливість переглянути прогнози інших і змінити суперника (лише 1 раз).'
+      : 'Змінювати можна без обмежень, поки вікенд не відкрився (коли підтвердять усі).';
     inner += `
       <div class="dim" style="margin-bottom:6px;font-size:12px">
         Rivals · дуель на вікенд (не обов'язково). Виграв більше балів (при рівних — більше точних рахунків) — +2, нічия — +1, поразка — 0.
@@ -906,7 +917,7 @@ function renderRivalBox(rivalsLocked, open){
         <select id="rival-sel" style="flex:1">${opts}</select>
         <button class="primary" id="rival-save" style="width:auto;padding:0 16px;margin:0">Обрати</button>
       </div>
-      ${myPick ? `<div class="dim" style="margin-top:6px;font-size:12px">Зараз: ${esc(myPick.rival_name)}. Змінити можна до дедлайну вікенда — навіть після того, як побачиш прогнози інших.</div>` : ''}
+      <div class="dim" style="margin-top:6px;font-size:12px">${myPick ? `Зараз: ${esc(myPick.rival_name)}. ` : ''}${hint}</div>
       <div id="rival-msg"></div>`;
   }
 
@@ -918,7 +929,7 @@ function renderRivalBox(rivalsLocked, open){
       .map(r => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
           <div><b>${esc(r.chooser_name)}</b> <span class="dim">проти</span> ${esc(r.rival_name)}</div>
-          <div>${rivalStatusMark(r.status)}</div>
+          <div>${rivalStatusMark(r.status, r.points)}</div>
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
@@ -957,6 +968,7 @@ function renderRivalBox(rivalsLocked, open){
     };
   }
 }
+
 
 // ---------------------------------------------------------------------
 //  U-13: звідки взялись бали за матч
