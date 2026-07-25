@@ -579,7 +579,27 @@
     border:1px solid var(--line);
     border-radius:10px;
     padding:14px 16px;
+    position:relative;
   }
+  /* Rivals badge on the Points summary cells */
+  .rv-badge{
+    position:absolute; top:8px; right:10px;
+    font-size:14px; line-height:1; cursor:default;
+  }
+  .rv-tip{
+    display:none;
+    position:absolute; top:22px; right:0;
+    background:var(--panel-2); border:1px solid var(--line);
+    border-radius:8px; padding:8px 10px; min-width:200px;
+    font-family:'JetBrains Mono',monospace; font-size:11px;
+    color:var(--text); z-index:40; text-align:left; white-space:nowrap;
+    box-shadow:0 6px 18px rgba(0,0,0,0.5);
+  }
+  .rv-badge:hover .rv-tip{ display:block; }
+  .rv-tip-row + .rv-tip-row{ margin-top:5px; padding-top:5px; border-top:1px solid var(--line); }
+  .rv-tip .win{ color:var(--green); font-weight:700; }
+  .rv-tip .loss{ color:var(--red); }
+  .rv-tip .pending{ color:var(--text); opacity:0.6; }
   .gp-summary-name{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
@@ -1436,11 +1456,25 @@ async function buildMonthRows(tournamentKey){
 
   const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
 
-  // Рядок «Points» у місячній таблиці — ЛИШЕ бали за матчі.
-  // Бали за бонусні питання живуть у своїй вкладці, а сума
-  // матчі+бонуси показується в Leaderboard (файл 44).
+  // Рядок «Points» у місячній таблиці = загальні бали етапу (як у
+  // Leaderboards): матчі + бонуси + дуелі. total_points уже містить
+  // rival_points (файл 71). Бонуси показуються ще й у своїй вкладці.
   const totals = await sbGet(
-    'leaderboard?select=display_name,match_points&tournament_id=eq.' + tid);
+    'leaderboard?select=display_name,total_points&tournament_id=eq.' + tid);
+
+  // Дуелі Rivals цього етапу — для бейджа ⚔️ біля імені в рядку Points.
+  // RLS сама ховає чужі пари до відкриття вікенда (той самий момент,
+  // що й прогнози). status: pending / win / loss.
+  const rivalRows = await sbGet(
+    'rival_board?select=chooser_name,rival_name,gameweek_number,status' +
+    '&tournament_id=eq.' + tid);
+  const rivalsByName = {};
+  rivalRows.forEach(r => {
+    (rivalsByName[r.chooser_name] = rivalsByName[r.chooser_name] || []).push({
+      rival: r.rival_name, status: r.status, gw: r.gameweek_number
+    });
+  });
+  LIVE_RIVALS = rivalsByName;
 
   const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
@@ -1455,7 +1489,7 @@ async function buildMonthRows(tournamentKey){
   const totalRow = Array(cols).fill('');
   totalRow[COL_DATE] = 'Points';
   const totalByName = {};
-  totals.forEach(t => { totalByName[t.display_name] = t.match_points; });
+  totals.forEach(t => { totalByName[t.display_name] = t.total_points; });
   names.forEach((n, i) => {
     totalRow[COL_FIRST + i] = (totalByName[n] === undefined ? 0 : totalByName[n]);
   });
@@ -1594,6 +1628,7 @@ async function buildSpecialRows(tournamentKey){
 /* Точка входу: віддає те саме, що й fetchSheet для архівних турнірів */
 async function fetchSupabaseTab(tab){
   LIVE_BOOSTS = true;              // див. boostKind: кольори EuroSeason
+  LIVE_RIVALS = null;             // бейджі дуелей лише в місячній таблиці
   if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
@@ -1864,6 +1899,7 @@ const FROZEN = {"1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc":{"0":[["№","Nam
 
 async function fetchSheet(sheetId, sheetName, gid){
   LIVE_BOOSTS = false;             // архів малюється старими кольорами
+  LIVE_RIVALS = null;              // в архіві дуелей немає
   // заморожений архів: віддаємо вшиті дані, мережа не потрібна
   if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
     const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
@@ -2097,11 +2133,29 @@ function renderPointsSummary(players, totals){
         const v = val(p, i);
         return `
         <div class="gp-summary-cell">
+          ${rivalBadge(p.name)}
           <span class="gp-summary-name">${escapeHtml(p.name)}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
       }).join('')}
     </div>`;
+}
+
+/* Бейдж ⚔️ з дуелями учасника біля його імені в рядку Points.
+   Показуємо лише в місячній таблиці EuroSeason (LIVE_RIVALS != null).
+   Деталі кожної дуелі — у підказці по наведенню. */
+function rivalBadge(name){
+  if(!LIVE_RIVALS) return '';
+  const duels = LIVE_RIVALS[name];
+  if(!duels || !duels.length) return '';
+  const label = { win: 'переміг', loss: 'поразка', pending: 'очікує' };
+  const rows = duels
+    .slice()
+    .sort((a, b) => a.gw - b.gw)
+    .map(d => `<div class="rv-tip-row">Вікенд ${d.gw}: проти ${escapeHtml(d.rival)}
+      · <span class="${d.status}">${label[d.status] || d.status}</span></div>`)
+    .join('');
+  return `<span class="rv-badge">⚔️<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
@@ -2291,6 +2345,11 @@ function renderBoostsBlock(boosts, players, predMap){
    Predict»), і за текстом їх не розрізнити. Архів має лишитись
    у старих кольорах із Google Sheets, EuroSeason — у нових. */
 let LIVE_BOOSTS = false;
+
+/* Дуелі Rivals для рядка Points місячної таблиці. null — не показувати
+   бейджі (архів, інші вкладки). Заповнює buildMonthRows, читає
+   renderPointsSummary. Формат: { 'Ім'я': [{rival, status, gw}], ... } */
+let LIVE_RIVALS = null;
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву
