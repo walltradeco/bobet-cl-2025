@@ -687,6 +687,9 @@ async function viewMatches(){
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
   const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
+  // Rivals 2.0: суперника можна міняти аж до реального дедлайну вікенда,
+  // незалежно від власного підтвердження — окремий, пізніший лок.
+  const rivalsLocked = Date.now() >= new Date(S.gw.deadline_at).getTime();
 
   const gwPicker = S.gameweeks.map(g =>
     `<button class="boost-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
@@ -838,25 +841,26 @@ async function viewMatches(){
   });
 
   await renderChecks();
-  renderRivalBox(locked, open);
+  renderRivalBox(rivalsLocked, open);
   if (!locked) { renderBoostPickers(); renderAutopilotBar(); }
   const cb = $('btn-confirm');
   if (cb) cb.onclick = reviewAndSave;
 }
 
 // ---------------------------------------------------------------------
-//  RIVALS — дуель на вікенд
+//  RIVALS 2.0 — дуель на вікенд, стратегічна зміна суперника
 //
-//  До підтвердження (не locked): вибір або зміна суперника. Список —
-//  учасники етапу, крім мене і крім тих, кого я вже брав цього місяця
-//  (правило «раз за етап»). Дедлайн — власне підтвердження вікенда.
+//  До дедлайну вікенда (не rivalsLocked): вибір або зміна суперника —
+//  НЕЗАЛЕЖНО від власного підтвердження. Список — учасники етапу, крім
+//  мене і крім тих, кого я вже брав цього місяця («раз за етап»).
+//  Дедлайн — реальний deadline_at вікенда (00:00), не підтвердження.
 //
-//  Після підтвердження (locked): суперника видно, але вже read-only.
+//  Після дедлайну (rivalsLocked): суперника видно, але вже read-only.
 //
-//  Коли вікенд відкрито (всі підтвердили) — під вибором показуємо всі
-//  пари вікенда зі значком ⚔️: сірий доки немає результатів, зелений —
-//  хто виграв дуель. RLS до відкриття чужі пари не віддає, тож список
-//  наповнюється рівно тоді, коли треба.
+//  Коли вікенд відкрито (підтвердили всі АБО настав дедлайн) — під
+//  вибором показуємо всі пари вікенда зі значком ⚔️: сірий доки немає
+//  результатів, зелений — хто виграв, «нічия» — рівно. RLS до відкриття
+//  чужі пари не віддає, тож список наповнюється рівно тоді, коли треба.
 // ---------------------------------------------------------------------
 function rivalStatusMark(status){
   if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг</span>`;
@@ -865,7 +869,7 @@ function rivalStatusMark(status){
   return `<span class="dim">⚔️ очікує</span>`;  // pending
 }
 
-function renderRivalBox(locked, open){
+function renderRivalBox(rivalsLocked, open){
   const box = $('rival-box');
   if (!box) return;
 
@@ -883,7 +887,7 @@ function renderRivalBox(locked, open){
 
   let inner = '';
 
-  if (locked) {
+  if (rivalsLocked) {
     // Read-only: мій суперник (якщо був)
     inner += myPick
       ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
@@ -902,7 +906,7 @@ function renderRivalBox(locked, open){
         <select id="rival-sel" style="flex:1">${opts}</select>
         <button class="primary" id="rival-save" style="width:auto;padding:0 16px;margin:0">Обрати</button>
       </div>
-      ${myPick ? `<div class="dim" style="margin-top:6px;font-size:12px">Зараз: ${esc(myPick.rival_name)}. Змінити можна до підтвердження вікенда.</div>` : ''}
+      ${myPick ? `<div class="dim" style="margin-top:6px;font-size:12px">Зараз: ${esc(myPick.rival_name)}. Змінити можна до дедлайну вікенда — навіть після того, як побачиш прогнози інших.</div>` : ''}
       <div id="rival-msg"></div>`;
   }
 
@@ -1295,8 +1299,9 @@ function reviewAndSave(){
       Точно підтверджуєш?</div>`;
   }
 
-  // Rivals: після підтвердження суперника вже не змінити, тому показуємо
-  // вибір тут окремим рядком. Немає вибору — теж пишемо явно, щоб людина
+  // Rivals 2.0: суперника можна змінити й ПІСЛЯ підтвердження (аж до
+  // дедлайну вікенда), тому це просто показ поточного вибору перед
+  // збереженням прогнозів. Немає вибору — теж пишемо явно, щоб людина
   // не думала, що забула (дуель — справа добровільна).
   const myRival = S.rivalPairs.find(r => r.chooser_id === S.me.participant_id);
   body += `<div class="rev-line" style="margin-top:12px">
