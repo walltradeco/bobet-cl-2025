@@ -299,6 +299,8 @@ const S = {
   pending: null,     // рахунки, набрані в полях і ще не збережені в базу
   checks: [],        // хто підтвердив цей вікенд
   iConfirmed: false, // чи підтвердив Я — це і є замок власних прогнозів
+  rivalPairs: [],    // дуелі цього вікенда (rival_board): мою видно завжди, чужі — після відкриття
+  myRivalsStage: [], // мої вибори суперника по всьому етапу (щоб не брати того самого двічі)
 };
 
 const $ = (id) => document.getElementById(id);
@@ -603,14 +605,23 @@ async function go(tab){
 //  МАТЧІ — внесення прогнозів (U-4, U-5, U-6, U-8)
 // =====================================================================
 async function loadGameweek(gwId){
-  const [mb, st, cf] = await Promise.all([
+  const [mb, st, cf, rp, rs] = await Promise.all([
     sb.from('match_board').select('*').eq('gameweek_id', gwId),
     sb.from('my_boost_stock').select('*').eq('participant_id', S.me.participant_id),
     sb.from('confirmation_board').select('*').eq('gameweek_id', gwId),
+    // Дуелі цього вікенда. RLS сама вирішує видимість: свою пару бачу
+    // завжди, чужі — лише коли підтвердили всі (вікенд відкрито).
+    sb.from('rival_board').select('*').eq('gameweek_id', gwId),
+    // Усі мої суперники в цьому етапі — щоб не пропонувати того самого двічі.
+    sb.from('rival_board').select('*')
+      .eq('tournament_id', S.stage.id)
+      .eq('chooser_id', S.me.participant_id),
   ]);
 
   const rows = mb.data || [];
   S.stock = st.data || [];
+  S.rivalPairs = rp.data || [];
+  S.myRivalsStage = rs.data || [];
 
   // Власна фіксація. Вікенд «відкритий» і «я підтвердив» — це два
   // різні стани: перший настає, коли підтвердили всі, другий —
@@ -708,6 +719,7 @@ async function viewMatches(){
   html += `<div class="card tight">
     <div class="dim" style="margin-bottom:8px">Підтвердили ${S.gw.confirmed_count} з ${S.gw.participant_count}</div>
     <div class="checks" id="checks"></div></div>
+    <div id="rival-box"></div>
     <div id="ap-bar"></div>`;
 
   for (const m of S.matches) {
@@ -778,9 +790,108 @@ async function viewMatches(){
   });
 
   await renderChecks();
+  renderRivalBox(locked, open);
   if (!locked) { renderBoostPickers(); renderAutopilotBar(); }
   const cb = $('btn-confirm');
   if (cb) cb.onclick = reviewAndSave;
+}
+
+// ---------------------------------------------------------------------
+//  RIVALS — дуель на вікенд
+//
+//  До підтвердження (не locked): вибір або зміна суперника. Список —
+//  учасники етапу, крім мене і крім тих, кого я вже брав цього місяця
+//  (правило «раз за етап»). Дедлайн — власне підтвердження вікенда.
+//
+//  Після підтвердження (locked): суперника видно, але вже read-only.
+//
+//  Коли вікенд відкрито (всі підтвердили) — під вибором показуємо всі
+//  пари вікенда зі значком ⚔️: сірий доки немає результатів, зелений —
+//  хто виграв дуель. RLS до відкриття чужі пари не віддає, тож список
+//  наповнюється рівно тоді, коли треба.
+// ---------------------------------------------------------------------
+function rivalStatusMark(status){
+  if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг</span>`;
+  if (status === 'loss') return `<span class="dim">⚔️ поразка</span>`;
+  return `<span class="dim">⚔️ очікує</span>`;  // pending
+}
+
+function renderRivalBox(locked, open){
+  const box = $('rival-box');
+  if (!box) return;
+
+  const myPick = S.rivalPairs.find(r => r.chooser_id === S.me.participant_id);
+
+  // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я,
+  // мінус ті, кого я вже брав в ІНШИХ вікендах цього етапу.
+  const usedNames = S.myRivalsStage
+    .filter(r => r.gameweek_id !== S.gw.gameweek_id)
+    .map(r => r.rival_name);
+  const candidates = (S.checks || [])
+    .filter(c => c.participant_id !== S.me.participant_id)
+    .filter(c => !usedNames.includes(c.display_name))
+    .map(c => c.display_name);
+
+  let inner = '';
+
+  if (locked) {
+    // Read-only: мій суперник (якщо був)
+    inner += myPick
+      ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
+      : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`;
+  } else {
+    // Форма вибору / зміни
+    const opts = ['<option value="">— обери суперника —</option>']
+      .concat(candidates.map(n =>
+        `<option value="${esc(n)}" ${myPick && myPick.rival_name === n ? 'selected' : ''}>${esc(n)}</option>`))
+      .join('');
+    inner += `
+      <div class="dim" style="margin-bottom:6px;font-size:12px">
+        Rivals · дуель на вікенд (не обов'язково). Виграв більше балів за матчі — +2. Нічия чи поразка — 0.
+      </div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <select id="rival-sel" style="flex:1">${opts}</select>
+        <button class="primary" id="rival-save" style="width:auto;padding:0 16px;margin:0">Обрати</button>
+      </div>
+      ${myPick ? `<div class="dim" style="margin-top:6px;font-size:12px">Зараз: ${esc(myPick.rival_name)}. Змінити можна до підтвердження вікенда.</div>` : ''}
+      <div id="rival-msg"></div>`;
+  }
+
+  // Список усіх пар — тільки коли вікенд відкрито
+  if (open && S.rivalPairs.length) {
+    const rowsHtml = S.rivalPairs
+      .slice()
+      .sort((a,b) => esc(a.chooser_name).localeCompare(esc(b.chooser_name)))
+      .map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
+          <div><b>${esc(r.chooser_name)}</b> <span class="dim">проти</span> ${esc(r.rival_name)}</div>
+          <div>${rivalStatusMark(r.status)}</div>
+        </div>`).join('');
+    inner += `
+      <div style="margin-top:12px">
+        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
+        ${rowsHtml}
+      </div>`;
+  }
+
+  box.innerHTML = `<div class="card tight">${inner}</div>`;
+
+  // Збереження вибору
+  const saveBtn = $('rival-save');
+  if (saveBtn) {
+    saveBtn.onclick = async () => {
+      const name = $('rival-sel').value;
+      if (!name) { msg($('rival-msg'), 'Обери суперника зі списку', 'err'); return; }
+      saveBtn.disabled = true;
+      const { data, error } = await sb.rpc('rival_pick', {
+        p_gameweek_id: S.gw.gameweek_id,
+        p_rival_name: name,
+      });
+      saveBtn.disabled = false;
+      if (error) { msg($('rival-msg'), error.message, 'err'); return; }
+      await go('matches');   // перемалюємо з новим станом
+    };
+  }
 }
 
 // ---------------------------------------------------------------------
