@@ -581,10 +581,19 @@
     padding:14px 16px;
     position:relative;
   }
-  /* Rivals badge on the Points summary cells */
-  .rv-badge{
+  /* Rivals / MVP badges on the Points summary cells */
+  .rv-badges{
     position:absolute; top:8px; right:10px;
+    display:flex; gap:6px; align-items:center;
+  }
+  .rv-badge{
+    position:relative;
     font-size:14px; line-height:1; cursor:default;
+    display:inline-flex; align-items:center; gap:1px;
+  }
+  .rv-count{
+    font-family:'JetBrains Mono',monospace; font-size:10px;
+    font-weight:700; color:var(--gold);
   }
   .rv-tip{
     display:none;
@@ -1476,6 +1485,19 @@ async function buildMonthRows(tournamentKey){
   });
   LIVE_RIVALS = rivalsByName;
 
+  // MVP кожного вікенда цього етапу — для бейджа 🏆 біля імені.
+  // RLS показує лише після відкриття вікенда (як дуелі).
+  const mvpRows = await sbGet(
+    'mvp_board?select=display_name,gameweek_number,points' +
+    '&tournament_id=eq.' + tid);
+  const mvpByName = {};
+  mvpRows.forEach(r => {
+    (mvpByName[r.display_name] = mvpByName[r.display_name] || []).push({
+      gw: r.gameweek_number, points: r.points
+    });
+  });
+  LIVE_MVP = mvpByName;
+
   const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
   // Матчі — відкрита інформація: показуємо розклад завжди. Прогнози
@@ -1629,6 +1651,7 @@ async function buildSpecialRows(tournamentKey){
 async function fetchSupabaseTab(tab){
   LIVE_BOOSTS = true;              // див. boostKind: кольори EuroSeason
   LIVE_RIVALS = null;             // бейджі дуелей лише в місячній таблиці
+  LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
   if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
@@ -1900,6 +1923,7 @@ const FROZEN = {"1KAwNElLp52kuICK4ngGAbhloAdFPskKm7i0zKq674Nc":{"0":[["№","Nam
 async function fetchSheet(sheetId, sheetName, gid){
   LIVE_BOOSTS = false;             // архів малюється старими кольорами
   LIVE_RIVALS = null;              // в архіві дуелей немає
+  LIVE_MVP = null;                 // в архіві MVP немає
   // заморожений архів: віддаємо вшиті дані, мережа не потрібна
   if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
     const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
@@ -2133,7 +2157,7 @@ function renderPointsSummary(players, totals){
         const v = val(p, i);
         return `
         <div class="gp-summary-cell">
-          ${rivalBadge(p.name)}
+          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}</span>
           <span class="gp-summary-name">${escapeHtml(p.name)}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
@@ -2156,6 +2180,23 @@ function rivalBadge(name){
       · <span class="${d.status}">${label[d.status] || d.status}</span></div>`)
     .join('');
   return `<span class="rv-badge">⚔️<span class="rv-tip">${rows}</span></span>`;
+}
+
+/* Бейдж 🏆 з турами, де учасник став MVP. Показуємо лише в місячній
+   таблиці (LIVE_MVP != null). Кількість MVP видно як «×N», деталі —
+   у підказці по наведенню. */
+function mvpBadge(name){
+  if(!LIVE_MVP) return '';
+  const wins = LIVE_MVP[name];
+  if(!wins || !wins.length) return '';
+  const rows = wins
+    .slice()
+    .sort((a, b) => a.gw - b.gw)
+    .map(w => `<div class="rv-tip-row">Вікенд ${w.gw}: MVP туру
+      · <span class="win">+${w.points}</span></div>`)
+    .join('');
+  const count = wins.length > 1 ? `<span class="rv-count">${wins.length}</span>` : '';
+  return `<span class="rv-badge">🏆${count}<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
@@ -2350,6 +2391,10 @@ let LIVE_BOOSTS = false;
    бейджі (архів, інші вкладки). Заповнює buildMonthRows, читає
    renderPointsSummary. Формат: { 'Ім'я': [{rival, status, gw}], ... } */
 let LIVE_RIVALS = null;
+
+/* MVP по вікендах для бейджа 🏆 в рядку Points. null — не показувати.
+   Формат: { 'Ім'я': [{gw, points}], ... } */
+let LIVE_MVP = null;
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву
