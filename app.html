@@ -799,7 +799,7 @@ async function viewMatches(){
     const mvpPts = iAmMvp ? ((S.mvpRows.find(r => r.participant_id === S.me.participant_id) || {}).points || 3) : 0;
     const mvpLine = iAmMvp
       ? `<div class="rev-line" style="border:none;padding:4px 0">
-           <span class="dim">🏆 MVP туру</span>
+           <span style="color:var(--gold);font-weight:700">MVP туру</span>
            <span class="s" style="color:var(--green)">+${mvpPts}</span>
          </div>`
       : '';
@@ -860,6 +860,7 @@ async function viewMatches(){
 // ---------------------------------------------------------------------
 function rivalStatusMark(status){
   if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг</span>`;
+  if (status === 'draw') return `<span class="dim">⚔️ нічия</span>`;
   if (status === 'loss') return `<span class="dim">⚔️ поразка</span>`;
   return `<span class="dim">⚔️ очікує</span>`;  // pending
 }
@@ -895,7 +896,7 @@ function renderRivalBox(locked, open){
       .join('');
     inner += `
       <div class="dim" style="margin-bottom:6px;font-size:12px">
-        Rivals · дуель на вікенд (не обов'язково). Виграв більше балів за матчі — +2. Нічия чи поразка — 0.
+        Rivals · дуель на вікенд (не обов'язково). Виграв більше балів (при рівних — більше точних рахунків) — +2, нічия — +1, поразка — 0.
       </div>
       <div style="display:flex;gap:8px;align-items:center">
         <select id="rival-sel" style="flex:1">${opts}</select>
@@ -928,7 +929,7 @@ function renderRivalBox(locked, open){
     const names = S.mvpRows.map(r => esc(r.display_name)).join(', ');
     inner += `
       <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line)">
-        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase">🏆 MVP вікенда</div>
+        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);font-weight:700">MVP вікенда</div>
         <div><b style="color:var(--gold)">${names}</b> <span class="dim">+${S.mvpRows[0].points}</span></div>
       </div>`;
   }
