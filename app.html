@@ -301,6 +301,9 @@ const S = {
   iConfirmed: false, // чи підтвердив Я — це і є замок власних прогнозів
   rivalPairs: [],    // дуелі цього вікенда (rival_board): мою видно завжди, чужі — після відкриття
   myRivalsStage: [], // мої вибори суперника по всьому етапу (щоб не брати того самого двічі)
+  styleRows: [],     // тренерські стилі цього вікенда (style_board): мій завжди, чужі — після відкриття
+  styleOptions: [],  // стилі етапу з позначкою, які вже витрачені (style_options)
+  styleCap: null,    // стеля балів стилю за вікенд (manager_style_config)
 };
 
 const $ = (id) => document.getElementById(id);
@@ -605,7 +608,7 @@ async function go(tab){
 //  МАТЧІ — внесення прогнозів (U-4, U-5, U-6, U-8)
 // =====================================================================
 async function loadGameweek(gwId){
-  const [mb, st, cf, rp, rs, mv] = await Promise.all([
+  const [mb, st, cf, rp, rs, mv, sbd, sop, scf] = await Promise.all([
     sb.from('match_board').select('*').eq('gameweek_id', gwId),
     sb.from('my_boost_stock').select('*').eq('participant_id', S.me.participant_id),
     sb.from('confirmation_board').select('*').eq('gameweek_id', gwId),
@@ -618,6 +621,14 @@ async function loadGameweek(gwId){
       .eq('chooser_id', S.me.participant_id),
     // MVP цього вікенда. RLS показує лише після відкриття (як дуелі).
     sb.from('mvp_board').select('*').eq('gameweek_id', gwId),
+    // Тренерський почерк (файл 78). Стилі вікенда — RLS та сама, що
+    // й у дуелей: свій видно завжди, чужі — після відкриття.
+    sb.from('style_board').select('*').eq('gameweek_id', gwId),
+    // Стилі етапу з позначкою, у якому вікенді кожен уже витрачено.
+    sb.rpc('style_options', { p_gameweek_id: gwId }),
+    // Стеля балів стилю за вікенд — різна по етапах (серпень 3, далі 4).
+    sb.from('manager_style_config').select('weekend_cap')
+      .eq('tournament_id', S.stage.id).maybeSingle(),
   ]);
 
   const rows = mb.data || [];
@@ -625,6 +636,9 @@ async function loadGameweek(gwId){
   S.rivalPairs = rp.data || [];
   S.myRivalsStage = rs.data || [];
   S.mvpRows = mv.data || [];
+  S.styleRows = sbd.data || [];
+  S.styleOptions = sop.data || [];
+  S.styleCap = scf.data ? scf.data.weekend_cap : null;
 
   // Власна фіксація. Вікенд «відкритий» і «я підтвердив» — це два
   // різні стани: перший настає, коли підтвердили всі, другий —
@@ -727,6 +741,7 @@ async function viewMatches(){
     <div class="dim" style="margin-bottom:8px">Підтвердили ${S.gw.confirmed_count} з ${S.gw.participant_count}</div>
     <div class="checks" id="checks"></div></div>
     <div id="rival-box"></div>
+    <div id="style-box"></div>
     <div id="ap-bar"></div>`;
 
   for (const m of S.matches) {
@@ -808,12 +823,26 @@ async function viewMatches(){
          </div>`
       : '';
 
-    const total = matchSum + rivalPts + mvpPts;
+    // Тренерський почерк. Бали не залежать від прогнозів, тому рядок є
+    // завжди, коли стиль на цей вікенд обрано (або кинуто системою).
+    const myStyle = (S.styleRows || []).find(r => r.participant_id === S.me.participant_id);
+    const stylePts = myStyle && myStyle.points != null ? myStyle.points : 0;
+    const styleLine = myStyle
+      ? `<div class="rev-line" style="border:none;padding:4px 0">
+           <span class="dim">👔 ${esc(myStyle.style_title)}${
+             myStyle.capped ? ` <span style="font-size:11px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
+           <span class="s" style="color:${stylePts > 0 ? 'var(--green)' : 'var(--text-dim)'}">
+             ${myStyle.scored ? '+' + stylePts : 'очікує'}</span>
+         </div>`
+      : '';
+
+    const total = matchSum + rivalPts + mvpPts + stylePts;
     html += `<div class="card tight" style="margin-top:14px;border-color:var(--gold)">
       <div class="rev-line" style="border:none;padding:4px 0">
         <span class="dim">Бали за матчі</span>
         <span class="s">${matchSum}</span></div>
       ${rivalLine}
+      ${styleLine}
       ${mvpLine}
       <div class="rev-line" style="border-top:1px solid var(--line);border-bottom:none;padding:8px 0 2px;margin-top:4px">
         <span style="font-weight:700">Разом за вікенд</span>
@@ -843,6 +872,7 @@ async function viewMatches(){
 
   await renderChecks();
   renderRivalBox(deadlinePassed, open);
+  renderStyleBox(locked, open);
   if (!locked) { renderBoostPickers(); renderAutopilotBar(); }
   const cb = $('btn-confirm');
   if (cb) cb.onclick = reviewAndSave;
@@ -876,9 +906,11 @@ function renderRivalBox(deadlinePassed, open){
   if (!box) return;
 
   const myPick = S.rivalPairs.find(r => r.chooser_id === S.me.participant_id);
+  // Результати вікенда вже проставлені — дуель зіграна, суперника не міняти.
+  const scored = S.rivalPairs.some(r => r.scored);
   // Стратегічну зміну вже використано: вікенд відкрито І я нею скористався.
   const usedUp = open && myPick && myPick.post_open_used;
-  const locked = deadlinePassed || usedUp;
+  const locked = deadlinePassed || scored || usedUp;
 
   // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я,
   // мінус ті, кого я вже брав в ІНШИХ вікендах цього етапу.
@@ -894,9 +926,11 @@ function renderRivalBox(deadlinePassed, open){
 
   if (locked) {
     // Read-only: мій суперник (якщо був)
-    const why = usedUp
-      ? '<div class="dim" style="margin-top:4px;font-size:12px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
-      : '';
+    const why = scored
+      ? '<div class="dim" style="margin-top:4px;font-size:12px">Результати вікенда внесені — дуель зіграна, суперник зафіксований.</div>'
+      : (usedUp
+        ? '<div class="dim" style="margin-top:4px;font-size:12px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
+        : '');
     inner += (myPick
       ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
       : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`) + why;
@@ -967,6 +1001,129 @@ function renderRivalBox(deadlinePassed, open){
       await go('matches');   // перемалюємо з новим станом
     };
   }
+}
+
+
+// ---------------------------------------------------------------------
+//  ТРЕНЕРСЬКИЙ ПОЧЕРК 👔 — стиль на вікенд (файл 78)
+//
+//  Стиль поводиться ТОЧНО ЯК ПРОГНОЗИ, а не як Rivals: фіксується моїм
+//  підтвердженням вікенда і після цього не міняється — тому сюди йде
+//  той самий `locked`, що замикає поля рахунків.
+//
+//  Один стиль на вікенд, і той самий стиль не можна взяти двічі за
+//  етап. Витрачені показуємо заблокованими, з номером вікенда, де вони
+//  пішли — щоб було видно, що лишилось на решту місяця.
+//
+//  Нарахування не залежить від прогнозів: стиль дивиться на реальні
+//  рахунки всіх матчів вікенда. Стеля (3 у серпні, 4 далі) ріже
+//  хвіст — про неї пишемо одразу, щоб не було сюрпризу.
+//
+//  Не обрав сам — база кине випадковий невикористаний у момент
+//  підтвердження (тригер style_on_confirm), тому «нічого» тут не буває.
+// ---------------------------------------------------------------------
+function styleFace(o, px){
+  // Фото тренера, якщо залите в Storage; поки немає — емодзі стилю
+  return o.photo_url
+    ? `<img src="${esc(o.photo_url)}" alt="${esc(o.title || o.style_title)}"
+         style="width:${px}px;height:${px}px;border-radius:50%;object-fit:cover;
+                vertical-align:middle;margin-right:5px">`
+    : `<span style="margin-right:4px">${o.icon || o.style_icon || '👔'}</span>`;
+}
+
+function renderStyleBox(locked, open){
+  const box = $('style-box');
+  if (!box) return;
+
+  const opts = S.styleOptions || [];
+  // Для етапу механіку не ввімкнено (немає рядка в manager_style_config) —
+  // блок просто не показуємо.
+  if (!opts.length) { box.innerHTML = ''; return; }
+
+  const mine = (S.styleRows || []).find(r => r.participant_id === S.me.participant_id);
+  const cur  = opts.find(o => o.is_current);
+  const cap  = S.styleCap;
+  const left = opts.filter(o => o.used_gameweek == null && !o.is_current).length;
+
+  let inner = `<div class="dim" style="margin-bottom:8px;font-size:12px">
+      👔 Тренерський почерк · один стиль на вікенд. Рахує реальні результати
+      матчів, а не твої прогнози${cap ? `. Максимум ${cap} бали за вікенд` : ''}.
+      Той самий стиль двічі за місяць узяти не можна.
+    </div>`;
+
+  if (locked) {
+    // Read-only: що зафіксовано. Разом із довідкою, за що цей тренер.
+    inner += cur
+      ? `<div>Твій стиль на цей вікенд:
+           <b style="color:var(--teal)">${styleFace(cur, 22)}${esc(cur.title)}</b>
+           ${mine && mine.auto_assigned
+             ? '<span class="dim" style="font-size:12px"> · кинуто системою</span>' : ''}
+         </div>
+         <div class="dim" style="margin-top:4px;font-size:12px">${esc(cur.description)}</div>
+         ${cur.manager_note
+           ? `<div class="dim" style="margin-top:3px;font-size:11px;font-style:italic">${esc(cur.manager_note)}</div>` : ''}`
+      : `<div class="dim">Стиль на цей вікенд не обрано — система кине випадковий, коли підтвердиш.</div>`;
+  } else {
+    // Вибір. Витрачені стилі лишаємо в списку, але вимкненими — так
+    // видно весь розклад місяця, а не тільки те, що ще доступне.
+    const chips = opts.map(o => {
+      const used = o.used_gameweek != null;
+      return `<button class="boost-chip ${o.is_current ? 'on' : ''}"
+        data-style="${esc(o.code)}" ${used ? 'disabled' : ''}
+        title="${esc(o.description)}"
+        style="${used ? 'opacity:.35;cursor:not-allowed' : ''}">
+        ${styleFace(o, 18)}${esc(o.title)}${used ? ` · вк ${o.used_gameweek}` : ''}</button>`;
+    }).join('');
+
+    inner += `<div class="boost-row">${chips}</div>`;
+    inner += cur
+      ? `<div class="dim" style="margin-top:6px;font-size:12px">
+           Зараз: <b style="color:var(--teal)">${esc(cur.title)}</b> — ${esc(cur.description)}
+         </div>
+         ${cur.manager_note
+           ? `<div class="dim" style="margin-top:3px;font-size:11px;font-style:italic">${esc(cur.manager_note)}</div>` : ''}`
+      : `<div class="dim" style="margin-top:6px;font-size:12px">
+           Стиль ще не обрано. Не обереш — при підтвердженні система кине випадковий із вільних.
+         </div>`;
+    inner += `<div class="dim" style="margin-top:4px;font-size:11px">
+        Вільних стилів на решту місяця: ${left}.</div>
+      <div id="style-msg"></div>`;
+  }
+
+  // Чужі стилі — рівно після відкриття вікенда, як і прогнози
+  if (open && (S.styleRows || []).length) {
+    const rowsHtml = S.styleRows
+      .slice()
+      .sort((a, b) => esc(a.display_name).localeCompare(esc(b.display_name)))
+      .map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
+          <div><b>${esc(r.display_name)}</b>
+            <span class="dim">·</span> ${styleFace(r, 18)}${esc(r.style_title)}</div>
+          <div class="s" style="color:${r.points > 0 ? 'var(--green)' : 'var(--text-dim)'}">
+            ${r.scored ? '+' + r.points : 'очікує'}${
+              r.capped ? ` <span class="dim" style="font-size:11px">(зі ${r.raw_points})</span>` : ''}</div>
+        </div>`).join('');
+    inner += `
+      <div style="margin-top:12px">
+        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
+        ${rowsHtml}
+      </div>`;
+  }
+
+  box.innerHTML = `<div class="card tight">${inner}</div>`;
+
+  box.querySelectorAll('[data-style]').forEach(b => {
+    b.onclick = async () => {
+      b.disabled = true;
+      const { error } = await sb.rpc('style_pick', {
+        p_gameweek_id: S.gw.gameweek_id,
+        p_style_code: b.dataset.style,
+      });
+      b.disabled = false;
+      if (error) { msg($('style-msg'), error.message, 'err'); return; }
+      await go('matches');   // перемалюємо з новим станом
+    };
+  });
 }
 
 
@@ -1319,6 +1476,21 @@ function reviewAndSave(){
   body += `<div class="rev-line" style="margin-top:12px">
     <span>⚔️ Суперник на вікенд</span>
     <span class="s">${myRival ? esc(myRival.rival_name) : '—'}</span></div>`;
+
+  // Тренерський почерк. На відміну від суперника, стиль ФІКСУЄТЬСЯ цим
+  // підтвердженням і після нього не міняється — тому тут не просто
+  // показ, а остання можливість передумати. Не обрав — база кине
+  // випадковий невикористаний, про що чесно попереджаємо.
+  const myStylePick = (S.styleOptions || []).find(o => o.is_current);
+  body += `<div class="rev-line">
+    <span>👔 Стиль на вікенд</span>
+    <span class="s">${myStylePick ? esc(myStylePick.title) : '—'}</span></div>`;
+  if ((S.styleOptions || []).length && !myStylePick) {
+    body += `<div class="msg err" style="margin-top:12px">
+      Стиль на цей вікенд ти не обрав — система кине випадковий із тих,
+      що ще лишились у цьому місяці. Після підтвердження змінити його
+      вже не можна.</div>`;
+  }
 
   // Автопілот увімкнений, але недороблений. Раніше тут же стояло
   // попередження «обрані, але не заявлені» — воно більше не потрібне:
