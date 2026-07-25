@@ -610,6 +610,7 @@
   .rv-tip .draw{ color:var(--gold); }
   .rv-tip .loss{ color:var(--red); }
   .rv-tip .pending{ color:var(--text); opacity:0.6; }
+  .rv-tip .cap{ color:var(--text); opacity:0.55; }
   .gp-summary-name{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
@@ -1499,6 +1500,23 @@ async function buildMonthRows(tournamentKey){
   });
   LIVE_MVP = mvpByName;
 
+  // Тренерський почерк цього етапу — для бейджа 👔 біля імені.
+  // RLS та сама, що й у дуелей: чужий стиль видно лише після
+  // відкриття вікенда.
+  const styleRows = await sbGet(
+    'style_board?select=display_name,gameweek_number,style_title,style_icon,' +
+    'style_photo,points,raw_points,capped,scored' +
+    '&tournament_id=eq.' + tid);
+  const stylesByName = {};
+  styleRows.forEach(r => {
+    (stylesByName[r.display_name] = stylesByName[r.display_name] || []).push({
+      gw: r.gameweek_number, title: r.style_title, icon: r.style_icon,
+      photo: r.style_photo, points: r.points, raw: r.raw_points,
+      capped: r.capped, scored: r.scored
+    });
+  });
+  LIVE_STYLES = stylesByName;
+
   const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
   // Матчі — відкрита інформація: показуємо розклад завжди. Прогнози
@@ -1653,6 +1671,7 @@ async function fetchSupabaseTab(tab){
   LIVE_BOOSTS = true;              // див. boostKind: кольори EuroSeason
   LIVE_RIVALS = null;             // бейджі дуелей лише в місячній таблиці
   LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
+  LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
@@ -1925,6 +1944,7 @@ async function fetchSheet(sheetId, sheetName, gid){
   LIVE_BOOSTS = false;             // архів малюється старими кольорами
   LIVE_RIVALS = null;              // в архіві дуелей немає
   LIVE_MVP = null;                 // в архіві MVP немає
+  LIVE_STYLES = null;              // в архіві стилів немає
   // заморожений архів: віддаємо вшиті дані, мережа не потрібна
   if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
     const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
@@ -2158,7 +2178,7 @@ function renderPointsSummary(players, totals){
         const v = val(p, i);
         return `
         <div class="gp-summary-cell">
-          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}</span>
+          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}</span>
           <span class="gp-summary-name">${escapeHtml(p.name)}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
@@ -2185,6 +2205,27 @@ function rivalBadge(name){
     })
     .join('');
   return `<span class="rv-badge">⚔️<span class="rv-tip">${rows}</span></span>`;
+}
+
+/* Бейдж 👔 з тренерськими стилями учасника — поруч із ⚔️ Rivals.
+   Показуємо лише в місячній таблиці (LIVE_STYLES != null). У підказці —
+   який стиль на якому вікенді і скільки дав. Якщо стеля етапу зрізала
+   бали, пишемо це явно, інакше «+3 із 6» виглядало б як помилка. */
+function styleBadge(name){
+  if(!LIVE_STYLES) return '';
+  const picks = LIVE_STYLES[name];
+  if(!picks || !picks.length) return '';
+  const rows = picks
+    .slice()
+    .sort((a, b) => a.gw - b.gw)
+    .map(s => {
+      const pts = s.scored
+        ? `<span class="win">+${s.points}</span>${s.capped ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
+        : '<span class="pending">очікує</span>';
+      return `<div class="rv-tip-row">Вікенд ${s.gw}: ${escapeHtml(s.title)} · ${pts}</div>`;
+    })
+    .join('');
+  return `<span class="rv-badge">👔<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* Бейдж 🏆 з турами, де учасник став MVP. Показуємо лише в місячній
@@ -2400,6 +2441,11 @@ let LIVE_RIVALS = null;
 /* MVP по вікендах для бейджа 🏆 в рядку Points. null — не показувати.
    Формат: { 'Ім'я': [{gw, points}], ... } */
 let LIVE_MVP = null;
+
+/* Тренерські стилі етапу (файл 78) для бейджа 👔 біля імені.
+   Формат: { 'Ім'я': [{gw, title, icon, photo, points, scored}], ... }
+   null — таблиця не місячна (архів, Leaderboards), бейджів немає. */
+let LIVE_STYLES = null;
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву
