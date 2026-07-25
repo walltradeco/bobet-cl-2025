@@ -605,7 +605,7 @@ async function go(tab){
 //  МАТЧІ — внесення прогнозів (U-4, U-5, U-6, U-8)
 // =====================================================================
 async function loadGameweek(gwId){
-  const [mb, st, cf, rp, rs] = await Promise.all([
+  const [mb, st, cf, rp, rs, mv] = await Promise.all([
     sb.from('match_board').select('*').eq('gameweek_id', gwId),
     sb.from('my_boost_stock').select('*').eq('participant_id', S.me.participant_id),
     sb.from('confirmation_board').select('*').eq('gameweek_id', gwId),
@@ -616,12 +616,15 @@ async function loadGameweek(gwId){
     sb.from('rival_board').select('*')
       .eq('tournament_id', S.stage.id)
       .eq('chooser_id', S.me.participant_id),
+    // MVP цього вікенда. RLS показує лише після відкриття (як дуелі).
+    sb.from('mvp_board').select('*').eq('gameweek_id', gwId),
   ]);
 
   const rows = mb.data || [];
   S.stock = st.data || [];
   S.rivalPairs = rp.data || [];
   S.myRivalsStage = rs.data || [];
+  S.mvpRows = mv.data || [];
 
   // Власна фіксація. Вікенд «відкритий» і «я підтвердив» — це два
   // різні стани: перший настає, коли підтвердили всі, другий —
@@ -789,12 +792,25 @@ async function viewMatches(){
              ${rivalPts > 0 ? '+' + rivalPts : (myPick.status === 'pending' ? 'очікує' : '+0')}</span>
          </div>`
       : '';
-    const total = matchSum + rivalPts;
+
+    // MVP туру. Показуємо рядок, лише якщо MVP саме я (кілька MVP при
+    // нічиї — тоді кожен бачить у себе). Бали додаються в total.
+    const iAmMvp = (S.mvpRows || []).some(r => r.participant_id === S.me.participant_id);
+    const mvpPts = iAmMvp ? ((S.mvpRows.find(r => r.participant_id === S.me.participant_id) || {}).points || 3) : 0;
+    const mvpLine = iAmMvp
+      ? `<div class="rev-line" style="border:none;padding:4px 0">
+           <span class="dim">🏆 MVP туру</span>
+           <span class="s" style="color:var(--green)">+${mvpPts}</span>
+         </div>`
+      : '';
+
+    const total = matchSum + rivalPts + mvpPts;
     html += `<div class="card tight" style="margin-top:14px;border-color:var(--gold)">
       <div class="rev-line" style="border:none;padding:4px 0">
         <span class="dim">Бали за матчі</span>
         <span class="s">${matchSum}</span></div>
       ${rivalLine}
+      ${mvpLine}
       <div class="rev-line" style="border-top:1px solid var(--line);border-bottom:none;padding:8px 0 2px;margin-top:4px">
         <span style="font-weight:700">Разом за вікенд</span>
         <span class="s" style="color:var(--gold);font-size:18px">${total}</span></div>
@@ -903,6 +919,17 @@ function renderRivalBox(locked, open){
       <div style="margin-top:12px">
         <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
+      </div>`;
+  }
+
+  // MVP вікенда — показуємо всім після відкриття (RLS сама фільтрує).
+  // Зазвичай один; кілька — при повній нічиї.
+  if (open && (S.mvpRows || []).length) {
+    const names = S.mvpRows.map(r => esc(r.display_name)).join(', ');
+    inner += `
+      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line)">
+        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase">🏆 MVP вікенда</div>
+        <div><b style="color:var(--gold)">${names}</b> <span class="dim">+${S.mvpRows[0].points}</span></div>
       </div>`;
   }
 
