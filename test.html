@@ -607,6 +607,7 @@
   .rv-badge:hover .rv-tip{ display:block; }
   .rv-tip-row + .rv-tip-row{ margin-top:5px; padding-top:5px; border-top:1px solid var(--line); }
   .rv-tip .win{ color:var(--green); font-weight:700; }
+  .rv-tip .draw{ color:var(--gold); }
   .rv-tip .loss{ color:var(--red); }
   .rv-tip .pending{ color:var(--text); opacity:0.6; }
   .gp-summary-name{
@@ -1475,12 +1476,12 @@ async function buildMonthRows(tournamentKey){
   // RLS сама ховає чужі пари до відкриття вікенда (той самий момент,
   // що й прогнози). status: pending / win / loss.
   const rivalRows = await sbGet(
-    'rival_board?select=chooser_name,rival_name,gameweek_number,status' +
+    'rival_board?select=chooser_name,rival_name,gameweek_number,status,points' +
     '&tournament_id=eq.' + tid);
   const rivalsByName = {};
   rivalRows.forEach(r => {
     (rivalsByName[r.chooser_name] = rivalsByName[r.chooser_name] || []).push({
-      rival: r.rival_name, status: r.status, gw: r.gameweek_number
+      rival: r.rival_name, status: r.status, gw: r.gameweek_number, points: r.points
     });
   });
   LIVE_RIVALS = rivalsByName;
@@ -2172,12 +2173,16 @@ function rivalBadge(name){
   if(!LIVE_RIVALS) return '';
   const duels = LIVE_RIVALS[name];
   if(!duels || !duels.length) return '';
-  const label = { win: 'переміг', loss: 'поразка', pending: 'очікує' };
+  const label = { win: 'переміг', draw: 'нічия', loss: 'поразка', pending: 'очікує' };
   const rows = duels
     .slice()
     .sort((a, b) => a.gw - b.gw)
-    .map(d => `<div class="rv-tip-row">Вікенд ${d.gw}: проти ${escapeHtml(d.rival)}
-      · <span class="${d.status}">${label[d.status] || d.status}</span></div>`)
+    .map(d => {
+      const txt = label[d.status] || d.status;
+      const pts = d.status === 'pending' ? '' : ` +${d.points}`;
+      return `<div class="rv-tip-row">Вікенд ${d.gw}: проти ${escapeHtml(d.rival)}
+      · <span class="${d.status}">${txt}${pts}</span></div>`;
+    })
     .join('');
   return `<span class="rv-badge">⚔️<span class="rv-tip">${rows}</span></span>`;
 }
@@ -2196,7 +2201,7 @@ function mvpBadge(name){
       · <span class="win">+${w.points}</span></div>`)
     .join('');
   const count = wins.length > 1 ? `<span class="rv-count">${wins.length}</span>` : '';
-  return `<span class="rv-badge">🏆${count}<span class="rv-tip">${rows}</span></span>`;
+  return `<span class="rv-badge" style="color:var(--gold);font-weight:700;font-size:11px;letter-spacing:0.03em">MVP${count}<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
