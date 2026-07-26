@@ -121,6 +121,13 @@
     color:#0E1410;
   }
   nav.tournaments button:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
+  /* HONORS не турнір, а наскрізна вітрина — тому золота, не зелена.
+     Так вона не читається як «ще один турнір у ряду». */
+  nav.tournaments button[data-key="honors"]{ color:var(--gold); border-color:rgba(232,178,60,0.35); }
+  nav.tournaments button[data-key="honors"]:hover{ border-color:var(--gold); }
+  nav.tournaments button[data-key="honors"].active{
+    background:var(--gold); border-color:var(--gold); color:#0E1410;
+  }
 
   nav.tabs{
     display:flex;
@@ -611,6 +618,107 @@
   .rv-tip .loss{ color:var(--red); }
   .rv-tip .pending{ color:var(--text); opacity:0.6; }
   .rv-tip .cap{ color:var(--text); opacity:0.55; }
+
+  /* ================= HONORS — трофейна вітрина =================
+     Ідея: не таблиця, а фізичний простір. Темна ніша, згори
+     світло, медалі стоять на полиці й дають відблиск. Головний
+     колір тут золотий, а не зелений, — вкладка навмисно інша. */
+  .hn-wrap{ padding:4px 0 40px; }
+  .hn-head{ text-align:center; margin:18px 0 26px; }
+  .hn-head h2{
+    font-family:'Space Grotesk',sans-serif; font-size:26px; letter-spacing:0.16em;
+    color:var(--gold); margin:0 0 6px; text-transform:uppercase;
+  }
+  .hn-head p{ color:var(--text-dim); font-size:13px; margin:0; }
+  .hn-sec{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.18em;
+    text-transform:uppercase; color:var(--text-dim);
+    margin:34px 0 14px; display:flex; align-items:center; gap:10px;
+  }
+  .hn-sec::after{ content:''; flex:1; height:1px; background:var(--line); }
+
+  /* Ніша: темніша за сторінку, зі світлом угорі */
+  .hn-case{
+    background:linear-gradient(180deg, rgba(232,178,60,0.10) 0%, rgba(0,0,0,0) 42%), var(--panel);
+    border:1px solid var(--line); border-radius:14px;
+    padding:0 0 2px; overflow:hidden; margin-bottom:12px;
+  }
+  .hn-case.dim{ opacity:0.75; }
+  .hn-lamp{ height:2px; background:linear-gradient(90deg,transparent,var(--gold),transparent); opacity:0.55; }
+  .hn-row{
+    display:flex; align-items:center; gap:16px;
+    padding:14px 16px 16px; flex-wrap:wrap;
+  }
+  .hn-who{ min-width:132px; }
+  .hn-who b{
+    font-family:'Space Grotesk',sans-serif; font-size:19px; color:var(--text);
+    display:block; line-height:1.15;
+  }
+  .hn-who span{ font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--text-dim); }
+  .hn-tally{ display:flex; gap:9px; margin-top:5px; font-family:'JetBrains Mono',monospace; font-size:12px; }
+  .hn-tally i{ font-style:normal; color:var(--text-dim); }
+
+  /* Полиця: медалі стоять на лінії й відсвічують донизу */
+  .hn-shelf{
+    flex:1; display:flex; flex-wrap:wrap; gap:8px; min-width:240px;
+    padding-bottom:9px; border-bottom:1px solid rgba(232,178,60,0.22);
+  }
+  .hn-m{
+    display:flex; flex-direction:column; align-items:center; gap:3px;
+    width:104px; text-align:center;   /* «Клубний ЧС 2025 · Play-off» має лягати у два рядки */
+  }
+  .hn-m .ic{
+    font-size:23px; line-height:1;
+    filter:drop-shadow(0 3px 5px rgba(232,178,60,0.35));
+  }
+  .hn-m .cap{
+    font-family:'JetBrains Mono',monospace; font-size:9px; line-height:1.25;
+    color:var(--text-dim); word-break:break-word;
+  }
+  .hn-empty{
+    padding:16px; text-align:center; color:var(--text-dim);
+    font-family:'JetBrains Mono',monospace; font-size:12px;
+  }
+  .hn-empty b{ color:var(--gold); }
+
+  /* Зала слави: плакетки на стіні */
+  .hn-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(232px,1fr)); gap:10px; }
+  .hn-plq{
+    background:var(--panel-2); border:1px solid var(--line);
+    border-left:3px solid var(--gold); border-radius:10px; padding:12px 13px;
+  }
+  .hn-plq .nm{
+    font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:0.06em;
+    color:var(--gold); margin-bottom:7px;
+  }
+  .hn-plq .who{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:17px;
+    color:var(--text); line-height:1.2;
+  }
+  .hn-plq .val{
+    font-family:'JetBrains Mono',monospace; font-size:20px; color:var(--text);
+    margin:3px 0 5px;
+  }
+  .hn-plq .note{ font-size:11px; color:var(--text-dim); line-height:1.35; }
+
+  /* Історія ліги */
+  .hn-facts{ display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:10px; }
+  .hn-fact{
+    background:var(--panel-2); border:1px solid var(--line);
+    border-radius:10px; padding:11px 13px;
+  }
+  .hn-fact .t{
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px; color:var(--text);
+  }
+  .hn-fact .w{ font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold); margin:4px 0 6px; }
+  .hn-fact .d{ font-size:11px; color:var(--text-dim); line-height:1.4; }
+
+  @media (max-width:640px){
+    .hn-row{ gap:10px; padding:12px; }
+    .hn-who{ min-width:100%; }
+    .hn-m{ width:70px; }
+  }
+
   .gp-summary-name{
     font-family:'Space Grotesk',sans-serif;
     font-weight:700;
@@ -1319,6 +1427,16 @@ const TOURNAMENTS = [
       { sheet:'General · Bonus',   kind:'special', source:'special', monthKey:'season2026' },
       { sheet:'Rules',             kind:'rules',   source:'rules' },
     ]
+  },
+  // HONORS — наскрізна вітрина по ВСІХ турнірах ліги, а не ще один
+  // турнір. Стоїть праворуч останньою: турніри йдуть хронологічно,
+  // і це підсумок усієї історії. Підвкладок немає — одна довга
+  // сторінка, тому tabs порожній, а рендер свій (файли 83, 84).
+  {
+    key:'honors',
+    title:'HONORS',
+    source:'honors',
+    tabs:[]
   },
 ];
 
@@ -3149,10 +3267,135 @@ function renderTabContent(tab, data){
   return renderGenericTable(data);
 }
 
+
+/* =====================================================================
+   HONORS — рендер трофейної вітрини
+
+   Чотири зони на одній сторінці, без підвкладок:
+     1. вітрина по людях — у кожного своя полиця з підписаними медалями
+     2. полиця EuroSeason 2026, поки порожня: сезон ще триває
+     3. зала слави — 16 номінацій плакетками
+     4. історія ліги — факти про самі турніри
+
+   Групування саме по людях (рішення Богдана): так видно, хто
+   найтитулованіший, без читання цифр — Антон і Бо з дев'ятьма
+   медалями фізично займають найбільше місця.
+   ===================================================================== */
+function renderHonors(medals, detail, hof, facts, season){
+  const byPerson = {};
+  (detail || []).forEach(d => (byPerson[d.person] = byPerson[d.person] || []).push(d));
+
+  // --- 1. Вітрина ---
+  const cases = (medals || []).filter(m => m.medals_total > 0).map(m => {
+    const mine = (byPerson[m.person] || []).slice()
+      .sort((a, b) => a.place - b.place || a.tournament_order - b.tournament_order);
+    const shelf = mine.map(d =>
+      `<div class="hn-m"><div class="ic">${d.medal}</div>
+         <div class="cap">${escapeHtml(d.label)}</div></div>`).join('');
+    const tally = [['🥇', m.gold], ['🥈', m.silver], ['🥉', m.bronze]]
+      .filter(([, n]) => n > 0)
+      .map(([ic, n]) => `<i>${ic} ${n}</i>`).join('');
+    return `
+      <div class="hn-case">
+        <div class="hn-lamp"></div>
+        <div class="hn-row">
+          <div class="hn-who">
+            <b>${escapeHtml(m.person)}</b>
+            <span>${m.medals_total} ${plural(m.medals_total, 'медаль', 'медалі', 'медалей')}
+              · ${m.tournaments_played} ${plural(m.tournaments_played, 'турнір', 'турніри', 'турнірів')}</span>
+            <div class="hn-tally">${tally}</div>
+          </div>
+          <div class="hn-shelf">${shelf}</div>
+        </div>
+      </div>`;
+  }).join('');
+
+  // --- 2. EuroSeason: полиця вже стоїть, але порожня ---
+  const lead = (season || [])[0];
+  const euro = `
+    <div class="hn-case dim">
+      <div class="hn-lamp"></div>
+      <div class="hn-empty">
+        <b>EuroSeason 2026</b> · сезон триває, полиця чекає
+        ${lead ? `<br>зараз попереду ${escapeHtml(lead.display_name)} — ${lead.total_points}` : ''}
+      </div>
+    </div>`;
+
+  // --- 3. Зала слави. Поділене перше місце: імена в один рядок ---
+  const groups = [];
+  (hof || []).forEach(r => {
+    const last = groups[groups.length - 1];
+    if(last && last.sort_order === r.sort_order) last.people.push(r.person);
+    else groups.push({ sort_order:r.sort_order, nomination:r.nomination,
+                       value:r.value, note:r.note, people:[r.person] });
+  });
+  const plaques = groups.map(g => `
+    <div class="hn-plq">
+      <div class="nm">${escapeHtml(g.nomination)}</div>
+      <div class="who">${g.people.map(escapeHtml).join(' · ')}</div>
+      <div class="val">${escapeHtml(g.value)}</div>
+      <div class="note">${escapeHtml(g.note)}</div>
+    </div>`).join('');
+
+  // --- 4. Історія ліги ---
+  const factCards = (facts || []).map(f => `
+    <div class="hn-fact">
+      <div class="t">${escapeHtml(f.tournament)}</div>
+      <div class="w">🏆 ${escapeHtml(f.winner || '—')}</div>
+      <div class="d">відрив від другого ${f.margin} ·
+        розкид у таблиці ${f.spread} · ${f.players}
+        ${plural(f.players, 'гравець', 'гравці', 'гравців')}</div>
+    </div>`).join('');
+
+  return `
+    <div class="hn-wrap">
+      <div class="hn-head">
+        <h2>Honors</h2>
+        <p>Усе, що ліга виграла за свою історію — від Євро 2024 і донині</p>
+      </div>
+      <div class="hn-sec">Трофейна вітрина</div>
+      ${cases}${euro}
+      <div class="hn-sec">Зала слави</div>
+      <div class="hn-grid">${plaques}</div>
+      <div class="hn-sec">Історія ліги</div>
+      <div class="hn-facts">${factCards}</div>
+    </div>`;
+}
+
+/* Українські відмінки для чисел: 1 медаль, 2 медалі, 5 медалей */
+function plural(n, one, few, many){
+  const a = Math.abs(n) % 100, b = a % 10;
+  if(a > 10 && a < 20) return many;
+  if(b > 1 && b < 5) return few;
+  if(b === 1) return one;
+  return many;
+}
+
 /* ======== UI ======== */
 async function loadActiveTab(){
-  const tab = activeTournament.tabs[activeTabIndex];
   const content = document.getElementById('content');
+
+  // HONORS живе за іншими правилами: не таблиця, а власна сторінка,
+  // зібрана з чотирьох в'юх бази. Тому виходимо з загального шляху
+  // до того, як він полізе по activeTournament.tabs.
+  if(activeTournament.source === 'honors'){
+    content.innerHTML = '<div class="status-line">Відчиняємо вітрину...</div>';
+    try{
+      const [medals, detail, hof, facts, season] = await Promise.all([
+        sbGet('honors_medals?select=*&order=gold.desc,medals_total.desc,person.asc'),
+        sbGet('honors_detail?select=*&order=tournament_order.asc,place.asc'),
+        sbGet('hall_of_fame?select=*&order=sort_order.asc,person.asc'),
+        sbGet('tournament_facts?select=*&order=tournament_order.asc'),
+        sbGet('season_leaderboard?select=display_name,total_points,place&order=place.asc'),
+      ]);
+      content.innerHTML = renderHonors(medals, detail, hof, facts, season);
+    }catch(err){
+      content.innerHTML = `<div class="status-line err">Не вдалося завантажити HONORS: ${escapeHtml(err.message)}</div>`;
+    }
+    return;
+  }
+
+  const tab = activeTournament.tabs[activeTabIndex];
   const fromDb = activeTournament.source === 'supabase';
   content.innerHTML = '<div class="status-line">Завантаження даних' +
     (fromDb ? '...' : ' з Google Sheets...') + '</div>';
@@ -3169,6 +3412,10 @@ async function loadActiveTab(){
 
 function renderTabs(){
   const nav = document.getElementById('tabs');
+  // У HONORS підвкладок немає — ховаємо весь ряд, щоб не лишалась
+  // порожня смуга над вітриною.
+  nav.style.display = activeTournament.source === 'honors' ? 'none' : '';
+  if(activeTournament.source === 'honors'){ nav.innerHTML = ''; return; }
   nav.innerHTML = activeTournament.tabs.map((t, idx) =>
     `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.sheet)}</button>`
   ).join('');
