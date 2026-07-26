@@ -666,16 +666,17 @@
   }
   .hn-m{
     display:flex; flex-direction:column; align-items:center; gap:3px;
-    width:140px; text-align:center;   /* «Клубний ЧС 2025 · Play-off» має лягати у два рядки */
+    width:168px; text-align:center;   /* «Клубний ЧС 2025 · Play-off» має лягати у два рядки */
   }
   .hn-m .ic{
-    font-size:38px; line-height:1;
+    font-size:44px; line-height:1;
     filter:drop-shadow(0 3px 5px rgba(232,178,60,0.35));
   }
   .hn-m .cap{
-    font-family:'JetBrains Mono',monospace; font-size:12.5px; line-height:1.35;
-    color:var(--text-dim); word-break:break-word;
+    font-family:'JetBrains Mono',monospace; font-size:13px; line-height:1.5;
+    color:var(--text); word-break:break-word;
   }
+  .hn-m .cap .lb{ color:var(--text-dim); opacity:0.65; }
   .hn-empty{
     padding:16px; text-align:center; color:var(--text-dim);
     font-family:'JetBrains Mono',monospace; font-size:14px;
@@ -703,23 +704,22 @@
   .hn-plq .note{ font-size:14px; color:var(--text-dim); line-height:1.45; }
 
   /* Медальний залік таблицею.
-     Крім цифр — смуга, що показує СКЛАД медалей: у Антона й Бо
-     по 9, але в одного смуга золота, в іншого срібна. Саме це
-     різнить їхні однакові дев'ятки. */
+     Смугу «Склад» прибрано на прохання Богдана — вона дублювала
+     цифри 🥇🥈🥉, які й так стоять поруч. */
   .hn-tbl{ width:100%; border-collapse:collapse; margin-bottom:6px; }
   .hn-tbl th{
     font-family:'JetBrains Mono',monospace; font-size:11.5px; font-weight:500;
     letter-spacing:0.08em; text-transform:uppercase; color:var(--text-dim);
-    padding:10px 8px; border-bottom:1px solid var(--line); text-align:center;
+    padding:11px 8px; font-size:12.5px; border-bottom:1px solid var(--line); text-align:center;
     white-space:nowrap;
   }
   .hn-tbl th:first-child{ text-align:left; padding-left:14px; }
   .hn-tbl td{
-    font-family:'JetBrains Mono',monospace; font-size:18px; color:var(--text);
-    padding:12px 8px; text-align:center; border-bottom:1px solid rgba(42,54,43,0.5);
+    font-family:'JetBrains Mono',monospace; font-size:21px; color:var(--text);
+    padding:14px 8px; text-align:center; border-bottom:1px solid rgba(42,54,43,0.5);
   }
   .hn-tbl td.nm{
-    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:20px;
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:23px;
     text-align:left; white-space:nowrap; padding-left:14px;
   }
   .hn-tbl td.nm .pos{
@@ -733,20 +733,10 @@
   .hn-tbl td.tot{ color:var(--text); font-weight:700; }
   .hn-tbl tbody tr:hover{ background:rgba(232,178,60,0.05); }
 
-  .hn-bar{
-    display:flex; height:9px; border-radius:5px; overflow:hidden;
-    background:rgba(255,255,255,0.05); min-width:90px;
-  }
-  .hn-bar i{ display:block; height:100%; }
-  .hn-bar .g{ background:var(--gold); }
-  .hn-bar .s{ background:#C7CBD1; }
-  .hn-bar .b{ background:#C0803E; }
-
   @media (max-width:720px){
     .hn-tbl td{ font-size:15px; padding:9px 4px; }
     .hn-tbl td.nm{ font-size:16px; }
     .hn-tbl th{ font-size:10px; padding:8px 4px; }
-    .hn-tbl .hide-sm{ display:none; }
   }
 
   /* Історія ліги */
@@ -765,7 +755,7 @@
   @media (max-width:640px){
     .hn-row{ gap:10px; padding:12px; }
     .hn-who{ min-width:100%; }
-    .hn-m{ width:108px; }
+    .hn-m{ width:132px; }
   }
 
   .gp-summary-name{
@@ -3361,9 +3351,15 @@ function honorsCase(d){
   const cases = (d.medals || []).filter(m => m.medals_total > 0).map(m => {
     const mine = (byPerson[m.person] || []).slice()
       .sort((a, b) => a.place - b.place || a.tournament_order - b.tournament_order);
+    // Єдиний патерн підпису: рівно два рядки, «Турнір» і «Етап».
+    // Раніше підпис був одним склеєним рядком різної довжини, і
+    // медалі стрибали по висоті. Тепер усі колонки однакові.
     const shelf = mine.map(x =>
       `<div class="hn-m"><div class="ic">${x.medal}</div>
-         <div class="cap">${escapeHtml(x.label)}</div></div>`).join('');
+         <div class="cap">
+           <span class="lb">Турнір</span> ${escapeHtml(x.tournament)}<br>
+           <span class="lb">Етап</span> ${escapeHtml(x.phase)}
+         </div></div>`).join('');
     const tally = [['🥇', m.gold], ['🥈', m.silver], ['🥉', m.bronze]]
       .filter(([, n]) => n > 0)
       .map(([ic, n]) => `<i>${ic} ${n}</i>`).join('');
@@ -3399,20 +3395,15 @@ function honorsCase(d){
 
 /* --- 2. Історія турнірів: залік + факти --- */
 function honorsHistory(d){
-  // Смуга показує склад медалей, а не тільки їх кількість
-  const maxTotal = Math.max(1, ...(d.medals || []).map(m => m.medals_total));
   const cell = (n, cls) => `<td class="${n ? cls : 'zero'}">${n || '·'}</td>`;
 
   const rows = (d.medals || []).map((m, i) => {
-    const seg = (n, cls) => n ? `<i class="${cls}" style="width:${n / maxTotal * 100}%"></i>` : '';
     const pos = i < 3 ? ['🥇', '🥈', '🥉'][i] : (i + 1);
     return `
     <tr>
       <td class="nm"><span class="pos">${pos}</span>${escapeHtml(m.person)}</td>
       ${cell(m.gold, 'g')}${cell(m.silver, 's')}${cell(m.bronze, 'b')}
       <td class="tot">${m.medals_total}</td>
-      <td class="hide-sm"><div class="hn-bar">
-        ${seg(m.gold, 'g')}${seg(m.silver, 's')}${seg(m.bronze, 'b')}</div></td>
       ${cell(m.tournament_wins, 'g')}
       <td>${m.tournaments_played}</td>
     </tr>`;
@@ -3422,24 +3413,26 @@ function honorsHistory(d){
     <table class="hn-tbl">
       <thead><tr>
         <th>Учасник</th><th>🥇</th><th>🥈</th><th>🥉</th>
-        <th>Усього</th><th class="hide-sm">Склад</th>
-        <th>Виграв<br>турнірів</th><th>Зіграв<br>турнірів</th>
+        <th>Усього</th><th>Виграв<br>турнірів</th><th>Зіграв<br>турнірів</th>
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 
+  // Картки турнірів ідуть ПЕРЕД таблицею: спершу «що це були за
+  // турніри», потім «хто скільки з них узяв». Так читається як
+  // історія, а не як звіт.
   const cards = (d.facts || []).map(f => `
     <div class="hn-fact">
       <div class="t">${escapeHtml(f.tournament)}</div>
       <div class="w">🏆 ${escapeHtml(f.winner || '—')}</div>
-      <div class="d">відрив від другого ${f.margin} ·
-        розкид у таблиці ${f.spread} · ${f.players}
-        ${plural(f.players, 'гравець', 'гравці', 'гравців')}</div>
+      <div class="d">відрив від другого — ${f.margin}
+        ${plural(f.margin, 'очко', 'очки', 'очок')}</div>
     </div>`).join('');
 
   return honorsWrap('Історія турнірів',
     'Медальний залік за весь час і як минув кожен турнір',
-    table + `<div class="hn-sec">Турніри</div><div class="hn-facts">${cards}</div>`);
+    `<div class="hn-facts">${cards}</div>
+     <div class="hn-sec">Медальний залік</div>${table}`);
 }
 
 /* --- 3. Рекорди ліги --- */
