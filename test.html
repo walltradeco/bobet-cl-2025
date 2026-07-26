@@ -593,6 +593,7 @@
     position:absolute; top:8px; right:10px;
     display:flex; gap:6px; align-items:center;
   }
+  .rv-badge .ic{ font-size:16px; }
   .rv-badge{
     position:relative;
     font-size:14px; line-height:1; cursor:default;
@@ -709,7 +710,7 @@
   }
   /* іконка номінації трохи більша за підпис: у моноширинному 13.5px
      вона інакше читається як розділовий знак, а не як значок */
-  .hn-plq .nm .ic{ font-size:17px; margin-right:3px; }
+  .hn-plq .nm .ic{ font-size:21px; margin-right:5px; vertical-align:-.28em; }
   .hn-plq .who{
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:23px;
     color:var(--text); line-height:1.2;
@@ -732,9 +733,9 @@
   }
   /* у шапці й у стовпці місця іконка живе серед моноширинного 12 px —
      на такому кеглі вона читалась як цятка, тому задаємо явно */
-  .hn-tbl th .ic{ font-size:18px; }
-  .hn-tbl .pos .ic{ font-size:17px; }
-  .hn-case .hn-tally .ic, .hn-who .ic{ font-size:16px; vertical-align:-.2em; }
+  .hn-tbl th .ic{ font-size:20px; }
+  .hn-tbl .pos .ic{ font-size:19px; }
+  .hn-case .hn-tally .ic, .hn-who .ic{ font-size:19px; vertical-align:-.25em; }
   .hn-fact .w .ic{ font-size:16px; margin-right:2px;
   }
   .hn-tbl th:first-child{ text-align:left; padding-left:14px; }
@@ -1387,22 +1388,57 @@
   }
 
   /* ================= ІКОНКИ =================
-     Замість емодзі — власний набір (assets/icons/sprite.svg, стиль C:
-     заливка + одна деталь акцентним кольором). Емодзі лишились у базі
-     як ключі; фронт підмінює їх на <use> і, якщо ключа немає в мапі,
-     показує сам емодзі — тому нова номінація нічого не ламає.
+     Набір із assets/icons/sprite.svg. Кожна іконка малюється трьома
+     змінними: --ic-base (основна форма), --ic-accent (одна деталь),
+     --ic-ribbon (тільки медалі — стрічка).
 
-     Розмір керується font-size, бо іконка стоїть у рядку тексту
-     нарівні з літерами. Колір бере з currentColor. */
+     ⚠️ Колір НЕ береться з currentColor: у «Рекордах ліги» заголовок
+     плакетки золотий, і на currentColor усі 20 значків виходили одного
+     кольору — саме через це перший захід і не зайшов. Тому кожній
+     іконці приписано свій колір класом i-*, як у емодзі, яке вона
+     заміняє. Розмір і далі керується font-size. */
   .ic{
-    --ic-base:currentColor; --ic-accent:var(--green); --ic-deep:var(--bg);
+    --ic-base:#C9D3CC; --ic-accent:#8FA396; --ic-deep:#0E1410;
     width:1em; height:1em; vertical-align:-.14em; flex:none;
   }
-  .ic-gold{--ic-accent:#E3B341}
-  .ic-silver{--ic-accent:#C7D2CC}
-  .ic-bronze{--ic-accent:#C08457}
-  .ic-honor{--ic-accent:var(--gold)}
-  .ic-blue{--ic-accent:#3B82F6}
+
+  /* медалі: диск — метал, стрічка — свій колір у кожної,
+     інакше на 15 px золото від срібла не відрізниш */
+  .i-gold   {--ic-base:#F5C542; --ic-accent:#FFE68A; --ic-ribbon:#2F6FD0}
+  .i-silver {--ic-base:#CBD5E1; --ic-accent:#F1F5F9; --ic-ribbon:#DC2626}
+  .i-bronze {--ic-base:#D2833F; --ic-accent:#F0B27A; --ic-ribbon:#16A34A}
+
+  .i-honor  {--ic-base:#F5C542; --ic-accent:#FFE68A}
+  .i-crown  {--ic-base:#FBBF24; --ic-accent:#FDE68A}
+  .i-star   {--ic-base:#FBBF24; --ic-accent:#FDE68A}
+
+  .i-fire   {--ic-base:#F97316; --ic-accent:#FDE047}
+  .i-ice    {--ic-base:#38BDF8; --ic-accent:#BAE6FD}
+  .i-gem    {--ic-base:#22D3EE; --ic-accent:#A5F3FC}
+  .i-orb    {--ic-base:#A855F7; --ic-accent:#D8B4FE}
+  .i-rocket {--ic-base:#E2E8F0; --ic-accent:#F97316}
+  .i-target {--ic-base:#F1F5F9; --ic-accent:#EF4444}
+  .i-heart  {--ic-base:#F43F5E; --ic-accent:#FDA4AF}
+  .i-brain  {--ic-base:#EC4899; --ic-accent:#F9A8D4}
+  .i-chart  {--ic-base:#38BDF8; --ic-accent:#22C55E}
+  .i-wave   {--ic-base:#A3E635; --ic-accent:#22C55E}
+  .i-puzzle {--ic-base:#22C55E; --ic-accent:#86EFAC}
+  .i-slots  {--ic-base:#EF4444; --ic-accent:#FDE047}
+  .i-bow    {--ic-base:#D4A257; --ic-accent:#22C55E}
+  .i-bracket{--ic-base:#38BDF8; --ic-accent:#22C55E}
+  .i-derby  {--ic-base:#3B82F6; --ic-accent:#F43F5E}
+  .i-swords {--ic-base:#E2E8F0; --ic-accent:#F59E0B}
+  .i-tie    {--ic-base:#F1F5F9; --ic-accent:#3B82F6}
+  .i-ball   {--ic-base:#F8FAFC; --ic-accent:#0F172A}
+  .i-shield {--ic-base:#3B82F6; --ic-accent:#BFDBFE}
+  .i-castle {--ic-base:#B4ADA6; --ic-accent:#DC2626}
+  .i-plane  {--ic-base:#F1F5F9; --ic-accent:#38BDF8}
+  .i-scales {--ic-base:#F1F5F9; --ic-accent:#FBBF24}
+  .i-knife  {--ic-base:#E2E8F0; --ic-accent:#A16207}
+  .i-boost  {--ic-base:#FACC15; --ic-accent:#FACC15}
+  .i-cap    {--ic-base:#475569; --ic-accent:#FBBF24}
+  .i-pinch  {--ic-base:#F1F5F9; --ic-accent:#22C55E}
+  .i-mask   {--ic-base:#38BDF8; --ic-accent:#22C55E}
 </style>
 </head>
 <body>
@@ -1921,24 +1957,24 @@ function buildRulesRows(){
    Мапу навмисно тримаємо на фронті, а не в базі: перейменувати
    іконку — це правка одного рядка тут, без міграції. */
 const ICONS = {
-  '\u{1F947}':['ic-medal','ic-gold'],   '\u{1F948}':['ic-medal','ic-silver'],
-  '\u{1F949}':['ic-medal','ic-bronze'], '\u{1F3C5}':['ic-medals','ic-honor'],
-  '\u{1F396}':['ic-ribbon','ic-honor'], '\u{1F451}':['ic-crown','ic-honor'],
-  '\u{2B50}':['ic-star','ic-honor'],    '\u{1F4AF}':['ic-hundred','ic-honor'],
-  '\u{1F4CA}':['ic-chart','ic-honor'],  '\u{1F494}':['ic-heart-crack',''],
-  '\u{1F680}':['ic-rocket',''],         '\u{1F3AF}':['ic-target',''],
-  '\u{1F52C}':['ic-crosshair',''],      '\u{1F48E}':['ic-gem','ic-blue'],
-  '\u{1F9CA}':['ic-ice','ic-blue'],     '\u{1F3A2}':['ic-wave',''],
-  '\u{1F977}':['ic-mask',''],           '\u{1F93C}':['ic-derby','ic-honor'],
-  '\u{1F9E9}':['ic-puzzle',''],         '\u{1F52E}':['ic-orb','ic-blue'],
-  '\u{1F3B0}':['ic-slots',''],          '\u{1F3F9}':['ic-bow',''],
-  '\u{1F9E0}':['ic-brain',''],          '\u{1F393}':['ic-cap','ic-honor'],
-  '\u{1F525}':['ic-fire',''],           '\u{1F3C6}':['ic-trophy','ic-honor'],
-  '\u{2694}':['ic-swords',''],          '\u{1F4A5}':['ic-burst',''],
-  '\u{1F454}':['ic-tie',''],            '\u{26BD}':['ic-ball',''],
-  '\u{1F3F0}':['ic-castle',''],         '\u{1F6E1}':['ic-shield',''],
-  '\u{1F90F}':['ic-pinch',''],          '\u{2708}':['ic-plane',''],
-  '\u{2696}':['ic-scales',''],          '\u{1F52A}':['ic-knife',''],
+  '\u{1F947}':['ic-medal-1','i-gold'],     '\u{1F948}':['ic-medal-2','i-silver'],
+  '\u{1F949}':['ic-medal-3','i-bronze'],   '\u{1F3C5}':['ic-medals','i-gold'],
+  '\u{1F396}':['ic-ribbon','i-honor'],   '\u{1F451}':['ic-crown','i-crown'],
+  '\u{2B50}':['ic-star','i-star'],       '\u{1F4AF}':['ic-hundred','i-honor'],
+  '\u{1F4CA}':['ic-chart','i-chart'],    '\u{1F494}':['ic-heart-crack','i-heart'],
+  '\u{1F680}':['ic-rocket','i-rocket'],  '\u{1F3AF}':['ic-target','i-target'],
+  '\u{1F52C}':['ic-crosshair','i-target'],'\u{1F48E}':['ic-gem','i-gem'],
+  '\u{1F9CA}':['ic-ice','i-ice'],        '\u{1F3A2}':['ic-wave','i-wave'],
+  '\u{1F977}':['ic-mask','i-bracket'],   '\u{1F93C}':['ic-derby','i-derby'],
+  '\u{1F9E9}':['ic-puzzle','i-puzzle'],  '\u{1F52E}':['ic-orb','i-orb'],
+  '\u{1F3B0}':['ic-slots','i-slots'],    '\u{1F3F9}':['ic-bow','i-bow'],
+  '\u{1F9E0}':['ic-brain','i-brain'],    '\u{1F393}':['ic-cap','i-cap'],
+  '\u{1F525}':['ic-fire','i-fire'],      '\u{1F3C6}':['ic-trophy','i-honor'],
+  '\u{2694}':['ic-swords','i-swords'],   '\u{1F4A5}':['ic-burst','i-fire'],
+  '\u{1F454}':['ic-tie','i-tie'],        '\u{26BD}':['ic-ball','i-ball'],
+  '\u{1F3F0}':['ic-castle','i-castle'],  '\u{1F6E1}':['ic-shield','i-shield'],
+  '\u{1F90F}':['ic-pinch','i-pinch'],    '\u{2708}':['ic-plane','i-plane'],
+  '\u{2696}':['ic-scales','i-scales'],   '\u{1F52A}':['ic-knife','i-knife'],
 };
 
 /* Іконка за емодзі. Незнайоме емодзі повертаємо як є — так нова
@@ -3768,10 +3804,35 @@ setInterval(() => {
 
 <!-- ============ медалі ============ -->
 <symbol id="ic-medal" viewBox="0 0 24 24">
-  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-base)"/>
-  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-base)"/>
+  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
   <circle cx="12" cy="15" r="7" fill="var(--ic-accent)"/>
+  <circle cx="12" cy="15" r="5.4" fill="var(--ic-base)" opacity=".25"/>
   <path d="m12 11 1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z" fill="var(--ic-deep,#0F1712)"/>
+</symbol>
+
+<symbol id="ic-medal-1" viewBox="0 0 24 24">
+  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <circle cx="12" cy="15" r="7" fill="var(--ic-accent)"/>
+  <circle cx="12" cy="15" r="5.5" fill="var(--ic-base)"/>
+  <path d="M12.9 10.9v8.2h-1.9v-5.9l-1.5.5v-1.6l2.2-1.2z" fill="var(--ic-deep,#0E1410)"/>
+</symbol>
+
+<symbol id="ic-medal-2" viewBox="0 0 24 24">
+  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <circle cx="12" cy="15" r="7" fill="var(--ic-accent)"/>
+  <circle cx="12" cy="15" r="5.5" fill="var(--ic-base)"/>
+  <path d="M9.2 13.3a2.85 2.85 0 0 1 5.7.2c0 1.3-.8 2.2-1.8 3.1l-1.4 1.2h3.3v1.3H9.2v-1.2l2.9-2.6c.6-.6 1-1 1-1.7a1 1 0 0 0-2-.1z" fill="var(--ic-deep,#0E1410)"/>
+</symbol>
+
+<symbol id="ic-medal-3" viewBox="0 0 24 24">
+  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
+  <circle cx="12" cy="15" r="7" fill="var(--ic-accent)"/>
+  <circle cx="12" cy="15" r="5.5" fill="var(--ic-base)"/>
+  <path d="M9.3 13.2a2.8 2.8 0 0 1 5.5.5c0 .8-.4 1.4-1 1.7.7.3 1.2 1 1.2 1.9a2.9 2.9 0 0 1-5.7.4l1.8-.4a1.1 1.1 0 0 0 2.1-.2c0-.6-.5-.9-1.2-.9h-.7v-1.4h.6c.6 0 1-.3 1-.8a1 1 0 0 0-1.9-.3z" fill="var(--ic-deep,#0E1410)"/>
 </symbol>
 
 <symbol id="ic-medals" viewBox="0 0 24 24">
@@ -3779,7 +3840,7 @@ setInterval(() => {
   <circle cx="6.4" cy="16.4" r="4.6" fill="var(--ic-base)" opacity=".6"/>
   <path d="M14.6 8.2h2.2l-1.4 3.2a5.6 5.6 0 0 1-1.8.6zM20.6 8.2h-2.2l-1.4 3.2a5.6 5.6 0 0 0 1.8.6z" fill="var(--ic-base)" opacity=".6"/>
   <circle cx="17.6" cy="16.4" r="4.6" fill="var(--ic-base)" opacity=".6"/>
-  <path d="M9.6 2.4h2.4l1.6 3.8a6.4 6.4 0 0 0-1.9.5zM14.4 2.4H12l-1.6 3.8a6.4 6.4 0 0 1 1.9.5z" fill="var(--ic-base)"/>
+  <path d="M9.6 2.4h2.4l1.6 3.8a6.4 6.4 0 0 0-1.9.5zM14.4 2.4H12l-1.6 3.8a6.4 6.4 0 0 1 1.9.5z" fill="var(--ic-ribbon,var(--ic-base))"/>
   <circle cx="12" cy="13.4" r="6" fill="var(--ic-accent)"/>
   <path d="m12 10 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--ic-deep,#0F1712)"/></symbol>
 
