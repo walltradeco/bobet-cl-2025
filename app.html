@@ -193,6 +193,19 @@
   .msg.ok{background:var(--green-soft);border:1px solid rgba(76,174,107,0.35);color:var(--green);}
   .hide{display:none !important;}
   .spin{text-align:center;padding:40px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+
+  /* ================= ІКОНКИ =================
+     Той самий набір, що в test.html (assets/icons/sprite.svg). Емодзі
+     лишаються в базі як ключі — фронт підмінює їх на <use>, а незнайоме
+     емодзі показує як є. Тому новий стиль у manager_styles з'явиться
+     на екрані навіть до того, як йому намалюють іконку. */
+  .ic{
+    --ic-base:currentColor; --ic-accent:var(--green); --ic-deep:#0E1410;
+    width:1em; height:1em; vertical-align:-.14em; flex:none;
+  }
+  .ic-gold{--ic-accent:#E3B341}
+  .ic-silver{--ic-accent:#C7D2CC}
+  .ic-bronze{--ic-accent:#C08457}
 </style>
 </head>
 <body>
@@ -308,6 +321,58 @@ const S = {
 
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* ======== ІКОНКИ ========
+   Ключ — емодзі, яке лежить у базі (hof_labels, honors_detail.medal)
+   або стояло в розмітці. Значення — id символа зі спрайта і клас
+   акценту. Правило акценту: золото — трофеї й Honors, зелений — гра,
+   синій — PSuper League.
+
+   Мапу навмисно тримаємо на фронті, а не в базі: перейменувати
+   іконку — це правка одного рядка тут, без міграції. */
+const ICONS = {
+  '\u{1F947}':['ic-medal','ic-gold'],   '\u{1F948}':['ic-medal','ic-silver'],
+  '\u{1F949}':['ic-medal','ic-bronze'], '\u{1F3C5}':['ic-medals','ic-honor'],
+  '\u{1F396}':['ic-ribbon','ic-honor'], '\u{1F451}':['ic-crown','ic-honor'],
+  '\u{2B50}':['ic-star','ic-honor'],    '\u{1F4AF}':['ic-hundred','ic-honor'],
+  '\u{1F4CA}':['ic-chart','ic-honor'],  '\u{1F494}':['ic-heart-crack',''],
+  '\u{1F680}':['ic-rocket',''],         '\u{1F3AF}':['ic-target',''],
+  '\u{1F52C}':['ic-crosshair',''],      '\u{1F48E}':['ic-gem','ic-blue'],
+  '\u{1F9CA}':['ic-ice','ic-blue'],     '\u{1F3A2}':['ic-wave',''],
+  '\u{1F977}':['ic-mask',''],           '\u{1F93C}':['ic-derby','ic-honor'],
+  '\u{1F9E9}':['ic-puzzle',''],         '\u{1F52E}':['ic-orb','ic-blue'],
+  '\u{1F3B0}':['ic-slots',''],          '\u{1F3F9}':['ic-bow',''],
+  '\u{1F9E0}':['ic-brain',''],          '\u{1F393}':['ic-cap','ic-honor'],
+  '\u{1F525}':['ic-fire',''],           '\u{1F3C6}':['ic-trophy','ic-honor'],
+  '\u{2694}':['ic-swords',''],          '\u{1F4A5}':['ic-burst',''],
+  '\u{1F454}':['ic-tie',''],            '\u{26BD}':['ic-ball',''],
+  '\u{1F3F0}':['ic-castle',''],         '\u{1F6E1}':['ic-shield',''],
+  '\u{1F90F}':['ic-pinch',''],          '\u{2708}':['ic-plane',''],
+  '\u{2696}':['ic-scales',''],          '\u{1F52A}':['ic-knife',''],
+};
+
+/* Іконка за емодзі. Незнайоме емодзі повертаємо як є — так нова
+   номінація в базі з'явиться на екрані навіть без правки фронта. */
+function ic(emoji, extra){
+  const key = String(emoji || '').replace(/\uFE0F/g, '');
+  const hit = ICONS[key];
+  if(!hit) return esc(emoji);
+  return `<svg class="ic ${hit[1]} ${extra || ''}"><use href="#${hit[0]}"></use></svg>`;
+}
+
+/* Рядок вигляду «\u{1F451} Король» з бази: емодзі на початку міняємо
+   на іконку, решту тексту екрануємо як звичайно. */
+function iconify(text, extra){
+  const raw = String(text == null ? '' : text).replace(/\uFE0F/g, '').trim();
+  for(const key in ICONS){
+    if(raw.startsWith(key)){
+      return ic(key, extra) + ' ' + esc(raw.slice(key.length).trim());
+    }
+  }
+  return esc(raw);
+}
+
+
 
 function msg(host, text, kind='err'){
   host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`;
@@ -621,7 +686,7 @@ async function loadGameweek(gwId){
       .eq('chooser_id', S.me.participant_id),
     // MVP цього вікенда. RLS показує лише після відкриття (як дуелі).
     sb.from('mvp_board').select('*').eq('gameweek_id', gwId),
-    // Тренерський почерк (файл 78). Стилі вікенда — RLS та сама, що
+    // Manager Style (файл 78). Стилі вікенда — RLS та сама, що
     // й у дуелей: свій видно завжди, чужі — після відкриття.
     sb.from('style_board').select('*').eq('gameweek_id', gwId),
     // Стилі етапу з позначкою, у якому вікенді кожен уже витрачено.
@@ -806,7 +871,7 @@ async function viewMatches(){
     const rivalPts = myPick && myPick.points != null ? myPick.points : 0;
     const rivalLine = myPick
       ? `<div class="rev-line" style="border:none;padding:4px 0">
-           <span class="dim">⚔️ Дуель проти ${esc(myPick.rival_name)}</span>
+           <span class="dim">${ic('\u{2694}')} Дуель проти ${esc(myPick.rival_name)}</span>
            <span class="s" style="color:${rivalPts > 0 ? 'var(--green)' : 'var(--text-dim)'}">
              ${rivalPts > 0 ? '+' + rivalPts : (myPick.status === 'pending' ? 'очікує' : '+0')}</span>
          </div>`
@@ -823,13 +888,13 @@ async function viewMatches(){
          </div>`
       : '';
 
-    // Тренерський почерк. Бали не залежать від прогнозів, тому рядок є
+    // Manager Style. Бали не залежать від прогнозів, тому рядок є
     // завжди, коли стиль на цей вікенд обрано (або кинуто системою).
     const myStyle = (S.styleRows || []).find(r => r.participant_id === S.me.participant_id);
     const stylePts = myStyle && myStyle.points != null ? myStyle.points : 0;
     const styleLine = myStyle
       ? `<div class="rev-line" style="border:none;padding:4px 0">
-           <span class="dim">👔 ${esc(myStyle.style_title)}${
+           <span class="dim">${ic('\u{1F454}')} ${esc(myStyle.style_title)}${
              myStyle.capped ? ` <span style="font-size:11px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
            <span class="s" style="color:${stylePts > 0 ? 'var(--green)' : 'var(--text-dim)'}">
              ${myStyle.scored ? '+' + stylePts : 'очікує'}</span>
@@ -895,10 +960,10 @@ async function viewMatches(){
 //  балами (переміг +2 / нічия +1 / поразка +0 / очікує).
 // ---------------------------------------------------------------------
 function rivalStatusMark(status, points){
-  if (status === 'win')  return `<span style="color:var(--green)">⚔️ переміг +${points}</span>`;
-  if (status === 'draw') return `<span class="dim">⚔️ нічия +${points}</span>`;
-  if (status === 'loss') return `<span class="dim">⚔️ поразка +0</span>`;
-  return `<span class="dim">⚔️ очікує</span>`;  // pending
+  if (status === 'win')  return `<span style="color:var(--green)">${ic('\u{2694}')} переміг +${points}</span>`;
+  if (status === 'draw') return `<span class="dim">${ic('\u{2694}')} нічия +${points}</span>`;
+  if (status === 'loss') return `<span class="dim">${ic('\u{2694}')} поразка +0</span>`;
+  return `<span class="dim">${ic('\u{2694}')} очікує</span>`;  // pending
 }
 
 function renderRivalBox(deadlinePassed, open){
@@ -1005,7 +1070,7 @@ function renderRivalBox(deadlinePassed, open){
 
 
 // ---------------------------------------------------------------------
-//  ТРЕНЕРСЬКИЙ ПОЧЕРК 👔 — стиль на вікенд (файл 78)
+//  MANAGER STYLE 👔 — тренерський стиль на вікенд (файл 78)
 //
 //  Стиль поводиться ТОЧНО ЯК ПРОГНОЗИ, а не як Rivals: фіксується моїм
 //  підтвердженням вікенда і після цього не міняється — тому сюди йде
@@ -1028,7 +1093,7 @@ function styleFace(o, px){
     ? `<img src="${esc(o.photo_url)}" alt="${esc(o.title || o.style_title)}"
          style="width:${px}px;height:${px}px;border-radius:50%;object-fit:cover;
                 vertical-align:middle;margin-right:5px">`
-    : `<span style="margin-right:4px">${o.icon || o.style_icon || '👔'}</span>`;
+    : `<span style="margin-right:4px;font-size:${px}px">${ic(o.icon || o.style_icon || '\u{1F454}')}</span>`;
 }
 
 function renderStyleBox(locked, open){
@@ -1046,7 +1111,7 @@ function renderStyleBox(locked, open){
   const left = opts.filter(o => o.used_gameweek == null && !o.is_current).length;
 
   let inner = `<div class="dim" style="margin-bottom:8px;font-size:12px">
-      👔 Тренерський почерк · один стиль на вікенд. Рахує реальні результати
+      ${ic('\u{1F454}')} Manager Style · один стиль на вікенд. Рахує реальні результати
       матчів, а не твої прогнози${cap ? `. Максимум ${cap} бали за вікенд` : ''}.
       Той самий стиль двічі за місяць узяти не можна.
     </div>`;
@@ -1474,16 +1539,16 @@ function reviewAndSave(){
   // не думала, що забула (дуель — справа добровільна).
   const myRival = S.rivalPairs.find(r => r.chooser_id === S.me.participant_id);
   body += `<div class="rev-line" style="margin-top:12px">
-    <span>⚔️ Суперник на вікенд</span>
+    <span>${ic('\u{2694}')} Суперник на вікенд</span>
     <span class="s">${myRival ? esc(myRival.rival_name) : '—'}</span></div>`;
 
-  // Тренерський почерк. На відміну від суперника, стиль ФІКСУЄТЬСЯ цим
+  // Manager Style. На відміну від суперника, стиль ФІКСУЄТЬСЯ цим
   // підтвердженням і після нього не міняється — тому тут не просто
   // показ, а остання можливість передумати. Не обрав — база кине
   // випадковий невикористаний, про що чесно попереджаємо.
   const myStylePick = (S.styleOptions || []).find(o => o.is_current);
   body += `<div class="rev-line">
-    <span>👔 Стиль на вікенд</span>
+    <span>${ic('\u{1F454}')} Стиль на вікенд</span>
     <span class="s">${myStylePick ? esc(myStylePick.title) : '—'}</span></div>`;
   if ((S.styleOptions || []).length && !myStylePick) {
     body += `<div class="msg err" style="margin-top:12px">
@@ -1789,7 +1854,7 @@ async function viewBoard(){
     : await sb.from('leaderboard').select('*')
         .eq('tournament_id', TOURNAMENT_ID).order('place');
 
-  const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
+  const medal = (p) => p === 1 ? ic('\u{1F947}') : p === 2 ? ic('\u{1F948}') : p === 3 ? ic('\u{1F949}') : '';
   $('view').innerHTML = `
     <div class="boost-row" style="margin-bottom:14px">
       <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(S.stage.title)}</button>
@@ -3094,5 +3159,227 @@ function closeModal(){ $('modal-host').innerHTML = ''; }
 // =====================================================================
 boot();
 </script>
+<!-- BoBet — набір іконок замість емодзі. Стиль C: суцільна заливка,
+     одна деталь фірмовим кольором.
+
+     Кожна іконка малюється двома змінними:
+       --ic-base    основна форма (за замовчуванням колір тексту)
+       --ic-accent  акцент — рівно одна деталь
+
+     Правило акценту, щоб 36 іконок лишались однією родиною:
+       золото  #E3B341  — усе, що про трофеї й Honors
+       зелений #22C55E  — усе, що про гру (бали, бусти, стилі)
+       синій   #3B82F6  — PSuper League
+
+     viewBox скрізь 24×24, форми розраховані на 15 px у бейджі:
+     дрібніші деталі за 1.5 px не малюємо — вони зникають. -->
+<svg xmlns="http://www.w3.org/2000/svg" style="display:none" aria-hidden="true">
+
+<!-- ============ медалі ============ -->
+<symbol id="ic-medal" viewBox="0 0 24 24">
+  <path d="M7.2 2h3l2.5 5.7a7.2 7.2 0 0 0-2.4.5z" fill="var(--ic-base)"/>
+  <path d="M16.8 2h-3l-2.5 5.7a7.2 7.2 0 0 1 2.4.5z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="15" r="7" fill="var(--ic-accent)"/>
+  <path d="m12 11 1.2 2.5 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4z" fill="var(--ic-deep,#0F1712)"/>
+</symbol>
+
+<symbol id="ic-medals" viewBox="0 0 24 24">
+  <path d="M3.4 8.2h2.2l1.4 3.2a5.6 5.6 0 0 0-1.8.6zM9.4 8.2H7.2l1.4 3.2a5.6 5.6 0 0 1 1.8.6z" fill="var(--ic-base)" opacity=".6"/>
+  <circle cx="6.4" cy="16.4" r="4.6" fill="var(--ic-base)" opacity=".6"/>
+  <path d="M14.6 8.2h2.2l-1.4 3.2a5.6 5.6 0 0 1-1.8.6zM20.6 8.2h-2.2l-1.4 3.2a5.6 5.6 0 0 0 1.8.6z" fill="var(--ic-base)" opacity=".6"/>
+  <circle cx="17.6" cy="16.4" r="4.6" fill="var(--ic-base)" opacity=".6"/>
+  <path d="M9.6 2.4h2.4l1.6 3.8a6.4 6.4 0 0 0-1.9.5zM14.4 2.4H12l-1.6 3.8a6.4 6.4 0 0 1 1.9.5z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="13.4" r="6" fill="var(--ic-accent)"/>
+  <path d="m12 10 1 2.1 2.3.3-1.7 1.6.4 2.3-2-1.1-2 1.1.4-2.3-1.7-1.6 2.3-.3z" fill="var(--ic-deep,#0F1712)"/></symbol>
+
+<symbol id="ic-ribbon" viewBox="0 0 24 24">
+  <path d="M5.5 2.6h13v4.2h-13z" fill="var(--ic-base)"/>
+  <path d="M7 2.6h2.4v4.2H7zM14.6 2.6H17v4.2h-2.4z" fill="var(--ic-accent)"/>
+  <path d="M6.4 8.2h11.2l-2 5.4 3 7.8-6.6-3.4-6.6 3.4 3-7.8z" fill="var(--ic-base)"/>
+</symbol>
+
+<!-- ============ Honors — номінації ============ -->
+<symbol id="ic-crown" viewBox="0 0 24 24">
+  <path d="M2.4 6.6 6.6 11l4-6.4a1.7 1.7 0 1 1 2.8 0l4 6.4 4.2-4.4a1.6 1.6 0 0 1 2.4 2v.2l-2.4 9.4H5.4L3 8.8v-.2a1.6 1.6 0 0 1-.6-2z" fill="var(--ic-accent)"/>
+  <path d="M4.6 20h14.8v2.2H4.6z" fill="var(--ic-base)"/>
+</symbol>
+
+<symbol id="ic-star" viewBox="0 0 24 24">
+  <path d="m12 2 3 6.5 7 .9-5.2 4.9 1.4 7.1L12 18l-6.2 3.4 1.4-7.1L2 9.4l7-.9z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-hundred" viewBox="0 0 24 24">
+  <rect x="1.6" y="5.6" width="20.8" height="12.8" rx="4" fill="var(--ic-accent)"/>
+  <path d="M5.6 9.2v1.5h1.3v4.1h1.7V9.2zM12 9.1a2.3 2.3 0 0 0-2.3 2.3v1.8a2.3 2.3 0 0 0 4.6 0v-1.8A2.3 2.3 0 0 0 12 9.1zm0 1.5a.8.8 0 0 1 .8.8v1.8a.8.8 0 0 1-1.6 0v-1.8a.8.8 0 0 1 .8-.8zM17.4 9.1a2.3 2.3 0 0 0-2.3 2.3v1.8a2.3 2.3 0 0 0 4.6 0v-1.8a2.3 2.3 0 0 0-2.3-2.3zm0 1.5a.8.8 0 0 1 .8.8v1.8a.8.8 0 0 1-1.6 0v-1.8a.8.8 0 0 1 .8-.8z" fill="var(--ic-deep,#0F1712)"/>
+</symbol>
+
+<symbol id="ic-chart" viewBox="0 0 24 24">
+  <path d="M2.6 20h18.8v2.2H2.6z" fill="var(--ic-base)"/>
+  <path d="M4 12.4h4v6.2H4zM16 8.6h4v10h-4z" fill="var(--ic-base)"/>
+  <path d="M10 3.4h4v15.2h-4z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-heart-crack" viewBox="0 0 24 24">
+  <path d="M12 21.2 3.6 12.8a5.4 5.4 0 0 1 7.6-7.6l.8.8.8-.8a5.4 5.4 0 0 1 7.6 7.6z" fill="var(--ic-base)"/>
+  <path d="m12.6 5.8-2.4 4.6 3 1.4-3 5 1-4-2.8-1.2 2.6-4.6z" fill="var(--ic-deep,#0F1712)"/>
+</symbol>
+
+<symbol id="ic-rocket" viewBox="0 0 24 24">
+  <path d="M13.6 2.4c3.6 1 6.6 4 7.6 7.6l-8.6 8.6-5.6-5.6z" fill="var(--ic-base)"/>
+  <circle cx="14.6" cy="9.4" r="2.4" fill="var(--ic-accent)"/>
+  <path d="M6.4 14.2 3 17.6l1.2 1.2 2.6-1.6zM9.8 17.6l-1.6 2.6 1.2 1.2 3.4-3.4zM2.4 21.6l1.2-3.2 2 2z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-target" viewBox="0 0 24 24">
+  <path d="M11 4.2a8.8 8.8 0 1 0 8.8 8.8 8.9 8.9 0 0 0-.5-2.8l-2 2a6.8 6.8 0 1 1-5.5-5.5l2-2a8.9 8.9 0 0 0-2.8-.5z" fill="var(--ic-base)"/>
+  <path d="M11 8.4a4.6 4.6 0 1 0 3.6 1.8l-2.2 2.2a1.5 1.5 0 1 1-1.4-1.4l2.2-2.2A4.6 4.6 0 0 0 11 8.4z" fill="var(--ic-base)"/>
+  <path d="M16.4 5.2v2.4l-4.6 4.6 1.4 1.4 4.6-4.6h2.4l-1.9-1.9z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-crosshair" viewBox="0 0 24 24">
+  <path d="M12 1.8a1.1 1.1 0 0 1 1.1 1.1v1.5a7.7 7.7 0 0 1 6.5 6.5h1.5a1.1 1.1 0 0 1 0 2.2h-1.5a7.7 7.7 0 0 1-6.5 6.5v1.5a1.1 1.1 0 0 1-2.2 0v-1.5a7.7 7.7 0 0 1-6.5-6.5H2.9a1.1 1.1 0 0 1 0-2.2h1.5a7.7 7.7 0 0 1 6.5-6.5V2.9A1.1 1.1 0 0 1 12 1.8zm0 4.8A5.4 5.4 0 1 0 17.4 12 5.4 5.4 0 0 0 12 6.6z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="12" r="2.6" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-gem" viewBox="0 0 24 24">
+  <path d="M7.4 2.6h9.2l4.4 6-9 13.2-9-13.2z" fill="var(--ic-base)"/>
+  <path d="M7.4 2.6h9.2l-1.8 6H9.2zM2 8.6h20l-10 13.2z" fill="var(--ic-accent)" opacity=".85"/>
+  <path d="M9.2 8.6h5.6l-2.8 13.2z" fill="var(--ic-deep,#0F1712)" opacity=".35"/>
+</symbol>
+
+<symbol id="ic-ice" viewBox="0 0 24 24">
+  <path d="M12 2 3.4 6.6v10.8L12 22l8.6-4.6V6.6z" fill="var(--ic-base)"/>
+  <path d="M12 2 3.4 6.6 12 11.2l8.6-4.6z" fill="var(--ic-accent)"/>
+  <path d="M12 11.2V22l8.6-4.6V6.6z" fill="var(--ic-deep,#0F1712)" opacity=".28"/>
+</symbol>
+
+<symbol id="ic-wave" viewBox="0 0 24 24">
+  <path d="M2 15.4c2.6 0 3.4-8.6 6.6-8.6s3.4 10.4 6.6 10.4c2.4 0 3.2-5.4 5.2-5.4v3.2c-.6 0-1.6 5.4-5.2 5.4-4 0-4.6-9.6-6.6-9.6S4.8 18.6 2 18.6z" fill="var(--ic-accent)"/>
+  <path d="M2 20.6h20v2H2z" fill="var(--ic-base)"/>
+</symbol>
+
+<symbol id="ic-mask" viewBox="0 0 24 24">
+  <path d="M2 4.4h6.4v2H2zM2 10.4h6.4v2H2zM2 14h6.4v2H2zM2 20h6.4v2H2z" fill="var(--ic-base)"/>
+  <path d="M7.4 4.4h2v8h-2zM7.4 14h2v8h-2zM12.6 11.4h2v8h-2z" fill="var(--ic-base)"/>
+  <path d="M9.4 11.4h5.2v2H9.4zM9.4 17.4h5.2v2H9.4z" fill="var(--ic-base)"/>
+  <path d="M14.6 14.4H22v2h-7.4z" fill="var(--ic-accent)"/>
+  <circle cx="20.4" cy="15.4" r="3" fill="var(--ic-accent)"/></symbol>
+
+<symbol id="ic-derby" viewBox="0 0 24 24">
+  <circle cx="6.6" cy="6.4" r="3.4" fill="var(--ic-base)"/>
+  <path d="M1.4 21.4a5.2 5.2 0 0 1 10.4 0z" fill="var(--ic-base)"/>
+  <circle cx="17.4" cy="6.4" r="3.4" fill="var(--ic-accent)"/>
+  <path d="M12.2 21.4a5.2 5.2 0 0 1 10.4 0z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-puzzle" viewBox="0 0 24 24">
+  <path d="M9.6 2.6h4.8a1.8 1.8 0 0 1 1.8 1.8 2.4 2.4 0 1 0 4.8 0 1.8 1.8 0 0 1 1.8 1.8v4.2a1.8 1.8 0 0 1-1.8 1.8 2.4 2.4 0 1 0 0 4.8 1.8 1.8 0 0 1 1.8 1.8v2.6H14a1.8 1.8 0 0 1-1.8-1.8 2.4 2.4 0 1 0-4.8 0 1.8 1.8 0 0 1-1.8 1.8H2V16a1.8 1.8 0 0 1 1.8-1.8 2.4 2.4 0 1 0 0-4.8A1.8 1.8 0 0 1 2 7.6V4.4h5.8a1.8 1.8 0 0 1 1.8-1.8z" fill="var(--ic-base)"/>
+  <path d="M12.2 19.6a2.4 2.4 0 0 0-4.6-1 2.4 2.4 0 0 0 .2 1 1.8 1.8 0 0 1-1.8 1.8H2V16a1.8 1.8 0 0 1 1.8-1.8 2.4 2.4 0 0 0 1-4.6 2.4 2.4 0 0 0-1 .2A1.8 1.8 0 0 1 2 7.6V4.4h5.8z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-orb" viewBox="0 0 24 24">
+  <path d="M4.6 19.6h14.8l1.6 2.6H3z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="10.6" r="8.2" fill="var(--ic-accent)"/>
+  <path d="M8.4 7a5 5 0 0 1 3.4-1.6 4.4 4.4 0 0 0-2.6 1.6 4.4 4.4 0 0 0-1 3 5 5 0 0 1 .2-3z" fill="var(--ic-deep,#0F1712)" opacity=".5"/>
+</symbol>
+
+<symbol id="ic-slots" viewBox="0 0 24 24">
+  <path d="M12 1.6A10.4 10.4 0 1 0 22.4 12 10.4 10.4 0 0 0 12 1.6zm0 4a6.4 6.4 0 1 1-6.4 6.4A6.4 6.4 0 0 1 12 5.6z" fill="var(--ic-base)"/>
+  <path d="M10.6 1.8h2.8v4h-2.8zM10.6 18.2h2.8v4h-2.8zM1.8 10.6h4v2.8h-4zM18.2 10.6h4v2.8h-4z" fill="var(--ic-accent)"/>
+  <circle cx="12" cy="12" r="3.6" fill="var(--ic-accent)"/></symbol>
+
+<symbol id="ic-bow" viewBox="0 0 24 24">
+  <path d="M21.6 2.4h-6.2v2.2h2.6L4.4 18.4l1.6 1.6L19.4 6.6v2.6h2.2z" fill="var(--ic-base)"/>
+  <path d="M21.6 9.2h-6.2v2.2h2.6l-9.6 9.6 1.6 1.6 9.6-9.6v2.6h2.2z" fill="var(--ic-base)" opacity=".55"/>
+  <path d="M2.4 21.6v-5.4l5.4 5.4z" fill="var(--ic-accent)"/></symbol>
+
+<symbol id="ic-brain" viewBox="0 0 24 24">
+  <path d="M11 2.6a3.5 3.5 0 0 0-3.4 2.7A3.6 3.6 0 0 0 5 11.5a3.6 3.6 0 0 0 1.5 6.4A3.4 3.4 0 0 0 11 21.4zm-1.6 4.2v1.8H7.6v1.8h1.8v2.6H7.6v1.8h1.8v3.4" fill="var(--ic-base)"/>
+  <path d="M13 2.6a3.5 3.5 0 0 1 3.4 2.7A3.6 3.6 0 0 1 19 11.5a3.6 3.6 0 0 1-1.5 6.4A3.4 3.4 0 0 1 13 21.4z" fill="var(--ic-accent)"/></symbol>
+
+<symbol id="ic-cap" viewBox="0 0 24 24">
+  <path d="M12 3 1.6 8 12 13l10.4-5z" fill="var(--ic-accent)"/>
+  <path d="M5.6 10.6v5.2c0 2 2.9 3.6 6.4 3.6s6.4-1.6 6.4-3.6v-5.2L12 14z" fill="var(--ic-base)"/>
+  <path d="M21.2 9v6.4h1.8V9z" fill="var(--ic-base)"/>
+</symbol>
+
+<!-- ============ гра ============ -->
+<symbol id="ic-fire" viewBox="0 0 24 24">
+  <path d="M13.4 2c.6 4-1.4 5.4-2.6 6.6-1-1-1.4-2.6-1-4.2C6.6 6.6 5 9.6 5 13a7 7 0 0 0 14 0c0-4.4-2.6-8.4-5.6-11z" fill="var(--ic-base)"/>
+  <path d="M12 21.4a3.4 3.4 0 0 1-3.4-3.4c0-2 1.8-3.2 3.4-5.2 1.6 2 3.4 3.2 3.4 5.2a3.4 3.4 0 0 1-3.4 3.4z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-trophy" viewBox="0 0 24 24">
+  <path d="M6.5 4.6H3.6v2.2a3.6 3.6 0 0 0 3.6 3.6h.4a6.9 6.9 0 0 1-1.1-2.2zM17.5 4.6h2.9v2.2a3.6 3.6 0 0 1-3.6 3.6h-.4a6.9 6.9 0 0 0 1.1-2.2z" fill="var(--ic-base)" opacity=".6"/>
+  <path d="M6.5 3h11v5.2a5.5 5.5 0 0 1-11 0z" fill="var(--ic-accent)"/>
+  <path d="M10.8 14h2.4v3.4h-2.4zM8 19h8v2.4H8z" fill="var(--ic-base)"/>
+</symbol>
+
+<symbol id="ic-swords" viewBox="0 0 24 24">
+  <path d="M2.6 3h3.6l11.6 11.6-2.6 2.6z" fill="var(--ic-base)"/>
+  <path d="M21.4 3h-3.6L6.2 14.6l2.6 2.6z" fill="var(--ic-base)"/>
+  <path d="M4.6 18.4 6.4 20.2 4 22.6l-1.8-1.8zM19.4 18.4l-1.8 1.8 2.4 2.4 1.8-1.8z" fill="var(--ic-accent)"/>
+  <path d="m4.9 14.7 4.4 4.4-1.3 1.3-4.4-4.4zM19.1 14.7l-4.4 4.4 1.3 1.3 4.4-4.4z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-burst" viewBox="0 0 24 24">
+  <path d="m12 1.4 2.6 5.4 5.8-2.2-2.2 5.8 5.4 2.6-5.4 2.6 2.2 5.8-5.8-2.2L12 24.6 9.4 19.2l-5.8 2.2 2.2-5.8L.4 13l5.4-2.6-2.2-5.8 5.8 2.2z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="13" r="3.6" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-tie" viewBox="0 0 24 24">
+  <path d="M6.4 2.6 3 5v16h4.8l2.4-12-1.6-2.6L12 7.2 8.9 3.9z" fill="var(--ic-base)"/>
+  <path d="M17.6 2.6 21 5v16h-4.8l-2.4-12 1.6-2.6L12 7.2l3.1-3.3z" fill="var(--ic-base)"/>
+  <path d="m12 8.6-1.3 2 1.3 9.4 1.3-9.4z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-ball" viewBox="0 0 24 24">
+  <path d="M12 1.6A10.4 10.4 0 1 0 22.4 12 10.4 10.4 0 0 0 12 1.6zm0 2.2a8.2 8.2 0 0 1 5 1.7l-1.6 4.4-3.4 1.1-3.4-1.1L7 5.5a8.2 8.2 0 0 1 5-1.7zM4.4 9.8l3.5 2.6.6 3.9-3 1.5a8.2 8.2 0 0 1-1.1-8zm15.2 0a8.2 8.2 0 0 1-1.1 8l-3-1.5.6-3.9zM12 20.2a8.2 8.2 0 0 1-4.3-1.2l.9-3.2h6.8l.9 3.2a8.2 8.2 0 0 1-4.3 1.2z" fill="var(--ic-base)"/>
+  <path d="m12 9.9 3.4 1.1-1.3 4h-4.2l-1.3-4z" fill="var(--ic-accent)"/>
+</symbol>
+
+<!-- ============ тренерські стилі ============ -->
+<symbol id="ic-castle" viewBox="0 0 24 24">
+  <path d="M2 5.4h3v2.2h2.4V5.4h3.4v2.2h2.4V5.4h3.4v2.2H22v-2.2h.4V21.4H1.6V5.4z" fill="var(--ic-base)"/>
+  <path d="M9.4 13.6h5.2v7.8H9.4z" fill="var(--ic-accent)"/>
+  <path d="M4.2 10.4h3v3.4h-3zM16.8 10.4h3v3.4h-3z" fill="var(--ic-deep,#0F1712)" opacity=".45"/></symbol>
+
+<symbol id="ic-shield" viewBox="0 0 24 24">
+  <path d="M12 1.8 3.4 5v7c0 5 3.6 9 8.6 10.2 5-1.2 8.6-5.2 8.6-10.2V5z" fill="var(--ic-base)"/>
+  <path d="M12 4.4 5.8 6.7V12c0 3.7 2.5 6.7 6.2 7.7z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-pinch" viewBox="0 0 24 24">
+  <path d="M2.6 3.4 9 12l-6.4 8.6 3.2 2L13 12 5.8 1.4z" fill="var(--ic-base)"/>
+  <path d="M21.4 3.4 15 12l6.4 8.6-3.2 2L11 12l7.2-10.6z" fill="var(--ic-base)"/>
+  <path d="M11.2 9.4h1.6v5.2h-1.6z" fill="var(--ic-accent)"/></symbol>
+
+<symbol id="ic-plane" viewBox="0 0 24 24">
+  <path d="M21.6 3.6a2 2 0 0 0-2.8 0l-3.4 3.4-11-3.2-2 2 8.6 5.4-3.4 3.4-3.8-.8-1.4 1.4 4.4 2.6 2.6 4.4 1.4-1.4-.8-3.8 3.4-3.4 5.4 8.6 2-2-3.2-11 3.4-3.4a2 2 0 0 0 .2-2.2z" fill="var(--ic-base)"/>
+  <path d="M21.6 3.6a2 2 0 0 0-2.8 0l-3.4 3.4 2.8 2.8 3.4-3.4a2 2 0 0 0 0-2.8z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-scales" viewBox="0 0 24 24">
+  <path d="M11 2.6h2v18.8h-2z" fill="var(--ic-base)"/>
+  <path d="M5.4 20.4h13.2v2H5.4zM3 6.4h18v2H3z" fill="var(--ic-base)"/>
+  <path d="M6.6 8.4 10 15.4H3.2zM17.4 8.4l3.4 7h-6.8z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-knife" viewBox="0 0 24 24">
+  <path d="M20.4 2.4 9.6 13.2l2.6 2.6L22 5.2a4 4 0 0 0-1.6-2.8z" fill="var(--ic-base)"/>
+  <path d="m8.6 14.2-6 6a1.6 1.6 0 0 0 2.2 2.2l6-6z" fill="var(--ic-accent)"/>
+</symbol>
+
+<symbol id="ic-boost" viewBox="0 0 24 24">
+  <path d="M13.6 1.4 4 13.4h6.2L9.2 22.6 20 10.2h-6.6z" fill="var(--ic-accent)"/></symbol>
+
+
+<symbol id="ic-bullseye" viewBox="0 0 24 24">
+  <path d="M12 1.6A10.4 10.4 0 1 0 22.4 12 10.4 10.4 0 0 0 12 1.6zm0 2.2A8.2 8.2 0 1 1 3.8 12 8.2 8.2 0 0 1 12 3.8z" fill="var(--ic-base)"/>
+  <path d="M12 6.6a5.4 5.4 0 1 0 5.4 5.4A5.4 5.4 0 0 0 12 6.6zm0 2.2A3.2 3.2 0 1 1 8.8 12 3.2 3.2 0 0 1 12 8.8z" fill="var(--ic-base)"/>
+  <circle cx="12" cy="12" r="1.8" fill="var(--ic-accent)"/>
+</symbol>
+
+</svg>
 </body>
 </html>
