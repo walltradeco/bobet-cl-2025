@@ -2051,7 +2051,11 @@ function withFlag(name){
    halves are recognised teams, so hyphenated names (Кот-д'Івуар, Кабо-Верде)
    stay intact. */
 function splitGame(s){
-  const spaced = s.split(/\s+[-–—]\s+/);
+  // Пари в архіві записані по-різному: «ЮАР - Канада» через тире
+  // (ЧС 2026) і «Брест/ПСЖ» через слеш (ЛЧ 2025). Слеш пускаємо і без
+  // пробілів — у назвах команд його не буває, на відміну від дефіса
+  // («Аль-Аглі»), який без пробілів розрізав би назву посередині.
+  const spaced = s.split(/\s+[-–—]\s+|\s*\/\s*/);
   if(spaced.length === 2) return [spaced[0].trim(), spaced[1].trim()];
   for(let i = 1; i < s.length - 1; i++){
     if(!'-–—'.includes(s[i])) continue;
