@@ -70,6 +70,11 @@
   }
   .yn button.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
   .yn button:disabled{opacity:0.4;cursor:not-allowed;}
+  /* Питання-вибір: варіантів може бути шість (Ballon d'Or), тому
+     переносимо рядками. flex:1 знято — інакше при шести варіантах
+     кожен стискається в нечитабельний стовпчик. */
+  .yn-wrap{flex-wrap:wrap;}
+  .yn-wrap button{flex:0 1 auto;min-width:120px;padding:11px 14px;font-size:14px;}
   .bq input.txt{
     width:100%;box-sizing:border-box;background:var(--panel-3);border:1px solid var(--line);
     border-radius:9px;color:var(--text);font-size:15px;padding:12px;
@@ -1907,7 +1912,22 @@ async function viewBonus(){
         <button data-yn="yes" data-bet="${id}" class="${on('yes').trim()}" ${ro ? 'disabled' : ''}>YES</button>
         <button data-yn="no"  data-bet="${id}" class="${on('no').trim()}"  ${ro ? 'disabled' : ''}>NO</button>
       </div>`;
+    } else if (type === 'choice'){
+      // Вибір зі списку, який задав адмін. Порядок навмисно НЕ
+      // перемішуємо — щоб у всіх була однакова картинка. Кнопки ті
+      // самі, що в YES/NO, лише більше й переносяться рядками.
+      const opts = q['варіанти'] || [];
+      control = `<div class="yn yn-wrap">` + opts.map(o =>
+        `<button data-choice="${esc(o)}" data-bet="${id}"
+                 class="${String(mine || '') === o ? 'on' : ''}"
+                 ${ro ? 'disabled' : ''}>${esc(o)}</button>`).join('') + `</div>`;
+    } else if (type === 'number'){
+      control = `<input class="txt" data-num="${id}" inputmode="numeric"
+                 value="${esc(mine || '')}" placeholder="число"
+                 ${ro ? 'disabled' : ''}>`;
     } else {
+      // Вільний текст. Лишився для сумісності — нових таких питань
+      // адмінка більше не створює.
       control = `<input class="txt" data-txt="${id}" value="${esc(mine || '')}"
                  placeholder="назва команди або гравця" ${ro ? 'disabled' : ''}>`;
     }
@@ -1930,7 +1950,13 @@ async function viewBonus(){
 
     const cost = type === 'yesno'
       ? `YES ${q['очок_за_yes']} б · NO ${q['очок_за_no']} б`
-      : `${max} б за влучну назву`;
+      : type === 'number'
+        ? (q['очок_за_близько'] != null
+            ? `точно ${max} б · помилка на 1 — ${q['очок_за_близько']} б`
+            : `${max} б за точне число`)
+        : type === 'choice'
+          ? `${max} б за правильний вибір`
+          : `${max} б за влучну назву`;
 
     return `<div class="bq${ro ? ' locked' : ''}">
       <div class="q">${q['нове'] ? '<span style="color:var(--gold)">нове · </span>' : ''}${esc(q['питання'])}</div>
@@ -1965,6 +1991,35 @@ async function viewBonus(){
     };
   });
 
+  // Вибір зі списку — той самий механізм, що YES/NO
+  $('view').querySelectorAll('[data-choice]').forEach(b => {
+    b.onclick = async () => {
+      const bet = b.dataset.bet, val = b.dataset.choice;
+      b.parentElement.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+      b.classList.add('on');
+      const { error } = await sb.rpc('save_special_answer', { p_bet: bet, p_answer: val });
+      if (error) { alert('Не збереглось: ' + error.message); await viewBonus(); }
+      else { const q = S.bonus.find(x => x['питання_id'] === bet); if (q) q['моя_відповідь'] = val; }
+    };
+  });
+
+  // Число — зберігаємо на втраті фокуса, як і текст.
+  // Перевірку дублює база (save_special_answer), тут лише щоб не
+  // ходити на сервер із явно кривим значенням.
+  $('view').querySelectorAll('[data-num]').forEach(inp => {
+    inp.oninput = () => { inp.value = inp.value.replace(/[^\d]/g, ''); };
+    inp.onblur = async () => {
+      const bet = inp.dataset.num;
+      const val = inp.value.trim();
+      const q = S.bonus.find(x => x['питання_id'] === bet);
+      if (q && String(q['моя_відповідь'] || '') === val) return;
+      if (!val) return;
+      const { error } = await sb.rpc('save_special_answer', { p_bet: bet, p_answer: val });
+      if (error) { alert('Не збереглось: ' + error.message); await viewBonus(); }
+      else if (q) q['моя_відповідь'] = val;
+    };
+  });
+
   // Текстова відповідь — зберігаємо, коли поле втрачає фокус
   $('view').querySelectorAll('[data-txt]').forEach(inp => {
     inp.onblur = async () => {
@@ -1983,7 +2038,9 @@ async function viewBonus(){
   $('b-confirm').onclick = async () => {
     // спершу дозберігаємо те, що в полі, але фокус ще не втрачено
     const act = document.activeElement;
-    if (act && act.dataset && act.dataset.txt) { act.blur(); await new Promise(r => setTimeout(r, 250)); }
+    if (act && act.dataset && (act.dataset.txt || act.dataset.num)) {
+      act.blur(); await new Promise(r => setTimeout(r, 250));
+    }
 
     const missing = openQ.filter(q => !String(q['моя_відповідь'] || '').trim());
     const body = openQ.map(q =>
@@ -2208,16 +2265,31 @@ async function viewAdmin(){
       <h2>Нове бонусне питання</h2>
       <p class="dim" style="margin-bottom:10px">Додається в етап «${esc(S.stage.title)}».</p>
       <input type="text" id="q-text" placeholder="текст питання" style="${AINP};margin-bottom:8px">
+      <!-- Вільного тексту тут свідомо НЕМАЄ: учасники більше не
+           вписують відповідь руками. У базі тип лишився для трьох
+           старих питань, але створити нове таке вже не можна. -->
       <select id="q-type" style="${AINP};margin-bottom:8px">
         <option value="yesno">YES / NO</option>
-        <option value="text">відповідь-ім'я (вписати назву чи прізвище)</option>
+        <option value="choice">вибір зі списку (варіанти задаєш ти)</option>
+        <option value="number">число</option>
       </select>
+      <div id="q-opts-row" style="display:none;margin-bottom:8px">
+        <textarea id="q-opts" rows="4" placeholder="Варіанти — по одному на рядок:&#10;Арсенал&#10;Манчестер Сіті"
+          style="${AINP};resize:vertical;font-family:'Inter',sans-serif"></textarea>
+        <p class="dim" style="margin-top:4px">Порядок такий, як напишеш. Мінімум два.
+          Після першої відповіді варіанти вже не змінити.</p>
+      </div>
       <div class="rev-line"><span id="q-pts-label">Балів за правильний YES</span>
         <input type="number" id="q-pts" value="3" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
           color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
       <div class="rev-line" id="q-no-row"><span>Балів за правильний NO</span>
         <input type="number" id="q-ptsno" value="1" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <div class="rev-line" id="q-near-row" style="display:none">
+        <span>Балів за промах на 1 <span class="dim">(порожньо — тільки точно)</span></span>
+        <input type="number" id="q-near" value="1" min="0" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
           color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
       <button class="ghost" id="btn-qadd" style="margin-top:10px;width:100%">Додати питання</button>
@@ -2308,12 +2380,16 @@ async function viewAdmin(){
 
   }
 
-  // тип питання перемикає підписи балів
+  // тип питання перемикає підписи балів і показує потрібні поля
   $('q-type').onchange = () => {
-    const yn = $('q-type').value === 'yesno';
-    $('q-pts-label').textContent = yn ? 'Балів за правильний YES' : 'Балів за влучну відповідь';
-    $('q-no-row').style.display = yn ? '' : 'none';
-    $('q-pts').value = yn ? 3 : 5;
+    const t = $('q-type').value;
+    $('q-pts-label').textContent =
+      t === 'yesno'  ? 'Балів за правильний YES' :
+      t === 'number' ? 'Балів за точне число'    : 'Балів за правильний вибір';
+    $('q-no-row').style.display   = t === 'yesno'  ? '' : 'none';
+    $('q-opts-row').style.display = t === 'choice' ? '' : 'none';
+    $('q-near-row').style.display = t === 'number' ? '' : 'none';
+    $('q-pts').value = 3;
   };
 
   $('btn-qadd').onclick = async () => {
@@ -2321,18 +2397,40 @@ async function viewAdmin(){
     if (!q) return alert('Текст питання порожній');
     const type = $('q-type').value;
     const pts  = Number($('q-pts').value);
-    const ptsNo = type === 'yesno' ? Number($('q-ptsno').value) : null;
     if (!pts) return alert('Вкажи бали');
-    if (!confirm(`Додати в «${S.stage.title}» питання:\n${q}\n${
-      type === 'yesno' ? `YES ${pts} / NO ${ptsNo}` : `відповідь-ім'я, ${pts} оч.`}`)) return;
+
+    const ptsNo = type === 'yesno' ? Number($('q-ptsno').value) : null;
+
+    let opts = null;
+    if (type === 'choice'){
+      opts = $('q-opts').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (opts.length < 2) return alert('Потрібно щонайменше два варіанти, по одному на рядок');
+      const dup = new Set(opts.map(s => s.toLowerCase()));
+      if (dup.size !== opts.length) return alert('Варіанти повторюються');
+    }
+
+    // Порожнє поле = тільки точна відповідь. Нуль — це теж «тільки
+    // точно», просто записаний інакше, тому зводимо до null.
+    let near = null;
+    if (type === 'number'){
+      const raw = $('q-near').value.trim();
+      near = raw === '' || Number(raw) === 0 ? null : Number(raw);
+    }
+
+    const what =
+      type === 'yesno'  ? `YES ${pts} / NO ${ptsNo}` :
+      type === 'choice' ? `вибір: ${opts.join(' / ')} — ${pts} б` :
+                          `число, ${pts} б${near != null ? `, промах на 1 — ${near} б` : ' (тільки точно)'}`;
+    if (!confirm(`Додати в «${S.stage.title}» питання:\n${q}\n${what}`)) return;
 
     const { data, error } = await sb.rpc('admin_bonus_add', {
       p_month: S.stage.key, p_question: q, p_type: type,
-      p_points: pts, p_points_no: ptsNo
+      p_points: pts, p_points_no: ptsNo, p_options: opts, p_near: near
     });
     if (error) return alert('Помилка: ' + error.message);
     $('qadd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(data)}</div>`;
     $('q-text').value = '';
+    $('q-opts').value = '';
     await renderAdminBonus();
   };
 
@@ -2755,25 +2853,48 @@ async function renderAdminBonus(){
     return;
   }
 
-  // Тип питання визначається наявністю points_yes: заповнене — YES/NO,
-  // порожнє — відповідь-ім'я. Окремої колонки «тип» у базі немає.
+  // Вид питання тепер лежить у стовпці answer_kind (файл 96). Раніше
+  // його вгадували за наявністю points_yes — на двох видах це ще
+  // працювало, на чотирьох стало неможливо.
   host.innerHTML = S.adminBets.map((b, i) => {
-    const yn  = b.points_yes !== null && b.points_yes !== undefined;
-    const cur = (b.correct_answer || '').trim();
-    const ctrl = yn
-      ? `<div class="boost-row">
+    const kind = b.answer_kind || (b.points_yes != null ? 'yesno' : 'text');
+    const yn   = kind === 'yesno';
+    const cur  = (b.correct_answer || '').trim();
+
+    let ctrl;
+    if (yn){
+      ctrl = `<div class="boost-row">
            <button class="boost-chip ${cur.toLowerCase() === 'yes' ? 'on' : ''}"
              data-yn="${i}" data-val="YES">YES · ${b.points_yes}</button>
            <button class="boost-chip ${cur.toLowerCase() === 'no' ? 'on' : ''}"
              data-yn="${i}" data-val="NO">NO · ${b.points_no}</button>
-         </div>`
-      : `<input type="text" data-atext="${i}" value="${esc(cur)}"
+         </div>`;
+    } else if (kind === 'choice'){
+      // Правильну відповідь адмін теж ОБИРАЄ, а не вписує — інакше
+      // одрук у слові «Манчестер» зробив би всіх мимо.
+      ctrl = `<div class="boost-row" style="flex-wrap:wrap">` +
+        (b.options || []).map(o =>
+          `<button class="boost-chip ${cur === o ? 'on' : ''}"
+             data-yn="${i}" data-val="${esc(o)}">${esc(o)}</button>`).join('') + `</div>`;
+    } else if (kind === 'number'){
+      ctrl = `<input type="number" data-atext="${i}" value="${esc(cur)}" min="0"
+           placeholder="правильне число" style="${AINP}">`;
+    } else {
+      ctrl = `<input type="text" data-atext="${i}" value="${esc(cur)}"
            placeholder="правильна відповідь" style="${AINP}">`;
+    }
+
+    const kindLabel =
+      yn                ? 'YES/NO' :
+      kind === 'choice' ? 'вибір: ' + (b.options || []).join(' / ') + ' · ' + b.points_if_correct + ' оч.' :
+      kind === 'number' ? 'число · ' + b.points_if_correct + ' оч.' +
+                          (b.points_near != null ? ' · ±1 → ' + b.points_near : ' · тільки точно') :
+                          'відповідь-ім\'я · ' + b.points_if_correct + ' оч.';
 
     return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)">
       <div style="font-size:14px;margin-bottom:5px">${esc(b.question)}</div>
       <div class="dim" style="font-size:12px;margin-bottom:9px">
-        ${yn ? 'YES/NO' : 'відповідь-ім\'я · ' + b.points_if_correct + ' оч.'}
+        ${esc(kindLabel)}
         · <span data-astate="${i}">${cur ? 'зараз: ' + esc(cur) : 'відповіді ще немає'}</span></div>
       ${ctrl}
       <button class="ghost" data-asave="${i}" style="margin-top:9px;width:100%">Внести відповідь</button>
@@ -2814,7 +2935,7 @@ async function renderAdminBonus(){
   host.querySelectorAll('[data-bsave]').forEach(btn => btn.onclick = async () => {
     const i = Number(btn.dataset.bsave);
     const b = S.adminBets[i];
-    const yn = b.points_yes !== null && b.points_yes !== undefined;
+    const yn = (b.answer_kind || (b.points_yes != null ? 'yesno' : 'text')) === 'yesno';
     const txt = host.querySelector(`[data-btext="${i}"]`).value.trim();
     if (!txt) return alert('Текст порожній');
     // Бали шлемо ТІЛЬКИ якщо їх справді змінили. Інакше база
@@ -2874,10 +2995,17 @@ async function renderAdminBonus(){
   host.querySelectorAll('[data-asave]').forEach(btn => btn.onclick = async () => {
     const i = Number(btn.dataset.asave);
     const b = S.adminBets[i];
-    const yn = b.points_yes !== null && b.points_yes !== undefined;
-    const val = yn
-      ? (b.__pick || (b.correct_answer || '').toUpperCase())
-      : (host.querySelector(`[data-atext="${i}"]`).value || '').trim();
+    // ⚠️ Тут мусить бути саме answer_kind. Питання-вибір теж малює
+    // кнопки (data-yn), але points_yes у нього порожній — і стара
+    // перевірка по points_yes полізла б шукати текстове поле, якого
+    // для вибору не існує, тобто впала б на .value від null.
+    const kind = b.answer_kind || (b.points_yes != null ? 'yesno' : 'text');
+    const byButtons = (kind === 'yesno' || kind === 'choice');
+    const val = byButtons
+      ? (b.__pick || (kind === 'yesno'
+                        ? (b.correct_answer || '').toUpperCase()
+                        : (b.correct_answer || '')))
+      : (host.querySelector(`[data-atext="${i}"]`)?.value || '').trim();
 
     if (!val) return alert('Спершу вкажи відповідь');
     if (!confirm(`${b.question}\nПравильна відповідь: ${val}\n\nБали перерахуються одразу. Вносимо?`)) return;
