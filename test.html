@@ -2189,8 +2189,16 @@ function flagImg(name){
    принцип, що й team_aliases у базі (файл 93), тому назви на сайті
    й у «Портретах гравців» сходяться. */
 const NAME_CANON = {
+  // Одруки й скорочення в архіві
   'турція':'Туреччина', 'туречина':'Туреччина',
   'голландія':'Нідерланди', 'голандія':'Нідерланди',
+  // Решта п'ять пар із team_aliases (файл 93) — щоб написання на
+  // сайті збігалось із «Портретами гравців» (рішення Богдана 27.07).
+  'реал':'Реал Мадрид', 'реал м':'Реал Мадрид',
+  'сіті':'Манчестер Сіті',
+  'фейенорд':'Феєнорд', 'фейєнорд':'Феєнорд',
+  'монтерей':'Монтеррей', 'монтерррей':'Монтеррей',
+  'борусія д':'Боруссія Д', 'борусія дортмунд':'Боруссія Дортмунд',
 };
 
 function canonName(v){
@@ -3999,7 +4007,11 @@ async function loadActiveTab(){
           = await Promise.all([
           sbGet('honors_medals?select=*&order=gold.desc,medals_total.desc,person.asc'),
           sbGet('honors_detail?select=*&order=tournament_order.asc,place.asc'),
-          sbGet('hall_of_fame?select=*&order=sort_order.asc,person.asc'),
+          // ⚠️ hall_of_fame_all, а не hall_of_fame: перша віддає лише
+          // номінації 1-27 (файл 92), друга додає до них 28+ з hof_extra
+          // (файл 95). Велику в'юху свідомо не переоголошуємо — вона вже
+          // 28 КБ і п'ять разів ставала пасткою з порядком файлів.
+          sbGet('hall_of_fame_all?select=*&order=sort_order.asc,person.asc'),
           sbGet('tournament_facts?select=*&order=tournament_order.asc'),
           sbGet('season_leaderboard?select=display_name,total_points,place&order=place.asc'),
           // «Портрети гравців» — той самий набір даних, тягнемо разом
