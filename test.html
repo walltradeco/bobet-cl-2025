@@ -3679,11 +3679,11 @@ function dnaPortrait(d, person){
   const teams = (d.dnaTeam || []).filter(x => x.person === person);
   const bonus = (d.dnaBonus || []).filter(x => x.person === person);
   const pairs = (d.dnaPair || []).filter(x => x.person === person);
+  const belief = (d.dnaBelief || []).filter(x => x.person === person);
+  const sh = (d.dnaShape || []).find(x => x.person === person) || {};
+  const vsLg = (d.dnaVsLeague || []).filter(x => x.person === person);
+  const scoreKind = (d.dnaScoreKind || []).filter(x => x.person === person);
 
-  // Талісман і нещаслива — краща й гірша команда з тих, на які
-  // ставили хоча б шість разів (поріг стоїть іще в запиті).
-  const best = teams[0];
-  const worst = teams[teams.length - 1];
   const twin = pairs[0];
   const anti = pairs[pairs.length - 1];
 
@@ -3694,6 +3694,41 @@ function dnaPortrait(d, person){
 
   const block = (title, inner) => `
     <div class="dna-block"><h4>${title}</h4>${inner}</div>`;
+
+  /* Командні рядки йдуть окремо для клубів і збірних: Іспанія і ПСЖ
+     в одному заліку нічого не означають. У кожному типі показуємо
+     дві різні речі:
+       ВІРА     — на кого ставиш частіше/рідше за решту ліги. Характер.
+       ВЛУЧНІСТЬ — скільки з тих ставок зіграло. Результат.
+     Перше цікавіше: влучність у переможця турніру висока в усіх,
+     тому «Талісман» майже в кожного вийшов би ПСЖ або Іспанія. */
+  const teamsFor = (kind, kindTitle, tournaments, played) => {
+    if(!played) return block(kindTitle,
+      `<div class="dna-row"><span class="n">Не грав у цих турнірах —
+        ${escapeHtml(tournaments)}</span></div>`);
+
+    const t = teams.filter(x => x.kind === kind);
+    const b = belief.filter(x => x.kind === kind);
+    const tBest = t[0], tWorst = t[t.length - 1];
+    const bMost = b[0], bLeast = b[b.length - 1];
+
+    const rows = [
+      bMost ? row('Вірить у', escapeHtml(bMost.team),
+                  `ставив на перемогу в ${bMost.my_pct}% матчів,
+                   решта ліги — в ${bMost.league_pct}%`) : '',
+      bLeast && bLeast !== bMost
+            ? row('Не вірить у', escapeHtml(bLeast.team),
+                  `${bLeast.my_pct}% проти ${bLeast.league_pct}% по лізі`) : '',
+      tBest ? row('Щастить із', escapeHtml(tBest.team),
+                  `зіграло ${tBest.backed_hit} з ${tBest.backed} ставок на перемогу`) : '',
+      tWorst && tWorst !== tBest
+            ? row('Не щастить із', escapeHtml(tWorst.team),
+                  `лише ${tWorst.backed_hit} з ${tWorst.backed}`) : '',
+    ].join('');
+
+    return block(`${kindTitle} · ${tournaments}`, rows
+      || '<div class="dna-row"><span class="n">Замало ставок на одну команду</span></div>');
+  };
 
   const vs = DNA_VS && DNA_VS !== person
     ? dnaCompare(d, person, DNA_VS) : '';
@@ -3719,60 +3754,103 @@ function dnaPortrait(d, person){
         один матч тут важить більше, ніж має</div>`}
 
     <div class="dna-blocks">
-      ${block('Почерк', [
+      ${block(`Почерк · усі ${p.matches} прогнозів`, [
         row('Улюблені рахунки',
-            scores.map(x => `${escapeHtml(x.score)} <i>×${x.used}</i>`).join(', ')),
+            scores.map(x => `${escapeHtml(x.score)} <i>×${x.used}</i>`).join(', '),
+            'три найчастіші з усіх його прогнозів'),
+        ...['clubs','nations'].map(k => {
+          const s = scoreKind.filter(x => x.kind === k);
+          return s.length ? row(k === 'clubs' ? '— у клубах' : '— у збірних',
+            s.map(x => `${escapeHtml(x.score)} <i>×${x.used}</i>`).join(', ')) : '';
+        }),
         row('Голів у прогнозі', p.goals_avg,
-            `насправді в цих матчах ${p.goals_real}`),
+            `у цих же матчах насправді забивали ${p.goals_real}`),
         row('Різних рахунків', p.repertoire,
-            p.repertoire >= 20 ? 'широкий репертуар' : 'вузький набір'),
+            p.repertoire >= 20 ? 'широкий репертуар — рідко повторюється'
+                               : 'вузький набір — ходить тими самими рахунками'),
         row('Нічиї', `${p.draws_pct}%`,
-            `поставив ${p.draws_pred}, вгадав ${p.draws_hit}`),
-        row('Дім / виїзд', `${p.home_pct}% / ${p.away_pct}%`),
-        row('Розгроми', `${p.blowout_pct}%`, 'прогнози з різницею 3+ голи'),
+            `поставив ${p.draws_pred} нічиїх, вгадав ${p.draws_hit}
+             (насправді нічиєю закінчується 26.7% матчів)`),
+        row('Ставить на господарів / гостей', `${p.home_pct}% / ${p.away_pct}%`,
+            'частка прогнозів на перемогу, решта — нічиї'),
+        row('Ставить розгроми', `${p.blowout_pct}%`,
+            'прогнозів із різницею 3+ голи'),
       ].join(''))}
 
-      ${block('Точність', [
-        row('Вгаданий результат', `${p.result_pct}%`, `${p.result_hits} із ${p.matches}`),
+      ${block('Точність · вгадані результати', [
+        row('Вгаданий результат', `${p.result_pct}%`,
+            `${p.result_hits} із ${p.matches} — тобто перемога, нічия
+             чи поразка вгадані, рахунок не обов'язково`),
         row('Точний рахунок', `${p.exact_pct}%`, `${p.exact_hits} разів`),
-        row('Найдовша серія', `${p.streak_result}`, 'влучань поспіль'),
+        row('Найдовша серія', `${p.streak_result}`,
+            'влучань поспіль, рахується наскрізь через усі чотири турніри'),
         row('Сам проти всіх', `${p.lone_exact}`,
-            'разів був єдиним, хто взяв точний рахунок'),
+            'разів був єдиним з усіх, хто взяв точний рахунок'),
         row('Проти більшості', `${p.against_crowd_pct}%`,
-            `${p.against_crowd} прогнозів не збіглись із думкою гурту`),
+            `${p.against_crowd} прогнозів розійшлися з тим, що поставила
+             більшість тих, хто грав той самий матч`),
+        sh.miss_goals != null
+          ? row('Промах у голах', sh.miss_goals,
+                `у середньому стільки голів різниці з реальним рахунком
+                 (по обох командах разом)`) : '',
       ].join(''))}
 
-      ${block('Команди', [
-        best  ? row('Талісман', escapeHtml(best.team),
-                    `${best.backed_hit} з ${best.backed} ставок на перемогу`) : '',
-        worst && worst !== best
-              ? row('Нещаслива', escapeHtml(worst.team),
-                    `${worst.backed_hit} з ${worst.backed} ставок на перемогу`) : '',
-      ].join('') || '<div class="dna-row"><span class="n">Замало ставок на одну команду</span></div>')}
+      ${teamsFor('clubs', 'Клуби', 'ЛЧ 2025 + Клубний ЧС 2025', r.clubs_matches)}
+      ${teamsFor('nations', 'Збірні', 'Євро 2024 + ЧС 2026', r.nations_matches)}
 
-      ${block('Ритм', [
+      ${block('Який футбол читає краще', [
+        sh.rout_hit_pct != null && sh.calm_hit_pct != null
+          ? row('Розгроми / в\'язкі матчі',
+                `${sh.rout_hit_pct}% / ${sh.calm_hit_pct}%`,
+                `вгадано в матчах із різницею 3+ голи (${sh.rout_matches} шт.)
+                 і в матчах, де на двох забили 0-1 (${sh.calm_matches} шт.)`) : '',
+        /* ⚠️ Вердикт даємо лише коли обох типів матчів набралось хоча б
+           по вісім. У Андрея їх 4 і 6, і без порога портрет писав би
+           «рідкість — читає обидва типи однаково» на десяти матчах. */
+        sh.blind_gap != null
+          ? row('Розрив', `${sh.blind_gap} в. п.`,
+                (sh.rout_matches < 8 || sh.calm_matches < 8)
+                  ? 'замало таких матчів, щоб робити висновок'
+              : sh.blind_gap >= 50 ? 'сліпа зона — в\'язкі матчі майже не читає'
+              : sh.blind_gap >= 30 ? 'як у більшості: розгроми даються легше всім'
+                                   : 'рідкість — читає обидва типи майже однаково') : '',
         r.group_pct != null && r.playoff_pct != null
-          ? row('Старт → плей-оф', `${r.group_pct}% → ${r.playoff_pct}%`,
-                r.playoff_pct > r.group_pct ? 'оживає, коли починається виліт'
-                                            : 'на вильоті грає гірше') : '',
+          ? row('Груповий етап → плей-оф', `${r.group_pct}% → ${r.playoff_pct}%`,
+                (r.playoff_pct > r.group_pct ? 'оживає на вильоті. ' : 'на вильоті грає гірше. ')
+                + 'Плей-оф — це Knockout і Play-off у всіх чотирьох турнірах') : '',
         r.nations_pct != null && r.clubs_pct != null
-          ? row('Збірні / клуби', `${r.nations_pct}% / ${r.clubs_pct}%`) : '',
+          ? row('Збірні / клуби', `${r.nations_pct}% / ${r.clubs_pct}%`,
+                'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025') : '',
         r.group_goals != null && r.playoff_goals != null
-          ? row('Голи в плей-офі', `${r.group_goals} → ${r.playoff_goals}`,
+          ? row('Голів у прогнозі на вильоті', `${r.group_goals} → ${r.playoff_goals}`,
                 r.playoff_goals < r.group_goals ? 'стає обережнішим' : 'не стримується') : '',
       ].join('') || '<div class="dna-row"><span class="n">Грав лише в одному типі турнірів</span></div>')}
 
+      ${block('Відносно решти ліги', vsLg.length
+        ? vsLg.map(t => row(escapeHtml(t.tournament),
+              `${t.diff > 0 ? '+' : ''}${t.diff} в. п.`,
+              `${t.my_pct}% проти ${t.league_pct}% у середньому по лізі`)).join('')
+          + `<div class="dna-row"><span class="n">Голий відсоток порівнювати між
+             турнірами не можна: у Клубному ЧС і ЧС було більше нерівних пар,
+             і вгадувати стало легше всім (46% → 60%). Тут це вже враховано</span></div>`
+        : '<div class="dna-row"><span class="n">Немає даних</span></div>')}
+
       ${block('Бонусні питання', bonus.length
         ? bonus.map(b => row(escapeHtml(b.kind_title), `${b.hit_pct}%`,
-                             `${b.hits} із ${b.questions}`)).join('')
+                             `${b.hits} із ${b.questions}` + (
+                               b.kind === 'special' ? ' · чемпіон, бомбардир і подібне — ставилось до старту турніру'
+                             : b.kind === 'group'   ? ' · місця команд у групах A-F, було тільки на Євро 2024'
+                             : b.kind === 'pair'    ? ' · ставилось уже по ходу, коли пари були відомі'
+                                                    : ''))).join('')
         : '<div class="dna-row"><span class="n">Не відповідав на бонусні питання</span></div>')}
 
       ${block('Люди', [
         twin ? row('Близнюк', escapeHtml(twin.other),
-                   `${twin.same_pct}% однакових рахунків на ${twin.together} спільних матчах`) : '',
+                   `${twin.same_pct}% прогнозів збіглися рахунок-у-рахунок
+                    на ${twin.together} матчах, які прогнозували обидва`) : '',
         anti && anti !== twin
              ? row('Антипод', escapeHtml(anti.other),
-                   `лише ${anti.same_pct}% збігів`) : '',
+                   `лише ${anti.same_pct}% на ${anti.together} спільних матчах`) : '',
       ].join('') || '<div class="dna-row"><span class="n">Замало спільних матчів</span></div>')}
     </div>
     ${vs}`;
@@ -3866,7 +3944,8 @@ async function loadActiveTab(){
       // перемикання між ними стає миттєвим.
       if(!HONORS_CACHE){
         const [medals, detail, hof, facts, season,
-               dnaProfile, dnaArch, dnaScore, dnaTeam, dnaRhythm, dnaBonus, dnaPair, dnaLeague]
+               dnaProfile, dnaArch, dnaScore, dnaTeam, dnaRhythm, dnaBonus, dnaPair, dnaLeague,
+               dnaBelief, dnaShape, dnaVsLeague, dnaScoreKind]
           = await Promise.all([
           sbGet('honors_medals?select=*&order=gold.desc,medals_total.desc,person.asc'),
           sbGet('honors_detail?select=*&order=tournament_order.asc,place.asc'),
@@ -3878,17 +3957,28 @@ async function loadActiveTab(){
           sbGet('dna_profile?select=*&order=matches.desc'),
           sbGet('dna_archetype?select=*'),
           sbGet('dna_score?select=*&order=person.asc,rn.asc'),
-          // менше шести ставок на команду — випадковість, а не характер,
-          // тому відсікаємо ще на сервері
-          sbGet('dna_team?select=*&backed=gte.6&order=backed_pct.desc,backed.desc'),
+          // Поріг — 4 ставки на команду. Розділення на клуби й збірні
+          // ділить вибірку навпіл, і на старому порозі 6 Женя з Максом
+          // лишались зовсім без збірних, а Саня з Мишею без клубів.
+          // ⚠️ Сортуємо за weighted_pct, а не backed_pct: у ньому
+          // сидить поправка на малу вибірку, інакше «3 з 4» обходить
+          // «11 з 15» і талісманом стає випадкова команда.
+          sbGet('dna_team?select=*&backed=gte.4&order=weighted_pct.desc,backed.desc'),
           sbGet('dna_rhythm?select=*'),
           sbGet('dna_bonus?select=*'),
           sbGet('dna_pair?select=*&order=same_pct.desc'),
           sbGet('dna_league?select=*'),
+          // Друге визначення улюбленої команди — «віра»: наскільки
+          // частіше за решту ліги людина ставить на її перемогу.
+          sbGet('dna_belief?select=*&played=gte.4&order=belief_diff.desc,played.desc'),
+          sbGet('dna_shape?select=*'),
+          sbGet('dna_vs_league?select=*&order=person.asc,tournament_order.asc'),
+          sbGet('dna_score_kind?select=*&order=person.asc,kind.asc,rn.asc'),
         ]);
         HONORS_CACHE = { medals, detail, hof, facts, season,
                          dnaProfile, dnaArch, dnaScore, dnaTeam,
                          dnaRhythm, dnaBonus, dnaPair,
+                         dnaBelief, dnaShape, dnaVsLeague, dnaScoreKind,
                          dnaLeague: (dnaLeague || [])[0] || null };
       }
       content.innerHTML = renderHonorsSection(kind, HONORS_CACHE);
