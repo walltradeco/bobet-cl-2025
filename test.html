@@ -1377,6 +1377,114 @@
     #cabinet-btn{margin-left:0;}
   }
 
+
+  /* ================= ПОРТРЕТИ ГРАВЦІВ =================
+     Живе за правилами Honors: та сама ніша, той самий золотий акцент.
+     Але цифри тут не про перемоги, а про характер, тому головний колір
+     у самих портретах зелений — щоб екран не читався як ще один залік. */
+  .dna-league{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:12px; margin:0 0 26px;
+  }
+  .dna-league .f{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px;
+  }
+  .dna-league .f b{
+    display:block; font-family:'Space Grotesk',sans-serif; font-size:20px;
+    color:var(--gold); margin-bottom:5px;
+  }
+  .dna-league .f span{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
+
+  .dna-grid{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:10px; margin-bottom:22px;
+  }
+  .dna-card{
+    display:flex; flex-direction:column; gap:2px; text-align:left; cursor:pointer;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; color:var(--text); font:inherit; transition:border-color .15s;
+  }
+  .dna-card:hover{ border-color:var(--green); }
+  .dna-card.on{ border-color:var(--green); background:rgba(34,197,94,0.07); }
+  .dna-card .nm{ font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:16px; }
+  .dna-card .arch{
+    font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--green);
+    letter-spacing:.04em; margin-bottom:6px;
+  }
+  .dna-card .big{ font-family:'Space Grotesk',sans-serif; font-size:26px; line-height:1; }
+  .dna-card .sub{ font-size:11px; color:var(--text-dim); line-height:1.4; margin-top:3px; }
+  .dna-card .thin{
+    margin-top:6px; font-size:10.5px; color:var(--gold); opacity:.85;
+    letter-spacing:.03em;
+  }
+
+  .dna-hint{ color:var(--text-dim); font-size:13px; text-align:center; padding:24px 0; }
+  .dna-head{
+    display:flex; justify-content:space-between; align-items:flex-start; gap:16px;
+    flex-wrap:wrap; margin-bottom:18px;
+  }
+  .dna-head h3{ font-family:'Space Grotesk',sans-serif; font-size:26px; margin:0; }
+  .dna-head .arch{ color:var(--green); font-size:14px; margin-top:2px; }
+  .dna-head .arch-note{ color:var(--text-dim); font-size:12.5px; margin-top:4px; max-width:420px; }
+  .dna-vs label{
+    display:block; font-size:11px; color:var(--text-dim); letter-spacing:.06em;
+    text-transform:uppercase; margin-bottom:4px;
+  }
+  .dna-vs select{
+    background:var(--panel-2); color:var(--text); border:1px solid var(--line);
+    border-radius:8px; padding:7px 10px; font:inherit; font-size:13px;
+  }
+  .dna-warn{
+    background:rgba(227,179,65,0.08); border:1px solid rgba(227,179,65,0.3);
+    border-radius:10px; padding:10px 13px; color:var(--gold); font-size:12.5px;
+    margin-bottom:16px;
+  }
+
+  .dna-blocks{
+    display:grid; grid-template-columns:repeat(auto-fill,minmax(290px,1fr)); gap:12px;
+  }
+  .dna-block{
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:14px 16px 10px;
+  }
+  .dna-block h4{
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--text-dim); margin:0 0 10px;
+  }
+  .dna-row{ padding:7px 0; border-top:1px solid var(--line); }
+  .dna-row:first-of-type{ border-top:0; padding-top:0; }
+  .dna-row .l{ display:block; font-size:12px; color:var(--text-dim); }
+  .dna-row .v{
+    display:block; font-family:'Space Grotesk',sans-serif; font-size:17px;
+    color:var(--text); margin-top:1px;
+  }
+  .dna-row .v i{ font-style:normal; color:var(--text-dim); font-size:13px; }
+  .dna-row .n{ display:block; font-size:11.5px; color:var(--text-dim); margin-top:2px; }
+
+  .dna-cmp{
+    margin-top:18px; background:var(--panel); border:1px solid var(--line);
+    border-radius:12px; padding:14px 16px;
+  }
+  .dna-cmp h4{ font-family:'Space Grotesk',sans-serif; font-size:16px; margin:0 0 4px; }
+  .dna-cmp-note{ color:var(--text-dim); font-size:12.5px; margin:0 0 10px; }
+  .dna-cmp table{ width:100%; border-collapse:collapse; }
+  .dna-cmp td{
+    width:34%; text-align:center; padding:7px 4px; font-size:15px;
+    font-family:'Space Grotesk',sans-serif; color:var(--text-dim);
+  }
+  .dna-cmp td.w{ color:var(--green); }
+  .dna-cmp th{
+    font-family:'JetBrains Mono',monospace; font-weight:400; font-size:11px;
+    color:var(--text-dim); text-align:center; padding:7px 4px; letter-spacing:.03em;
+  }
+  .dna-cmp tr + tr td, .dna-cmp tr + tr th{ border-top:1px solid var(--line); }
+
+  @media (max-width:640px){
+    .dna-grid{ grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); }
+    .dna-card .big{ font-size:22px; }
+    .dna-head h3{ font-size:22px; }
+  }
 </style>
 </head>
 <body>
@@ -1508,6 +1616,7 @@ const TOURNAMENTS = [
       { sheet:'Трофейна вітрина',  kind:'honorsCase' },
       { sheet:'Історія турнірів',  kind:'honorsHistory' },
       { sheet:'Рекорди ліги',      kind:'honorsRecords' },
+      { sheet:'Портрети гравців', kind:'honorsDna' },
     ]
   },
 ];
@@ -3370,6 +3479,7 @@ let HONORS_CACHE = null;
 function renderHonorsSection(kind, d){
   if(kind === 'honorsHistory') return honorsHistory(d);
   if(kind === 'honorsRecords') return honorsRecords(d);
+  if(kind === 'honorsDna')     return honorsDna(d);
   return honorsCase(d);
 }
 
@@ -3489,6 +3599,236 @@ function honorsRecords(d){
     `<div class="hn-grid">${plaques}</div>`);
 }
 
+
+/* ================= ПОРТРЕТИ ГРАВЦІВ (Prediction DNA) =================
+   Четверта підвкладка Honors. Балів не дає — це портрет, а не змагання.
+
+   Стан тримаємо в модулі, а не в DOM: вибір людини й пари для
+   порівняння переживає перемальовку, і повертатись «до всіх» можна
+   без повторного запиту — дані вже в HONORS_CACHE. */
+let DNA_PERSON = null;
+let DNA_VS = null;
+
+/* Головна цифра картки — відсоток вгаданих результатів. Саме він
+   найкраще розводить людей: точні рахунки в усіх у межах 6-11%. */
+function honorsDna(d){
+  const profiles = d.dnaProfile || [];
+  if(!profiles.length){
+    return honorsWrap('Портрети гравців', 'Дані ще не залиті',
+      '<div class="status-line">Портрети з’являться після заливки архіву прогнозів.</div>');
+  }
+  const arch = Object.fromEntries((d.dnaArch || []).map(a => [a.person, a]));
+  const league = d.dnaLeague;
+
+  const cards = profiles.map(p => {
+    const a = arch[p.person] || {};
+    const on = p.person === DNA_PERSON;
+    return `
+      <button class="dna-card${on ? ' on' : ''}" data-dna="${escapeHtml(p.person)}">
+        <span class="nm">${escapeHtml(p.person)}</span>
+        <span class="arch">${escapeHtml(a.archetype || '—')}</span>
+        <span class="big">${p.result_pct}%</span>
+        <span class="sub">вгаданих результатів · ${p.matches} прогнозів</span>
+        ${p.is_solid ? '' : '<span class="thin">мало даних</span>'}
+      </button>`;
+  }).join('');
+
+  const portrait = DNA_PERSON ? dnaPortrait(d, DNA_PERSON) :
+    '<div class="dna-hint">Обери гравця, щоб побачити портрет цілком</div>';
+
+  return honorsWrap('Портрети гравців',
+    'Не хто виграв, а який ти — почерк, звички й сліпі зони',
+    `${dnaLeagueBlock(league)}
+     <div class="dna-grid">${cards}</div>
+     <div class="dna-portrait" id="dna-portrait">${portrait}</div>`);
+}
+
+/* Блок про лігу загалом. Тут головне відкриття розбору: нічиї
+   недооцінюють геть усі, без жодного винятку. */
+function dnaLeagueBlock(l){
+  if(!l) return '';
+  return `
+    <div class="dna-league">
+      <div class="f">
+        <b>${l.draws_real_pct}% проти ${l.draws_pred_pct}%</b>
+        <span>стільки матчів насправді закінчились унічию — і стільки нічиїх ставила ліга.
+              Недооцінюють усі без винятку</span>
+      </div>
+      <div class="f">
+        <b>${l.pair_bonus_pct}% проти ${l.long_bonus_pct}%</b>
+        <span>влучань у питаннях «хто пройде пару» проти прогнозів на весь турнір наперед.
+              Матч ліга читає, турнір — ні</span>
+      </div>
+      <div class="f">
+        <b>${l.goals_pred} проти ${l.goals_real}</b>
+        <span>голів у середньому в прогнозі й насправді. Тут ліга майже не помиляється</span>
+      </div>
+      <div class="f">
+        <b>${l.predictions}</b>
+        <span>прогнозів на ${l.matches} матчів за всю історію — від ${l.people} людей</span>
+      </div>
+    </div>`;
+}
+
+function dnaPortrait(d, person){
+  const p = (d.dnaProfile || []).find(x => x.person === person);
+  if(!p) return '';
+  const a = (d.dnaArch || []).find(x => x.person === person) || {};
+  const r = (d.dnaRhythm || []).find(x => x.person === person) || {};
+  const scores = (d.dnaScore || []).filter(x => x.person === person);
+  const teams = (d.dnaTeam || []).filter(x => x.person === person);
+  const bonus = (d.dnaBonus || []).filter(x => x.person === person);
+  const pairs = (d.dnaPair || []).filter(x => x.person === person);
+
+  // Талісман і нещаслива — краща й гірша команда з тих, на які
+  // ставили хоча б шість разів (поріг стоїть іще в запиті).
+  const best = teams[0];
+  const worst = teams[teams.length - 1];
+  const twin = pairs[0];
+  const anti = pairs[pairs.length - 1];
+
+  const row = (label, value, note) => `
+    <div class="dna-row"><span class="l">${label}</span>
+      <span class="v">${value}</span>
+      ${note ? `<span class="n">${note}</span>` : ''}</div>`;
+
+  const block = (title, inner) => `
+    <div class="dna-block"><h4>${title}</h4>${inner}</div>`;
+
+  const vs = DNA_VS && DNA_VS !== person
+    ? dnaCompare(d, person, DNA_VS) : '';
+
+  const others = (d.dnaProfile || []).filter(x => x.person !== person)
+    .map(x => `<option value="${escapeHtml(x.person)}"${x.person === DNA_VS ? ' selected' : ''}>
+                 ${escapeHtml(x.person)}</option>`).join('');
+
+  return `
+    <div class="dna-head">
+      <div>
+        <h3>${escapeHtml(person)}</h3>
+        <div class="arch">${escapeHtml(a.archetype || '')}</div>
+        <div class="arch-note">${escapeHtml(a.archetype_note || '')}</div>
+      </div>
+      <div class="dna-vs">
+        <label>Порівняти з</label>
+        <select id="dna-vs"><option value="">—</option>${others}</select>
+      </div>
+    </div>
+    ${p.is_solid ? '' :
+      `<div class="dna-warn">Лише ${p.matches} прогнозів — цифри хиткі,
+        один матч тут важить більше, ніж має</div>`}
+
+    <div class="dna-blocks">
+      ${block('Почерк', [
+        row('Улюблені рахунки',
+            scores.map(x => `${escapeHtml(x.score)} <i>×${x.used}</i>`).join(', ')),
+        row('Голів у прогнозі', p.goals_avg,
+            `насправді в цих матчах ${p.goals_real}`),
+        row('Різних рахунків', p.repertoire,
+            p.repertoire >= 20 ? 'широкий репертуар' : 'вузький набір'),
+        row('Нічиї', `${p.draws_pct}%`,
+            `поставив ${p.draws_pred}, вгадав ${p.draws_hit}`),
+        row('Дім / виїзд', `${p.home_pct}% / ${p.away_pct}%`),
+        row('Розгроми', `${p.blowout_pct}%`, 'прогнози з різницею 3+ голи'),
+      ].join(''))}
+
+      ${block('Точність', [
+        row('Вгаданий результат', `${p.result_pct}%`, `${p.result_hits} із ${p.matches}`),
+        row('Точний рахунок', `${p.exact_pct}%`, `${p.exact_hits} разів`),
+        row('Найдовша серія', `${p.streak_result}`, 'влучань поспіль'),
+        row('Сам проти всіх', `${p.lone_exact}`,
+            'разів був єдиним, хто взяв точний рахунок'),
+        row('Проти більшості', `${p.against_crowd_pct}%`,
+            `${p.against_crowd} прогнозів не збіглись із думкою гурту`),
+      ].join(''))}
+
+      ${block('Команди', [
+        best  ? row('Талісман', escapeHtml(best.team),
+                    `${best.backed_hit} з ${best.backed} ставок на перемогу`) : '',
+        worst && worst !== best
+              ? row('Нещаслива', escapeHtml(worst.team),
+                    `${worst.backed_hit} з ${worst.backed} ставок на перемогу`) : '',
+      ].join('') || '<div class="dna-row"><span class="n">Замало ставок на одну команду</span></div>')}
+
+      ${block('Ритм', [
+        r.group_pct != null && r.playoff_pct != null
+          ? row('Старт → плей-оф', `${r.group_pct}% → ${r.playoff_pct}%`,
+                r.playoff_pct > r.group_pct ? 'оживає, коли починається виліт'
+                                            : 'на вильоті грає гірше') : '',
+        r.nations_pct != null && r.clubs_pct != null
+          ? row('Збірні / клуби', `${r.nations_pct}% / ${r.clubs_pct}%`) : '',
+        r.group_goals != null && r.playoff_goals != null
+          ? row('Голи в плей-офі', `${r.group_goals} → ${r.playoff_goals}`,
+                r.playoff_goals < r.group_goals ? 'стає обережнішим' : 'не стримується') : '',
+      ].join('') || '<div class="dna-row"><span class="n">Грав лише в одному типі турнірів</span></div>')}
+
+      ${block('Бонусні питання', bonus.length
+        ? bonus.map(b => row(escapeHtml(b.kind_title), `${b.hit_pct}%`,
+                             `${b.hits} із ${b.questions}`)).join('')
+        : '<div class="dna-row"><span class="n">Не відповідав на бонусні питання</span></div>')}
+
+      ${block('Люди', [
+        twin ? row('Близнюк', escapeHtml(twin.other),
+                   `${twin.same_pct}% однакових рахунків на ${twin.together} спільних матчах`) : '',
+        anti && anti !== twin
+             ? row('Антипод', escapeHtml(anti.other),
+                   `лише ${anti.same_pct}% збігів`) : '',
+      ].join('') || '<div class="dna-row"><span class="n">Замало спільних матчів</span></div>')}
+    </div>
+    ${vs}`;
+}
+
+/* Порівняння двох портретів. Показуємо тільки те, де різниця має сенс:
+   відсотки й почерк, а не абсолютні числа — вони залежать від того,
+   хто скільки зіграв. */
+function dnaCompare(d, a, b){
+  const pa = (d.dnaProfile || []).find(x => x.person === a);
+  const pb = (d.dnaProfile || []).find(x => x.person === b);
+  if(!pa || !pb) return '';
+  const pair = (d.dnaPair || []).find(x => x.person === a && x.other === b);
+  const line = (label, va, vb, better) => {
+    const win = better === 'more' ? (parseFloat(va) > parseFloat(vb))
+              : better === 'less' ? (parseFloat(va) < parseFloat(vb)) : null;
+    return `<tr><td class="${win === true ? 'w' : ''}">${va}</td>
+                <th>${label}</th>
+                <td class="${win === false ? 'w' : ''}">${vb}</td></tr>`;
+  };
+  return `
+    <div class="dna-cmp">
+      <h4>${escapeHtml(a)} проти ${escapeHtml(b)}</h4>
+      ${pair ? `<p class="dna-cmp-note">Однакові рахунки в
+        ${pair.same_pct}% із ${pair.together} спільних матчів</p>` : ''}
+      <table>
+        ${line('вгаданий результат', pa.result_pct + '%', pb.result_pct + '%', 'more')}
+        ${line('точний рахунок', pa.exact_pct + '%', pb.exact_pct + '%', 'more')}
+        ${line('голів у прогнозі', pa.goals_avg, pb.goals_avg)}
+        ${line('нічиї', pa.draws_pct + '%', pb.draws_pct + '%')}
+        ${line('вгаданих нічиїх', pa.draws_hit, pb.draws_hit, 'more')}
+        ${line('різних рахунків', pa.repertoire, pb.repertoire)}
+        ${line('проти більшості', pa.against_crowd_pct + '%', pb.against_crowd_pct + '%')}
+        ${line('серія влучань', pa.streak_result, pb.streak_result, 'more')}
+        ${line('сам проти всіх', pa.lone_exact, pb.lone_exact, 'more')}
+      </table>
+    </div>`;
+}
+
+/* Кліки й вибір у порівнянні. Слухаємо на документі, бо вміст
+   вкладки перемальовується цілком і власні обробники б губились. */
+document.addEventListener('click', e => {
+  const card = e.target.closest('.dna-card');
+  if(!card) return;
+  const person = card.getAttribute('data-dna');
+  DNA_PERSON = (DNA_PERSON === person) ? null : person;
+  DNA_VS = null;
+  loadActiveTab();
+});
+document.addEventListener('change', e => {
+  if(e.target && e.target.id === 'dna-vs'){
+    DNA_VS = e.target.value || null;
+    loadActiveTab();
+  }
+});
+
 /* Спільна обгортка: заголовок секції + вміст */
 function honorsWrap(title, sub, inner){
   return `
@@ -3525,14 +3865,31 @@ async function loadActiveTab(){
       // тягнемо його один раз і тримаємо до перезавантаження сторінки:
       // перемикання між ними стає миттєвим.
       if(!HONORS_CACHE){
-        const [medals, detail, hof, facts, season] = await Promise.all([
+        const [medals, detail, hof, facts, season,
+               dnaProfile, dnaArch, dnaScore, dnaTeam, dnaRhythm, dnaBonus, dnaPair, dnaLeague]
+          = await Promise.all([
           sbGet('honors_medals?select=*&order=gold.desc,medals_total.desc,person.asc'),
           sbGet('honors_detail?select=*&order=tournament_order.asc,place.asc'),
           sbGet('hall_of_fame?select=*&order=sort_order.asc,person.asc'),
           sbGet('tournament_facts?select=*&order=tournament_order.asc'),
           sbGet('season_leaderboard?select=display_name,total_points,place&order=place.asc'),
+          // «Портрети гравців» — той самий набір даних, тягнемо разом
+          // з рештою Honors, щоб перемикання лишалось миттєвим.
+          sbGet('dna_profile?select=*&order=matches.desc'),
+          sbGet('dna_archetype?select=*'),
+          sbGet('dna_score?select=*&order=person.asc,rn.asc'),
+          // менше шести ставок на команду — випадковість, а не характер,
+          // тому відсікаємо ще на сервері
+          sbGet('dna_team?select=*&backed=gte.6&order=backed_pct.desc,backed.desc'),
+          sbGet('dna_rhythm?select=*'),
+          sbGet('dna_bonus?select=*'),
+          sbGet('dna_pair?select=*&order=same_pct.desc'),
+          sbGet('dna_league?select=*'),
         ]);
-        HONORS_CACHE = { medals, detail, hof, facts, season };
+        HONORS_CACHE = { medals, detail, hof, facts, season,
+                         dnaProfile, dnaArch, dnaScore, dnaTeam,
+                         dnaRhythm, dnaBonus, dnaPair,
+                         dnaLeague: (dnaLeague || [])[0] || null };
       }
       content.innerHTML = renderHonorsSection(kind, HONORS_CACHE);
     }catch(err){
