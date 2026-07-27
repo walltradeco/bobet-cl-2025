@@ -345,6 +345,29 @@
     font-size:20px;
     color:var(--text);
     white-space:normal;
+    position:relative;          /* якір для позначки турніру */
+  }
+  /* Назва турніру — дрібним рядком над матчем, притиснута праворуч.
+     ⚠️ Спершу було position:absolute, щоб підпис не міняв висоту
+     рядка. Але довга назва («Суперкубок Англії») налазила на назви
+     команд, коли ті переносяться в два рядки — коротка «УПЛ» ні,
+     тому на око проблему видно не одразу. У потоці підпис має власне
+     місце й не перекриє нічого за будь-якої довжини. Висота рядків
+     лишається однаковою, бо підпис є в КОЖНОГО матчу. */
+  .comp-tag{
+    display:block;
+    text-align:right;
+    font-size:11px;
+    font-weight:600;
+    letter-spacing:0.03em;
+    color:var(--green);
+    opacity:0.75;
+    margin-bottom:2px;
+    white-space:nowrap;
+    pointer-events:none;
+  }
+  @media (max-width:700px){
+    .comp-tag{ font-size:10px; }
   }
   .flag{
     display:inline-block;
@@ -1762,7 +1785,7 @@ async function buildMonthRows(tournamentKey){
   const board = await sbGet(
     'match_board?select=gameweek_id,position,home_team,away_team,kickoff_at,' +
     'home_score,away_score,display_name,pred_home,pred_away,' +
-    'pred_home_2,pred_away_2,boost_code');
+    'pred_home_2,pred_away_2,boost_code,competition');
 
   const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
 
@@ -1857,7 +1880,13 @@ async function buildMonthRows(tournamentKey){
       const first = cells[0];
       const row = Array(cols).fill('');
       row[COL_DATE] = fmtDate(first.kickoff_at);
-      row[COL_GAME] = first.home_team + ' — ' + first.away_team;
+      // Назва турніру йде ДРУГИМ РЯДКОМ клітинки. Так уже влаштований
+      // блок бустів (там теж lines[0] — матч), тому вся решта коду
+      // далі бере тільки перший рядок і нічого не помічає: пошук
+      // бустів, розбір рахунку, порівняння назв — усе лишається на
+      // чистому «Команда — Команда».
+      row[COL_GAME] = first.home_team + ' — ' + first.away_team
+                    + (first.competition ? '\n' + first.competition : '');
       row[COL_RES]  = fmtScore(first.home_score, first.away_score);
       names.forEach((n, i) => {
         const c = cells.find(x => x.display_name === n);
@@ -2903,7 +2932,13 @@ function renderMatches(data){
   const bodyEnd = boostsStart === -1 ? rows.length : boostsStart;
   for(let ri = headerRow + 1; ri < bodyEnd; ri++){
     const r = rows[ri];
-    const game = cellStr(r[gameCol]);
+    // Клітинка матчу може нести другий рядок — назву турніру («УПЛ»,
+    // «Суперкубок Англії»). Відрізаємо його одразу, щоб уся логіка
+    // нижче працювала з чистою назвою пари, як і раніше.
+    const gameCell = cellStr(r[gameCol]);
+    const gameLines = gameCell.split('\n');
+    const game = gameLines[0].trim();
+    const comp = (gameLines[1] || '').trim();
     const rawDate = cellStr(r[dateCol]);
     const preds = players.map(p => cellStr(r[p.col]));
 
@@ -2953,7 +2988,7 @@ function renderMatches(data){
     const dateVal = filledDate;
     const isDayStart = dateVal !== '' && dateVal !== lastDate;
     if(isDayStart){ lastDate = dateVal; dayIndex++; }
-    body.push({ date: dateVal, isDayStart, dayIndex, game, result: cellStr(r[resCol]), preds });
+    body.push({ date: dateVal, isDayStart, dayIndex, game, comp, result: cellStr(r[resCol]), preds });
     players.forEach((p, pi) => {
       if(preds[pi] !== '') predMap[p.col + '|' + normGame(game)] = preds[pi];
     });
@@ -2991,7 +3026,9 @@ function renderMatches(data){
           return `
           <tr class="${row.isDayStart ? 'day-start' : ''} ${row.dayIndex % 2 === 0 ? 'day-even' : ''}">
             ${hasDate ? `<td class="c-date">${escapeHtml(row.date)}</td>` : ''}
-            <td class="c-game">${gameWithFlags(row.game)}</td>
+            <td class="c-game">${row.comp
+              ? `<span class="comp-tag">${escapeHtml(row.comp)}</span>` : ''
+              }${gameWithFlags(row.game)}</td>
             <td class="c-result">${row.result ? `<span class="result-pill">${escapeHtml(row.result)}</span>` : '—'}</td>
             ${row.preds.map((pv, pi) => {
               const pPair = parseScore(pv);
