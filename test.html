@@ -801,7 +801,15 @@
   }
 
   /* Історія ліги */
-  .hn-facts{ display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:12px; }
+  /* Картки переможців турнірів. auto-fit + justify-content:center
+     замість auto-fill: ряд збирається по центру, а не притискається
+     ліворуч із діркою праворуч. margin-bottom обов'язковий — без
+     нього картки впритул налазили на першу полицю з медалями. */
+  .hn-facts{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,280px));
+    gap:12px; margin-bottom:26px; justify-content:center;
+  }
   .hn-fact{
     background:var(--panel-2); border:1px solid var(--line);
     border-left:3px solid rgba(232,178,60,0.45);
@@ -1443,8 +1451,8 @@
   .dna-league .f span{ font-size:12.5px; color:var(--text-dim); line-height:1.5; }
 
   .dna-grid{
-    display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
-    gap:10px; margin-bottom:22px;
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,190px));
+    gap:10px; margin-bottom:26px; justify-content:center;
   }
   .dna-card{
     display:flex; flex-direction:column; gap:2px; text-align:left; cursor:pointer;
@@ -1513,6 +1521,12 @@
     color:var(--text); margin-top:1px;
   }
   .dna-row .v i{ font-style:normal; color:var(--text-dim); font-size:13px; }
+  /* Прапор чи емблема перед назвою команди — той самий вигляд, що
+     в турнірних таблицях. Зменшені, бо тут рядок дрібніший за клітинку
+     матчу, і вирівняні по базовій лінії тексту. */
+  .dna-row .v .team{ display:inline-flex; align-items:center; gap:6px; }
+  .dna-row .v .flag{ width:19px; height:14px; border-radius:2px; }
+  .dna-row .v .crest{ width:17px; height:17px; }
   .dna-row .n{ display:block; font-size:11.5px; color:var(--text-dim); margin-top:2px; }
 
   .dna-cmp{
@@ -1534,7 +1548,7 @@
   .dna-cmp tr + tr td, .dna-cmp tr + tr th{ border-top:1px solid var(--line); }
 
   @media (max-width:640px){
-    .dna-grid{ grid-template-columns:repeat(auto-fill,minmax(132px,1fr)); }
+    .dna-grid{ grid-template-columns:repeat(auto-fit,minmax(132px,1fr)); }
     .dna-card .big{ font-size:22px; }
     .dna-head h3{ font-size:22px; }
   }
@@ -2265,7 +2279,11 @@ const NAME_CANON = {
   'сіті':'Манчестер Сіті',
   'фейенорд':'Феєнорд', 'фейєнорд':'Феєнорд',
   'монтерей':'Монтеррей', 'монтерррей':'Монтеррей',
-  'борусія д':'Боруссія Д', 'борусія дортмунд':'Боруссія Дортмунд',
+  // Повна назва, а не скорочення: словник у базі (team_aliases,
+  // файл 104) зводить сюди ж, тож турніри й портрети показують
+  // одне й те саме слово.
+  'борусія д':'Боруссія Дортмунд', 'боруссія д':'Боруссія Дортмунд',
+  'борусія дортмунд':'Боруссія Дортмунд',
 };
 
 function canonName(v){
@@ -3721,16 +3739,26 @@ function honorsRecords(d){
       }
     }
 
+    // Люди з ОДНАКОВИМ підписом ідуть одним рядком: у «Залпі» в
+    // Антона й Бо це той самий етап і та сама кількість, тож писати
+    // їх окремо означало б двічі повторити ідентичний текст.
+    const byNote = [];
+    g.rows.forEach((r, i) => {
+      const hit = byNote.find(x => x.note === tails[i]);
+      if(hit) hit.people.push(r.person);
+      else byNote.push({ note: tails[i], people: [r.person] });
+    });
+
     const body = same
       ? `<div class="who">${people.map(escapeHtml).join(' · ')}</div>
          <div class="val">${escapeHtml(g.value)}</div>
          <div class="note">${escapeHtml(g.rows[0].note)}</div>`
       : `<div class="val">${escapeHtml(g.value)}</div>` +
         (head ? `<div class="note">${escapeHtml(head)}</div>` : '') +
-        g.rows.map((r, i) => `
+        byNote.map(x => `
           <div class="hn-sub">
-            <span class="who-one">${escapeHtml(r.person)}</span>
-            <span class="note">${escapeHtml(tails[i])}</span>
+            <span class="who-one">${x.people.map(escapeHtml).join(' · ')}</span>
+            <span class="note">${escapeHtml(x.note)}</span>
           </div>`).join('');
     return `<div class="hn-plq">
       <div class="nm">${escapeHtml(g.nomination)}</div>
@@ -3866,17 +3894,22 @@ function dnaPortrait(d, person){
     const tBest = t[0], tWorst = t[t.length - 1];
     const bMost = b[0], bLeast = b[b.length - 1];
 
+    /* Назви команд проганяємо через withFlag() — той самий шлях, що
+       й у турнірних таблицях. Дає одразу дві речі: єдине написання
+       (в архіві є «Турція», а показати треба «Туреччина») і той самий
+       прапор чи емблему, що й у матчах. До цього портрет друкував
+       назву як є, і вкладки розходились на тому самому слові. */
     const rows = [
-      bMost ? row('Вірить у', escapeHtml(bMost.team),
+      bMost ? row('Вірить у', withFlag(bMost.team),
                   `ставив на перемогу в ${bMost.my_pct}% матчів,
                    решта ліги — в ${bMost.league_pct}%`) : '',
       bLeast && bLeast !== bMost
-            ? row('Не вірить у', escapeHtml(bLeast.team),
+            ? row('Не вірить у', withFlag(bLeast.team),
                   `${bLeast.my_pct}% проти ${bLeast.league_pct}% по лізі`) : '',
-      tBest ? row('Щастить із', escapeHtml(tBest.team),
+      tBest ? row('Щастить із', withFlag(tBest.team),
                   `зіграло ${tBest.backed_hit} з ${tBest.backed} ставок на перемогу`) : '',
       tWorst && tWorst !== tBest
-            ? row('Не щастить із', escapeHtml(tWorst.team),
+            ? row('Не щастить із', withFlag(tWorst.team),
                   `лише ${tWorst.backed_hit} з ${tWorst.backed}`) : '',
     ].join('');
 
