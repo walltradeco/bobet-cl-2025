@@ -104,7 +104,14 @@
   .deadline.closed .t{color:var(--red);font-size:15px;}
 
   /* ---------- MATCH ROW ---------- */
-  .match{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel-2);}
+  .match{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel-2);position:relative;}
+  /* Назва турніру — дрібним рядком над командами, притиснута праворуч.
+     ⚠️ У потоці, а не absolute: назва гостя теж вирівняна праворуч,
+     тож накладний підпис перекривав би її на довгих назвах
+     («Суперкубок Англії»). */
+  .comp-tag{display:block;text-align:right;font-size:10px;font-weight:600;
+    letter-spacing:0.03em;color:var(--green);opacity:0.7;margin-bottom:4px;
+    white-space:nowrap;pointer-events:none;}
   .match.boosted{border-color:var(--purple);background:var(--purple-soft);}
   .match.autopilot{border-color:var(--gold);background:var(--gold-soft);}
   .match-teams{display:flex;align-items:center;gap:8px;margin-bottom:10px;}
@@ -660,6 +667,7 @@ async function loadGameweek(gwId){
       seen.set(r.match_id, {
         match_id: r.match_id, position: r.position,
         home_team: r.home_team, away_team: r.away_team,
+        competition: r.competition,
         status: r.status, home_score: r.home_score, away_score: r.away_score,
         others: []
       });
@@ -767,6 +775,7 @@ async function viewMatches(){
         ? '<div class="ap-tag">Автопілот спрацював</div>' : ''}
       ${p.boost === 'autopilot' && m.home_score == null && !isAp
         ? '<div class="ap-tag">Автопілот · кандидат</div>' : ''}
+      ${m.competition ? `<div class="comp-tag">${esc(m.competition)}</div>` : ''}
       <div class="match-teams">
         <div class="team">${esc(m.home_team)}</div>
         <div class="vs">—</div>
@@ -2129,6 +2138,7 @@ async function viewAdmin(){
         Tab перескакує далі. Одна кнопка внизу — бали перерахуються самі.</p>
       ${list.map(m => `
         <div class="match" data-am="${m.match_id}">
+          ${m.competition ? `<div class="comp-tag">${esc(m.competition)}</div>` : ''}
           <div class="match-teams">
             <div class="team">${esc(m.home_team)}</div><div class="vs">—</div>
             <div class="team away">${esc(m.away_team)}</div>
@@ -2155,15 +2165,26 @@ async function viewAdmin(){
     <div class="card">
       <h2>Додати матч</h2>
       <p class="dim" style="margin-bottom:10px">
-        Команди шукаються за повною або скороченою назвою. Матч стає
-        останнім у вікенді.</p>
+        Команди шукаються за повною або скороченою назвою. Матч стане
+        на своє місце за часом початку — не в кінець списку.</p>
       <input type="text" id="m-home" placeholder="господарі" style="${AINP};margin-bottom:8px">
       <input type="text" id="m-away" placeholder="гості" style="${AINP};margin-bottom:8px">
       <input type="datetime-local" id="m-when" style="${AINP};margin-bottom:8px">
-      <select id="m-comp" style="${AINP}">
-        <option value="league">чемпіонат</option>
-        <option value="cup">кубок</option>
-      </select>
+      <!-- Було «чемпіонат / кубок» — два значення, які ніде не
+           показувались і нічого не означали. Тепер це справжня назва
+           турніру: вона видно під матчем у кабінеті й на табло.
+           Список — підказка з того, що вже використовується, але
+           вписати можна будь-що. -->
+      <input type="text" id="m-comp" list="comp-list" placeholder="турнір — можна лишити порожнім"
+             style="${AINP}">
+      <datalist id="comp-list">
+        <option value="АПЛ"><option value="Ла Ліга"><option value="Серія А">
+        <option value="Бундесліга"><option value="УПЛ">
+        <option value="Суперкубок Англії"><option value="Суперкубок Німеччини">
+      </datalist>
+      <p class="dim" style="margin-top:4px">
+        Лишиш порожнім — підставиться ліга господарів автоматично.
+        Заповнюй руками для кубків і суперкубків.</p>
       <button class="ghost" id="btn-madd" style="margin-top:10px;width:100%">Додати матч у вікенд</button>
       <div id="madd-result"></div>
     </div>
@@ -2288,8 +2309,13 @@ async function viewAdmin(){
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
           color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
       <div class="rev-line" id="q-near-row" style="display:none">
-        <span>Балів за промах на 1 <span class="dim">(порожньо — тільки точно)</span></span>
+        <span>Балів за промах <span class="dim">(порожньо — тільки точно)</span></span>
         <input type="number" id="q-near" value="1" min="0" style="width:90px;padding:7px;
+          background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
+          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+      <div class="rev-line" id="q-win-row" style="display:none">
+        <span>На скільки можна промахнутись <span class="dim">(±)</span></span>
+        <input type="number" id="q-win" value="1" min="1" max="10" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
           color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
       <button class="ghost" id="btn-qadd" style="margin-top:10px;width:100%">Додати питання</button>
@@ -2389,6 +2415,7 @@ async function viewAdmin(){
     $('q-no-row').style.display   = t === 'yesno'  ? '' : 'none';
     $('q-opts-row').style.display = t === 'choice' ? '' : 'none';
     $('q-near-row').style.display = t === 'number' ? '' : 'none';
+    $('q-win-row').style.display  = t === 'number' ? '' : 'none';
     $('q-pts').value = 3;
   };
 
@@ -2411,21 +2438,24 @@ async function viewAdmin(){
 
     // Порожнє поле = тільки точна відповідь. Нуль — це теж «тільки
     // точно», просто записаний інакше, тому зводимо до null.
-    let near = null;
+    let near = null, win = 1;
     if (type === 'number'){
       const raw = $('q-near').value.trim();
       near = raw === '' || Number(raw) === 0 ? null : Number(raw);
+      win  = Math.min(10, Math.max(1, Number($('q-win').value) || 1));
     }
 
     const what =
       type === 'yesno'  ? `YES ${pts} / NO ${ptsNo}` :
       type === 'choice' ? `вибір: ${opts.join(' / ')} — ${pts} б` :
-                          `число, ${pts} б${near != null ? `, промах на 1 — ${near} б` : ' (тільки точно)'}`;
+                          `число, ${pts} б${near != null
+                            ? `, промах до ±${win} — ${near} б` : ' (тільки точно)'}`;
     if (!confirm(`Додати в «${S.stage.title}» питання:\n${q}\n${what}`)) return;
 
     const { data, error } = await sb.rpc('admin_bonus_add', {
       p_month: S.stage.key, p_question: q, p_type: type,
-      p_points: pts, p_points_no: ptsNo, p_options: opts, p_near: near
+      p_points: pts, p_points_no: ptsNo, p_options: opts,
+      p_near: near, p_window: win
     });
     if (error) return alert('Помилка: ' + error.message);
     $('qadd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(data)}</div>`;
@@ -2640,11 +2670,13 @@ async function renderAdminMatches(){
         p_month: S.stage.key, p_gameweek: S.gw.number,
         p_home: h, p_away: a,
         p_kickoff: when ? new Date(when).toISOString() : null,
-        p_competition: $('m-comp').value
+        // Порожнє поле віддаємо як 'league' — тригер у базі (файл 98)
+        // побачить це значення й підставить лігу господарів сам.
+        p_competition: $('m-comp').value.trim() || 'league'
       });
       if (out === null) return;
       $('madd-result').innerHTML = `<div class="msg ok" style="margin-top:12px">${esc(out)}</div>`;
-      $('m-home').value = ''; $('m-away').value = '';
+      $('m-home').value = ''; $('m-away').value = ''; $('m-comp').value = '';
       await again();
     };
   }
@@ -2888,7 +2920,9 @@ async function renderAdminBonus(){
       yn                ? 'YES/NO' :
       kind === 'choice' ? 'вибір: ' + (b.options || []).join(' / ') + ' · ' + b.points_if_correct + ' оч.' :
       kind === 'number' ? 'число · ' + b.points_if_correct + ' оч.' +
-                          (b.points_near != null ? ' · ±1 → ' + b.points_near : ' · тільки точно') :
+                          (b.points_near != null
+                            ? ' · ±' + (b.near_window ?? 1) + ' → ' + b.points_near
+                            : ' · тільки точно') :
                           'відповідь-ім\'я · ' + b.points_if_correct + ' оч.';
 
     return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)">
@@ -2913,6 +2947,17 @@ async function renderAdminBonus(){
             <input type="number" data-bptsno="${i}" value="${b.points_no}"
               style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
               border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>` : ''}
+          ${kind === 'number' ? `
+          <div class="rev-line"><span>Балів за промах <span class="dim">(0 — тільки точно)</span></span>
+            <input type="number" data-bnear="${i}" min="0" value="${b.points_near ?? 0}"
+              style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
+              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          <div class="rev-line"><span>На скільки можна промахнутись <span class="dim">(±)</span></span>
+            <input type="number" data-bwin="${i}" min="1" max="10" value="${b.near_window ?? 1}"
+              style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
+              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          <button class="ghost" data-bnumsave="${i}" style="width:100%;margin-bottom:7px">
+            Зберегти умову промаху</button>` : ''}
           <p class="dim" style="font-size:12px;margin:7px 0">
             Текст правиться завжди. Бали — тільки поки на питання ще ніхто не відповів.</p>
           <button class="ghost" data-bsave="${i}" style="width:100%">Зберегти правку</button>
@@ -2930,6 +2975,18 @@ async function renderAdminBonus(){
       </details>
     </div>`;
   }).join('');
+
+  // --- умова промаху для питання-цифри (файл 99)
+  host.querySelectorAll('[data-bnumsave]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.bnumsave);
+    const b = S.adminBets[i];
+    const nearRaw = Number(host.querySelector(`[data-bnear="${i}"]`).value);
+    const near = nearRaw > 0 ? nearRaw : null;      // 0 = тільки точна відповідь
+    const win  = Math.min(10, Math.max(1, Number(host.querySelector(`[data-bwin="${i}"]`).value) || 1));
+    const out = await adminRpc('admin_bonus_number',
+      { p_bet: b.id, p_near: near, p_window: win });
+    if (out !== null) { alert(out); await renderAdminBonus(); }
+  });
 
   // --- правки питання: текст і бали
   host.querySelectorAll('[data-bsave]').forEach(btn => btn.onclick = async () => {
