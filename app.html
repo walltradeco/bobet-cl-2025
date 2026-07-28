@@ -722,7 +722,7 @@ async function go(tab){
 //  МАТЧІ — внесення прогнозів (U-4, U-5, U-6, U-8)
 // =====================================================================
 async function loadGameweek(gwId){
-  const [mb, st, cf, rp, rs, mv, sbd, sop, scf] = await Promise.all([
+  const [mb, st, cf, rp, rs, mv, sbd, sop, scf, sst] = await Promise.all([
     sb.from('match_board').select('*').eq('gameweek_id', gwId),
     sb.from('my_boost_stock').select('*').eq('participant_id', S.me.participant_id),
     sb.from('confirmation_board').select('*').eq('gameweek_id', gwId),
@@ -743,6 +743,11 @@ async function loadGameweek(gwId){
     // Стеля балів стилю за вікенд — різна по етапах (серпень 3, далі 4).
     sb.from('manager_style_config').select('weekend_cap')
       .eq('tournament_id', S.stage.id).maybeSingle(),
+    // Мої стилі за ВЕСЬ етап — для лічильника «взято з максимуму».
+    // Окремий запит, бо style_board вище фільтрується по вікенду.
+    sb.from('style_board').select('*')
+      .eq('tournament_id', S.stage.id)
+      .eq('participant_id', S.me.participant_id),
   ]);
 
   const rows = mb.data || [];
@@ -753,6 +758,7 @@ async function loadGameweek(gwId){
   S.styleRows = sbd.data || [];
   S.styleOptions = sop.data || [];
   S.styleCap = scf.data ? scf.data.weekend_cap : null;
+  S.myStylesStage = sst.data || [];   // мої стилі за весь етап
 
   // Власна фіксація. Вікенд «відкритий» і «я підтвердив» — це два
   // різні стани: перший настає, коли підтвердили всі, другий —
@@ -1047,8 +1053,11 @@ async function viewMatches(){
 // ---------------------------------------------------------------------
 //  RIVALS 2.0 — дуель на вікенд, стратегічна зміна суперника
 //
-//  ДО відкриття вікенда (не всі підтвердили): вибір/зміна суперника —
-//  без обмежень, як і раніше.
+//  ДО мого підтвердження: вибір і зміна суперника без обмежень.
+//
+//  ПІСЛЯ мого підтвердження (файл 107): суперник зафіксований разом
+//  із прогнозами й стилем. Раніше його можна було міняти й далі —
+//  виходило, що дві частини вікенда з трьох замикаються, а третя ні.
 //
 //  ПІСЛЯ відкриття (всі підтвердили, прогнози видно всім): дозволена
 //  РІВНО ОДНА стратегічна зміна (rival_board.post_open_used). Після
@@ -1076,7 +1085,11 @@ function renderRivalBox(deadlinePassed, open){
   const scored = S.rivalPairs.some(r => r.scored);
   // Стратегічну зміну вже використано: вікенд відкрито І я нею скористався.
   const usedUp = open && myPick && myPick.post_open_used;
-  const locked = deadlinePassed || scored || usedUp;
+  // Я підтвердив, але вікенд ще не відкрито — вибір зафіксовано (файл 107).
+  // ⚠️ Саме `!open`: коли підтвердять усі, вікенд відкриється, і тоді
+  // має ожити стратегічна зміна, хоч підтвердження нікуди не зникло.
+  const confirmedLock = S.iConfirmed && !open;
+  const locked = deadlinePassed || scored || usedUp || confirmedLock;
 
   // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я,
   // мінус ті, кого я вже брав в ІНШИХ вікендах цього етапу.
@@ -1088,7 +1101,20 @@ function renderRivalBox(deadlinePassed, open){
     .filter(c => !usedNames.includes(c.display_name))
     .map(c => c.display_name);
 
-  let inner = '';
+  // Скільки очок дуелі вже взято за етап і скільки їх усього.
+  // Максимум — по 2 за кожен вікенд етапу: дуель виграється проти
+  // конкретної людини, але очки з неї твої власні, і суперник свої
+  // втрачає незалежно від тебе.
+  const rivalMax  = S.gameweeks.length * 2;
+  const rivalGot  = (S.myRivalsStage || [])
+    .reduce((acc, r) => acc + (r.points || 0), 0);
+
+  let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <div><b style="color:var(--text);font-size:13px">⚔️ Rivals · дуель на вікенд</b></div>
+      <div class="mono" title="взято за етап із можливих"
+        style="font-size:13px;font-weight:700;color:${rivalGot ? 'var(--green)' : 'var(--text-dim)'}">
+        ${rivalGot}/${rivalMax}</div>
+    </div>`;
 
   if (locked) {
     // Read-only: мій суперник (якщо був)
@@ -1096,10 +1122,15 @@ function renderRivalBox(deadlinePassed, open){
       ? '<div class="dim" style="margin-top:4px;font-size:12px">Результати вікенда внесені — дуель зіграна, суперник зафіксований.</div>'
       : (usedUp
         ? '<div class="dim" style="margin-top:4px;font-size:12px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
-        : '');
+        : (confirmedLock
+          ? `<div class="dim" style="margin-top:4px;font-size:12px">Вікенд підтверджено — суперник зафіксований разом із прогнозами
+             й стилем. Коли підтвердять усі й стануть видні чужі прогнози,
+             його можна буде переобрати <b>один раз</b>.</div>`
+          : ''));
     inner += (myPick
-      ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
-      : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`) + why;
+      ? `<div style="margin-top:6px">Твій суперник на цей вікенд:
+           <b style="color:var(--gold)">${esc(myPick.rival_name)}</b></div>`
+      : `<div class="dim" style="margin-top:6px">Суперника на цей вікенд ти не обрав.</div>`) + why;
   } else {
     // Вибір суперника — кнопками, як у бонусних питаннях і стилях.
     // Випадний список тут був єдиним білим елементом на всю сторінку
@@ -1113,20 +1144,20 @@ function renderRivalBox(deadlinePassed, open){
     // завжди, а не лише ту, що діє зараз.
     const hint = open
       ? `<b style="color:var(--gold)">Вікенд відкрито.</b> Тепер видно чужі прогнози,
-         і суперника можна змінити <b>рівно один раз</b> — це і є суть механіки:
+         і суперника можна переобрати <b>рівно один раз</b> — це і є суть механіки:
          подивитись, у кого вікенд складається краще, і встигнути переграти вибір.
          Після цієї зміни суперник зафіксований до кінця вікенда.`
-      : `Поки вікенд не відкрився, змінювати суперника можна скільки завгодно.
+      : `Поки не підтвердив вікенд, суперника можна міняти скільки завгодно.
+         Підтвердив — вибір фіксується разом із прогнозами й стилем.
          Коли підтвердять усі, вікенд відкриється і стануть видні чужі прогнози —
-         і тоді буде <b>ще одна, остання зміна</b>: подивившись на чужі рахунки,
-         суперника можна переграти один раз. Далі вибір фіксується.`;
+         і тоді буде <b>ще одна, остання зміна</b>: суперника можна переобрати один раз.`;
 
     inner += `
-      <div class="dim" style="margin-bottom:8px;font-size:12px">
-        <b style="color:var(--text);font-size:13px">⚔️ Rivals · дуель на вікенд</b><br>
-        Обери одного суперника. Хто набрав за вікенд більше очок — +2;
-        при рівних очках рахуються вгадані точні рахунки; повна рівність — по +1 обом.
-        Одного й того самого суперника двічі за місяць брати не можна.
+      <div class="dim" style="margin:6px 0 8px;font-size:12px">
+        Обери одного суперника на цей вікенд. Порівнюються очки за матчі вікенда:
+        у кого більше — тому <b>+2</b>. Порівну очок — рахуються вгадані точні
+        рахунки, у кого їх більше. Порівну і того, і того — <b>по +1 обом</b>.
+        Одного й того самого суперника двічі за етап брати не можна.
       </div>
       <div class="yn yn-wrap" id="rival-pick">${chips}</div>
       <div class="dim" style="margin-top:8px;font-size:12px">${
@@ -1161,6 +1192,32 @@ function renderRivalBox(deadlinePassed, open){
         <div><b style="color:var(--gold)">${names}</b> <span class="dim">+${S.mvpRows[0].points}</span></div>
       </div>`;
   }
+
+  // Розбір механіки — той самий <details>, що в бустів. Показуємо і в
+  // режимі вибору, і після фіксації: перечитати правило потрібно саме
+  // тоді, коли міняти вже нічого не можна.
+  inner += `
+    <details class="bex">
+      <summary>Як це рахується — приклади</summary>
+      <div>${esc(
+`Дуель — це твої власні очки, а не відібрані в суперника. Ви обидва можете виграти свої дуелі в одному вікенді: він теж когось обирає, і його результат від твого не залежить.
+
+За етап дуелі дають щонайбільше ${rivalMax} очок — по 2 за кожен із ${S.gameweeks.length} вікендів.
+
+Порівнюються очки за матчі вікенда, без урахування Rivals і стилю:
+• у тебе 7, у суперника 4 — тобі +2, йому 0
+• у вас по 5, але в тебе 1 точний рахунок, у нього жодного — тобі +2
+• у вас по 5 і точних порівну — по +1 обом
+
+⚠️ Нічия дає по одному очку кожному, тобто зовсім без очок дуель лишає тільки програного.
+
+⚠️ Одного суперника двічі за етап брати не можна — обрані в попередніх вікендах зі списку зникають.
+
+Коли міняти:
+• поки не підтвердив вікенд — скільки завгодно
+• підтвердив — зафіксовано разом із прогнозами й стилем
+• коли підтвердять усі й стануть видні чужі прогнози — ще рівно одна зміна`)}</div>
+    </details>`;
 
   box.innerHTML = `<div class="card tight">${inner}</div>`;
 
@@ -1222,11 +1279,23 @@ function renderStyleBox(locked, open){
   const cap  = S.styleCap;
   const left = opts.filter(o => o.used_gameweek == null && !o.is_current).length;
 
-  let inner = `<div class="dim" style="margin-bottom:8px;font-size:12px">
-      <b style="color:var(--text);font-size:13px">👔 Manager Style · один стиль на вікенд</b><br>
-      Рахує реальні результати матчів, а не твої прогнози${
+  // Взято за етап зі стелі × кількість вікендів — той самий лічильник,
+  // що в Rivals: одразу видно, скільки механіка ще може принести.
+  const styleMax = cap ? cap * S.gameweeks.length : 0;
+  const styleGot = (S.myStylesStage || [])
+    .reduce((acc, r) => acc + (r.points || 0), 0);
+
+  let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <div><b style="color:var(--text);font-size:13px">👔 Manager Style · один стиль на вікенд</b></div>
+      ${styleMax ? `<div class="mono" title="взято за етап із можливих"
+        style="font-size:13px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
+        ${styleGot}/${styleMax}</div>` : ''}
+    </div>
+    <div class="dim" style="margin:6px 0 8px;font-size:12px">
+      Очки за стиль нараховуються за <b>фінальними рахунками матчів</b> вікенда —
+      твої прогнози тут не враховуються взагалі${
         cap ? `, максимум ${ptsWord(cap)} за вікенд` : ''}.
-      Той самий стиль двічі за місяць узяти не можна.
+      Той самий стиль двічі за етап узяти не можна.
     </div>`;
 
   if (locked) {
@@ -1265,9 +1334,31 @@ function renderStyleBox(locked, open){
            Стиль обов'язковий: без нього вікенд не підтвердити.
          </div>`;
     inner += `<div class="dim" style="margin-top:4px;font-size:11px">
-        Вільних стилів на решту місяця: ${left}.</div>
+        Вільних стилів на решту етапу: ${left}.</div>
       <div id="style-msg"></div>`;
   }
+
+  // Розбір механіки — як у бустів і Rivals. Коли стиль уже обрано,
+  // під загальним правилом ідуть приклади саме цього тренера
+  // (manager_styles.examples, файл 107): у кожного стилю свої кейси,
+  // і головне в них — що прогноз на нарахування не впливає.
+  inner += `
+    <details class="bex">
+      <summary>Як це рахується — приклади</summary>
+      <div>${esc(
+`Стиль — це ставка на те, ЯК складеться вікенд, а не на конкретні рахунки. Нараховується за фінальними результатами матчів; твої прогнози на нього не впливають ніяк.
+
+Найпростіше запам'ятати так: поставив 3:0, матч закінчився 0:3 — за прогноз нуль, а стиль Flick усе одно дасть очко, бо хтось забив три.
+
+За етап стилі дають щонайбільше ${styleMax} очок — по ${cap} за кожен із ${S.gameweeks.length} вікендів.
+
+⚠️ Стеля ${cap} діє на вікенд: якщо умова спрацювала більше разів, зайве зрізається. У сумі за вікенд це видно рядком «(стеля N, сирих M)».
+
+⚠️ Один стиль на вікенд, і той самий стиль двічі за етап узяти не можна — витрачені лишаються в списку сірими, з номером вікенда, де пішли.
+
+⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
+      + (cur && cur.examples ? '\n\n— — —\n\n' + esc(cur.title) + '\n' + esc(cur.examples) : '')}</div>
+    </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
   if (open && (S.styleRows || []).length) {
