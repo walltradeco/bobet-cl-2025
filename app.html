@@ -117,8 +117,12 @@
     font-family:'Inter',sans-serif;font-size:14px;font-weight:600;line-height:1.25;}
   .gw-chip .d{display:block;font-family:'JetBrains Mono',monospace;
     font-size:11px;font-weight:400;color:var(--text-dim);margin-top:2px;}
-  .gw-chip.on{border-color:var(--purple);color:var(--purple);background:var(--purple-soft);}
-  .gw-chip.on .d{color:var(--purple);opacity:0.75;}
+  /* Обране скрізь у кабінеті золоте — і вибір (стиль, суперник,
+     бонусна відповідь), і навігація (етап, вкладка, вікенд).
+     Виняток один: бусти, у яких колір змістовний і збігається
+     з кольорами в таблицях сайту. */
+  .gw-chip.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
+  .gw-chip.on .d{color:var(--gold);opacity:0.75;}
 
   /* ---------- MATCH ROW ---------- */
   .match{border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px;background:var(--panel-2);position:relative;}
@@ -163,7 +167,10 @@
     font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;
     border-radius:7px;cursor:pointer;
   }
-  .boost-chip.on{border-color:var(--purple);color:var(--purple);background:var(--purple-soft);}
+  /* Лишається для чіпів в адмінці (правильна відповідь на питання).
+     Колір той самий золотий — бусти свої кольори ставлять інлайном
+     і цим класом не фарбуються. */
+  .boost-chip.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
   .boost-chip:disabled{opacity:0.3;cursor:not-allowed;}
 
   /* ---------- BUTTONS ---------- */
@@ -195,6 +202,15 @@
   .qty button{width:34px;height:34px;border-radius:8px;background:var(--panel-3);
     border:1px solid var(--line);color:var(--text);font-size:18px;cursor:pointer;}
   .qty .n{font-family:'JetBrains Mono',monospace;font-size:17px;min-width:22px;text-align:center;font-weight:700;}
+
+  /* Розбір буста з прикладами. white-space:pre-line — текст лежить
+     у базі рядками, і саме розбивка робить кейси читабельними. */
+  .bex{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
+  .bex summary{cursor:pointer;font-size:12px;color:var(--gold);
+    font-family:'JetBrains Mono',monospace;letter-spacing:0.02em;}
+  .bex summary::marker{color:var(--text-dim);}
+  .bex > div{white-space:pre-line;color:var(--text-dim);font-size:13px;
+    line-height:1.6;margin-top:8px;}
 
   /* ---------- TABLE ---------- */
   table{width:100%;border-collapse:collapse;font-size:14px;}
@@ -581,6 +597,28 @@ const BOOST_COLORS = {
 function boostColor(code){
   return BOOST_COLORS[code] || 'var(--purple)';
 }
+
+// Пофарбувати картку матчу під буст, який на ній стоїть.
+//
+// ⚠️ Це виправлення бага, а не оформлення. Було так: перший рендер
+// ставив `border-left` кольором буста інлайном, а клік по чіпу міняв
+// лише className. Тобто після кліку смуга лишалась від попереднього
+// стану, а клас `.boosted` фарбував рамку у фіолетовий незалежно від
+// буста — і 2x виглядав фіолетовим, хоча він жовтий. Правильним колір
+// здавався тільки в того буста, що вже був збережений у базі.
+//
+// Тепер клас і кольори ставить одна функція, і кличуть її обидва місця.
+function paintMatchCard(card, code, isAp){
+  if (!card) return;
+  const ap = code === 'autopilot' || isAp;
+  card.className = 'match' + (ap ? ' autopilot' : (code ? ' boosted' : ''));
+  const c = ap ? boostColor('autopilot') : (code ? boostColor(code) : null);
+  // Прозорість шістнадцятковим суфіксом: 1a ≈ 10% заливки, 66 ≈ 40% рамки.
+  card.style.borderLeft  = c ? `4px solid ${c}` : '';
+  card.style.borderColor = c ? `${c}66` : '';
+  card.style.background  = c ? `${c}1a` : '';
+  if (c) card.style.borderLeftColor = c;
+}
 // Плашка буста в його кольорі
 function boostChip(code, label, dim){
   const c = boostColor(code);
@@ -794,7 +832,16 @@ async function viewMatches(){
   }).join('');
 
   const total = S.matches.length;
-  const filledCnt = S.matches.filter(m => S.myPred[m.match_id]).length;
+  // ⚠️ Прогноз — це заповнений рахунок, а не просто рядок у S.myPred.
+  // Клік по бусту створює запис із самим boost, без цифр, і стара
+  // перевірка «є об'єкт» рахувала такий матч як заповнений: шапка
+  // писала «3 з 3» при трьох порожніх полях. Умова тут мусить бути
+  // та сама, що в todo(), інакше лічильник і кнопка розходяться.
+  const isFilled = m => {
+    const p = S.myPred[m.match_id];
+    return p && p.home != null && p.away != null;
+  };
+  const filledCnt = S.matches.filter(isFilled).length;
   const missing = total - filledCnt;
 
   let html = `
@@ -807,9 +854,10 @@ async function viewMatches(){
       </div>
       <div style="text-align:right">
         <div class="cap">прогнози</div>
-        <div class="t" style="font-size:19px;color:${
+        <div class="t" id="pred-count" style="font-size:19px;color:${
           missing ? 'var(--gold)' : 'var(--green)'}">${filledCnt} з ${total}</div>
-        ${missing ? `<div class="when">лишилось заповнити ${missing}</div>` : ''}
+        <div class="when" id="pred-left">${
+          missing ? `лишилось заповнити ${missing}` : ''}</div>
       </div>
     </div>`;
 
@@ -842,10 +890,13 @@ async function viewMatches(){
     const p = S.myPred[m.match_id] || {};
     const isAp = S.ap.picks.includes(m.match_id);
     const cls = (p.boost === 'autopilot' || isAp) ? 'autopilot' : (p.boost ? 'boosted' : '');
-    // Картка матчу з бустом підсвічується кольором самого буста,
-    // щоб не читати назву (BOOST_COLORS — один словник на весь кабінет)
-    const tint = p.boost
-      ? ` style="border-left:4px solid ${boostColor(p.boost)}"`
+    // Картка матчу з бустом підсвічується кольором самого буста, щоб не
+    // читати назву (BOOST_COLORS — один словник на весь кабінет).
+    // Ті самі кольори ставить paintMatchCard при кліку — правити разом.
+    const tintCode = (p.boost === 'autopilot' || isAp) ? 'autopilot' : p.boost;
+    const c = tintCode ? boostColor(tintCode) : null;
+    const tint = c
+      ? ` style="border-left:4px solid ${c};border-color:${c}66;border-left-color:${c};background:${c}1a"`
       : '';
     html += `
     <div class="match ${cls}" data-match="${m.match_id}"${tint}>
@@ -1050,25 +1101,36 @@ function renderRivalBox(deadlinePassed, open){
       ? `<div>Твій суперник на цей вікенд: <b style="color:var(--purple)">${esc(myPick.rival_name)}</b></div>`
       : `<div class="dim">Суперника на цей вікенд ти не обрав.</div>`) + why;
   } else {
-    // Форма вибору / зміни
-    const opts = ['<option value="">— обери суперника —</option>']
-      .concat(candidates.map(n =>
-        `<option value="${esc(n)}" ${myPick && myPick.rival_name === n ? 'selected' : ''}>${esc(n)}</option>`))
-      .join('');
+    // Вибір суперника — кнопками, як у бонусних питаннях і стилях.
+    // Випадний список тут був єдиним білим елементом на всю сторінку
+    // і вимагав двох дій (обрати в списку + натиснути «Обрати»).
+    const chips = candidates.map(n =>
+      `<button data-rival="${esc(n)}"
+        class="${myPick && myPick.rival_name === n ? 'on' : ''}">${esc(n)}</button>`).join('');
+
+    // Правило зміни суперника різне до і після відкриття вікенда, і
+    // це головна особливість механіки — тому пишемо обидві половини
+    // завжди, а не лише ту, що діє зараз.
     const hint = open
-      ? 'Вікенд відкрито — це твоя ОСТАННЯ можливість переглянути прогнози інших і змінити суперника (лише 1 раз).'
-      : 'Змінювати можна без обмежень, поки вікенд не відкрився (коли підтвердять усі).';
+      ? `<b style="color:var(--gold)">Вікенд відкрито.</b> Тепер видно чужі прогнози,
+         і суперника можна змінити <b>рівно один раз</b> — це і є суть механіки:
+         подивитись, у кого вікенд складається краще, і встигнути переграти вибір.
+         Після цієї зміни суперник зафіксований до кінця вікенда.`
+      : `Поки вікенд не відкрився, змінювати суперника можна скільки завгодно.
+         Коли підтвердять усі, вікенд відкриється і стануть видні чужі прогнози —
+         і тоді буде <b>ще одна, остання зміна</b>: подивившись на чужі рахунки,
+         суперника можна переграти один раз. Далі вибір фіксується.`;
+
     inner += `
       <div class="dim" style="margin-bottom:8px;font-size:12px">
         <b style="color:var(--text);font-size:13px">⚔️ Rivals · дуель на вікенд</b><br>
         Обери одного суперника. Хто набрав за вікенд більше очок — +2;
         при рівних очках рахуються вгадані точні рахунки; повна рівність — по +1 обом.
+        Одного й того самого суперника двічі за місяць брати не можна.
       </div>
-      <div style="display:flex;gap:8px;align-items:center">
-        <select id="rival-sel" style="flex:1">${opts}</select>
-        <button class="primary" id="rival-save" style="width:auto;padding:0 16px;margin:0">Обрати</button>
-      </div>
-      <div class="dim" style="margin-top:6px;font-size:12px">${myPick ? `Зараз: ${esc(myPick.rival_name)}. ` : ''}${hint}</div>
+      <div class="yn yn-wrap" id="rival-pick">${chips}</div>
+      <div class="dim" style="margin-top:8px;font-size:12px">${
+        myPick ? `Твій суперник: <b style="color:var(--gold)">${esc(myPick.rival_name)}</b>. ` : ''}${hint}</div>
       <div id="rival-msg"></div>`;
   }
 
@@ -1102,23 +1164,20 @@ function renderRivalBox(deadlinePassed, open){
 
   box.innerHTML = `<div class="card tight">${inner}</div>`;
 
-  // Збереження вибору
-  const saveBtn = $('rival-save');
-  if (saveBtn) {
-    saveBtn.onclick = async () => {
-      const name = $('rival-sel').value;
-      if (!name) { msg($('rival-msg'), 'Обери суперника зі списку', 'err'); return; }
-      saveBtn.disabled = true;
+  // Збереження вибору — клік по імені, без окремої кнопки
+  box.querySelectorAll('[data-rival]').forEach(b => {
+    b.onclick = async () => {
+      b.disabled = true;
       keepTyped();   // як і в стилі — не втратити набрані рахунки
-      const { data, error } = await sb.rpc('rival_pick', {
+      const { error } = await sb.rpc('rival_pick', {
         p_gameweek_id: S.gw.gameweek_id,
-        p_rival_name: name,
+        p_rival_name: b.dataset.rival,
       });
-      saveBtn.disabled = false;
+      b.disabled = false;
       if (error) { msg($('rival-msg'), error.message, 'err'); return; }
       await go('matches');   // перемалюємо з новим станом
     };
-  }
+  });
 }
 
 
@@ -1177,7 +1236,7 @@ function renderStyleBox(locked, open){
     // довідка. Самі тексти лишаються в базі під майбутні Rules.
     inner += cur
       ? `<div>Твій стиль на цей вікенд:
-           <b style="color:var(--teal)">${styleFace(cur, 22)}${esc(cur.title)}</b>
+           <b style="color:var(--gold)">${styleFace(cur, 22)}${esc(cur.title)}</b>
            ${mine && mine.auto_assigned
              ? '<span class="dim" style="font-size:12px"> · кинуто системою</span>' : ''}
          </div>
@@ -1186,22 +1245,24 @@ function renderStyleBox(locked, open){
   } else {
     // Вибір. Витрачені стилі лишаємо в списку, але вимкненими — так
     // видно весь розклад місяця, а не тільки те, що ще доступне.
+    // Ті самі кнопки, що в бонусних питаннях і Rivals — один вигляд
+    // вибору на весь кабінет (рішення Богдана 27.07.2026).
     const chips = opts.map(o => {
       const used = o.used_gameweek != null;
-      return `<button class="boost-chip ${o.is_current ? 'on' : ''}"
+      return `<button class="${o.is_current ? 'on' : ''}"
         data-style="${esc(o.code)}" ${used ? 'disabled' : ''}
-        title="${esc(o.description)}"
-        style="${used ? 'opacity:.35;cursor:not-allowed' : ''}">
+        title="${esc(o.description)}">
         ${styleFace(o, 18)}${esc(o.title)}${used ? ` · вк ${o.used_gameweek}` : ''}</button>`;
     }).join('');
 
-    inner += `<div class="boost-row">${chips}</div>`;
+    inner += `<div class="yn yn-wrap">${chips}</div>`;
     inner += cur
       ? `<div class="dim" style="margin-top:8px;font-size:12px">
-           Обрано: <b style="color:var(--teal)">${esc(cur.title)}</b> — ${esc(cur.description)}
+           Обрано: <b style="color:var(--gold)">${esc(cur.title)}</b> — ${esc(cur.description)}
          </div>`
       : `<div class="dim" style="margin-top:8px;font-size:12px">
-           Стиль ще не обрано — без нього вікенд не підтвердити.
+           Натисни на тренера — під списком з'явиться, за що саме він дає очки.
+           Стиль обов'язковий: без нього вікенд не підтвердити.
          </div>`;
     inner += `<div class="dim" style="margin-top:4px;font-size:11px">
         Вільних стилів на решту місяця: ${left}.</div>
@@ -1521,7 +1582,7 @@ function renderBoostPickers(){
       renderBoostPickers();
 
       const card = $('view').querySelector(`[data-match="${id}"]`);
-      card.className = 'match' + (b.dataset.code ? ' boosted' : '');
+      paintMatchCard(card, b.dataset.code || null);
 
       // Double Predict відкриває поля для другого рахунку
       const dp = card.querySelector('.dp-wrap');
@@ -1587,6 +1648,24 @@ function refreshConfirmState(){
     note.textContent = gaps.length
       ? `Щоб підтвердити, лишилось: ${gaps.join(', ')}.`
       : 'Перед збереженням покажемо, що саме ти обрав.';
+  }
+
+  // Лічильник у шапці рахується з тих самих даних, що й кнопка, і
+  // мусить оновлюватись разом із нею — інакше він застигав на «0 з 3»,
+  // поки людина заповнює поля, і суперечив підпису під кнопкою.
+  const cnt = $('pred-count');
+  if (cnt) {
+    const total = S.matches.length;
+    const filled = S.matches.filter(m => {
+      const p = S.myPred[m.match_id];
+      return p && p.home != null && p.away != null;
+    }).length;
+    cnt.textContent = `${filled} з ${total}`;
+    cnt.style.color = filled < total ? 'var(--gold)' : 'var(--green)';
+    const left = $('pred-left');
+    if (left) {
+      left.textContent = filled < total ? `лишилось заповнити ${total - filled}` : '';
+    }
   }
 }
 
@@ -1752,6 +1831,44 @@ function reviewAndSave(){
   });
 }
 
+// ---------------------------------------------------------------------
+//  Картка буста: назва, ціна, коротке правило і розгорнутий розбір.
+//
+//  Один вигляд на два стани вкладки: до фіксації праворуч стоїть
+//  лічильник ±, після фіксації — скільки цього буста куплено. Раніше
+//  після фіксації правила зникали зовсім, хоча саме тоді вони й
+//  потрібні: розкладати куплене по матчах ще попереду.
+//
+//  Розбір із прикладами лежить у базі (`boost_types.examples`, файл
+//  106) і схований у <details>: сім бустів × десять рядків зробили б
+//  сторінку нечитабельною, а так кожен розгортає те, що йому треба.
+//  ⚠️ Приклади в базі звірені прогоном через саме нарахування —
+//  текст, не звірений із кодом, це тиха помилка.
+// ---------------------------------------------------------------------
+function boostCard(b, owned, controlHtml){
+  const c = boostColor(b.code);
+  const right = controlHtml != null
+    ? controlHtml
+    : `<div class="mono" style="font-size:15px;font-weight:700;white-space:nowrap;
+         color:${owned ? c : 'var(--text-dim)'}">${owned ? '×' + owned : '—'}</div>`;
+  return `
+    <div class="card tight" style="border-left:3px solid ${c}">
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
+        <div style="flex:1">
+          <div style="font-weight:700;font-size:15px;color:${c}">${esc(b.title)}
+            <span class="mono" style="color:var(--gold);font-size:13px">${priceOf(b.code)}р</span></div>
+          <div class="dim" style="margin-top:4px">${esc(b.description)}</div>
+        </div>
+        ${right}
+      </div>
+      ${b.examples ? `
+        <details class="bex">
+          <summary>Як це рахується — приклади</summary>
+          <div>${esc(b.examples)}</div>
+        </details>` : ''}
+    </div>`;
+}
+
 // =====================================================================
 //  BOOSTS — драфт і склади в одній вкладці
 //
@@ -1817,9 +1934,22 @@ async function viewDraft(){
     // admin_unlock_draft lockedAt стає порожнім і калькулятор
     // повертається сам.
     if (lockedAt) {
+      // Раніше тут лишався самий факт фіксації — і правила бустів
+      // ставали недоступні саме тоді, коли потрібні найбільше:
+      // розкладати куплене по матчах ще попереду. Тепер лишається
+      // повний довідник, з кількістю купленого у себе.
+      // ⚠️ Рахуємо з локального stock цього екрана, а не з S.stock:
+      // глобальний заповнює loadGameweek, а на вкладку Boosts можна
+      // зайти, жодного разу не відкривши Матчі — і там було б порожньо.
+      const mineByCode = {};
+      for (const u of (stock || [])) {
+        mineByCode[u.boost_code] = (mineByCode[u.boost_code] || 0) + 1;
+      }
       $('view').innerHTML = `<div class="msg ok">Boosts зафіксовано ${fmtWhen(lockedAt)}
         · витрачено <b class="mono">${ds.total_spent}</b> з <b class="mono">${budget}</b> рексів.
-        Змінити вже не можна — якщо це помилка, потрібен адмін.</div>`;
+        Змінити вже не можна — якщо це помилка, потрібен адмін.</div>
+        <div class="dim" style="margin:14px 0 10px">Що саме куплено і як воно рахується:</div>
+        ${S.boostTypes.map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}`;
       return;
     }
 
@@ -1838,21 +1968,12 @@ async function viewDraft(){
         <div class="dim" style="margin-top:6px">Залишок: <b class="mono">${left}</b> рексів</div>
       </div>
       ${closed ? '<div class="msg err">Драфт закрито — Boosts більше не змінити</div>' : ''}
-      ${S.boostTypes.map(b => `
-        <div class="card tight" style="border-left:3px solid ${boostColor(b.code)}">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
-            <div style="flex:1">
-              <div style="font-weight:700;font-size:15px;color:${boostColor(b.code)}">${esc(b.title)}
-                <span class="mono" style="color:var(--gold);font-size:13px">${priceOf(b.code)}р</span></div>
-              <div class="dim" style="margin-top:4px">${esc(b.description)}</div>
-            </div>
+      ${S.boostTypes.map(b => boostCard(b, null, `
             <div class="qty">
               <button data-m="${b.code}" ${closed ? 'disabled' : ''}>−</button>
               <span class="n">${state[b.code] || 0}</span>
               <button data-p="${b.code}" ${closed ? 'disabled' : ''}>+</button>
-            </div>
-          </div>
-        </div>`).join('')}
+            </div>`)).join('')}
       ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${closed || left < 0 || sp === 0 ? 'disabled' : ''}>
         ${left < 0 ? 'Перевитрата' : 'Підтвердити Boosts'}</button>`}
       <p class="dim" style="text-align:center;margin-top:10px">
