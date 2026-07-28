@@ -907,6 +907,11 @@ async function viewMatches(){
       Поправити тепер може тільки адмін.</div>`;
   }
 
+  if (open) {
+    html += `<div class="msg ok">Прогнози всіх відкриті. Суперника в Rivals
+      ще можна переобрати — рівно один раз (деталі внизу, у блоці Rivals).</div>`;
+  }
+
   html += `<div class="card tight">
     <div style="margin-bottom:7px"><span class="cap">Підтвердили</span>
       <span class="dim" style="font-size:12px">${S.gw.confirmed_count} з ${S.gw.participant_count}</span></div>
@@ -1190,6 +1195,8 @@ function renderRivalBox(deadlinePassed, open){
         Одного й того самого суперника двічі за етап брати не можна.
       </div>
       <div class="yn yn-wrap" id="rival-pick">${chips}</div>
+      ${open ? `<button class="primary" id="rival-confirm-change" disabled
+          style="margin-top:10px;width:100%">Підтвердити зміну суперника</button>` : ''}
       <div class="dim" style="margin-top:8px;font-size:12px">${
         myPick ? `Твій суперник: <b style="color:var(--gold)">${esc(myPick.rival_name)}</b>. ` : ''}${hint}</div>
       <div id="rival-msg"></div>`;
@@ -1251,20 +1258,56 @@ function renderRivalBox(deadlinePassed, open){
 
   box.innerHTML = `<div class="card tight">${inner}</div>`;
 
-  // Збереження вибору — клік по імені, без окремої кнопки
-  box.querySelectorAll('[data-rival]').forEach(b => {
-    b.onclick = async () => {
-      b.disabled = true;
-      keepTyped();   // як і в стилі — не втратити набрані рахунки
-      const { error } = await sb.rpc('rival_pick', {
-        p_gameweek_id: S.gw.gameweek_id,
-        p_rival_name: b.dataset.rival,
-      });
-      b.disabled = false;
-      if (error) { msg($('rival-msg'), error.message, 'err'); return; }
-      await go('matches');   // перемалюємо з новим станом
-    };
-  });
+  if (open) {
+    // Пост-open: це ОСТАННЯ зміна за вікенд, тому клік по імені лише
+    // ПОЗНАЧАЄ вибір (без запиту до бази) — можна клікати між
+    // кандидатами скільки завгодно. Зберігає й списує зміну тільки
+    // кнопка «Підтвердити зміну суперника» через модалку, як було
+    // раніше (Богдан 28.07.2026) — інакше перший-ліпший клік одразу
+    // фіксував суперника без шансу передумати.
+    let pending = myPick ? myPick.rival_name : null;
+    const confirmBtn = $('rival-confirm-change');
+    box.querySelectorAll('[data-rival]').forEach(b => {
+      b.onclick = () => {
+        pending = b.dataset.rival;
+        box.querySelectorAll('[data-rival]').forEach(x =>
+          x.classList.toggle('on', x.dataset.rival === pending));
+        if (confirmBtn) confirmBtn.disabled = (pending === (myPick && myPick.rival_name));
+      };
+    });
+    if (confirmBtn) {
+      confirmBtn.onclick = () => {
+        showModal('Підтвердити зміну суперника', `
+          <p>Новий суперник: <b style="color:var(--gold)">${esc(pending)}</b>.</p>
+          <p class="dim">Це остання зміна цього вікенда — після підтвердження
+          суперника більше не можна буде переобрати.</p>`,
+          async () => {
+            const { error } = await sb.rpc('rival_pick', {
+              p_gameweek_id: S.gw.gameweek_id,
+              p_rival_name: pending,
+            });
+            if (error) throw new Error(error.message);
+            closeModal();
+            await go('matches');
+          });
+      };
+    }
+  } else {
+    // До підтвердження вікенда — міняти можна вільно, зберігаємо одразу.
+    box.querySelectorAll('[data-rival]').forEach(b => {
+      b.onclick = async () => {
+        b.disabled = true;
+        keepTyped();   // як і в стилі — не втратити набрані рахунки
+        const { error } = await sb.rpc('rival_pick', {
+          p_gameweek_id: S.gw.gameweek_id,
+          p_rival_name: b.dataset.rival,
+        });
+        b.disabled = false;
+        if (error) { msg($('rival-msg'), error.message, 'err'); return; }
+        await go('matches');   // перемалюємо з новим станом
+      };
+    });
+  }
 }
 
 
@@ -1387,7 +1430,8 @@ function renderStyleBox(locked, open){
 ⚠️ Один стиль на вікенд, і той самий стиль двічі за етап узяти не можна — витрачені лишаються в списку сірими, з номером вікенда, де пішли.
 
 ⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
-      + (cur && cur.examples ? '\n\n— — —\n\n' + esc(cur.title) + '\n' + esc(cur.examples) : '')}</div>
+      + (opts.length ? '\n\n— — —\n\n' + opts.map(o =>
+          esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
     </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
