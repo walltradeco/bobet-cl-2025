@@ -903,11 +903,19 @@ async function viewMatches(){
 
   if (S.iConfirmed && !open) {
     html += `<div class="msg ok">Твої прогнози зафіксовані. Чекаємо решту —
-      коли підтвердять усі, вікенд відкриється і стануть видні чужі прогнози.
-      Поправити тепер може тільки адмін.</div>`;
+      коли підтвердять усі, вікенд відкриється, стануть видні чужі прогнози,
+      і зможеш ще раз переобрати суперника в Rivals. Поправити прогнози
+      тепер може тільки адмін.</div>`;
   }
 
-  if (open) {
+  // Банер про зміну суперника — тільки поки зміна ще реально доступна.
+  // ⚠️ Раніше показувався просто на `open`, тому висів і тоді, коли
+  // зміну вже використали або результати вікенда внесені (Богдан
+  // помітив: адмін уже вніс рахунки, а надпис досі стирчав).
+  const myRivalPick = (S.rivalPairs || []).find(r => r.chooser_id === S.me.participant_id);
+  const rivalUsedUp = open && myRivalPick && myRivalPick.post_open_used;
+  const rivalScored = (S.rivalPairs || []).some(r => r.scored);
+  if (open && !rivalUsedUp && !rivalScored) {
     html += `<div class="msg ok">Прогнози всіх відкриті. Суперника в Rivals
       ще можна переобрати — рівно один раз (деталі внизу, у блоці Rivals).</div>`;
   }
@@ -1144,12 +1152,21 @@ function renderRivalBox(deadlinePassed, open){
   const rivalGot  = (S.myRivalsStage || [])
     .reduce((acc, r) => acc + (r.points || 0), 0);
 
+  // Розклад по вікендах — щоб «0/8» не висіло голим числом, а було
+  // видно, звідки саме воно набралось (Богдан 28.07.2026).
+  const rivalBreakdown = (S.myRivalsStage || [])
+    .slice().sort((a, b) => a.gameweek_number - b.gameweek_number)
+    .map(r => `Вікенд ${r.gameweek_number}: ${
+      r.status === 'pending' ? 'очікує' : '+' + (r.points || 0) + '/2'}`)
+    .join(' · ');
+
   let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><b style="color:var(--text);font-size:13px">⚔️ Rivals · дуель на вікенд</b></div>
       <div class="mono" title="взято за етап із можливих"
         style="font-size:13px;font-weight:700;color:${rivalGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${rivalGot}/${rivalMax}</div>
-    </div>`;
+    </div>
+    ${rivalBreakdown ? `<div class="dim" style="font-size:11px;margin-top:2px">${rivalBreakdown}</div>` : ''}`;
 
   if (locked) {
     // Read-only: мій суперник (якщо був)
@@ -1162,9 +1179,14 @@ function renderRivalBox(deadlinePassed, open){
              й стилем. Коли підтвердять усі й стануть видні чужі прогнози,
              його можна буде переобрати <b>один раз</b>.</div>`
           : ''));
+    // Той самий вигляд, що в списаного стилю Manager Style (сіра
+    // заблокована кнопка з номером вікенда) — раніше тут був простий
+    // золотий текст, і ці два однотипні стани виглядали по-різному
+    // без жодної причини (Богдан 28.07.2026).
     inner += (myPick
-      ? `<div style="margin-top:6px">Твій суперник на цей вікенд:
-           <b style="color:var(--gold)">${esc(myPick.rival_name)}</b></div>`
+      ? `<div class="yn yn-wrap" style="margin-top:6px">
+           <button class="on" disabled>${esc(myPick.rival_name)} · вк ${S.gw.number}</button>
+         </div>`
       : `<div class="dim" style="margin-top:6px">Суперника на цей вікенд ти не обрав.</div>`) + why;
   } else {
     // Вибір суперника — кнопками, як у бонусних питаннях і стилях.
@@ -1219,17 +1241,6 @@ function renderRivalBox(deadlinePassed, open){
       </div>`;
   }
 
-  // MVP вікенда — показуємо всім після відкриття (RLS сама фільтрує).
-  // Зазвичай один; кілька — при повній нічиї.
-  if (open && (S.mvpRows || []).length) {
-    const names = S.mvpRows.map(r => esc(r.display_name)).join(', ');
-    inner += `
-      <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--line)">
-        <div style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:var(--gold);font-weight:700">MVP вікенда</div>
-        <div><b style="color:var(--gold)">${names}</b> <span class="dim">+${S.mvpRows[0].points}</span></div>
-      </div>`;
-  }
-
   // Розбір механіки — той самий <details>, що в бустів. Показуємо і в
   // режимі вибору, і після фіксації: перечитати правило потрібно саме
   // тоді, коли міняти вже нічого не можна.
@@ -1256,7 +1267,57 @@ function renderRivalBox(deadlinePassed, open){
 • коли підтвердять усі й стануть видні чужі прогнози — ще рівно одна зміна`)}</div>
     </details>`;
 
-  box.innerHTML = `<div class="card tight">${inner}</div>`;
+  // MVP вікенда — окрема картка (Богдан 28.07.2026: раніше висіла
+  // хвостом у картці Rivals, без жодного пояснення й без видно, хто
+  // скільки набрав — MVP просто зʼявлявся нізвідки).
+  let mvpHtml = '';
+  if (open) {
+    const weekendTotals = {};
+    const add = (name, pts) => { weekendTotals[name] = (weekendTotals[name] || 0) + (pts || 0); };
+    S.matches.forEach(m => {
+      const mine = S.myPred[m.match_id];
+      if (mine && mine.points != null) add(S.me.display_name, mine.points);
+      (m.others || []).forEach(o => {
+        if (o.total_points != null) add(o.display_name, o.total_points);
+      });
+    });
+    const ranking = Object.entries(weekendTotals).sort((a, b) => b[1] - a[1]);
+    const mvpNames = new Set((S.mvpRows || []).map(r => r.display_name));
+
+    const rankingHtml = ranking.map(([name, pts]) => `
+      <div style="display:flex;justify-content:space-between;padding:4px 0">
+        <span style="${mvpNames.has(name) ? 'color:var(--gold);font-weight:700' : ''}">${esc(name)}</span>
+        <span class="mono ${mvpNames.has(name) ? '' : 'dim'}">${pts}</span>
+      </div>`).join('');
+
+    mvpHtml = `<div class="card tight">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+        <div><b style="color:var(--text);font-size:13px">🏆 MVP вікенда</b></div>
+        ${mvpNames.size ? `<div style="font-weight:700;color:var(--gold)">
+          ${[...mvpNames].map(esc).join(', ')} <span class="dim">+${S.mvpRows[0].points}</span></div>` : ''}
+      </div>
+      <div class="dim" style="margin:6px 0 8px;font-size:12px">
+        MVP вікенда — той, у кого найбільше очок за матчі цього вікенда
+        (без Rivals і стилю). Порівну очок — рахуються вгадані точні
+        рахунки; порівну і тут — MVP стають усі, хто ділить перше
+        місце, і кожен отримує повні очки.
+      </div>
+      ${rankingHtml ? `<div style="margin-top:4px">${rankingHtml}</div>` : ''}
+      <details class="bex" style="margin-top:8px">
+        <summary>Як це рахується — приклади</summary>
+        <div>${esc(
+`MVP вікенда рахується так само, як Rivals: спершу очки за матчі, при рівності — вгадані точні рахунки.
+
+• у тебе 7 очок за матчі вікенда, у решти менше — ти MVP, +3
+• у двох по 7, але в тебе 1 точний рахунок, а в іншого 0 — MVP ти
+• у двох по 7 і точних порівну — MVP обидва, і кожен отримує повні +3
+
+⚠️ MVP — не половина приза на двох. Коли ділять перше місце троє, кожен із трьох отримує +3, а не +1.`)}</div>
+      </details>
+    </div>`;
+  }
+
+  box.innerHTML = `<div class="card tight">${inner}</div>${mvpHtml}`;
 
   if (open) {
     // Пост-open: це ОСТАННЯ зміна за вікенд, тому клік по імені лише
@@ -1358,12 +1419,21 @@ function renderStyleBox(locked, open){
   const styleGot = (S.myStylesStage || [])
     .reduce((acc, r) => acc + (r.points || 0), 0);
 
+  // Той самий розклад по вікендах, що в Rivals — видно, звідки набралась
+  // сума, а не тільки що вона є (Богдан 28.07.2026).
+  const styleBreakdown = (S.myStylesStage || [])
+    .slice().sort((a, b) => a.gameweek_number - b.gameweek_number)
+    .map(r => `Вікенд ${r.gameweek_number}: ${
+      r.scored ? '+' + r.points + (cap ? '/' + cap : '') : 'очікує'}`)
+    .join(' · ');
+
   let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><b style="color:var(--text);font-size:13px">👔 Manager Style · один стиль на вікенд</b></div>
       ${styleMax ? `<div class="mono" title="взято за етап із можливих"
         style="font-size:13px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${styleGot}/${styleMax}</div>` : ''}
     </div>
+    ${styleBreakdown ? `<div class="dim" style="font-size:11px;margin-top:2px">${styleBreakdown}</div>` : ''}
     <div class="dim" style="margin:6px 0 8px;font-size:12px">
       Очки за стиль нараховуються за <b>фінальними рахунками матчів</b> вікенда —
       твої прогнози тут не враховуються взагалі${
@@ -1431,7 +1501,7 @@ function renderStyleBox(locked, open){
 
 ⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
       + (opts.length ? '\n\n— — —\n\n' + opts.map(o =>
-          esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
+          (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
     </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
@@ -2058,9 +2128,28 @@ async function renderInto(hostId, fn){
 }
 
 async function viewBoosts(){
-  $('view').innerHTML = '<div id="pane-draft"></div><div id="pane-stock"></div>';
-  await renderInto('pane-draft', viewDraft);
-  await renderInto('pane-stock', viewStock);
+  // Порядок панелей залежить від того, чи вже зафіксовано свій набір.
+  // До фіксації головна дія — калькулятор (pane-draft), тож він іде
+  // першим. Після — цікавіше подивитись, що взяли інші, тому pane-stock
+  // піднімається над довідником власних Boosts (Богдан 28.07.2026).
+  const { data: ds } = await sb.from('draft_submissions')
+    .select('confirmed_at')
+    .eq('tournament_id', TOURNAMENT_ID)
+    .eq('participant_id', S.me.participant_id)
+    .maybeSingle();
+  const locked = !!(ds && ds.confirmed_at);
+
+  $('view').innerHTML = locked
+    ? '<div id="pane-stock"></div><div id="pane-draft"></div>'
+    : '<div id="pane-draft"></div><div id="pane-stock"></div>';
+
+  if (locked) {
+    await renderInto('pane-stock', viewStock);
+    await renderInto('pane-draft', viewDraft);
+  } else {
+    await renderInto('pane-draft', viewDraft);
+    await renderInto('pane-stock', viewStock);
+  }
 }
 
 // =====================================================================
