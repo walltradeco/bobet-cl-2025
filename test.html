@@ -1841,11 +1841,15 @@ async function buildMonthRows(tournamentKey){
 
   const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
 
-  // Рядок «Points» у місячній таблиці = загальні бали етапу (як у
-  // Leaderboards): матчі + бонуси + дуелі. total_points уже містить
-  // rival_points (файл 71). Бонуси показуються ще й у своїй вкладці.
+  // Рядок «Points» у місячній таблиці = бали БЕЗ бонусних питань —
+  // матчі + дуелі + MVP + стиль. Бонуси мають свою окрему вкладку
+  // («August · Bonus» тощо), тому total_points (де bonus_points уже
+  // складений) сюди не годиться — інакше бонус рахується двічі:
+  // і тут, і на своїй вкладці, і в Leaderboards (де total_points —
+  // саме те, що треба, бо там свідомо сума всього).
   const totals = await sbGet(
-    'leaderboard?select=display_name,total_points&tournament_id=eq.' + tid);
+    'leaderboard?select=display_name,match_points,rival_points,mvp_points,style_points'
+    + '&tournament_id=eq.' + tid);
 
   // Дуелі Rivals цього етапу — для бейджа ⚔️ біля імені в рядку Points.
   // RLS сама ховає чужі пари до відкриття вікенда (той самий момент,
@@ -1904,7 +1908,10 @@ async function buildMonthRows(tournamentKey){
   const totalRow = Array(cols).fill('');
   totalRow[COL_DATE] = 'Points';
   const totalByName = {};
-  totals.forEach(t => { totalByName[t.display_name] = t.total_points; });
+  totals.forEach(t => {
+    totalByName[t.display_name] = (t.match_points || 0) + (t.rival_points || 0)
+      + (t.mvp_points || 0) + (t.style_points || 0);
+  });
   names.forEach((n, i) => {
     totalRow[COL_FIRST + i] = (totalByName[n] === undefined ? 0 : totalByName[n]);
   });
