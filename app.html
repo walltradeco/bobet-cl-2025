@@ -337,6 +337,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const S = {
   me: null,
   stage: STAGES.find(s => s.key === currentStageKey()),
+  stageOpens: null,  // tournament_id -> коли етап відкривається в кабінеті (108)
   tab: 'matches',
   bonus: [],         // бонусні питання поточного етапу
   bonusDraft: {},    // питання_id -> незбережена відповідь
@@ -490,6 +491,12 @@ async function boot(){
   $('my-name').textContent = S.me.display_name;
   $('my-email').textContent = S.me.email || '';
 
+  // Коли який етап відкривається в кабінеті (файл 108). Читаємо один
+  // раз на старті: поле міняється вручну, не в ході гри.
+  const { data: tt } = await sb.from('tournaments').select('id,cabinet_opens_at');
+  S.stageOpens = {};
+  for (const t of (tt || [])) S.stageOpens[t.id] = t.cabinet_opens_at;
+
   await loadRefs();
   renderStages();
   renderTabs();
@@ -507,8 +514,28 @@ async function loadMe(stage){
 // =====================================================================
 //  Перемикач етапів
 // =====================================================================
+// Етапи, які видно В КАБІНЕТІ (файл 108). Вересень і жовтень мають
+// бюджети бустів, але їхній баланс ще переглядатиметься — тому вони
+// відкриваються 1 числа свого місяця, щоб ніхто не витратив рекси
+// за старими цінами.
+//
+// ⚠️ Адмін бачить усі етапи завжди: інакше не підготувати наступний
+// місяць — ні матчі завести, ні склад, ні ціни.
+// ⚠️ Свій поточний етап не ховаємо ніколи, навіть якщо він закрився
+// поки людина сиділа на сторінці — інакше кабінет став би порожнім
+// посеред роботи.
+function visibleStages(){
+  if (S.me && S.me.is_admin) return STAGES;
+  const now = Date.now();
+  return STAGES.filter(s => {
+    if (S.stage && s.key === S.stage.key) return true;
+    const opens = S.stageOpens ? S.stageOpens[s.id] : null;
+    return !opens || new Date(opens).getTime() <= now;
+  });
+}
+
 function renderStages(){
-  $('stages').innerHTML = STAGES.map(s =>
+  $('stages').innerHTML = visibleStages().map(s =>
     `<button data-stage="${s.key}" class="${S.stage.key === s.key ? 'on' : ''}">${esc(s.title)}</button>`
   ).join('');
   $('stages').querySelectorAll('button').forEach(b => {
@@ -519,6 +546,9 @@ function renderStages(){
 async function setStage(key){
   const st = STAGES.find(s => s.key === key);
   if (!st || st.key === S.stage.key) return;
+  // Прихований етап (файл 108) — кнопки для нього немає, але вручну
+  // сюди прийти можна; правило мусить стояти й тут.
+  if (!visibleStages().some(s => s.key === key)) return;
 
   const prev = S.stage;
   S.stage = st;
