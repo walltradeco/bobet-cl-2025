@@ -428,6 +428,7 @@
   .result-pill .team span{overflow:hidden; text-overflow:ellipsis;}
   table.matches thead th.th-result{color:var(--gold);}
   td.pred{position:relative;}
+  td.pred .team{min-width:0; max-width:100%;}
   td.pred.exact{
     background:rgba(76,174,107,0.45);
     color:#EFFAF0;
@@ -594,7 +595,7 @@
     min-width:0;
   }
   .gp-actualteam .result-pill .flag{width:20px; height:15px;}
-  .gp-actualteam .team, .gp-pred .team{gap:7px;}
+  .gp-actualteam .team, .gp-pred .team{gap:7px; min-width:0; max-width:100%;}
   .gp-actualteam .flag, .gp-pred .flag{width:20px; height:15px;}
   .gp-pred{color:var(--text-dim);}
   .gp-pred.hit{
@@ -888,8 +889,14 @@
     font-family:'JetBrains Mono',monospace;
     font-size:18px;
     white-space:normal;
+    overflow:hidden;
   }
-  table.special td.sb-val .team{justify-content:center; gap:7px;}
+  /* Повні назви команд («Реал Мадрид», «Боруссія Дортмунд») довші за
+     короткі скорочення, якими це писалось раніше — без min-width:0
+     inline-flex не стискається до ширини вузької колонки й вилазить
+     поверх сусідніх клітинок замість переносу на другий рядок. */
+  table.special td.sb-val .team{justify-content:center; gap:7px; max-width:100%; min-width:0;}
+  table.special td.sb-val .team span{min-width:0;}
   table.special td.sb-val.sb-hit{
     background:rgba(76,174,107,0.45);
     color:#EFFAF0;
