@@ -1660,7 +1660,7 @@ const TOURNAMENTS = [
   },
   {
     key:'euroseason2026',
-    title:'EuroSeason 2026',
+    title:'ЄвроСезон 2026',
     source:'supabase',
     tabs:[
       { sheet:'Leaderboards',      kind:'leaderboard', source:'leaderboard' },
@@ -1683,7 +1683,7 @@ const TOURNAMENTS = [
   // Дані спільні на всі три, тягнуться один раз (див. HONORS_CACHE).
   {
     key:'honors',
-    title:'HONORS',
+    title:'Нагороди',
     source:'honors',
     tabs:[
       { sheet:'Трофейна вітрина',  kind:'honorsCase' },
@@ -1691,7 +1691,7 @@ const TOURNAMENTS = [
       // дублював цифри біля кожного імені у вітрині, а картки
       // переможців переїхали туди ж, угору.
       { sheet:'Рекорди ліги',      kind:'honorsRecords' },
-      { sheet:'Портрети гравців', kind:'honorsDna' },
+      { sheet:'Портрети', kind:'honorsDna' },
     ]
   },
 ];
@@ -2377,6 +2377,17 @@ function canonName(v){
   return NAME_CANON[s.toLowerCase().replace(/\s+/g,' ').trim()] || s;
 }
 
+// Єдине написання імен ЛЮДЕЙ — тільки НА ПОКАЗ. Дані (FROZEN) не
+// чіпаємо: підрахунок бонусів звіряє рядки, а колонки гравців
+// адресуються за індексом. Тут зводимо лише повне значення клітинки —
+// «Андрей»→«Андрій», «Миша»→«Міша» (у базі це robить honor_aliases,
+// файл 112; тут — дзеркало для архівних таблиць, які малюються з FROZEN).
+const PERSON_CANON = { 'андрей':'Андрій', 'миша':'Міша' };
+function canonPerson(v){
+  const s = cellStr(v);
+  return PERSON_CANON[s.toLowerCase().trim()] || s;
+}
+
 function withFlag(name){
   const s = canonName(name);
   const icon = teamIcon(s);
@@ -2697,7 +2708,7 @@ function renderBoards(finalBoards){
         return `
         <div class="lb-row ${placeCls}">
           <div class="lb-rank">${rankInner}</div>
-          <div class="lb-name">${escapeHtml(e.name)}</div>
+          <div class="lb-name">${escapeHtml(canonPerson(e.name))}</div>
           <div class="lb-pts">${e.pts}</div>
         </div>`;
       }).join('')}
@@ -2721,7 +2732,7 @@ function renderPointsSummary(players, totals){
         return `
         <div class="gp-summary-cell">
           <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}</span>
-          <span class="gp-summary-name">${escapeHtml(p.name)}</span>
+          <span class="gp-summary-name">${escapeHtml(canonPerson(p.name))}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
       }).join('')}
@@ -2943,7 +2954,7 @@ function renderBoostsBlock(boosts, players, predMap){
       <thead>
         <tr>
           <th class="boost-head">${escapeHtml(boosts.title)}</th>
-          ${players.map(p => `<th class="boost-player">${escapeHtml(p.name)}</th>`).join('')}
+          ${players.map(p => `<th class="boost-player">${escapeHtml(canonPerson(p.name))}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -3162,7 +3173,7 @@ function renderMatches(data){
           ${hasDate ? '<th class="meta">Date</th>' : ''}
           <th class="meta th-game">Game</th>
           <th class="meta th-result" style="text-align:center;">Result</th>
-          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(canonPerson(p.name))}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -3303,7 +3314,7 @@ function renderGroupPositions(data){
             <th>#</th>
             <th class="gp-seed-h">Склад</th>
             <th class="gp-actual-h">Final result</th>
-            ${players.map(p => `<th class="gp-player">${escapeHtml(p.name)}</th>`).join('')}
+            ${players.map(p => `<th class="gp-player">${escapeHtml(canonPerson(p.name))}</th>`).join('')}
           </tr>
         </thead>
         <tbody>
@@ -3326,7 +3337,7 @@ function renderGroupPositions(data){
     <div class="gp-summary">
       ${players.map((p, i) => `
         <div class="gp-summary-cell">
-          <span class="gp-summary-name">${escapeHtml(p.name)}</span>
+          <span class="gp-summary-name">${escapeHtml(canonPerson(p.name))}</span>
           <span class="gp-summary-pts">${escapeHtml(pointsRow[i] || '0')}</span>
         </div>`).join('')}
     </div>` : '';
@@ -3397,7 +3408,7 @@ function renderPairWinners(data){
         <tr>
           <th class="meta">Pair</th>
           <th class="meta th-result">Winner</th>
-          ${players.map(p => `<th class="p-name-cell">${escapeHtml(p.name)}</th>`).join('')}
+          ${players.map(p => `<th class="p-name-cell">${escapeHtml(canonPerson(p.name))}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -3502,7 +3513,7 @@ function renderSpecialBets(data){
         <tr>
           <th class="sb-th">Question</th>
           <th class="sb-th sb-th-actual" style="text-align:center;">Final Result</th>
-          ${players.map(p => `<th class="sb-th-player">${escapeHtml(p.name)}</th>`).join('')}
+          ${players.map(p => `<th class="sb-th-player">${escapeHtml(canonPerson(p.name))}</th>`).join('')}
         </tr>
       </thead>
       <tbody>
@@ -3565,11 +3576,11 @@ function renderGenericTable(data){
     <div class="table-card">
       <table class="sheet-table">
         <thead><tr>${headerRow.map((c, ci) =>
-          `<th class="${ci === pointsColIdx ? 'th-points' : ''}">${escapeHtml(c)}</th>`
+          `<th class="${ci === pointsColIdx ? 'th-points' : ''}">${escapeHtml(canonPerson(c))}</th>`
         ).join('')}</tr></thead>
         <tbody>
           ${bodyRows.map(r => `<tr>${headerRow.map((_, ci) =>
-            `<td class="${ci === pointsColIdx ? 'td-points' : ''}">${escapeHtml(r[ci] ?? '')}</td>`
+            `<td class="${ci === pointsColIdx ? 'td-points' : ''}">${escapeHtml(canonPerson(r[ci] ?? ''))}</td>`
           ).join('')}</tr>`).join('')}
         </tbody>
       </table>
@@ -3767,7 +3778,7 @@ function honorsCase(d){
     <div class="hn-case dim">
       <div class="hn-lamp"></div>
       <div class="hn-empty">
-        <b>EuroSeason 2026</b> · сезон триває, полиця чекає
+        <b>ЄвроСезон 2026</b> · сезон триває, полиця чекає
         ${lead ? `<br>зараз попереду ${escapeHtml(lead.display_name)} — ${lead.total_points}` : ''}
       </div>
     </div>`;
@@ -3878,7 +3889,7 @@ let DNA_VS = null;
 function honorsDna(d){
   const profiles = d.dnaProfile || [];
   if(!profiles.length){
-    return honorsWrap('Портрети гравців', 'Дані ще не залиті',
+    return honorsWrap('Портрети', 'Дані ще не залиті',
       '<div class="status-line">Портрети з’являться після заливки архіву прогнозів.</div>');
   }
   const arch = Object.fromEntries((d.dnaArch || []).map(a => [a.person, a]));
@@ -3901,7 +3912,7 @@ function honorsDna(d){
   const portrait = DNA_PERSON ? dnaPortrait(d, DNA_PERSON) :
     '<div class="dna-hint">Обери гравця, щоб побачити портрет цілком</div>';
 
-  return honorsWrap('Портрети гравців',
+  return honorsWrap('Портрети',
     'Почерк кожного: улюблені рахунки, звички, сильні й слабкі місця — на 1162 прогнозах за всю історію ліги',
     `${dnaLeagueBlock(league)}
      <div class="dna-grid">${cards}</div>
