@@ -1691,7 +1691,7 @@ const TOURNAMENTS = [
       // дублював цифри біля кожного імені у вітрині, а картки
       // переможців переїхали туди ж, угору.
       { sheet:'Рекорди ліги',      kind:'honorsRecords' },
-      { sheet:'Портрети', kind:'honorsDna' },
+      { sheet:'Портрети гравців', kind:'honorsDna' },
     ]
   },
 ];
@@ -3889,7 +3889,7 @@ let DNA_VS = null;
 function honorsDna(d){
   const profiles = d.dnaProfile || [];
   if(!profiles.length){
-    return honorsWrap('Портрети', 'Дані ще не залиті',
+    return honorsWrap('Портрети гравців', 'Дані ще не залиті',
       '<div class="status-line">Портрети з’являться після заливки архіву прогнозів.</div>');
   }
   const arch = Object.fromEntries((d.dnaArch || []).map(a => [a.person, a]));
@@ -3912,7 +3912,7 @@ function honorsDna(d){
   const portrait = DNA_PERSON ? dnaPortrait(d, DNA_PERSON) :
     '<div class="dna-hint">Обери гравця, щоб побачити портрет цілком</div>';
 
-  return honorsWrap('Портрети',
+  return honorsWrap('Портрети гравців',
     'Почерк кожного: улюблені рахунки, звички, сильні й слабкі місця — на 1162 прогнозах за всю історію ліги',
     `${dnaLeagueBlock(league)}
      <div class="dna-grid">${cards}</div>
