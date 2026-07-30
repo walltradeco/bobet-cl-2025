@@ -233,6 +233,17 @@
     white-space:nowrap;
   }
   .lb-row.p1 .lb-name, .lb-row.p2 .lb-name, .lb-row.p3 .lb-name{font-weight:700;}
+  .lb-delta{
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    font-weight:700;
+    min-width:30px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .lb-delta .lb-up{color:var(--green);}
+  .lb-delta .lb-down{color:var(--red);}
+  .lb-delta .lb-same{color:var(--text-dim); opacity:0.6;}
   .lb-pts{
     font-family:'JetBrains Mono',monospace;
     font-weight:700;
@@ -1185,6 +1196,7 @@
     .lb-name{font-size:14px;}
     .lb-pts{font-size:15px;}
     .lb-rank{min-width:34px;}
+    .lb-delta{font-size:11px; min-width:24px;}
     table.matches{font-size:13px;}
     table.matches td{padding:8px 5px; font-size:13px;}
     table.matches thead th{padding:9px 5px 8px;}
@@ -1770,9 +1782,20 @@ async function buildLeaderboardRows(){
   tours.forEach(t => { byKey[t.key] = t; });
 
   const monthly = await sbGet(
-    'leaderboard?select=tournament_id,display_name,total_points,place');
+    'leaderboard?select=tournament_id,participant_id,display_name,total_points,place');
   const season = await sbGet(
-    'season_leaderboard?select=display_name,total_points,place&order=place.asc');
+    'season_leaderboard?select=person_key,display_name,total_points,place&order=place.asc');
+
+  // Зміна місця з останнього знімку (файл 116) — тримаємо ЛИШЕ як
+  // косметичну підказку: якщо в'юх ще нема на проді (стара БД до
+  // заливки 116) чи запит впав — просто нічого не показуємо.
+  let monthlyDelta = [], seasonDelta = [];
+  try { monthlyDelta = await sbGet('leaderboard_rank_delta?select=tournament_key,participant_id,delta'); } catch(e) {}
+  try { seasonDelta  = await sbGet('season_leaderboard_rank_delta?select=person_key,delta'); } catch(e) {}
+  const deltaByParticipant = {};
+  monthlyDelta.forEach(d => { deltaByParticipant[d.tournament_key + '|' + d.participant_id] = d.delta; });
+  const deltaByPerson = {};
+  seasonDelta.forEach(d => { deltaByPerson[d.person_key] = d.delta; });
 
   // Склад гравців: беремо з будь-якого місяця, який уже видно.
   const roster = [...new Set(monthly.map(r => r.display_name))];
@@ -1783,6 +1806,7 @@ async function buildLeaderboardRows(){
     const t = byKey[m.key];
     const rows = t
       ? monthly.filter(r => r.tournament_id === t.id).sort((a, b) => a.place - b.place)
+        .map(r => ({ ...r, delta: deltaByParticipant[m.key + '|' + r.participant_id] }))
       : [];
     // Місяць ще не стартував — показуємо борд із нулями, як у таблиці.
     boards.push({
@@ -1791,9 +1815,12 @@ async function buildLeaderboardRows(){
         : roster.map((n, i) => ({ place: 1, display_name: n, total_points: 0 }))
     });
   }
-  boards.push({ title:'General', rows: season });
+  boards.push({
+    title:'General',
+    rows: season.map(r => ({ ...r, delta: deltaByPerson[r.person_key] }))
+  });
 
-  const BOARD_W = 4;                       // №, Name, Points, порожня
+  const BOARD_W = 4;                       // №, Name, Points, зміна місця
   const cols = boards.length * BOARD_W;
   const depth = Math.max(1, ...boards.map(b => b.rows.length));
   const out = grid(depth + 2, cols);
@@ -1808,6 +1835,7 @@ async function buildLeaderboardRows(){
       out[ri + 2][c]     = r.place;
       out[ri + 2][c + 1] = r.display_name;
       out[ri + 2][c + 2] = r.total_points;
+      out[ri + 2][c + 3] = r.delta == null ? '' : String(r.delta);
     });
   });
 
@@ -2679,6 +2707,7 @@ function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
   const boards = [];
   for(const nameCol of nameCols){
     const ptsCol = nameCol + 1;
+    const deltaCol = ptsCol + 1;
     // title: nearest non-empty text above this board. Merged stage titles in CSV land
     // in the leftmost cell of the merged range, so scan a few columns left of Name too.
     let title = '';
@@ -2695,7 +2724,8 @@ function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
       const pts = toNum(rows[di][ptsCol]);
       if(name === '' || isPlaceholderName(name)) continue;
       if(pts === null) continue;
-      entries.push({ name, pts });
+      const delta = toNum(rows[di][deltaCol]);   // null для архіву — там немає зміни місця
+      entries.push({ name, pts, delta });
     }
     // Учасники, які цей турнір не грають, стоять у таблиці з 0. Ховаємо їх, але
     // лише коли турнір уже стартував (є хоч кілька ненульових результатів).
@@ -2704,6 +2734,16 @@ function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
     if(shown.length) boards.push({ title, entries: shown });
   }
   return boards;
+}
+
+// Зміна місця з останнього знімку (файл 116). null/undefined — немає
+// даних (архів, або живий борд ще не мав жодного знімку) — не показуємо
+// нічого, а не «=», щоб не брехати «нуль змін», коли просто нема історії.
+function lbDelta(d){
+  if(d === null || d === undefined || d === '') return '';
+  if(d > 0)  return `<span class="lb-up">▲${d}</span>`;
+  if(d < 0)  return `<span class="lb-down">▼${-d}</span>`;
+  return `<span class="lb-same">=</span>`;
 }
 
 function renderBoards(finalBoards){
@@ -2737,6 +2777,7 @@ function renderBoards(finalBoards){
         <div class="lb-row ${placeCls}">
           <div class="lb-rank">${rankInner}</div>
           <div class="lb-name">${escapeHtml(canonPerson(e.name))}</div>
+          <div class="lb-delta">${lbDelta(e.delta)}</div>
           <div class="lb-pts">${e.pts}</div>
         </div>`;
       }).join('')}
