@@ -101,6 +101,15 @@
   .press-q textarea:focus{outline:none;border-color:var(--gold);}
   .press-q .saved{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--teal);
     margin-top:6px;min-height:15px;}
+  .press-q .btns{display:flex;gap:8px;margin-top:9px;}
+  .press-q .btns button{flex:0 0 auto;padding:9px 16px;border-radius:9px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+    border:1px solid var(--line);}
+  .press-q .btns .confirm{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);}
+  .press-q .btns .skip{background:var(--panel-3);color:var(--text-dim);}
+  .press-note{font-size:13px;line-height:1.5;color:var(--text-dim);
+    background:var(--panel-3);border:1px solid var(--line);border-radius:9px;
+    padding:10px 12px;margin-bottom:12px;}
   .gw-group h3{font-family:'Space Grotesk',sans-serif;font-size:15px;margin:18px 0 8px;
     color:var(--gold);}
   .feed-item{border-left:3px solid var(--line);padding:8px 0 8px 12px;margin-bottom:9px;}
@@ -2674,19 +2683,30 @@ const PRESS_SLOT = {
   post:         'Після туру',
 };
 
+// Скільки невирішених питань показуємо одночасно. Богдан 30.07.2026:
+// щоб не завалювати екран — не більше трьох, решта підтягнеться,
+// щойно на ці відповіси або пропустиш.
+const PRESS_OPEN_LIMIT = 3;
+// Порядок слотів у списку: спершу передматчеві (є дедлайн), потім
+// післяматчеві.
+const PRESS_SLOT_RANK = { pre_shared: 0, pre_personal: 1, post: 2 };
+
 async function viewPress(){
   const stageId = S.stage.id;
-  const [prRes, ansRes, feedRes] = await Promise.all([
+  const [prRes, ansRes, skipRes, feedRes, rolloutRes] = await Promise.all([
     sb.from('press_prompts').select('*').eq('tournament_id', stageId).order('created_at'),
     sb.from('press_answers').select('*').eq('participant_id', S.me.participant_id),
+    sb.from('press_prompt_skips').select('*').eq('participant_id', S.me.participant_id),
     sb.from('press_feed').select('*').eq('tournament_id', stageId).order('created_at', { ascending: false }),
+    sb.rpc('press_rollout_active', { p_tournament: stageId }),
   ]);
 
   const prompts = prRes.data || [];
   const myAns   = ansRes.data || [];
+  const mySkips = skipRes.data || [];
   const feed    = feedRes.data || [];
+  const rolloutActive = !!rolloutRes.data;
 
-  // Заголовок вікенда за id — з довідника, що вже завантажений.
   const gwTitle = (id) => {
     const g = S.gameweeks.find(x => x.gameweek_id === id);
     return g ? (g.title || ('Вікенд ' + g.number)) : 'Вікенд';
@@ -2696,42 +2716,33 @@ async function viewPress(){
     return g ? g.number : 0;
   };
 
-  // Мої питання: спільні (participant_id null) + персональні саме мої.
-  const answerOf = (promptId) => {
-    const a = myAns.find(x => x.prompt_id === promptId);
-    return a ? a.body : '';
-  };
-  const mine = prompts
-    .filter(p => p.participant_id == null || p.participant_id === S.me.participant_id)
-    .sort((a, b) => gwNum(b.gameweek_id) - gwNum(a.gameweek_id)
-                 || (a.slot > b.slot ? 1 : -1));
+  const isAnswered = (id) => myAns.some(a => a.prompt_id === id);
+  const isSkipped  = (id) => mySkips.some(s => s.prompt_id === id);
+
+  // Невирішені мої питання: спільні (participant_id null) + мої персональні,
+  // без тих, на які вже відповів або які пропустив. Сортуємо за слотом
+  // (передматчеві першими), потім за свіжістю вікенда.
+  const openMine = prompts
+    .filter(p => (p.participant_id == null || p.participant_id === S.me.participant_id)
+              && !isAnswered(p.id) && !isSkipped(p.id))
+    .sort((a, b) => (PRESS_SLOT_RANK[a.slot] - PRESS_SLOT_RANK[b.slot])
+                 || (gwNum(b.gameweek_id) - gwNum(a.gameweek_id)));
+  const shown  = openMine.slice(0, PRESS_OPEN_LIMIT);
+  const hidden = openMine.length - shown.length;
 
   let html = `<div class="card"><h2>News & Press · ${esc(S.stage.title)}</h2>
     <p class="dim">Новини рахуються автоматично після кожного вікенда. Пресконференції —
-    добровільні: відповідаєш парою речень, і це бачать усі. Балів не дає.</p></div>`;
+    добровільні. Балів не дає.</p></div>`;
 
-  // ---------- 1. Мої питання ----------
-  if (mine.length){
-    html += `<div class="card"><h2>Твої питання</h2>
-      <p class="dim" style="margin-bottom:12px">Пиши коротко, 1-2 речення. Зберігається саме
-      при виході з поля. Порожня відповідь — прибирає її зі стрічки.</p>` +
-      mine.map(p => {
-        const ans = answerOf(p.id);
-        return `<div class="press-q${ans ? ' answered' : ''}" data-pwrap="${p.id}">
-          <div class="slot">${esc(PRESS_SLOT[p.slot] || p.slot)} · ${esc(gwTitle(p.gameweek_id))}</div>
-          <div class="q">${esc(p.body)}</div>
-          <textarea data-prompt="${p.id}" rows="2" placeholder="твоя відповідь…">${esc(ans)}</textarea>
-          <div class="saved" data-saved="${p.id}"></div>
-        </div>`;
-      }).join('') + `</div>`;
-  }
-
-  // ---------- 2. Стрічка ----------
+  // ---------- 1. Стрічка (завжди згори) ----------
+  const rolloutNote = rolloutActive
+    ? `<p class="press-note">🟢 новини цього вікенда ще виходять — заходь протягом години</p>`
+    : '';
   if (!feed.length){
-    html += `<div class="card"><p class="dim">Стрічка поки порожня — новини зʼявляться,
-      щойно завершиться перший вікенд етапу.</p></div>`;
+    html += `<div class="card"><h2>Стрічка</h2>${rolloutNote}
+      <p class="dim">Поки порожня — новини зʼявляться, щойно завершиться перший вікенд етапу,
+      а відповіді пресконференцій — щойно хтось відповість.</p></div>`;
   } else {
-    // Групуємо за вікендом; вікенди — за спаданням номера (найновіший згори).
     const groups = new Map();
     for (const it of feed){
       if (!groups.has(it.gameweek_id)) groups.set(it.gameweek_id, []);
@@ -2739,9 +2750,8 @@ async function viewPress(){
     }
     const gwIds = [...groups.keys()].sort((a, b) => gwNum(b) - gwNum(a));
 
-    html += `<div class="card"><h2>Стрічка</h2>` + gwIds.map(gid => {
-      const items = groups.get(gid);
-      const rows = items.map(it => {
+    html += `<div class="card"><h2>Стрічка</h2>${rolloutNote}` + gwIds.map(gid => {
+      const rows = groups.get(gid).map(it => {
         const isPress = it.item_type === 'press';
         const del = (S.me.is_admin && isPress && it.answer_id)
           ? `<button class="del" data-del="${it.answer_id}" title="видалити відповідь">видалити</button>`
@@ -2755,25 +2765,55 @@ async function viewPress(){
     }).join('') + `</div>`;
   }
 
+  // ---------- 2. Твої питання (нижче, максимум 3) ----------
+  if (shown.length){
+    html += `<div class="card"><h2>Твої питання</h2>
+      <div class="press-note">Пиши що хочеш — вільним текстом. Натиснеш «Підтвердити» —
+      відповідь одразу зʼявиться у стрічці вгорі, її бачитимуть усі. Не хочеш відповідати —
+      «Пропустити».${hidden > 0 ? ` Ще ${ptsQ(hidden)} — підтягнуться, коли розберешся з цими.` : ''}</div>` +
+      shown.map(p => `
+        <div class="press-q" data-pwrap="${p.id}">
+          <div class="slot">${esc(PRESS_SLOT[p.slot] || p.slot)} · ${esc(gwTitle(p.gameweek_id))}</div>
+          <div class="q">${esc(p.body)}</div>
+          <textarea data-prompt="${p.id}" rows="2" placeholder="пиши що хочеш…"></textarea>
+          <div class="btns">
+            <button class="confirm" data-confirm="${p.id}">Підтвердити</button>
+            <button class="skip" data-skip="${p.id}">Пропустити</button>
+          </div>
+          <div class="saved" data-saved="${p.id}"></div>
+        </div>`).join('') + `</div>`;
+  }
+
   $('view').innerHTML = html;
 
-  // Збереження відповіді при виході з поля.
-  $('view').querySelectorAll('[data-prompt]').forEach(ta => {
-    ta.onblur = async () => {
-      const id  = ta.dataset.prompt;
-      const val = ta.value.trim();
-      const prev = answerOf(id);
-      if (val === (prev || '')) return;
-      const note = $('view').querySelector(`[data-saved="${id}"]`);
-      const { data, error } = await sb.rpc('save_press_answer', { p_prompt: id, p_body: val });
-      if (error){ if (note){ note.textContent = 'не збереглось: ' + error.message; note.style.color = 'var(--red)'; } return; }
-      // локальний кеш, щоб повторний blur без змін не слав запит
-      const a = myAns.find(x => x.prompt_id === id);
-      if (val){ if (a) a.body = val; else myAns.push({ prompt_id: id, participant_id: S.me.participant_id, body: val }); }
-      else if (a){ myAns.splice(myAns.indexOf(a), 1); }
-      const wrap = $('view').querySelector(`[data-pwrap="${id}"]`);
-      if (wrap) wrap.classList.toggle('answered', !!val);
-      if (note){ note.style.color = 'var(--teal)'; note.textContent = data || (val ? 'збережено' : 'прибрано'); }
+  const setNote = (id, txt, color) => {
+    const n = $('view').querySelector(`[data-saved="${id}"]`);
+    if (n){ n.textContent = txt; n.style.color = color; }
+  };
+
+  // Підтвердити: зберегти відповідь → вона летить у стрічку, список
+  // перемальовується (питання зникає, підтягується наступне).
+  $('view').querySelectorAll('[data-confirm]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.confirm;
+      const ta = $('view').querySelector(`[data-prompt="${id}"]`);
+      const val = (ta ? ta.value : '').trim();
+      if (!val){ setNote(id, 'напиши відповідь або натисни «Пропустити»', 'var(--red)'); return; }
+      btn.disabled = true;
+      const { error } = await sb.rpc('save_press_answer', { p_prompt: id, p_body: val });
+      if (error){ btn.disabled = false; setNote(id, 'не збереглось: ' + error.message, 'var(--red)'); return; }
+      await viewPress();
+    };
+  });
+
+  // Пропустити: позначаємо пропуск, питання зникає зі списку.
+  $('view').querySelectorAll('[data-skip]').forEach(btn => {
+    btn.onclick = async () => {
+      const id = btn.dataset.skip;
+      btn.disabled = true;
+      const { error } = await sb.rpc('skip_press_prompt', { p_prompt: id });
+      if (error){ btn.disabled = false; setNote(id, 'не вийшло: ' + error.message, 'var(--red)'); return; }
+      await viewPress();
     };
   });
 
@@ -2786,6 +2826,15 @@ async function viewPress(){
       await viewPress();
     };
   });
+}
+
+// «1 питання / 2 питання / 5 питань» — відмінок для лічильника прихованих.
+function ptsQ(n){
+  const a = n % 100, b = a % 10;
+  if (a > 10 && a < 20) return `${n} питань`;
+  if (b === 1) return `${n} питання`;
+  if (b >= 2 && b <= 4) return `${n} питання`;
+  return `${n} питань`;
 }
 
 // =====================================================================
