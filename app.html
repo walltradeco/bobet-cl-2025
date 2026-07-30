@@ -23,23 +23,23 @@
     color:var(--text); font-family:'Inter',sans-serif; min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:920px;margin:0 auto;padding:0 16px 120px;}
+  .wrap{max-width:1080px;margin:0 auto;padding:0 16px 120px;}
   .mono{font-family:'JetBrains Mono',monospace;}
   .grotesk{font-family:'Space Grotesk',sans-serif;}
 
   /* ---------- HEADER ---------- */
   header{padding:22px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px;}
   .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;letter-spacing:-0.01em;}
+  .brand{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:23px;letter-spacing:-0.01em;}
   .brand span{color:var(--gold);}
-  .whoami{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);text-align:right;}
-  .whoami b{color:var(--purple);display:block;font-size:14px;}
+  .whoami{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);text-align:right;}
+  .whoami b{color:var(--purple);display:block;font-size:15px;}
 
   /* ---------- TABS ---------- */
   nav.tabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 18px;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
   nav.tabs button{
     background:var(--panel);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:14px;
+    font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:15px;
     padding:9px 14px;border-radius:8px;white-space:nowrap;cursor:pointer;
   }
   nav.tabs button.on{background:var(--panel-3);color:var(--text);border-color:var(--gold);}
@@ -49,23 +49,24 @@
     -webkit-overflow-scrolling:touch;}
   nav.stages button{
     flex:1 1 0;background:transparent;border:1px solid var(--line);color:var(--text-dim);
-    font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.06em;
+    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.06em;
     text-transform:uppercase;padding:8px 6px;border-radius:8px;white-space:nowrap;cursor:pointer;
   }
   nav.stages button.on{background:var(--gold-soft);color:var(--gold);border-color:var(--gold);}
   nav.stages button:disabled{opacity:0.35;cursor:not-allowed;}
+  nav.stages button.locked{opacity:0.5;}
 
   /* ---------- BONUS ---------- */
   .bq{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px;
     background:var(--panel-2);}
   .bq.locked{background:var(--panel);border-style:dashed;}
-  .bq .q{font-size:14px;font-weight:600;line-height:1.4;margin-bottom:4px;}
-  .bq .meta{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+  .bq .q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:4px;}
+  .bq .meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
     margin-bottom:10px;}
   .yn{display:flex;gap:8px;}
   .yn button{
     flex:1;background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;
+    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;
     padding:12px;border-radius:9px;cursor:pointer;
   }
   .yn button.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
@@ -74,15 +75,15 @@
      переносимо рядками. flex:1 знято — інакше при шести варіантах
      кожен стискається в нечитабельний стовпчик. */
   .yn-wrap{flex-wrap:wrap;}
-  .yn-wrap button{flex:0 1 auto;min-width:120px;padding:11px 14px;font-size:14px;}
+  .yn-wrap button{flex:0 1 auto;min-width:120px;padding:11px 14px;font-size:15px;}
   .bq input.txt{
     width:100%;box-sizing:border-box;background:var(--panel-3);border:1px solid var(--line);
-    border-radius:9px;color:var(--text);font-size:15px;padding:12px;
+    border-radius:9px;color:var(--text);font-size:16px;padding:12px;
     font-family:'Inter',sans-serif;
   }
   .bq input.txt:focus{outline:none;border-color:var(--gold);}
   .bq input.txt:disabled{opacity:0.6;}
-  .bq .res{font-family:'JetBrains Mono',monospace;font-size:12px;margin-top:9px;}
+  .bq .res{font-family:'JetBrains Mono',monospace;font-size:13px;margin-top:9px;}
   .bq .res.ok{color:var(--teal);}
   .bq .res.no{color:var(--red);}
   .bq .res.wait{color:var(--text-dim);}
@@ -90,8 +91,8 @@
   /* ---------- CARDS ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
   .card.tight{padding:12px;}
-  h2{font-family:'Space Grotesk',sans-serif;font-size:17px;margin:0 0 12px;font-weight:700;}
-  .dim{color:var(--text-dim);font-size:13px;line-height:1.5;}
+  h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
+  .dim{color:var(--text-dim);font-size:14px;line-height:1.5;}
 
   /* ---------- DEADLINE ---------- */
   .deadline{
@@ -99,13 +100,13 @@
     background:var(--gold-soft);border:1px solid rgba(232,178,60,0.3);
     border-radius:10px;padding:14px 16px;margin-bottom:14px;gap:16px;
   }
-  .deadline .t{font-family:'JetBrains Mono',monospace;font-size:22px;color:var(--gold);font-weight:700;}
+  .deadline .t{font-family:'JetBrains Mono',monospace;font-size:23px;color:var(--gold);font-weight:700;}
   .deadline.closed{background:var(--red-soft);border-color:rgba(199,92,74,0.35);}
-  .deadline.closed .t{color:var(--red);font-size:16px;}
+  .deadline.closed .t{color:var(--red);font-size:17px;}
   /* Спільний дрібний заголовок над цифрою — був трьома копіями інлайн-стилів */
-  .cap{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;
+  .cap{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;
     text-transform:uppercase;color:var(--text-dim);}
-  .deadline .when{font-size:12px;color:var(--text-dim);margin-top:3px;}
+  .deadline .when{font-size:13px;color:var(--text-dim);margin-top:3px;}
 
   /* ---------- ПЕРЕМИКАЧ ВІКЕНДІВ ----------
      Це навігація по вікенду, а не дрібний вибір, тому окремий чіп,
@@ -114,9 +115,9 @@
   .gw-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .gw-chip{background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
     border-radius:9px;padding:8px 14px;cursor:pointer;text-align:left;
-    font-family:'Inter',sans-serif;font-size:14px;font-weight:600;line-height:1.25;}
+    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;line-height:1.25;}
   .gw-chip .d{display:block;font-family:'JetBrains Mono',monospace;
-    font-size:11px;font-weight:400;color:var(--text-dim);margin-top:2px;}
+    font-size:12px;font-weight:400;color:var(--text-dim);margin-top:2px;}
   /* Обране скрізь у кабінеті золоте — і вибір (стиль, суперник,
      бонусна відповідь), і навігація (етап, вкладка, вікенд).
      Виняток один: бусти, у яких колір змістовний і збігається
@@ -130,7 +131,7 @@
      ⚠️ У потоці, а не absolute: назва гостя теж вирівняна праворуч,
      тож накладний підпис перекривав би її на довгих назвах
      («Суперкубок Англії»). */
-  .comp-tag{text-align:right;font-size:10px;font-weight:600;
+  .comp-tag{text-align:right;font-size:11px;font-weight:600;
     letter-spacing:0.03em;color:var(--green);opacity:0.7;
     white-space:nowrap;pointer-events:none;}
   /* Час початку матчу — ліворуч у тому ж рядку, що й турнір. Раніше
@@ -138,33 +139,33 @@
      не видно, який матч якого дня. */
   .match-meta{display:flex;justify-content:space-between;align-items:baseline;
     gap:10px;margin-bottom:6px;}
-  .match-when{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);}
+  .match-when{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
   .match.boosted{border-color:var(--purple);background:var(--purple-soft);}
   .match.autopilot{border-color:var(--gold);background:var(--gold-soft);}
   .match-teams{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
-  .team{flex:1;font-size:16px;font-weight:600;line-height:1.3;}
+  .team{flex:1;font-size:17px;font-weight:600;line-height:1.3;}
   .team.away{text-align:right;}
-  .vs{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:12px;}
+  .vs{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:13px;}
   .score-in{display:flex;align-items:center;justify-content:center;gap:10px;}
   .score-in input{
     width:62px;height:52px;text-align:center;
-    font-family:'JetBrains Mono',monospace;font-size:24px;font-weight:700;
+    font-family:'JetBrains Mono',monospace;font-size:25px;font-weight:700;
     background:var(--panel-3);border:1px solid var(--line);border-radius:9px;color:var(--text);
   }
   .score-in input:focus{outline:none;border-color:var(--gold);}
-  .score-in .sep{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:20px;}
-  .actual{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--teal);text-align:center;margin-top:8px;}
-  .pts{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);font-weight:700;}
+  .score-in .sep{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:21px;}
+  .actual{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--teal);text-align:center;margin-top:8px;}
+  .pts{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gold);font-weight:700;}
 
   /* ---------- BOOST PICKER ---------- */
-  .ap-tag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:0.08em;
+  .ap-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;
     text-transform:uppercase;color:var(--gold);margin-bottom:7px;}
   .match.ap-pick{cursor:pointer;border-style:dashed;}
   .match.ap-blocked{opacity:0.4;cursor:not-allowed;border-style:solid;}
   .boost-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .boost-chip{
     background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'JetBrains Mono',monospace;font-size:12px;padding:6px 10px;
+    font-family:'JetBrains Mono',monospace;font-size:13px;padding:6px 10px;
     border-radius:7px;cursor:pointer;
   }
   /* Лишається для чіпів в адмінці (правильна відповідь на питання).
@@ -176,20 +177,20 @@
   /* ---------- BUTTONS ---------- */
   button.primary{
     width:100%;background:var(--gold);color:#1a1206;border:none;border-radius:10px;
-    padding:15px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer;
+    padding:15px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;cursor:pointer;
   }
   button.primary:disabled{background:var(--panel-3);color:var(--text-dim);cursor:not-allowed;}
   button.ghost{
     background:transparent;border:1px solid var(--line);color:var(--text-dim);
-    border-radius:8px;padding:10px 14px;font-size:14px;cursor:pointer;font-family:'Inter',sans-serif;
+    border-radius:8px;padding:10px 14px;font-size:15px;cursor:pointer;font-family:'Inter',sans-serif;
   }
 
   /* ---------- REVIEW MODAL ---------- */
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;
     align-items:flex-end;justify-content:center;z-index:100;padding:0;}
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;
-    padding:20px 16px 28px;width:100%;max-width:920px;max-height:88vh;overflow-y:auto;}
-  .rev-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px;}
+    padding:20px 16px 28px;width:100%;max-width:1080px;max-height:88vh;overflow-y:auto;}
+  .rev-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px;}
   .rev-line .s{font-family:'JetBrains Mono',monospace;font-weight:700;}
 
   /* ---------- DRAFT ---------- */
@@ -200,46 +201,46 @@
   .budget .fill.over{background:var(--red);}
   .qty{display:flex;align-items:center;gap:10px;}
   .qty button{width:34px;height:34px;border-radius:8px;background:var(--panel-3);
-    border:1px solid var(--line);color:var(--text);font-size:18px;cursor:pointer;}
-  .qty .n{font-family:'JetBrains Mono',monospace;font-size:17px;min-width:22px;text-align:center;font-weight:700;}
+    border:1px solid var(--line);color:var(--text);font-size:19px;cursor:pointer;}
+  .qty .n{font-family:'JetBrains Mono',monospace;font-size:18px;min-width:22px;text-align:center;font-weight:700;}
 
   /* Розбір буста з прикладами. white-space:pre-line — текст лежить
      у базі рядками, і саме розбивка робить кейси читабельними. */
   .bex{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
-  .bex summary{cursor:pointer;font-size:12px;color:var(--gold);
+  .bex summary{cursor:pointer;font-size:13px;color:var(--gold);
     font-family:'JetBrains Mono',monospace;letter-spacing:0.02em;}
   .bex summary::marker{color:var(--text-dim);}
-  .bex > div{white-space:pre-line;color:var(--text-dim);font-size:13px;
+  .bex > div{white-space:pre-line;color:var(--text-dim);font-size:14px;
     line-height:1.6;margin-top:8px;}
 
   /* ---------- TABLE ---------- */
-  table{width:100%;border-collapse:collapse;font-size:14px;}
-  th{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-dim);
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
   td.n{font-family:'JetBrains Mono',monospace;font-weight:700;}
-  .medal{font-size:15px;}
+  .medal{font-size:16px;}
 
   /* ---------- CHECKS ---------- */
   .checks{display:flex;flex-wrap:wrap;gap:7px;}
   .chk{display:flex;align-items:center;gap:6px;background:var(--panel-2);
-    border:1px solid var(--line);border-radius:20px;padding:5px 11px;font-size:13px;}
+    border:1px solid var(--line);border-radius:20px;padding:5px 11px;font-size:14px;}
   .chk.yes{border-color:var(--green);color:var(--green);}
   .chk.no{color:var(--text-dim);}
 
   /* ---------- LOGIN ---------- */
   .login{max-width:380px;margin:8vh auto 0;text-align:center;}
-  .login h1{font-family:'Space Grotesk',sans-serif;font-size:34px;margin:0 0 6px;}
+  .login h1{font-family:'Space Grotesk',sans-serif;font-size:35px;margin:0 0 6px;}
   .login h1 span{color:var(--gold);}
   .login input{
     width:100%;padding:15px;margin:8px 0;background:var(--panel-2);
-    border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:16px;
+    border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:17px;
     font-family:'Inter',sans-serif;text-align:center;
   }
-  .login input.code{font-family:'JetBrains Mono',monospace;font-size:24px;letter-spacing:0.18em;font-weight:700;}
+  .login input.code{font-family:'JetBrains Mono',monospace;font-size:25px;letter-spacing:0.18em;font-weight:700;}
   .login input:focus{outline:none;border-color:var(--gold);}
 
-  .msg{padding:11px 13px;border-radius:9px;font-size:14px;margin:10px 0;}
+  .msg{padding:11px 13px;border-radius:9px;font-size:15px;margin:10px 0;}
   .msg.err{background:var(--red-soft);border:1px solid rgba(199,92,74,0.35);color:var(--red);}
   .msg.ok{background:var(--green-soft);border:1px solid rgba(76,174,107,0.35);color:var(--green);}
   .hide{display:none !important;}
@@ -280,7 +281,7 @@
       <div class="whoami">
         <b id="my-name">—</b>
         <span id="my-email"></span>
-        <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:11px;margin-top:5px">вийти</button>
+        <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:12px;margin-top:5px">вийти</button>
       </div>
     </div>
     <nav class="stages" id="stages"></nav>
@@ -304,11 +305,13 @@ const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
 // Етапи EuroSeason 2026. UUID фіксовані у базі (файл 05_seed.sql),
 // тому список статичний — зайвого запиту на старті не робимо.
 // bonusOnly: у General немає ні матчів, ні бустів, лише бонусні питання.
+// Назви — англійською, як на публічному борді (test.html: August/
+// September/October/General), щоб кабінет і борд писали однаково.
 const STAGES = [
-  { key: 'season2026', id: '44444444-4444-4444-4444-444444444444', title: 'General',  bonusOnly: true  },
-  { key: 'aug2026',    id: '11111111-1111-1111-1111-111111111111', title: 'Серпень',  bonusOnly: false },
-  { key: 'sep2026',    id: '22222222-2222-2222-2222-222222222222', title: 'Вересень', bonusOnly: false },
-  { key: 'oct2026',    id: '33333333-3333-3333-3333-333333333333', title: 'Жовтень',  bonusOnly: false },
+  { key: 'season2026', id: '44444444-4444-4444-4444-444444444444', title: 'General',   bonusOnly: true  },
+  { key: 'aug2026',    id: '11111111-1111-1111-1111-111111111111', title: 'August',    bonusOnly: false },
+  { key: 'sep2026',    id: '22222222-2222-2222-2222-222222222222', title: 'September', bonusOnly: false },
+  { key: 'oct2026',    id: '33333333-3333-3333-3333-333333333333', title: 'October',   bonusOnly: false },
 ];
 
 // Кабінет відкривається на поточному місяці. До 1 серпня — на серпні,
@@ -524,20 +527,25 @@ async function loadMe(stage){
 // ⚠️ Свій поточний етап не ховаємо ніколи, навіть якщо він закрився
 // поки людина сиділа на сторінці — інакше кабінет став би порожнім
 // посеред роботи.
-function visibleStages(){
-  if (S.me && S.me.is_admin) return STAGES;
-  const now = Date.now();
-  return STAGES.filter(s => {
-    if (S.stage && s.key === S.stage.key) return true;
-    const opens = S.stageOpens ? S.stageOpens[s.id] : null;
-    return !opens || new Date(opens).getTime() <= now;
-  });
+// Дата відкриття етапу для НЕ-адміна, або null — уже відкрито/адмін/
+// свій поточний етап (той не блокуємо ніколи, див. коментар вище).
+function stageLockedUntil(s){
+  if (S.me && S.me.is_admin) return null;
+  if (S.stage && s.key === S.stage.key) return null;
+  const opens = S.stageOpens ? S.stageOpens[s.id] : null;
+  if (!opens || new Date(opens).getTime() <= Date.now()) return null;
+  return opens;
 }
 
+// Усі етапи видно завжди (рішення Богдана 30.07.2026) — раніше
+// закриті ховались кнопкою зовсім, тепер кнопка є, а клік по ще
+// не відкритому показує повідомлення замість вмісту (див. setStage).
 function renderStages(){
-  $('stages').innerHTML = visibleStages().map(s =>
-    `<button data-stage="${s.key}" class="${S.stage.key === s.key ? 'on' : ''}">${esc(s.title)}</button>`
-  ).join('');
+  $('stages').innerHTML = STAGES.map(s => {
+    const locked = !!stageLockedUntil(s);
+    return `<button data-stage="${s.key}" class="${S.stage.key === s.key ? 'on' : ''}${locked ? ' locked' : ''}">
+      ${locked ? '🔒 ' : ''}${esc(s.title)}</button>`;
+  }).join('');
   $('stages').querySelectorAll('button').forEach(b => {
     b.onclick = () => setStage(b.dataset.stage);
   });
@@ -546,9 +554,21 @@ function renderStages(){
 async function setStage(key){
   const st = STAGES.find(s => s.key === key);
   if (!st || st.key === S.stage.key) return;
-  // Прихований етап (файл 108) — кнопки для нього немає, але вручну
-  // сюди прийти можна; правило мусить стояти й тут.
-  if (!visibleStages().some(s => s.key === key)) return;
+
+  // Етап ще не відкрито (файл 108, тепер файл 116 — м'яко замість
+  // ховання кнопки). Показуємо повідомлення, самого перемикання не
+  // робимо — S.stage і TOURNAMENT_ID лишаються на поточному етапі.
+  const opens = stageLockedUntil(st);
+  if (opens) {
+    $('view').innerHTML = `<div class="card">
+      <h2>${esc(st.title)}</h2>
+      <p class="dim">Етап буде відкрито ${esc(fmtDeadline(opens))}.
+      До того часу тут ще можуть змінюватись бюджет і баланс механік
+      (ціни бустів, стелі тощо) — тому заповнювати прогнози можна
+      лише після відкриття.</p>
+    </div>`;
+    return;
+  }
 
   const prev = S.stage;
   S.stage = st;
@@ -894,7 +914,7 @@ async function viewMatches(){
       </div>
       <div style="text-align:right">
         <div class="cap">прогнози</div>
-        <div class="t" id="pred-count" style="font-size:19px;color:${
+        <div class="t" id="pred-count" style="font-size:20px;color:${
           missing ? 'var(--gold)' : 'var(--green)'}">${filledCnt} з ${total}</div>
         <div class="when" id="pred-left">${
           missing ? `лишилось заповнити ${missing}` : ''}</div>
@@ -926,9 +946,9 @@ async function viewMatches(){
 
   html += `<div class="card tight">
     <div style="margin-bottom:7px"><span class="cap">Підтвердили</span>
-      <span class="dim" style="font-size:12px">${S.gw.confirmed_count} з ${S.gw.participant_count}</span></div>
+      <span class="dim" style="font-size:13px">${S.gw.confirmed_count} з ${S.gw.participant_count}</span></div>
     <div class="checks" id="checks"></div>
-    <div class="dim" style="margin-top:8px;font-size:12px">
+    <div class="dim" style="margin-top:8px;font-size:13px">
       Щойно підтвердять усі — вікенд відкриється, і прогнози стануть видні кожному.</div></div>
     <div id="ap-bar"></div>`;
   // ⚠️ Rivals і Manager Style стоять ПІСЛЯ матчів (рішення Богдана
@@ -976,16 +996,16 @@ async function viewMatches(){
                class="sc-a" value="${p.away ?? ''}" ${locked ? 'disabled' : ''}>
       </div>
       <div class="dp-wrap ${p.boost === 'double_predict' || p.home2 != null ? '' : 'hide'}">
-        <div class="dim" style="text-align:center;margin:8px 0 4px;font-size:12px">
+        <div class="dim" style="text-align:center;margin:8px 0 4px;font-size:13px">
           другий рахунок</div>
         <div class="score-in">
           <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
                  class="sc-h2" value="${p.home2 ?? ''}" ${locked ? 'disabled' : ''}
-                 style="height:44px;font-size:20px">
+                 style="height:44px;font-size:21px">
           <span class="sep">:</span>
           <input type="number" min="0" max="20" inputmode="numeric" pattern="[0-9]*"
                  class="sc-a2" value="${p.away2 ?? ''}" ${locked ? 'disabled' : ''}
-                 style="height:44px;font-size:20px">
+                 style="height:44px;font-size:21px">
         </div>
       </div>
       ${m.status === 'played' ? renderBreakdown(m, p) : ''}
@@ -1034,7 +1054,7 @@ async function viewMatches(){
     const styleLine = myStyle
       ? `<div class="rev-line" style="border:none;padding:4px 0">
            <span class="dim">👔 ${esc(myStyle.style_title)}${
-             myStyle.capped ? ` <span style="font-size:11px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
+             myStyle.capped ? ` <span style="font-size:12px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
            <span class="s" style="color:${stylePts > 0 ? 'var(--green)' : 'var(--text-dim)'}">
              ${myStyle.scored ? '+' + stylePts : 'очікує'}</span>
          </div>`
@@ -1050,7 +1070,7 @@ async function viewMatches(){
       ${mvpLine}
       <div class="rev-line" style="border-top:1px solid var(--line);border-bottom:none;padding:8px 0 2px;margin-top:4px">
         <span style="font-weight:700">Разом за вікенд</span>
-        <span class="s" style="color:var(--gold);font-size:18px">${total}</span></div>
+        <span class="s" style="color:var(--gold);font-size:19px">${total}</span></div>
     </div>`;
   }
 
@@ -1165,21 +1185,21 @@ function renderRivalBox(deadlinePassed, open){
     .join(' · ');
 
   let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-      <div><b style="color:var(--text);font-size:13px">⚔️ Rivals · дуель на вікенд</b></div>
+      <div><b style="color:var(--text);font-size:14px">⚔️ Rivals · дуель на вікенд</b></div>
       <div class="mono" title="взято за етап із можливих"
-        style="font-size:13px;font-weight:700;color:${rivalGot ? 'var(--green)' : 'var(--text-dim)'}">
+        style="font-size:14px;font-weight:700;color:${rivalGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${rivalGot}/${rivalMax}</div>
     </div>
-    ${rivalBreakdown ? `<div class="dim" style="font-size:11px;margin-top:2px">${rivalBreakdown}</div>` : ''}`;
+    ${rivalBreakdown ? `<div class="dim" style="font-size:12px;margin-top:2px">${rivalBreakdown}</div>` : ''}`;
 
   if (locked) {
     // Read-only: мій суперник (якщо був)
     const why = scored
-      ? '<div class="dim" style="margin-top:4px;font-size:12px">Результати вікенда внесені — дуель зіграна, суперник зафіксований.</div>'
+      ? '<div class="dim" style="margin-top:4px;font-size:13px">Результати вікенда внесені — дуель зіграна, суперник зафіксований.</div>'
       : (usedUp
-        ? '<div class="dim" style="margin-top:4px;font-size:12px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
+        ? '<div class="dim" style="margin-top:4px;font-size:13px">Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенда.</div>'
         : (confirmedLock
-          ? `<div class="dim" style="margin-top:4px;font-size:12px">Вікенд підтверджено — суперник зафіксований разом із прогнозами
+          ? `<div class="dim" style="margin-top:4px;font-size:13px">Вікенд підтверджено — суперник зафіксований разом із прогнозами
              й стилем. Коли підтвердять усі й стануть видні чужі прогнози,
              його можна буде переобрати <b>один раз</b>.</div>`
           : ''));
@@ -1214,7 +1234,7 @@ function renderRivalBox(deadlinePassed, open){
          і тоді буде <b>ще одна, остання зміна</b>: суперника можна переобрати один раз.`;
 
     inner += `
-      <div class="dim" style="margin:6px 0 8px;font-size:12px">
+      <div class="dim" style="margin:6px 0 8px;font-size:13px">
         Обери одного суперника на цей вікенд. Порівнюються очки за матчі вікенда:
         у кого більше — тому <b>+2</b>. Порівну очок — рахуються вгадані точні
         рахунки, у кого їх більше. Порівну і того, і того — <b>по +1 обом</b>.
@@ -1223,7 +1243,7 @@ function renderRivalBox(deadlinePassed, open){
       <div class="yn yn-wrap" id="rival-pick">${chips}</div>
       ${open ? `<button class="primary" id="rival-confirm-change" disabled
           style="margin-top:10px;width:100%">Підтвердити зміну суперника</button>` : ''}
-      <div class="dim" style="margin-top:8px;font-size:12px">${
+      <div class="dim" style="margin-top:8px;font-size:13px">${
         myPick ? `Твій суперник: <b style="color:var(--gold)">${esc(myPick.rival_name)}</b>. ` : ''}${hint}</div>
       <div id="rival-msg"></div>`;
   }
@@ -1240,7 +1260,7 @@ function renderRivalBox(deadlinePassed, open){
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
-        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
+        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
       </div>`;
   }
@@ -1296,11 +1316,11 @@ function renderRivalBox(deadlinePassed, open){
 
     mvpHtml = `<div class="card tight">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><b style="color:var(--text);font-size:13px">🏆 MVP вікенда</b></div>
+        <div><b style="color:var(--text);font-size:14px">🏆 MVP вікенда</b></div>
         ${mvpNames.size ? `<div style="font-weight:700;color:var(--gold)">
           ${[...mvpNames].map(esc).join(', ')} <span class="dim">+${S.mvpRows[0].points}</span></div>` : ''}
       </div>
-      <div class="dim" style="margin:6px 0 8px;font-size:12px">
+      <div class="dim" style="margin:6px 0 8px;font-size:13px">
         MVP вікенда — той, у кого найбільше очок за матчі цього вікенда
         (без Rivals і стилю). Порівну очок — рахуються вгадані точні
         рахунки; порівну і тут — MVP стають усі, хто ділить перше
@@ -1432,13 +1452,13 @@ function renderStyleBox(locked, open){
     .join(' · ');
 
   let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-      <div><b style="color:var(--text);font-size:13px">👔 Manager Style · один стиль на вікенд</b></div>
+      <div><b style="color:var(--text);font-size:14px">👔 Manager Style · один стиль на вікенд</b></div>
       ${styleMax ? `<div class="mono" title="взято за етап із можливих"
-        style="font-size:13px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
+        style="font-size:14px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${styleGot}/${styleMax}</div>` : ''}
     </div>
-    ${styleBreakdown ? `<div class="dim" style="font-size:11px;margin-top:2px">${styleBreakdown}</div>` : ''}
-    <div class="dim" style="margin:6px 0 8px;font-size:12px">
+    ${styleBreakdown ? `<div class="dim" style="font-size:12px;margin-top:2px">${styleBreakdown}</div>` : ''}
+    <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Очки за стиль нараховуються за <b>фінальними рахунками матчів</b> вікенда —
       твої прогнози тут не враховуються взагалі${
         cap ? `, максимум ${ptsWord(cap)} за вікенд` : ''}.
@@ -1454,9 +1474,9 @@ function renderStyleBox(locked, open){
       ? `<div>Твій стиль на цей вікенд:
            <b style="color:var(--gold)">${styleFace(cur, 22)}${esc(cur.title)}</b>
            ${mine && mine.auto_assigned
-             ? '<span class="dim" style="font-size:12px"> · кинуто системою</span>' : ''}
+             ? '<span class="dim" style="font-size:13px"> · кинуто системою</span>' : ''}
          </div>
-         <div class="dim" style="margin-top:4px;font-size:12px">${esc(cur.description)}</div>`
+         <div class="dim" style="margin-top:4px;font-size:13px">${esc(cur.description)}</div>`
       : `<div class="dim">Стиль на цей вікенд не обрано — система кине випадковий, коли підтвердиш.</div>`;
   } else {
     // Вибір. Витрачені стилі лишаємо в списку, але вимкненими — так
@@ -1473,14 +1493,14 @@ function renderStyleBox(locked, open){
 
     inner += `<div class="yn yn-wrap">${chips}</div>`;
     inner += cur
-      ? `<div class="dim" style="margin-top:8px;font-size:12px">
+      ? `<div class="dim" style="margin-top:8px;font-size:13px">
            Обрано: <b style="color:var(--gold)">${esc(cur.title)}</b> — ${esc(cur.description)}
          </div>`
-      : `<div class="dim" style="margin-top:8px;font-size:12px">
+      : `<div class="dim" style="margin-top:8px;font-size:13px">
            Натисни на тренера — під списком з'явиться, за що саме він дає очки.
            Стиль обов'язковий: без нього вікенд не підтвердити.
          </div>`;
-    inner += `<div class="dim" style="margin-top:4px;font-size:11px">
+    inner += `<div class="dim" style="margin-top:4px;font-size:12px">
         Вільних стилів на решту етапу: ${left}.</div>
       <div id="style-msg"></div>`;
   }
@@ -1519,11 +1539,11 @@ function renderStyleBox(locked, open){
             <span class="dim">·</span> ${styleFace(r, 18)}${esc(r.style_title)}</div>
           <div class="s" style="color:${r.points > 0 ? 'var(--green)' : 'var(--text-dim)'}">
             ${r.scored ? '+' + r.points : 'очікує'}${
-              r.capped ? ` <span class="dim" style="font-size:11px">(зі ${r.raw_points})</span>` : ''}</div>
+              r.capped ? ` <span class="dim" style="font-size:12px">(зі ${r.raw_points})</span>` : ''}</div>
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
-        <div class="dim" style="font-size:11px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
+        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
         ${rowsHtml}
       </div>`;
   }
@@ -1565,7 +1585,7 @@ function renderBreakdown(m, p){
 
   return `<div class="actual">факт ${m.home_score}:${m.away_score}
     · <span class="pts">${ptsWord(p.points)}</span>
-    <div class="dim" style="font-size:12px;margin-top:3px">${parts.join(' · ')}</div></div>`;
+    <div class="dim" style="font-size:13px;margin-top:3px">${parts.join(' · ')}</div></div>`;
 }
 
 // ---------------------------------------------------------------------
@@ -1620,7 +1640,7 @@ function renderAutopilotBar(){
           <div class="dim" style="margin-top:3px">
             Обери два матчі — система сама подвоїть той, де вийде більше очок.</div>
         </div>
-        <div class="mono" style="font-size:19px;font-weight:700;color:var(--gold)">${n}/2</div>
+        <div class="mono" style="font-size:20px;font-weight:700;color:var(--gold)">${n}/2</div>
       </div>
       <button class="ghost" id="ap-toggle" style="width:100%;margin-top:10px">
         ${S.ap.on ? 'Готово' : (n ? 'Змінити кандидатів' : 'Обрати кандидатів')}</button>
@@ -1792,7 +1812,7 @@ function renderBoostPickers(){
     if (cur && cur !== 'autopilot') {
       chips += `<button class="boost-chip" data-set-boost="${m.match_id}" data-code="">зняти</button>`;
     }
-    host.innerHTML = chips || '<span class="dim" style="font-size:12px">вільних Boosts немає</span>';
+    host.innerHTML = chips || '<span class="dim" style="font-size:13px">вільних Boosts немає</span>';
   }
 
   $('view').querySelectorAll('[data-set-boost]').forEach(b => {
@@ -2088,14 +2108,14 @@ function boostCard(b, owned, controlHtml){
   const c = boostColor(b.code);
   const right = controlHtml != null
     ? controlHtml
-    : `<div class="mono" style="font-size:15px;font-weight:700;white-space:nowrap;
+    : `<div class="mono" style="font-size:16px;font-weight:700;white-space:nowrap;
          color:${owned ? c : 'var(--text-dim)'}">${owned ? '×' + owned : '—'}</div>`;
   return `
     <div class="card tight" style="border-left:3px solid ${c}">
       <div style="display:flex;justify-content:space-between;align-items:center;gap:12px">
         <div style="flex:1">
-          <div style="font-weight:700;font-size:15px;color:${c}">${esc(b.title)}
-            <span class="mono" style="color:var(--gold);font-size:13px">${priceOf(b.code)}р</span></div>
+          <div style="font-weight:700;font-size:16px;color:${c}">${esc(b.title)}
+            <span class="mono" style="color:var(--gold);font-size:14px">${priceOf(b.code)}р</span></div>
           <div class="dim" style="margin-top:4px">${esc(b.description)}</div>
         </div>
         ${right}
@@ -2219,7 +2239,7 @@ async function viewDraft(){
       <div class="budget">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span class="dim">Витрачено</span>
-          <span class="mono" style="font-size:19px;font-weight:700;color:${left < 0 ? 'var(--red)' : 'var(--gold)'}">
+          <span class="mono" style="font-size:20px;font-weight:700;color:${left < 0 ? 'var(--red)' : 'var(--gold)'}">
             ${sp} / ${budget}</span>
         </div>
         <div class="bar"><div class="fill ${left < 0 ? 'over' : ''}" style="width:${pct}%"></div></div>
@@ -2357,7 +2377,7 @@ async function viewBoard(){
       <td class="n" style="color:var(--green)">${r.exact_count}</td>
       <td class="n dim">${r.match_points ?? 0}</td>
       <td class="n dim">${r.bonus_points ?? 0}</td>
-      <td class="n" style="text-align:right;color:var(--gold);font-size:16px">${r.total_points}</td>
+      <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
     </tr>`).join('')}</tbody></table>`}</div>`;
 
   $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
@@ -2436,7 +2456,7 @@ async function viewBonus(){
           .sort((a, b) => Number(b.confirmed) - Number(a.confirmed))
           .map(c => `<div class="chk ${c.confirmed ? 'yes' : 'no'}">
             ${c.confirmed ? '✓' : '○'} ${esc(c.display_name)}</div>`).join('')}</div>
-        <div class="dim" style="font-size:12px;margin-top:8px">
+        <div class="dim" style="font-size:13px;margin-top:8px">
           Видно лише, хто вже здав. Чужі відповіді відкриються всім,
           коли відповідять усі.</div></div>`;
     }
@@ -2489,20 +2509,22 @@ async function viewBonus(){
                  === String(correct).trim().toLowerCase();
         res = `<div class="res ${hit ? 'ok' : 'no'}">
                  правильно: ${esc(correct)} · ${hit ? 'влучив' : 'мимо'}
-                 ${pts == null ? '' : ' · ' + pts + ' б'}
+                 ${pts == null ? '' : ' · +' + pts}
                </div>`;
       }
     }
 
+    // Формат очок уніфіковано з MVP/Rivals/Manager Style — голе «+N»,
+    // без слів «б»/«оч.» (рішення Богдана 30.07.2026).
     const cost = type === 'yesno'
-      ? `YES ${q['очок_за_yes']} б · NO ${q['очок_за_no']} б`
+      ? `YES +${q['очок_за_yes']} · NO +${q['очок_за_no']}`
       : type === 'number'
         ? (q['очок_за_близько'] != null
-            ? `точно ${max} б · помилка на 1 — ${q['очок_за_близько']} б`
-            : `${max} б за точне число`)
+            ? `точно +${max} · помилка на 1 — +${q['очок_за_близько']}`
+            : `+${max} за точне число`)
         : type === 'choice'
-          ? `${max} б за правильний вибір`
-          : `${max} б за влучну назву`;
+          ? `+${max} за правильний вибір`
+          : `+${max} за влучну назву`;
 
     return `<div class="bq${ro ? ' locked' : ''}">
       <div class="q">${q['нове'] ? '<span style="color:var(--gold)">нове · </span>' : ''}${esc(q['питання'])}</div>
@@ -2619,7 +2641,7 @@ async function viewLog(){
       ? '<p class="dim">Записів немає.</p>'
       : `<table><thead><tr><th>Коли</th><th>Хто</th><th>Чий</th><th>Дія</th></tr></thead><tbody>
          ${data.map(r => `<tr>
-           <td class="dim mono" style="font-size:12px">${new Date(r.created_at).toLocaleString('uk-UA')}</td>
+           <td class="dim mono" style="font-size:13px">${new Date(r.created_at).toLocaleString('uk-UA')}</td>
            <td>${esc(r.адмін)}</td><td>${esc(r.чий_прогноз)}</td>
            <td class="dim">${r.action === 'viewed' ? 'дивився' : 'змінював'}</td>
          </tr>`).join('')}</tbody></table>`}
@@ -2642,7 +2664,7 @@ async function viewLog(){
 //  позначаються галочками окремо.
 // =====================================================================
 const AINP = "width:100%;padding:11px;background:var(--panel-3);border:1px solid var(--line);"
-           + "border-radius:9px;color:var(--text);font-size:15px";
+           + "border-radius:9px;color:var(--text);font-size:16px";
 
 async function viewAdmin(){
   if (!S.me.is_admin) return;
@@ -2818,7 +2840,7 @@ async function viewAdmin(){
         і внизу показується, хто скільки отримав.</p>
       <button class="ghost" id="bonus-suggest-btn" style="width:100%;margin-bottom:12px">
         🤖 Порахувати підказки з результатів</button>
-      <p class="dim" style="font-size:12px;margin-bottom:12px">
+      <p class="dim" style="font-size:13px;margin-bottom:12px">
         Система рахує пропозицію відповіді з внесених рахунків матчів
         (і статистики гравців, коли вона є). Це лише підказка — правильну
         відповідь усе одно підтверджуєш ти.</p>
@@ -2880,7 +2902,7 @@ async function viewAdmin(){
           <input type="checkbox" data-rstage="${s.key}" ${s.key === S.stage.key ? 'checked' : ''}
             style="margin-right:6px;vertical-align:middle">${esc(s.title)}</label>`).join('')}
       </div>
-      <label class="dim" style="display:block;margin-bottom:10px;font-size:13px;cursor:pointer">
+      <label class="dim" style="display:block;margin-bottom:10px;font-size:14px;cursor:pointer">
         <input type="checkbox" id="r-admin" style="margin-right:6px;vertical-align:middle">права адміна</label>
       <button class="ghost" id="btn-radd" style="width:100%">Додати в склад</button>
       <div id="radd-result"></div>
@@ -3088,7 +3110,7 @@ function toLocalInput(iso){
 }
 
 const ANUM = "width:100%;padding:8px;background:var(--panel-3);border:1px solid var(--line);"
-           + "border-radius:7px;color:var(--text);font-size:14px";
+           + "border-radius:7px;color:var(--text);font-size:15px";
 
 // ---------------------------------------------------------------------
 //  Матчі вікенда: час, перенесення, скасування, видалення
@@ -3123,9 +3145,9 @@ async function renderAdminMatches(){
 
     return `<div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line);
       ${dead ? 'opacity:.55' : ''}">
-      <div style="font-size:14px;margin-bottom:4px">
+      <div style="font-size:15px;margin-bottom:4px">
         <span class="mono dim">№${pos}</span> ${esc(r['пара'])}</div>
-      <div class="dim" style="font-size:12px;margin-bottom:9px">
+      <div class="dim" style="font-size:13px;margin-bottom:9px">
         ${esc(when)} · ${esc(st)} · рахунок ${esc(r['рахунок'])}</div>
 
       <div style="display:flex;gap:7px;margin-bottom:7px">
@@ -3237,7 +3259,7 @@ async function renderAdminWeeks(){
     ? '<p class="dim">У цьому етапі вікендів ще немає.</p>'
     : weeks.map(g => `
       <div style="margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--line)">
-        <div style="font-size:14px;margin-bottom:7px">
+        <div style="font-size:15px;margin-bottom:7px">
           <span class="mono dim">№${g.number}</span> ${esc(g.title || ('Вікенд ' + g.number))}</div>
         <div style="display:flex;gap:7px;margin-bottom:7px">
           <input type="text" data-wt="${g.number}" value="${esc(g.title || '')}"
@@ -3373,10 +3395,8 @@ async function renderAdminUnconfirm(){
                  'Його прогнози лишаються на місці, але поля відкриються ' +
                  'назад і він зможе їх переробити.')) return;
 
-    // p_month — назва етапу словом: stage_key розуміє «Серпень»,
-    // «Вересень», «Жовтень» (файл 37).
     const out = await adminRpc('admin_unconfirm', {
-      p_month: S.stage.title, p_name: who, p_gameweek: Number(gw)
+      p_month: S.stage.key, p_name: who, p_gameweek: Number(gw)
     });
     if (out === null) return;
     $('unconf-result').innerHTML =
@@ -3423,7 +3443,7 @@ function bonusSugHtml(b, i){
   const val = (s['кілька'] && s['кілька'].length) ? s['кілька'] : s['пропозиція'];
   if (!val || val === '—') {
     // резолвер є, але поки нема що запропонувати (немає даних)
-    return `<div style="font-size:12px;color:var(--muted);margin:2px 0 9px;
+    return `<div style="font-size:13px;color:var(--muted);margin:2px 0 9px;
         padding:8px 10px;background:var(--panel-3);border-radius:7px">
         🤖 ще нема підказки${s['підстава'] ? ' · ' + esc(s['підстава']) : ''}</div>`;
   }
@@ -3433,9 +3453,9 @@ function bonusSugHtml(b, i){
     : '<span style="color:var(--gold)">проміжна</span>';
   return `<div style="margin:2px 0 10px;padding:9px 11px;border-radius:8px;
       background:rgba(232,178,60,0.10);border:1px solid rgba(232,178,60,0.35)">
-      <div style="font-size:13px;margin-bottom:4px">
+      <div style="font-size:14px;margin-bottom:4px">
         🤖 підказка: <b>${esc(val)}</b> · ${badge}</div>
-      ${s['підстава'] ? `<div class="dim" style="font-size:12px;margin-bottom:8px">${esc(s['підстава'])}</div>` : ''}
+      ${s['підстава'] ? `<div class="dim" style="font-size:13px;margin-bottom:8px">${esc(s['підстава'])}</div>` : ''}
       <button class="ghost" data-asugtake="${i}" style="width:100%;padding:7px">
         Прийняти цю відповідь</button>
     </div>`;
@@ -3479,9 +3499,9 @@ async function renderAdminBonus(){
     if (yn){
       ctrl = `<div class="boost-row">
            <button class="boost-chip ${cur.toLowerCase() === 'yes' ? 'on' : ''}"
-             data-yn="${i}" data-val="YES">YES · ${b.points_yes}</button>
+             data-yn="${i}" data-val="YES">YES +${b.points_yes}</button>
            <button class="boost-chip ${cur.toLowerCase() === 'no' ? 'on' : ''}"
-             data-yn="${i}" data-val="NO">NO · ${b.points_no}</button>
+             data-yn="${i}" data-val="NO">NO +${b.points_no}</button>
          </div>`;
     } else if (kind === 'choice'){
       // Правильну відповідь адмін теж ОБИРАЄ, а не вписує — інакше
@@ -3500,16 +3520,16 @@ async function renderAdminBonus(){
 
     const kindLabel =
       yn                ? 'YES/NO' :
-      kind === 'choice' ? 'вибір: ' + (b.options || []).join(' / ') + ' · ' + b.points_if_correct + ' оч.' :
-      kind === 'number' ? 'число · ' + b.points_if_correct + ' оч.' +
+      kind === 'choice' ? 'вибір: ' + (b.options || []).join(' / ') + ' · +' + b.points_if_correct :
+      kind === 'number' ? 'число · +' + b.points_if_correct +
                           (b.points_near != null
-                            ? ' · ±' + (b.near_window ?? 1) + ' → ' + b.points_near
+                            ? ' · ±' + (b.near_window ?? 1) + ' → +' + b.points_near
                             : ' · тільки точно') :
-                          'відповідь-ім\'я · ' + b.points_if_correct + ' оч.';
+                          'відповідь-ім\'я · +' + b.points_if_correct;
 
     return `<div style="margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--line)">
-      <div style="font-size:14px;margin-bottom:5px">${esc(b.question)}</div>
-      <div class="dim" style="font-size:12px;margin-bottom:9px">
+      <div style="font-size:15px;margin-bottom:5px">${esc(b.question)}</div>
+      <div class="dim" style="font-size:13px;margin-bottom:9px">
         ${esc(kindLabel)}
         · <span data-astate="${i}">${cur ? 'зараз: ' + esc(cur) : 'відповіді ще немає'}</span></div>
       <div data-asug="${i}">${bonusSugHtml(b, i)}</div>
@@ -3518,7 +3538,7 @@ async function renderAdminBonus(){
       <div data-ares="${i}"></div>
 
       <details style="margin-top:10px">
-        <summary class="dim" style="cursor:pointer;font-size:12px">правки самого питання</summary>
+        <summary class="dim" style="cursor:pointer;font-size:13px">правки самого питання</summary>
         <div style="margin-top:9px">
           <input type="text" data-btext="${i}" value="${esc(b.question)}"
             placeholder="текст питання" style="${AINP};margin-bottom:7px">
@@ -3541,7 +3561,7 @@ async function renderAdminBonus(){
               border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
           <button class="ghost" data-bnumsave="${i}" style="width:100%;margin-bottom:7px">
             Зберегти умову промаху</button>` : ''}
-          <p class="dim" style="font-size:12px;margin:7px 0">
+          <p class="dim" style="font-size:13px;margin:7px 0">
             Текст правиться завжди. Бали — тільки поки на питання ще ніхто не відповів.</p>
           <button class="ghost" data-bsave="${i}" style="width:100%">Зберегти правку</button>
 
@@ -3730,17 +3750,17 @@ async function renderAdminRoster(){
         return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
         <div class="rev-line" style="border:0;padding:0">
         <span>${esc(nm)}${p['адмін'] ? ' · адмін' : ''}${
-          p['заходив'] ? '' : '<span class="dim" style="font-size:12px"> · ще не заходив</span>'}</span>
+          p['заходив'] ? '' : '<span class="dim" style="font-size:13px"> · ще не заходив</span>'}</span>
         <span style="display:flex;gap:6px">
         <button class="ghost" data-runlock="${esc(nm)}"
-          style="width:auto;padding:6px 10px;font-size:13px">розфіксувати бусти</button>
+          style="width:auto;padding:6px 10px;font-size:14px">розфіксувати бусти</button>
         <button class="ghost" data-rrm="${esc(nm)}"
-          style="width:auto;padding:6px 12px;font-size:13px">прибрати</button></span></div>
+          style="width:auto;padding:6px 12px;font-size:14px">прибрати</button></span></div>
         <div style="display:flex;gap:6px;margin-top:7px">
         <input type="email" data-em="${esc(nm)}" value="${esc(em)}"
           placeholder="пошти немає" style="${AINP};flex:1">
         <button class="ghost" data-emsave="${esc(nm)}"
-          style="width:auto;padding:6px 12px;font-size:13px;white-space:nowrap">зберегти</button>
+          style="width:auto;padding:6px 12px;font-size:14px;white-space:nowrap">зберегти</button>
         </div></div>`;
       }).join('');
 
