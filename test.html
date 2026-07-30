@@ -2021,9 +2021,23 @@ async function buildSpecialRows(tournamentKey){
   const tid = tours[0].id;
 
   const bets = await sbGet(
-    'special_bets?select=id,position,question,correct_answer' +
+    'special_bets?select=id,position,question,correct_answer,answer_kind,' +
+    'points_yes,points_no,points_if_correct,points_near,near_window' +
     '&tournament_id=eq.' + tid + '&order=position.asc');
   if(!bets.length) return [['Бонусних питань поки немає']];
+
+  // Скільки очок дає питання — дрібним рядком під текстом, тим самим
+  // стилем, що підпис ліги біля матчу (.comp-tag). Формат уніфіковано
+  // з кабінетом (app.html, viewBonus): голе «+N», без слів «б»/«оч.».
+  const bonusBadge = (b) => {
+    const kind = b.answer_kind || (b.points_yes != null ? 'yesno' : 'text');
+    if(kind === 'yesno')  return `YES +${b.points_yes} · NO +${b.points_no}`;
+    if(kind === 'number')
+      return b.points_near != null
+        ? `точно +${b.points_if_correct} · ±${b.near_window ?? 1} → +${b.points_near}`
+        : `+${b.points_if_correct} за точне число`;
+    return `+${b.points_if_correct}`;
+  };
 
   const people = await sbGet(
     'participants?select=id,display_name&tournament_id=eq.' + tid +
@@ -2048,7 +2062,7 @@ async function buildSpecialRows(tournamentKey){
 
   for(const b of bets){
     const rowA = Array(cols).fill('');
-    rowA[COL_Q] = b.question;
+    rowA[COL_Q] = b.question + '\n' + bonusBadge(b);
     rowA[COL_ACTUAL] = b.correct_answer || '';
     rowA[COL_MARK] = 'Prediction';
 
@@ -3161,10 +3175,17 @@ function renderMatches(data){
     const dateVal = filledDate;
     const isDayStart = dateVal !== '' && dateVal !== lastDate;
     if(isDayStart){ lastDate = dateVal; dayIndex++; }
-    body.push({ date: dateVal, isDayStart, dayIndex, game, comp, result: cellStr(r[resCol]), preds });
-    players.forEach((p, pi) => {
-      if(preds[pi] !== '') predMap[p.col + '|' + normGame(game)] = preds[pi];
-    });
+    const resultCell = cellStr(r[resCol]);
+    body.push({ date: dateVal, isDayStart, dayIndex, game, comp, result: resultCell, preds });
+    // Жирним у блоці Boosts позначаємо рахунок, який реально зарахований —
+    // а це видно лише коли матч уже зіграний. Без цієї умови перша з двох
+    // цифр Double Predict завжди збігалась з основним прогнозом і завжди
+    // жирніла, навіть коли матч іще не почався.
+    if(resultCell !== ''){
+      players.forEach((p, pi) => {
+        if(preds[pi] !== '') predMap[p.col + '|' + normGame(game)] = preds[pi];
+      });
+    }
   }
   if(body.filter(b => !b.sep).length === 0) return null;
 
@@ -3532,8 +3553,13 @@ function renderSpecialBets(data){
       </thead>
       <tbody>
         ${bets.map(bet => {
+          // Другий рядок лейблу (якщо є) — бейдж «скільки очок» для
+          // живого EuroSeason, тим самим підходом, що підпис ліги
+          // біля матчу (.comp-tag). В архіві другого рядка нема —
+          // split просто поверне порожній хвіст, і бейдж не покажеться.
+          const [qText, qBadge] = bet.label.split('\n');
           const predRow = `<tr>
-            <td class="sb-label">${escapeHtml(bet.label)}</td>
+            <td class="sb-label">${qBadge ? `<span class="comp-tag">${escapeHtml(qBadge)}</span>` : ''}${escapeHtml(qText)}</td>
             <td class="sb-actual">${bet.actual && bet.actual !== '-' ? `<span class="result-pill">${withFlag(bet.actual)}</span>` : '<span style="color:var(--text-dim);">—</span>'}</td>
             ${bet.preds.map((v, i) => {
               const hit = isHit(bet, i);
