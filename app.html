@@ -281,7 +281,10 @@
       <div class="whoami">
         <b id="my-name">—</b>
         <span id="my-email"></span>
-        <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:12px;margin-top:5px">вийти</button>
+        <div style="margin-top:5px">
+          <button class="ghost" id="btn-log" style="padding:3px 8px;font-size:12px">📋 Журнал</button>
+          <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:12px">вийти</button>
+        </div>
       </div>
     </div>
     <nav class="stages" id="stages"></nav>
@@ -450,6 +453,7 @@ $('in-code').addEventListener('keydown', (e) => {
 });
 
 $('btn-logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+$('btn-log').onclick = () => go('log');
 
 // =====================================================================
 //  Запуск
@@ -562,10 +566,9 @@ async function setStage(key){
   if (opens) {
     $('view').innerHTML = `<div class="card">
       <h2>${esc(st.title)}</h2>
-      <p class="dim">Етап буде відкрито ${esc(fmtDeadline(opens))}.
-      До того часу тут ще можуть змінюватись бюджет і баланс механік
-      (ціни бустів, стелі тощо) — тому заповнювати прогнози можна
-      лише після відкриття.</p>
+      <p class="dim">Відкриється ${esc(fmtDeadline(opens))} — поки що тут
+      ще підкручуємо бюджет і баланс механік (ціни бустів, стелі тощо),
+      тому заповнити прогнози можна буде тільки після відкриття.</p>
     </div>`;
     return;
   }
@@ -731,14 +734,16 @@ function fmtDeadline(iso){
 //  Вкладки
 // =====================================================================
 function renderTabs(){
-  // На General немає ні матчів, ні бустів, ні журналу — лише Bonus.
+  // На General немає ні матчів, ні бустів — лише Bonus.
+  // Журнал прибрано з цього ряду (рішення Богдана 30.07.2026) — він
+  // лишається доступним кнопкою «📋 Журнал» у шапці кабінету, той самий
+  // viewLog(), просто не займає слот у головних вкладках.
   const tabs = S.stage.bonusOnly
     ? [['bonus', 'Bonus']]
     : [
         ['boosts',  'Boosts'],
         ['matches', 'Матчі'],
         ['bonus',   'Bonus'],
-        ['log',     'Журнал'],
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
