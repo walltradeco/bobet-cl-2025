@@ -573,6 +573,10 @@ async function setStage(key){
   S.ap = { unit: null, picks: [], touched: false };
   S.pending = null;
   S.bonus = []; S.bonusDraft = {};
+  // Підказки резолвера (файл 114) кешуються за номером питання (position),
+  // а він однаковий у кожного етапу (1-8) — без скидання підказки серпня
+  // підставлялись би під питання General і навпаки.
+  S.bonusSug = {};
 
   await loadRefs();
   renderStages();
