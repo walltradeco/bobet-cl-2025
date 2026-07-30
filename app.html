@@ -2812,6 +2812,12 @@ async function viewAdmin(){
       <p class="dim" style="margin-bottom:12px">
         Відповідь вноситься по одному питанню. Бали перераховуються одразу,
         і внизу показується, хто скільки отримав.</p>
+      <button class="ghost" id="bonus-suggest-btn" style="width:100%;margin-bottom:12px">
+        🤖 Порахувати підказки з результатів</button>
+      <p class="dim" style="font-size:12px;margin-bottom:12px">
+        Система рахує пропозицію відповіді з внесених рахунків матчів
+        (і статистики гравців, коли вона є). Це лише підказка — правильну
+        відповідь усе одно підтверджуєш ти.</p>
       <div id="bonus-admin"></div>
     </div>
 
@@ -3404,6 +3410,45 @@ async function renderAdminRename(){
 // ---------------------------------------------------------------------
 //  Бонусні питання етапу: внести правильну відповідь
 // ---------------------------------------------------------------------
+// Підказка, порахована резолвером (файл 114). Ключ — position питання.
+// Тримаємо окремо від самих питань: підказка не змінює correct_answer,
+// поки адмін не натиснув «Прийняти».
+function bonusSugHtml(b, i){
+  const s = (S.bonusSug || {})[b.position];
+  if (!s) return '';
+  const val = (s['кілька'] && s['кілька'].length) ? s['кілька'] : s['пропозиція'];
+  if (!val || val === '—') {
+    // резолвер є, але поки нема що запропонувати (немає даних)
+    return `<div style="font-size:12px;color:var(--muted);margin:2px 0 9px;
+        padding:8px 10px;background:var(--panel-3);border-radius:7px">
+        🤖 ще нема підказки${s['підстава'] ? ' · ' + esc(s['підстава']) : ''}</div>`;
+  }
+  const done = s['завершено'];
+  const badge = done
+    ? '<span style="color:var(--green)">фінальна</span>'
+    : '<span style="color:var(--gold)">проміжна</span>';
+  return `<div style="margin:2px 0 10px;padding:9px 11px;border-radius:8px;
+      background:rgba(232,178,60,0.10);border:1px solid rgba(232,178,60,0.35)">
+      <div style="font-size:13px;margin-bottom:4px">
+        🤖 підказка: <b>${esc(val)}</b> · ${badge}</div>
+      ${s['підстава'] ? `<div class="dim" style="font-size:12px;margin-bottom:8px">${esc(s['підстава'])}</div>` : ''}
+      <button class="ghost" data-asugtake="${i}" style="width:100%;padding:7px">
+        Прийняти цю відповідь</button>
+    </div>`;
+}
+
+// Порахувати підказки для поточного етапу й перемалювати блок бонусів.
+async function loadBonusSug(){
+  const btn = $('bonus-suggest-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'рахую…'; }
+  const rows = await adminRpc('suggest_bonus_answers', { p_month: S.stage.key });
+  if (btn) { btn.disabled = false; btn.textContent = '🤖 Порахувати підказки з результатів'; }
+  if (rows === null) return;
+  S.bonusSug = {};
+  rows.forEach(r => { S.bonusSug[r['поз']] = r; });
+  await renderAdminBonus();
+}
+
 async function renderAdminBonus(){
   const host = $('bonus-admin');
   if (!host) return;
@@ -3463,6 +3508,7 @@ async function renderAdminBonus(){
       <div class="dim" style="font-size:12px;margin-bottom:9px">
         ${esc(kindLabel)}
         · <span data-astate="${i}">${cur ? 'зараз: ' + esc(cur) : 'відповіді ще немає'}</span></div>
+      <div data-asug="${i}">${bonusSugHtml(b, i)}</div>
       ${ctrl}
       <button class="ghost" data-asave="${i}" style="margin-top:9px;width:100%">Внести відповідь</button>
       <div data-ares="${i}"></div>
@@ -3619,6 +3665,44 @@ async function renderAdminBonus(){
         <span>${esc(r['учасник'])}</span>
         <span class="s">${esc(r['відповів'])} · ${r['очок']} оч.</span></div>`).join('');
   });
+
+  // --- прийняти підказку резолвера. Одну відповідь вносимо через
+  //     admin_bonus_answer, кілька (нічия між клубами) — через
+  //     admin_bonus_answer_multi. Підтвердження — це і є «я перевірив».
+  host.querySelectorAll('[data-asugtake]').forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.asugtake);
+    const b = S.adminBets[i];
+    const s = (S.bonusSug || {})[b.position];
+    if (!s) return;
+    const several = (s['кілька'] || '').split(' / ').map(x => x.trim()).filter(Boolean);
+    const multi = several.length > 1;
+    const shown = multi ? several.join(' / ') : s['пропозиція'];
+    if (!confirm(`${b.question}\nПідказка: ${shown}\n${s['підстава'] || ''}` +
+                 `\n\nВнести цю відповідь? Бали перерахуються одразу.`)) return;
+
+    btn.disabled = true; btn.textContent = 'вношу…';
+    const { data, error } = multi
+      ? await sb.rpc('admin_bonus_answer_multi',
+          { p_month: S.stage.key, p_question_like: b.question, p_answers: several })
+      : await sb.rpc('admin_bonus_answer',
+          { p_month: S.stage.key, p_question_like: b.question, p_answer: s['пропозиція'] });
+    btn.disabled = false; btn.textContent = 'Прийняти цю відповідь';
+    if (error) return alert('Помилка: ' + error.message);
+
+    b.correct_answer = multi ? several.join(' / ') : s['пропозиція'];
+    const st = host.querySelector(`[data-astate="${i}"]`);
+    if (st) st.textContent = 'зараз: ' + b.correct_answer;
+    const rr = host.querySelector(`[data-ares="${i}"]`);
+    if (rr) rr.innerHTML = `<div class="msg ok" style="margin-top:10px">Внесено: ${esc(b.correct_answer)}</div>` +
+      (data || []).map(r => `<div class="rev-line">
+        <span>${esc(r['учасник'])}</span>
+        <span class="s">${esc(r['відповів'])} · ${r['очок']} оч.</span></div>`).join('');
+  });
+
+  // кнопка «порахувати підказки» живе поза #bonus-admin, тому чіпляємось
+  // тут (перемальовування host її не зачіпає)
+  const sugBtn = $('bonus-suggest-btn');
+  if (sugBtn) sugBtn.onclick = loadBonusSug;
 }
 
 // ---------------------------------------------------------------------
