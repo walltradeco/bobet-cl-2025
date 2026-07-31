@@ -1,0 +1,45 @@
+# BoBet — автоматичне внесення рахунків матчів із SofaScore.
+#
+# Кожні 3 години headless-браузер (Playwright) заходить на SofaScore
+# (обходить 403), читає рахунок ЗАВЕРШЕНИХ матчів (normaltime) і шле у
+# фед (Edge Function ingest-scores → RPC ingest_match_scores). Працює
+# без відкритого застосунку й без живого чату.
+#
+# СЕКРЕТИ (Settings → Secrets and variables → Actions → New secret):
+#   FEED_URL    = https://<проєкт>.supabase.co/functions/v1/ingest-scores
+#   FEED_SECRET = той самий рядок, що в секреті Edge Function
+
+name: SofaScore scores feed
+
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: sofascore-scores
+  cancel-in-progress: false
+
+jobs:
+  pull-scores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Playwright + Chromium
+        run: |
+          python -m pip install --upgrade pip
+          pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Pull finished scores to feed
+        env:
+          FEED_URL: ${{ secrets.FEED_URL }}
+          FEED_SECRET: ${{ secrets.FEED_SECRET }}
+        run: |
+          python tools/feed_scores.py --since-days 7
