@@ -120,6 +120,13 @@
   .feed-item .who{font-weight:700;color:var(--purple);}
   .feed-item .q{font-size:14px;line-height:1.5;}
   .feed-item .a{font-size:14px;line-height:1.5;margin-top:3px;color:var(--text-dim);}
+  /* Заяви репортерів + нитки реакцій (файл 137) */
+  .feed-item.statement{border-left-color:var(--gold);}
+  .feed-item.statement .stmt-line{font-size:14px;line-height:1.5;}
+  .feed-item.statement .stmt-line.reaction{margin-top:6px;margin-left:16px;
+    padding-left:10px;border-left:2px solid var(--line);color:var(--text-dim);}
+  .feed-item.statement .stmt-line .who{color:var(--gold);}
+  .feed-item.statement .stmt-line.reaction .who{color:var(--text-dim);}
   .press-q .interviewer{font-family:'JetBrains Mono',monospace;font-size:12px;
     color:var(--purple);margin-bottom:4px;}
   .feed-item .del{cursor:pointer;color:var(--red);font-size:13px;margin-left:6px;
@@ -2699,19 +2706,21 @@ const PRESS_SLOT_RANK = { intro: -1, pre_shared: 0, pre_personal: 1, post: 2 };
 
 async function viewPress(){
   const stageId = S.stage.id;
-  const [prRes, ansRes, skipRes, feedRes, rolloutRes, ivRes] = await Promise.all([
+  const [prRes, ansRes, skipRes, feedRes, rolloutRes, ivRes, stmtRes] = await Promise.all([
     sb.from('press_prompts').select('*').eq('tournament_id', stageId).order('created_at'),
     sb.from('press_answers').select('*').eq('participant_id', S.me.participant_id),
     sb.from('press_prompt_skips').select('*').eq('participant_id', S.me.participant_id),
     sb.from('press_feed').select('*').eq('tournament_id', stageId).order('created_at', { ascending: false }),
     sb.rpc('press_rollout_active', { p_tournament: stageId }),
     sb.from('press_interviewers').select('code,title'),
+    sb.from('press_statement_feed').select('*').eq('tournament_id', stageId).order('created_at'),
   ]);
 
   const prompts = prRes.data || [];
   const myAns   = ansRes.data || [];
   const mySkips = skipRes.data || [];
   const feed    = feedRes.data || [];
+  const statements = stmtRes.data || [];
   const rolloutActive = !!rolloutRes.data;
   const interviewers = new Map((ivRes.data || []).map(iv => [iv.code, iv.title]));
   const interviewerName = (code) => interviewers.get(code) || code;
@@ -2758,20 +2767,50 @@ async function viewPress(){
   const rolloutNote = rolloutActive
     ? `<p class="press-note">🟢 новини цього вікенда ще виходять — заходь протягом години</p>`
     : '';
-  if (!feed.length){
+  if (!feed.length && !statements.length){
     html += `<div class="card"><h2>Стрічка</h2>${rolloutNote}
       <p class="dim">Поки порожня — новини зʼявляться, щойно завершиться перший вікенд етапу,
       а відповіді пресконференцій — щойно хтось відповість.</p></div>`;
   } else {
+    // Заяви репортерів (файл 137): топ-заяви + вкладені реакції-нитки.
+    // Реакції групуємо під батьком; топ-заяви йдуть у стрічку нарівні
+    // з новинами/питаннями, за часом.
+    const reactionsByParent = new Map();
+    for (const s of statements){
+      if (!s.parent_id) continue;
+      if (!reactionsByParent.has(s.parent_id)) reactionsByParent.set(s.parent_id, []);
+      reactionsByParent.get(s.parent_id).push(s);
+    }
+
+    // Єдина стрічка: press_feed (news/press) + топ-заяви. Кожен елемент
+    // з міткою kind, сортуємо разом за часом усередині вікенда.
     const groups = new Map();
-    for (const it of feed){
-      if (!groups.has(it.gameweek_id)) groups.set(it.gameweek_id, []);
-      groups.get(it.gameweek_id).push(it);
+    const push = (gid, item) => {
+      if (!groups.has(gid)) groups.set(gid, []);
+      groups.get(gid).push(item);
+    };
+    for (const it of feed) push(it.gameweek_id, { kind: 'feed', at: it.created_at, it });
+    for (const s of statements){
+      if (s.parent_id) continue;
+      push(s.gameweek_id, { kind: 'statement', at: s.created_at, it: s });
     }
     const gwIds = [...groups.keys()].sort((a, b) => gwNum(b) - gwNum(a));
 
+    const renderStatementLine = (s, extraClass = '') =>
+      `<div class="stmt-line${extraClass}"><span class="who">🎤 ${esc(interviewerName(s.interviewer_code))}</span>: ${esc(s.body)}</div>`;
+
     html += `<div class="card"><h2>Стрічка</h2>${rolloutNote}` + gwIds.map(gid => {
-      const rows = groups.get(gid).map(it => {
+      const items = groups.get(gid).sort((a, b) =>
+        (new Date(b.at) - new Date(a.at)));
+      const rows = items.map(row => {
+        if (row.kind === 'statement'){
+          const s = row.it;
+          const reacts = (reactionsByParent.get(s.statement_id) || [])
+            .sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+            .map(r => renderStatementLine(r, ' reaction')).join('');
+          return `<div class="feed-item statement">${renderStatementLine(s)}${reacts}</div>`;
+        }
+        const it = row.it;
         const isPress = it.item_type === 'press';
         if (!isPress){
           return `<div class="feed-item news"><div class="body">${esc(it.body)}</div></div>`;
