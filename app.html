@@ -415,7 +415,7 @@ const S = {
   styleOptions: [],  // стилі етапу з позначкою, які вже витрачені (style_options)
   styleCap: null,    // стеля балів стилю за вікенд (manager_style_config)
   gwDots: {},        // gameweek_id -> {boosts_new, predictions_new} (файл 147)
-  stageDots: {},     // {boosts_todo, boosts_draft_new, press_new} (файл 147)
+  stageDots: {},     // {boosts_todo, boosts_draft_new, press_new, press_todo} (файл 147)
   bonusTodo: false,  // є незаповнене бонусне питання цього етапу
 };
 
@@ -817,17 +817,17 @@ function renderTabs(){
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
-  // Крапка «є оновлення» (файл 147). boosts і matches — агрегат по
-  // всіх вікендах етапу (сам список вікендів дивиться на S.gwDots
-  // деінде, тут лише «чи є хоч один»). Bonus — стара логіка «не
-  // заповнив», без seen-таблиці (Богдан: «там нічого й не змінюється»).
+  // Крапка «є оновлення / ще не зроблено» (файл 147). Дві причини, які
+  // фронт малює однаково: TODO — ти сам чогось не заповнив; NEW — щось
+  // сталось, чого ти не бачив. boosts і matches — агрегат по всіх
+  // вікендах етапу (де саме — видно на чіпах усередині).
   const gwDots = Object.values(S.gwDots || {});
   const sd = S.stageDots || {};
   const dotFor = {
-    bonus:   !!S.bonusTodo,
+    bonus:   !!S.bonusTodo,                                       // не заповнив бонуси
     boosts:  !!(sd.boosts_todo || sd.boosts_draft_new || gwDots.some(d => d.boosts_new)),
-    matches: gwDots.some(d => d.predictions_new),
-    press:   !!sd.press_new,
+    matches: gwDots.some(d => d.predictions_todo || d.predictions_new),
+    press:   !!(sd.press_new || sd.press_todo),                  // нове у стрічці АБО є питання без відповіді
   };
 
   $('tabs').innerHTML = tabs.map(([k, t]) =>
@@ -985,7 +985,8 @@ async function viewMatches(){
   // ним. Немає роздільника — показуємо як є, без вигадування дат.
   const gwPicker = S.gameweeks.map(g => {
     const [name, ...rest] = (g.title || ('Вікенд ' + g.number)).split('·');
-    const dot = S.gwDots[g.gameweek_id] && S.gwDots[g.gameweek_id].predictions_new;
+    const d = S.gwDots[g.gameweek_id];
+    const dot = d && (d.predictions_todo || d.predictions_new);
     return `<button class="gw-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
       data-gw="${g.gameweek_id}">${esc(name.trim())}${dot ? '<span class="new-dot"></span>' : ''}${
         rest.length ? `<span class="d">${esc(rest.join('·').trim())}</span>` : ''}</button>`;
@@ -2831,6 +2832,17 @@ async function viewPress(){
                  || (gwNum(b.gameweek_id) - gwNum(a.gameweek_id)));
   const shown  = openMine.slice(0, openLimit);
   const hidden = openMine.length - shown.length;
+
+  // Крапка «є питання від репортера, на яке ще не відповів» (файл 147,
+  // press_todo). Рахуємо тут з уже завантажених питань — так дот
+  // оновлюється одразу після відповіді/скіпу (обидва кличуть viewPress),
+  // а не лише при перезаході на етап. Гасне дією (відповів або пропустив),
+  // не переглядом — як bonus/predictions todo.
+  const pressTodo = openMine.length > 0;
+  if (S.stageDots && S.stageDots.press_todo !== pressTodo) {
+    S.stageDots.press_todo = pressTodo;
+    renderTabs();
+  }
 
   let html = `<div class="card"><h2>News & Press · ${esc(S.stage.title)}</h2>
     <p class="dim">Новини рахуються автоматично після кожного вікенда. Пресконференції —
