@@ -989,6 +989,7 @@
     --lbgd: #B388FF;   /* Різниця голів — бузковий   */
     --lb2x: #FFD740;   /* 2x — жовтий                */
     --lbtot:#69F0AE;   /* Total 3.5+ — зелений       */
+    --lbun: #78909C;   /* Under 2.5 — сталевий        */
     --lbap: #FF9100;   /* Автопілот — помаранчевий   */
     --lbbt: #FF4081;   /* Обидві заб'ють — рожевий   */
     --lb3x: #FF5252;   /* 3x — червоний              */
@@ -1005,6 +1006,7 @@
   td.pred.lbgd{box-shadow:inset 0 0 0 5px var(--lbgd);}
   td.pred.lb2x{box-shadow:inset 0 0 0 5px var(--lb2x);}
   td.pred.lbtot{box-shadow:inset 0 0 0 5px var(--lbtot);}
+  td.pred.lbun{box-shadow:inset 0 0 0 5px var(--lbun);}
   td.pred.lbap{box-shadow:inset 0 0 0 5px var(--lbap);}
   td.pred.lbbt{box-shadow:inset 0 0 0 5px var(--lbbt);}
   td.pred.lb3x{box-shadow:inset 0 0 0 5px var(--lb3x);}
@@ -1039,6 +1041,7 @@
   .chip.lbgd{background:transparent; box-shadow:inset 0 0 0 5px var(--lbgd);}
   .chip.lb2x{background:transparent; box-shadow:inset 0 0 0 5px var(--lb2x);}
   .chip.lbtot{background:transparent; box-shadow:inset 0 0 0 5px var(--lbtot);}
+  .chip.lbun{background:transparent; box-shadow:inset 0 0 0 5px var(--lbun);}
   .chip.lbap{background:transparent; box-shadow:inset 0 0 0 5px var(--lbap);}
   .chip.lbbt{background:transparent; box-shadow:inset 0 0 0 5px var(--lbbt);}
   .chip.lb3x{background:transparent; box-shadow:inset 0 0 0 5px var(--lb3x);}
@@ -1046,6 +1049,7 @@
   table.boosts td.boost-label.lbgd{color:var(--lbgd); box-shadow:inset 3px 0 0 var(--lbgd);}
   table.boosts td.boost-label.lb2x{color:var(--lb2x); box-shadow:inset 3px 0 0 var(--lb2x);}
   table.boosts td.boost-label.lbtot{color:var(--lbtot); box-shadow:inset 3px 0 0 var(--lbtot);}
+  table.boosts td.boost-label.lbun{color:var(--lbun); box-shadow:inset 3px 0 0 var(--lbun);}
   table.boosts td.boost-label.lbap{color:var(--lbap); box-shadow:inset 3px 0 0 var(--lbap);}
   table.boosts td.boost-label.lbbt{color:var(--lbbt); box-shadow:inset 3px 0 0 var(--lbbt);}
   table.boosts td.boost-label.lb3x{color:var(--lb3x); box-shadow:inset 3px 0 0 var(--lb3x);}
@@ -3088,6 +3092,7 @@ function boostKind(label){
   else if(/btts|обидв|обе\s|both/.test(s))        k = 'bbt';
   else if(/^3\s*[хx]|\bx3\b/.test(s))             k = 'b3x';
   else if(/^2\s*[хx]|\bx2\b/.test(s))             k = 'b2x';
+  else if(/under|андер|2\.5|менше 2/.test(s))     k = 'bun';
   else if(/total|тотал|3\.5/.test(s))             k = 'btot';
   else if(/overtime|овертайм|додатков/.test(s))   k = 'bot';
   else                                            k = 'bgen';
