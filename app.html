@@ -970,7 +970,7 @@ async function viewMatches(){
     renderTabs();
   }
   sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: S.gw.gameweek_id, p_kind: 'predictions' })
-    .catch(() => {});
+    .then(() => {}, () => {});
 
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
@@ -2284,9 +2284,9 @@ async function viewBoosts(){
   sd.boosts_draft_new = false;
   for (const k in S.gwDots) S.gwDots[k].boosts_new = false;
   if (hadDot) renderTabs();
-  sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: null, p_kind: 'boosts_draft' }).catch(() => {});
+  sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: null, p_kind: 'boosts_draft' }).then(() => {}, () => {});
   for (const g of S.gameweeks) {
-    sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: g.gameweek_id, p_kind: 'boosts' }).catch(() => {});
+    sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: g.gameweek_id, p_kind: 'boosts' }).then(() => {}, () => {});
   }
 }
 
@@ -2777,7 +2777,7 @@ async function viewPress(){
     S.stageDots.press_new = false;
     renderTabs();
   }
-  sb.rpc('mark_seen', { p_tournament: stageId, p_gameweek: null, p_kind: 'press' }).catch(() => {});
+  sb.rpc('mark_seen', { p_tournament: stageId, p_gameweek: null, p_kind: 'press' }).then(() => {}, () => {});
 
   const [prRes, ansRes, skipRes, feedRes, rolloutRes, ivRes, stmtRes] = await Promise.all([
     sb.from('press_prompts').select('*').eq('tournament_id', stageId).order('created_at'),
