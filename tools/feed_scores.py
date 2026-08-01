@@ -85,6 +85,7 @@ def load_map(path, since_days):
                 if not (today - dt.timedelta(days=since_days) <= d <= today):
                     continue
             rows.append({"event_id": int(eid),
+                         "custom_id": (r.get("sofascore_custom_id") or "").strip(),
                          "label": f"{r.get('home_team_ua','?')} – {r.get('away_team_ua','?')}"})
     return rows
 
@@ -98,28 +99,28 @@ _BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 
 
-def _prime(page):
-    """Зайти на ВЕБ-домен SofaScore, щоб Playwright пройшов Cloudflare як
-    справжній браузер і отримав clearance-cookie. Прямий запит до
-    api.sofascore.com з datacenter-IP дає 403 Forbidden (перевірено в
-    GitHub Actions 01.08.2026); запит із контексту вже завантаженої
-    сторінки sofascore.com — з cookies і Referer — проходить."""
-    page.goto("https://www.sofascore.com/", wait_until="domcontentloaded",
-              timeout=30000)
-    page.wait_for_timeout(2500)   # дати Cloudflare відпрацювати challenge
+def fetch_event(page, custom_id):
+    """(event, raw) з ВЕБ-сторінки матчу SofaScore за customId.
 
+    ⚠️ Прямий api.sofascore.com з datacenter-IP GitHub Actions дає
+    403 Forbidden (перевірено 01.08.2026, і напряму, і через веб-контекст
+    fetch). Але сама ВЕБ-сторінка матчу віддається з тим самим рахунком
+    у server-rendered __NEXT_DATA__ (props.pageProps.event) — Cloudflare
+    її пускає там, де ріже API. Тому беремо рахунок звідти, без API.
 
-def fetch_event(page, event_id):
-    """(data, raw) події SofaScore. Запит робимо ЧЕРЕЗ fetch у контексті
-    завантаженої сторінки sofascore.com — так він несе Referer і cookies
-    браузера, і Cloudflare не віддає 403, як на прямий серверний запит."""
-    body = page.evaluate(
-        """async (id) => {
-            const r = await fetch('https://api.sofascore.com/api/v1/event/' + id,
-                                  { headers: { 'accept': 'application/json' } });
-            return await r.text();
-        }""", event_id)
-    return json.loads(body), body
+    URL за customId: slug у шляху не важить — SofaScore редіректить за
+    customId (перевірено: /x/<customId> → правильна сторінка)."""
+    page.goto(f"https://www.sofascore.com/x/{custom_id}",
+              wait_until="domcontentloaded", timeout=30000)
+    raw = page.evaluate(
+        "() => { const s = document.getElementById('__NEXT_DATA__');"
+        "        return s ? s.textContent : null; }")
+    if not raw:
+        # немає __NEXT_DATA__ → або Cloudflare-заглушка, або 404; для
+        # діагностики повертаємо початок body
+        return None, (page.content() or "")[:200]
+    ev = json.loads(raw).get("props", {}).get("pageProps", {}).get("event")
+    return ev, raw[:160]
 
 
 def collect(rows, verbose=True):
@@ -129,25 +130,26 @@ def collect(rows, verbose=True):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(user_agent=_BROWSER_UA, locale="en-US")
-        _prime(page)   # один раз проходимо Cloudflare на веб-домені
         for i, r in enumerate(rows):
+            if not r.get("custom_id"):
+                if verbose:
+                    print(f"  … {r['label']}: немає customId у CSV — пропуск")
+                continue
             if i:
                 time.sleep(1.5)   # ввічливість до SofaScore при великому вікні
             try:
-                data, body = fetch_event(page, r["event_id"])
+                ev, raw = fetch_event(page, r["custom_id"])
             except Exception as e:  # мережа/парсинг одного матчу не валить решту
                 if verbose:
-                    print(f"  ⚠️  {r['label']} (event {r['event_id']}): {e}")
+                    print(f"  ⚠️  {r['label']} (customId {r['custom_id']}): {e}")
                 continue
-            score = parse_score(data)
+            score = parse_score(ev) if ev else None
             if score is None:
                 if verbose:
-                    st = (data.get("event", {}).get("status") or {}).get("type", "?")
+                    st = ((ev or {}).get("status") or {}).get("type", "?")
                     note = f"  … {r['label']}: ще не finished ({st}) — пропуск"
-                    # діагностика: коли статусу немає взагалі («?»), показуємо
-                    # сире тіло — саме так видно антибот-заглушку SofaScore
-                    if st == "?":
-                        note += f" | raw={body[:160]!r}"
+                    if ev is None:
+                        note += f" | нема __NEXT_DATA__, body={raw!r}"
                     print(note)
                 continue
             if verbose:
