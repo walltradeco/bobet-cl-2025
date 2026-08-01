@@ -9,11 +9,11 @@
 Самодостатній: сам ходить на SofaScore через headless Playwright
 (обходить 403 — перевірено 31.07.2026), сам POSTить у фед.
 
-ЗАВЖДИ normaltime, НІКОЛИ current. Матч із пенальті/овертаймом має
+⚠️ ЗАВЖДИ normaltime, НІКОЛИ current. Матч із пенальті/овертаймом має
 current = рахунок ПІСЛЯ пенальті (напр. 2:4), а normaltime = основний
 час (0:0). Прогнози завжди на основний час — беремо normaltime.
 
-Скрипт оперує ЛИШЕ SofaScore event_id (беруться з CSV --map, дефолт
+Скрипт оперує ЛИШЕ SofaScore event_id (беруться з CSV `--map`, дефолт
 sofascore_match_ids.csv). Наш match_id(uuid) резолвить RPC у базі через
 sofascore_event_map — скрипт uuid узагалі не бачить. Пишемо ЛИШЕ
 завершені матчі; RPC ігнорує ті, що вже мають рахунок, тож надсилати
@@ -89,10 +89,23 @@ def load_map(path, since_days):
     return rows
 
 
+# ⚠️ Реалістичний User-Agent ОБОВʼЯЗКОВИЙ. Дефолтний headless Chromium
+# віддає UA з міткою "HeadlessChrome", і SofaScore на datacenter-IP
+# (GitHub Actions) повертає йому JSON-заглушку без поля "event" — статус
+# читався як "?", і кожен матч тихо йшов у «ще не finished». Знайдено
+# 01.08.2026 з логу Actions: 3 finished-матчі, а written=0.
+_BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+               "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
+
+
 def fetch_event(page, event_id):
-    """JSON події SofaScore через уже відкриту сторінку Playwright."""
-    page.goto(EVENT_URL.format(event_id), wait_until="domcontentloaded", timeout=20000)
-    return json.loads(page.inner_text("pre"))
+    """(data, raw) події SofaScore. Беремо СИРУ HTTP-відповідь, а не
+    відрендерений <pre>: так менше залежимо від того, як Chromium показує
+    JSON, і маємо сире тіло для діагностики."""
+    resp = page.goto(EVENT_URL.format(event_id),
+                     wait_until="domcontentloaded", timeout=20000)
+    body = resp.text() if resp is not None else page.inner_text("pre")
+    return json.loads(body), body
 
 
 def collect(rows, verbose=True):
@@ -101,24 +114,29 @@ def collect(rows, verbose=True):
     matches = []
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+        page = browser.new_page(user_agent=_BROWSER_UA, locale="en-US")
         for i, r in enumerate(rows):
             if i:
                 time.sleep(1.5)   # ввічливість до SofaScore при великому вікні
             try:
-                data = fetch_event(page, r["event_id"])
+                data, body = fetch_event(page, r["event_id"])
             except Exception as e:  # мережа/парсинг одного матчу не валить решту
                 if verbose:
-                    print(f"  warn  {r['label']} (event {r['event_id']}): {e}")
+                    print(f"  ⚠️  {r['label']} (event {r['event_id']}): {e}")
                 continue
             score = parse_score(data)
             if score is None:
                 if verbose:
                     st = (data.get("event", {}).get("status") or {}).get("type", "?")
-                    print(f"  ... {r['label']}: ще не finished ({st}) — пропуск")
+                    note = f"  … {r['label']}: ще не finished ({st}) — пропуск"
+                    # діагностика: коли статусу немає взагалі («?»), показуємо
+                    # сире тіло — саме так видно антибот-заглушку SofaScore
+                    if st == "?":
+                        note += f" | raw={body[:160]!r}"
+                    print(note)
                 continue
             if verbose:
-                print(f"  ok  {r['label']}: {score[0]}:{score[1]} (normaltime)")
+                print(f"  ✅ {r['label']}: {score[0]}:{score[1]} (normaltime)")
             matches.append({"event_id": r["event_id"],
                             "home": score[0], "away": score[1]})
         browser.close()
@@ -165,7 +183,7 @@ def _selftest():
     weird = {"event": {"status": {"type": "finished"},
              "homeScore": {"current": 1}, "awayScore": {"current": 0}}}
     assert parse_score(weird) is None
-    print("feed_scores selftest OK")
+    print("feed_scores selftest OK (пенальті→normaltime, не-finished→None)")
 
 
 if __name__ == "__main__":
