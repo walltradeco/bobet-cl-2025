@@ -3074,6 +3074,9 @@ async function viewAdmin(){
       <h2>Результати вікенда</h2>
       <p class="dim" style="margin-bottom:14px">
         Tab перескакує далі. Одна кнопка внизу — очки перерахуються самі.</p>
+      <button class="ghost" id="btn-pull-scores" style="width:100%;margin-bottom:10px">
+        🤖 Підтягнути зібрані рахунки</button>
+      <div id="staged-box" style="margin-bottom:12px"></div>
       ${list.map(m => `
         <div class="match" data-am="${m.match_id}">
           ${m.competition ? `<div class="comp-tag">${esc(m.competition)}</div>` : ''}
@@ -3346,6 +3349,33 @@ async function viewAdmin(){
       if (error) return alert('Помилка: ' + error.message);
       alert(`Збережено ${results.length}. Бали перераховано.`);
       go('admin');
+    };
+
+    // Напівавтомат: показати зібрані автоматом рахунки (staging, файл 152)
+    // і дати підтвердити одним кліком — той самий шлях, що email-кнопка.
+    $('btn-pull-scores').onclick = async () => {
+      const box = $('staged-box');
+      box.innerHTML = '<div class="dim">читаю…</div>';
+      const { data, error } = await sb.from('admin_staged_scores')
+        .select('*').eq('month', S.stage.key);
+      if (error) { box.innerHTML = `<div class="msg err">Помилка: ${esc(error.message)}</div>`; return; }
+      if (!data || !data.length) {
+        box.innerHTML = '<div class="dim">Зібраних рахунків поки немає — автомат нічого не підтягнув.</div>';
+        return;
+      }
+      box.innerHTML =
+        `<div class="msg ok" style="margin-bottom:8px">Автомат зібрав рахунки (${data.length}) — перевір і підтверди:</div>`
+        + data.map(s => `<div style="padding:4px 0">${esc(s.home_team)}
+             <b class="mono">${s.home_score}:${s.away_score}</b> ${esc(s.away_team)}
+             <span class="dim">· ${esc(s.gameweek)}</span></div>`).join('')
+        + `<button class="primary" id="btn-confirm-scores" style="width:100%;margin-top:10px">
+             Підтвердити внесення (${data.length})</button>`;
+      $('btn-confirm-scores').onclick = async () => {
+        const res = await adminRpc('confirm_staged_scores', { p_month: S.stage.key });
+        if (res === null) return;
+        alert(`Внесено ${res.written ?? 0}. Бали перераховано.`);
+        go('admin');
+      };
     };
 
   }
