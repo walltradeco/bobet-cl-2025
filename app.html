@@ -44,6 +44,13 @@
   }
   nav.tabs button.on{background:var(--panel-3);color:var(--text);border-color:var(--gold);}
 
+  /* Крапка «є оновлення, чого ти ще не бачив» — на вкладці й на
+     чіпі вікенда. Колір навмисно не золотий (той про «обрано»),
+     а зелений — «щось сталось». */
+  .new-dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+    background:var(--green);margin-left:6px;vertical-align:middle;
+    box-shadow:0 0 0 2px rgba(76,174,107,0.25);}
+
   /* ---------- ПЕРЕМИКАЧ ЕТАПІВ ---------- */
   nav.stages{display:flex;gap:5px;overflow-x:auto;margin:12px 0 0;padding-bottom:3px;
     -webkit-overflow-scrolling:touch;}
@@ -407,6 +414,9 @@ const S = {
   styleRows: [],     // тренерські стилі цього вікенда (style_board): мій завжди, чужі — після відкриття
   styleOptions: [],  // стилі етапу з позначкою, які вже витрачені (style_options)
   styleCap: null,    // стеля балів стилю за вікенд (manager_style_config)
+  gwDots: {},        // gameweek_id -> {boosts_new, predictions_new} (файл 147)
+  stageDots: {},     // {boosts_todo, boosts_draft_new, press_new} (файл 147)
+  bonusTodo: false,  // є незаповнене бонусне питання цього етапу
 };
 
 const $ = (id) => document.getElementById(id);
@@ -657,14 +667,29 @@ function defaultTab(){
 }
 
 async function loadRefs(){
-  const [gw, bt, bp] = await Promise.all([
+  const [gw, bt, bp, gwd, sd, bq] = await Promise.all([
     sb.from('gameweek_status').select('*').eq('tournament_id', TOURNAMENT_ID).order('number'),
     sb.from('boost_types').select('*').order('sort_order'),
     sb.from('boost_prices').select('*').eq('tournament_id', TOURNAMENT_ID),
+    sb.from('gameweek_dots').select('*').eq('tournament_id', TOURNAMENT_ID),
+    sb.from('stage_dots').select('*').eq('tournament_id', TOURNAMENT_ID).maybeSingle(),
+    sb.from('my_bonus_questions').select('*'),
   ]);
   S.gameweeks  = gw.data || [];
   S.boostTypes = bt.data || [];
   S.prices     = bp.data || [];
+
+  // Крапки «є оновлення» (файл 147). gwDots — по вікенду (ключ —
+  // gameweek_id), stageDots — один рядок на етап (може бути відсутній,
+  // якщо я не учасник цього етапу, напр. адмін не в складі).
+  S.gwDots = {};
+  for (const d of (gwd.data || [])) S.gwDots[d.gameweek_id] = d;
+  S.stageDots = sd.data || {};
+
+  // Bonus: як і раніше, «є що заповнити», без seen-логіки — та сама
+  // умова, що в viewBonus() (isRO/openQ), але тут потрібен лише факт.
+  const myBonus = (bq.data || []).filter(q => q['етап'] === S.stage.key);
+  S.bonusTodo = myBonus.some(q => !q['зафіксовано'] && countdown(q['дедлайн']));
 
   // За замовчуванням — найближчий незакритий вікенд
   S.gw = S.gameweeks.find(g => !g.is_open) || S.gameweeks[S.gameweeks.length - 1] || null;
@@ -785,15 +810,29 @@ function renderTabs(){
   const tabs = S.stage.bonusOnly
     ? [['bonus', 'Bonus'], ['press', 'News & Press']]
     : [
+        ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
-        ['bonus',   'Bonus'],
         ['press',   'News & Press'],
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
+  // Крапка «є оновлення» (файл 147). boosts і matches — агрегат по
+  // всіх вікендах етапу (сам список вікендів дивиться на S.gwDots
+  // деінде, тут лише «чи є хоч один»). Bonus — стара логіка «не
+  // заповнив», без seen-таблиці (Богдан: «там нічого й не змінюється»).
+  const gwDots = Object.values(S.gwDots || {});
+  const sd = S.stageDots || {};
+  const dotFor = {
+    bonus:   !!S.bonusTodo,
+    boosts:  !!(sd.boosts_todo || sd.boosts_draft_new || gwDots.some(d => d.boosts_new)),
+    matches: gwDots.some(d => d.predictions_new),
+    press:   !!sd.press_new,
+  };
+
   $('tabs').innerHTML = tabs.map(([k, t]) =>
-    `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}</button>`
+    `<button data-tab="${k}" class="${S.tab === k ? 'on' : ''}">${t}${
+      dotFor[k] ? '<span class="new-dot"></span>' : ''}</button>`
   ).join('');
 
   $('tabs').querySelectorAll('button').forEach(b => {
@@ -924,6 +963,15 @@ async function viewMatches(){
   if (!S.gw) S.gw = S.gameweeks[0];
   await loadGameweek(S.gw.gameweek_id);
 
+  // Переглянув саме цей вікенд — гасимо його крапку тут же, не чекаючи
+  // відповіді сервера (файл 147). Чужі вікенди не займаємо.
+  if (S.gwDots[S.gw.gameweek_id] && S.gwDots[S.gw.gameweek_id].predictions_new) {
+    S.gwDots[S.gw.gameweek_id].predictions_new = false;
+    renderTabs();
+  }
+  sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: S.gw.gameweek_id, p_kind: 'predictions' })
+    .catch(() => {});
+
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
   const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
@@ -937,8 +985,9 @@ async function viewMatches(){
   // ним. Немає роздільника — показуємо як є, без вигадування дат.
   const gwPicker = S.gameweeks.map(g => {
     const [name, ...rest] = (g.title || ('Вікенд ' + g.number)).split('·');
+    const dot = S.gwDots[g.gameweek_id] && S.gwDots[g.gameweek_id].predictions_new;
     return `<button class="gw-chip ${g.gameweek_id === S.gw.gameweek_id ? 'on' : ''}"
-      data-gw="${g.gameweek_id}">${esc(name.trim())}${
+      data-gw="${g.gameweek_id}">${esc(name.trim())}${dot ? '<span class="new-dot"></span>' : ''}${
         rest.length ? `<span class="d">${esc(rest.join('·').trim())}</span>` : ''}</button>`;
   }).join('');
 
@@ -2225,6 +2274,20 @@ async function viewBoosts(){
     await renderInto('pane-draft', viewDraft);
     await renderInto('pane-stock', viewStock);
   }
+
+  // Крапка «є оновлення» (файл 147). У Boosts немає чіпів по вікендах
+  // (склад — один на весь етап, а «використано» видно тут же, без
+  // навігації) — тому перегляд вкладки гасить дот стадії й дот
+  // «результати відомі» одразу для всіх вікендів.
+  const sd = S.stageDots || (S.stageDots = {});
+  const hadDot = sd.boosts_draft_new || Object.values(S.gwDots).some(d => d.boosts_new);
+  sd.boosts_draft_new = false;
+  for (const k in S.gwDots) S.gwDots[k].boosts_new = false;
+  if (hadDot) renderTabs();
+  sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: null, p_kind: 'boosts_draft' }).catch(() => {});
+  for (const g of S.gameweeks) {
+    sb.rpc('mark_seen', { p_tournament: TOURNAMENT_ID, p_gameweek: g.gameweek_id, p_kind: 'boosts' }).catch(() => {});
+  }
 }
 
 // =====================================================================
@@ -2342,6 +2405,7 @@ async function viewDraft(){
         });
         if (e2) throw new Error(e2.message);
 
+        if (S.stageDots) S.stageDots.boosts_todo = false;
         closeModal();
         await go('draft');
         alert(msg || 'Boosts зафіксовано');
@@ -2706,6 +2770,15 @@ const PRESS_SLOT_RANK = { intro: -1, pre_shared: 0, pre_personal: 1, post: 2 };
 
 async function viewPress(){
   const stageId = S.stage.id;
+
+  // Крапка «є оновлення» (файл 147) — стрічка суцільна на весь етап,
+  // без чіпів по вікендах, тож гасимо одразу при вході на вкладку.
+  if (S.stageDots && S.stageDots.press_new) {
+    S.stageDots.press_new = false;
+    renderTabs();
+  }
+  sb.rpc('mark_seen', { p_tournament: stageId, p_gameweek: null, p_kind: 'press' }).catch(() => {});
+
   const [prRes, ansRes, skipRes, feedRes, rolloutRes, ivRes, stmtRes] = await Promise.all([
     sb.from('press_prompts').select('*').eq('tournament_id', stageId).order('created_at'),
     sb.from('press_answers').select('*').eq('participant_id', S.me.participant_id),
