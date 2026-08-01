@@ -1,97 +1,97 @@
-date,home_team_ua,away_team_ua,sofascore_event_id,sofa_home_en,sofa_away_en
-2026-08-15,Динамо Київ,Колос,16412919,Dynamo Kyiv,Kolos Kovalivka
-2026-08-15,Харків,Шахтар,16412912,FC Kharkiv,Shakhtar Donetsk
-2026-08-16,Арсенал,Манчестер Сіті,16248427,Arsenal,Manchester City
-2026-08-21,Арсенал,Ковентрі Сіті,16363633,Arsenal,Coventry City
-2026-08-22,Галл Сіті,Манчестер Юнайтед,16363634,Hull City,Manchester United
-2026-08-22,Боруссія Дортмунд,Баварія,16248441,Borussia Dortmund,FC Bayern München
-2026-08-22,Еспаньйол,Реал Мадрид,16416306,Espanyol,Real Madrid
-2026-08-23,Фрозіноне,Ювентус,16283048,Frosinone,Juventus
-2026-08-23,Торіно,Мілан,16283046,Torino,AC Milan
-2026-08-23,Ельче,Барселона,16416311,Elche,FC Barcelona
-2026-08-24,Фулгем,Челсі,16363244,Fulham,Chelsea
-2026-08-26,Реал Мадрид,Реал Сосьєдад,16421051,Real Madrid,Real Sociedad
-2026-08-27,Барселона,Атлетік Більбао,16421059,FC Barcelona,Athletic Club
-2026-08-28,Баварія,Штутгарт,16434087,FC Bayern München,VfB Stuttgart
-2026-08-28,Мілан,Венеція,16284980,AC Milan,Venezia
-2026-08-29,Астон Вілла,Арсенал,16363245,Aston Villa,Arsenal
-2026-08-29,Манчестер Юнайтед,Іпсвіч Таун,16363253,Manchester United,Ipswich Town
-2026-08-29,Шахтар,Полісся,16412925,Shakhtar Donetsk,Polissya Zhytomyr
-2026-08-29,Буковина,Динамо Київ,16412921,Bukovyna Chernivtsi,Dynamo Kyiv
-2026-08-30,Челсі,Брайтон,16363249,Chelsea,Brighton & Hove Albion
-2026-08-30,Реал Мадрид,Малага,16416312,Real Madrid,Málaga CF
-2026-08-30,Ювентус,Парма,16284975,Juventus,Parma
-2026-08-31,Барселона,Райо Вальєкано,16416295,FC Barcelona,Rayo Vallecano
-2026-09-05,Динамо Київ,ЛНЗ,16412933,Dynamo Kyiv,LNZ Cherkasy
-2026-09-05,Шальке 04,Баварія,16434032,FC Schalke 04,FC Bayern München
-2026-09-05,Карпати,Шахтар,16412930,Karpaty Lviv,Shakhtar Donetsk
-2026-09-05,Бетіс,Реал Мадрид,16416315,Real Betis,Real Madrid
-2026-09-06,Евертон,Манчестер Юнайтед,16363259,Everton,Manchester United
-2026-09-06,Арсенал,Челсі,16363257,Arsenal,Chelsea
-2026-09-06,Ювентус,Мілан,16285004,Juventus,AC Milan
-2026-09-06,Валенсія,Барселона,16416325,Valencia,FC Barcelona
-2026-09-12,Ельверсберг,Баварія,16434041,SV 07 Elversberg,FC Bayern München
-2026-09-12,Сандерленд,Арсенал,16363646,Sunderland,Arsenal
-2026-09-12,Челсі,Галл Сіті,16363641,Chelsea,Hull City
-2026-09-12,Динамо Київ,Епіцентр,16412940,Dynamo Kyiv,FC Epicentr Dunaivtsi
-2026-09-12,Шахтар,Чорноморець,16412941,Shakhtar Donetsk,Chornomorets Odesa
-2026-09-12,Реал Мадрид,Райо Вальєкано,16416331,Real Madrid,Rayo Vallecano
-2026-09-13,Манчестер Юнайтед,Манчестер Сіті,16363645,Manchester United,Manchester City
-2026-09-13,Сассуоло,Ювентус,16285013,Sassuolo,Juventus
-2026-09-13,Лаціо,Мілан,16285012,Lazio,AC Milan
-2026-09-13,Леванте,Барселона,16416329,Levante UD,FC Barcelona
-2026-09-16,Барселона,Расінг Сантандер,16416346,FC Barcelona,Real Racing Club
-2026-09-16,Ельче,Реал Мадрид,16416342,Elche,Real Madrid
-2026-09-18,Брентфорд,Челсі,16363649,Brentford,Chelsea
-2026-09-19,Баварія,Уніон Берлін,16434038,FC Bayern München,1. FC Union Berlin
-2026-09-19,Брайтон,Арсенал,16363650,Brighton & Hove Albion,Arsenal
-2026-09-19,Зоря,Динамо Київ,16412947,Zoria Luhansk,Dynamo Kyiv
-2026-09-19,Шахтар,ЛНЗ,16412950,Shakhtar Donetsk,LNZ Cherkasy
-2026-09-20,Фулгем,Манчестер Юнайтед,16363652,Fulham,Manchester United
-2026-09-20,Ювентус,Аталанта,16285022,Juventus,Atalanta
-2026-09-20,Мілан,Лечче,16285023,AC Milan,Lecce
-2026-09-20,Севілья,Барселона,16416349,Sevilla,FC Barcelona
-2026-09-20,Атлетіко Мадрид,Реал Мадрид,16416339,Atlético Madrid,Real Madrid
-2026-10-10,Аугсбург,Баварія,16434057,FC Augsburg,FC Bayern München
-2026-10-10,Манчестер Юнайтед,Тоттенгем,16363879,Manchester United,Tottenham Hotspur
-2026-10-10,Арсенал,Лідс Юнайтед,16363871,Arsenal,Leeds United
-2026-10-10,Челсі,Борнмут,16363873,Chelsea,Bournemouth
-2026-10-10,Динамо Київ,Карпати,16412956,Dynamo Kyiv,Karpaty Lviv
-2026-10-10,Верес,Шахтар,16412957,NK Veres Rivne,Shakhtar Donetsk
-2026-10-10,Реал Мадрид,Вільярреал,16421066,Real Madrid,Villarreal
-2026-10-11,Кальярі,Ювентус,16285029,Cagliari,Juventus
-2026-10-11,Сассуоло,Мілан,16285035,Sassuolo,AC Milan
-2026-10-11,Барселона,Хетафе,16421060,FC Barcelona,Getafe
-2026-10-17,Баварія,РБ Лейпциг,16434062,FC Bayern München,RB Leipzig
-2026-10-17,Евертон,Челсі,16363884,Everton,Chelsea
-2026-10-17,Ноттінгем Форест,Арсенал,16363889,Nottingham Forest,Arsenal
-2026-10-17,Полісся,Динамо Київ,16412969,Polissya Zhytomyr,Dynamo Kyiv
-2026-10-17,Шахтар,Колос,16412966,Shakhtar Donetsk,Kolos Kovalivka
-2026-10-17,Реал Мадрид,Севілья,16421075,Real Madrid,Sevilla
-2026-10-18,Лідс Юнайтед,Манчестер Юнайтед,16363886,Leeds United,Manchester United
-2026-10-18,Мілан,Аталанта,16285040,AC Milan,Atalanta
-2026-10-18,Ювентус,Лаціо,16285044,Juventus,Lazio
-2026-10-18,Бетіс,Барселона,16421068,Real Betis,FC Barcelona
-2026-10-24,Фрайбург,Баварія,16434075,SC Freiburg,FC Bayern München
-2026-10-24,Манчестер Юнайтед,Борнмут,16363899,Manchester United,Bournemouth
-2026-10-24,Арсенал,Евертон,16363891,Arsenal,Everton
-2026-10-24,Челсі,Тоттенгем,16363893,Chelsea,Tottenham Hotspur
-2026-10-24,Динамо Київ,Кудрівка,16412971,Dynamo Kyiv,Kudrivka
-2026-10-24,Шахтар,Зоря,16412972,Shakhtar Donetsk,Zoria Luhansk
-2026-10-25,Лечче,Ювентус,16285054,Lecce,Juventus
-2026-10-25,Удінезе,Мілан,16285058,Udinese,AC Milan
-2026-10-25,Барселона,Реал Мадрид,16421080,FC Barcelona,Real Madrid
-2026-10-28,Дженоа,Ювентус,16285061,Genoa,Juventus
-2026-10-28,Мілан,Болонья,16285062,AC Milan,Bologna
-2026-10-31,Кривбас,Динамо Київ,16412986,FC Kryvbas Kryvyi Rih,Dynamo Kyiv
-2026-10-31,Баварія,Боруссія Дортмунд,16434076,FC Bayern München,Borussia Dortmund
-2026-10-31,Ліверпуль,Арсенал,16363907,Liverpool FC,Arsenal
-2026-10-31,Челсі,Манчестер Юнайтед,16363904,Chelsea,Manchester United
-2026-10-31,Оболонь,Шахтар,16412985,Obolon Kyiv,Shakhtar Donetsk
-2026-10-31,Расінг Сантандер,Реал Мадрид,16421098,Real Racing Club,Real Madrid
-2026-11-01,Мілан,Інтер,16285075,AC Milan,Inter
-2026-11-01,Ювентус,Наполі,16285067,Juventus,SSC Napoli
-2026-11-01,Барселона,Алавес,16421091,FC Barcelona,Deportivo Alavés
-2026-08-01,Челсі,Тоттенгем,16282057,Chelsea,Tottenham Hotspur
-2026-08-01,Манчестер Юнайтед,Атлетіко Мадрид,16284994,Manchester United,Atletico Madrid
-2026-08-01,Жирона,Арсенал,16404394,Girona,Arsenal
+date,home_team_ua,away_team_ua,sofascore_event_id,sofa_home_en,sofa_away_en,sofascore_custom_id
+2026-08-15,Динамо Київ,Колос,16412919,Dynamo Kyiv,Kolos Kovalivka,
+2026-08-15,Харків,Шахтар,16412912,FC Kharkiv,Shakhtar Donetsk,
+2026-08-16,Арсенал,Манчестер Сіті,16248427,Arsenal,Manchester City,
+2026-08-21,Арсенал,Ковентрі Сіті,16363633,Arsenal,Coventry City,
+2026-08-22,Галл Сіті,Манчестер Юнайтед,16363634,Hull City,Manchester United,
+2026-08-22,Боруссія Дортмунд,Баварія,16248441,Borussia Dortmund,FC Bayern München,
+2026-08-22,Еспаньйол,Реал Мадрид,16416306,Espanyol,Real Madrid,
+2026-08-23,Фрозіноне,Ювентус,16283048,Frosinone,Juventus,
+2026-08-23,Торіно,Мілан,16283046,Torino,AC Milan,
+2026-08-23,Ельче,Барселона,16416311,Elche,FC Barcelona,
+2026-08-24,Фулгем,Челсі,16363244,Fulham,Chelsea,
+2026-08-26,Реал Мадрид,Реал Сосьєдад,16421051,Real Madrid,Real Sociedad,
+2026-08-27,Барселона,Атлетік Більбао,16421059,FC Barcelona,Athletic Club,
+2026-08-28,Баварія,Штутгарт,16434087,FC Bayern München,VfB Stuttgart,
+2026-08-28,Мілан,Венеція,16284980,AC Milan,Venezia,
+2026-08-29,Астон Вілла,Арсенал,16363245,Aston Villa,Arsenal,
+2026-08-29,Манчестер Юнайтед,Іпсвіч Таун,16363253,Manchester United,Ipswich Town,
+2026-08-29,Шахтар,Полісся,16412925,Shakhtar Donetsk,Polissya Zhytomyr,
+2026-08-29,Буковина,Динамо Київ,16412921,Bukovyna Chernivtsi,Dynamo Kyiv,
+2026-08-30,Челсі,Брайтон,16363249,Chelsea,Brighton & Hove Albion,
+2026-08-30,Реал Мадрид,Малага,16416312,Real Madrid,Málaga CF,
+2026-08-30,Ювентус,Парма,16284975,Juventus,Parma,
+2026-08-31,Барселона,Райо Вальєкано,16416295,FC Barcelona,Rayo Vallecano,
+2026-09-05,Динамо Київ,ЛНЗ,16412933,Dynamo Kyiv,LNZ Cherkasy,
+2026-09-05,Шальке 04,Баварія,16434032,FC Schalke 04,FC Bayern München,
+2026-09-05,Карпати,Шахтар,16412930,Karpaty Lviv,Shakhtar Donetsk,
+2026-09-05,Бетіс,Реал Мадрид,16416315,Real Betis,Real Madrid,
+2026-09-06,Евертон,Манчестер Юнайтед,16363259,Everton,Manchester United,
+2026-09-06,Арсенал,Челсі,16363257,Arsenal,Chelsea,
+2026-09-06,Ювентус,Мілан,16285004,Juventus,AC Milan,
+2026-09-06,Валенсія,Барселона,16416325,Valencia,FC Barcelona,
+2026-09-12,Ельверсберг,Баварія,16434041,SV 07 Elversberg,FC Bayern München,
+2026-09-12,Сандерленд,Арсенал,16363646,Sunderland,Arsenal,
+2026-09-12,Челсі,Галл Сіті,16363641,Chelsea,Hull City,
+2026-09-12,Динамо Київ,Епіцентр,16412940,Dynamo Kyiv,FC Epicentr Dunaivtsi,
+2026-09-12,Шахтар,Чорноморець,16412941,Shakhtar Donetsk,Chornomorets Odesa,
+2026-09-12,Реал Мадрид,Райо Вальєкано,16416331,Real Madrid,Rayo Vallecano,
+2026-09-13,Манчестер Юнайтед,Манчестер Сіті,16363645,Manchester United,Manchester City,
+2026-09-13,Сассуоло,Ювентус,16285013,Sassuolo,Juventus,
+2026-09-13,Лаціо,Мілан,16285012,Lazio,AC Milan,
+2026-09-13,Леванте,Барселона,16416329,Levante UD,FC Barcelona,
+2026-09-16,Барселона,Расінг Сантандер,16416346,FC Barcelona,Real Racing Club,
+2026-09-16,Ельче,Реал Мадрид,16416342,Elche,Real Madrid,
+2026-09-18,Брентфорд,Челсі,16363649,Brentford,Chelsea,
+2026-09-19,Баварія,Уніон Берлін,16434038,FC Bayern München,1. FC Union Berlin,
+2026-09-19,Брайтон,Арсенал,16363650,Brighton & Hove Albion,Arsenal,
+2026-09-19,Зоря,Динамо Київ,16412947,Zoria Luhansk,Dynamo Kyiv,
+2026-09-19,Шахтар,ЛНЗ,16412950,Shakhtar Donetsk,LNZ Cherkasy,
+2026-09-20,Фулгем,Манчестер Юнайтед,16363652,Fulham,Manchester United,
+2026-09-20,Ювентус,Аталанта,16285022,Juventus,Atalanta,
+2026-09-20,Мілан,Лечче,16285023,AC Milan,Lecce,
+2026-09-20,Севілья,Барселона,16416349,Sevilla,FC Barcelona,
+2026-09-20,Атлетіко Мадрид,Реал Мадрид,16416339,Atlético Madrid,Real Madrid,
+2026-10-10,Аугсбург,Баварія,16434057,FC Augsburg,FC Bayern München,
+2026-10-10,Манчестер Юнайтед,Тоттенгем,16363879,Manchester United,Tottenham Hotspur,
+2026-10-10,Арсенал,Лідс Юнайтед,16363871,Arsenal,Leeds United,
+2026-10-10,Челсі,Борнмут,16363873,Chelsea,Bournemouth,
+2026-10-10,Динамо Київ,Карпати,16412956,Dynamo Kyiv,Karpaty Lviv,
+2026-10-10,Верес,Шахтар,16412957,NK Veres Rivne,Shakhtar Donetsk,
+2026-10-10,Реал Мадрид,Вільярреал,16421066,Real Madrid,Villarreal,
+2026-10-11,Кальярі,Ювентус,16285029,Cagliari,Juventus,
+2026-10-11,Сассуоло,Мілан,16285035,Sassuolo,AC Milan,
+2026-10-11,Барселона,Хетафе,16421060,FC Barcelona,Getafe,
+2026-10-17,Баварія,РБ Лейпциг,16434062,FC Bayern München,RB Leipzig,
+2026-10-17,Евертон,Челсі,16363884,Everton,Chelsea,
+2026-10-17,Ноттінгем Форест,Арсенал,16363889,Nottingham Forest,Arsenal,
+2026-10-17,Полісся,Динамо Київ,16412969,Polissya Zhytomyr,Dynamo Kyiv,
+2026-10-17,Шахтар,Колос,16412966,Shakhtar Donetsk,Kolos Kovalivka,
+2026-10-17,Реал Мадрид,Севілья,16421075,Real Madrid,Sevilla,
+2026-10-18,Лідс Юнайтед,Манчестер Юнайтед,16363886,Leeds United,Manchester United,
+2026-10-18,Мілан,Аталанта,16285040,AC Milan,Atalanta,
+2026-10-18,Ювентус,Лаціо,16285044,Juventus,Lazio,
+2026-10-18,Бетіс,Барселона,16421068,Real Betis,FC Barcelona,
+2026-10-24,Фрайбург,Баварія,16434075,SC Freiburg,FC Bayern München,
+2026-10-24,Манчестер Юнайтед,Борнмут,16363899,Manchester United,Bournemouth,
+2026-10-24,Арсенал,Евертон,16363891,Arsenal,Everton,
+2026-10-24,Челсі,Тоттенгем,16363893,Chelsea,Tottenham Hotspur,
+2026-10-24,Динамо Київ,Кудрівка,16412971,Dynamo Kyiv,Kudrivka,
+2026-10-24,Шахтар,Зоря,16412972,Shakhtar Donetsk,Zoria Luhansk,
+2026-10-25,Лечче,Ювентус,16285054,Lecce,Juventus,
+2026-10-25,Удінезе,Мілан,16285058,Udinese,AC Milan,
+2026-10-25,Барселона,Реал Мадрид,16421080,FC Barcelona,Real Madrid,
+2026-10-28,Дженоа,Ювентус,16285061,Genoa,Juventus,
+2026-10-28,Мілан,Болонья,16285062,AC Milan,Bologna,
+2026-10-31,Кривбас,Динамо Київ,16412986,FC Kryvbas Kryvyi Rih,Dynamo Kyiv,
+2026-10-31,Баварія,Боруссія Дортмунд,16434076,FC Bayern München,Borussia Dortmund,
+2026-10-31,Ліверпуль,Арсенал,16363907,Liverpool FC,Arsenal,
+2026-10-31,Челсі,Манчестер Юнайтед,16363904,Chelsea,Manchester United,
+2026-10-31,Оболонь,Шахтар,16412985,Obolon Kyiv,Shakhtar Donetsk,
+2026-10-31,Расінг Сантандер,Реал Мадрид,16421098,Real Racing Club,Real Madrid,
+2026-11-01,Мілан,Інтер,16285075,AC Milan,Inter,
+2026-11-01,Ювентус,Наполі,16285067,Juventus,SSC Napoli,
+2026-11-01,Барселона,Алавес,16421091,FC Barcelona,Deportivo Alavés,
+2026-08-01,Челсі,Тоттенгем,16282057,Chelsea,Tottenham Hotspur,IN
+2026-08-01,Манчестер Юнайтед,Атлетіко Мадрид,16284994,Manchester United,Atletico Madrid,KsLgb
+2026-08-01,Жирона,Арсенал,16404394,Girona,Arsenal,RsoKj
