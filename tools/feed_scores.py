@@ -98,13 +98,27 @@ _BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
 
 
+def _prime(page):
+    """Зайти на ВЕБ-домен SofaScore, щоб Playwright пройшов Cloudflare як
+    справжній браузер і отримав clearance-cookie. Прямий запит до
+    api.sofascore.com з datacenter-IP дає 403 Forbidden (перевірено в
+    GitHub Actions 01.08.2026); запит із контексту вже завантаженої
+    сторінки sofascore.com — з cookies і Referer — проходить."""
+    page.goto("https://www.sofascore.com/", wait_until="domcontentloaded",
+              timeout=30000)
+    page.wait_for_timeout(2500)   # дати Cloudflare відпрацювати challenge
+
+
 def fetch_event(page, event_id):
-    """(data, raw) події SofaScore. Беремо СИРУ HTTP-відповідь, а не
-    відрендерений <pre>: так менше залежимо від того, як Chromium показує
-    JSON, і маємо сире тіло для діагностики."""
-    resp = page.goto(EVENT_URL.format(event_id),
-                     wait_until="domcontentloaded", timeout=20000)
-    body = resp.text() if resp is not None else page.inner_text("pre")
+    """(data, raw) події SofaScore. Запит робимо ЧЕРЕЗ fetch у контексті
+    завантаженої сторінки sofascore.com — так він несе Referer і cookies
+    браузера, і Cloudflare не віддає 403, як на прямий серверний запит."""
+    body = page.evaluate(
+        """async (id) => {
+            const r = await fetch('https://api.sofascore.com/api/v1/event/' + id,
+                                  { headers: { 'accept': 'application/json' } });
+            return await r.text();
+        }""", event_id)
     return json.loads(body), body
 
 
@@ -115,6 +129,7 @@ def collect(rows, verbose=True):
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page(user_agent=_BROWSER_UA, locale="en-US")
+        _prime(page)   # один раз проходимо Cloudflare на веб-домені
         for i, r in enumerate(rows):
             if i:
                 time.sleep(1.5)   # ввічливість до SofaScore при великому вікні
