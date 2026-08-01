@@ -702,6 +702,13 @@ function priceOf(code){
 function typeOf(code){
   return S.boostTypes.find(x => x.code === code) || { title: code, description: '' };
 }
+// Бусти, доступні НА ЦЬОМУ етапі — лише ті, що мають ціну в boost_prices.
+// Без цього x3, прибраний із серпня (файл 148), малювався як «0р», бо
+// priceOf повертає 0 за відсутності ціни. Адмінка (виставлення цін) далі
+// бере повний S.boostTypes — там навпаки потрібні всі.
+function activeBoosts(){
+  return S.boostTypes.filter(b => S.prices.some(p => p.boost_code === b.code));
+}
 
 // ---------------------------------------------------------------------
 //  КОЛЬОРИ БУСТІВ
@@ -2343,7 +2350,7 @@ async function viewDraft(){
         · витрачено <b class="mono">${ds.total_spent}</b> з <b class="mono">${budget}</b> рексів.
         Змінити вже не можна — якщо це помилка, потрібен адмін.</div>
         <div class="dim" style="margin:14px 0 10px">Що саме куплено і як воно рахується:</div>
-        ${S.boostTypes.map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}`;
+        ${activeBoosts().map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}`;
       return;
     }
 
@@ -2362,7 +2369,7 @@ async function viewDraft(){
         <div class="dim" style="margin-top:6px">Залишок: <b class="mono">${left}</b> рексів</div>
       </div>
       ${closed ? '<div class="msg err">Драфт закрито — Boosts більше не змінити</div>' : ''}
-      ${S.boostTypes.map(b => boostCard(b, null, `
+      ${activeBoosts().map(b => boostCard(b, null, `
             <div class="qty">
               <button data-m="${b.code}" ${closed ? 'disabled' : ''}>−</button>
               <span class="n">${state[b.code] || 0}</span>
