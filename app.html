@@ -1363,10 +1363,11 @@ function renderRivalBox(deadlinePassed, open){
 
     inner += `
       <div class="dim" style="margin:6px 0 8px;font-size:13px">
-        Обери одного суперника на цей вікенд. Порівнюються очки за матчі вікенда:
-        у кого більше — тому <b>+2</b>. Порівну очок — рахуються вгадані точні
-        рахунки, у кого їх більше. Порівну і того, і того — <b>по +1 обом</b>.
-        Одного й того самого суперника двічі за етап брати не можна.
+        Обери одного суперника на цей вікенд. Порівнюються очки за матчі вікенда
+        плюс Manager Style: у кого більше — тому <b>+2</b>. Порівну очок —
+        рахуються вгадані точні рахунки, у кого їх більше. Порівну і того,
+        і того — <b>по +1 обом</b>. Одного й того самого суперника двічі
+        за етап брати не можна.
       </div>
       <div class="yn yn-wrap" id="rival-pick">${chips}</div>
       ${open ? `<button class="primary" id="rival-confirm-change" disabled
@@ -1376,6 +1377,39 @@ function renderRivalBox(deadlinePassed, open){
       <div id="rival-msg"></div>`;
   }
 
+  // НОВЕ (179): Rivals і MVP тепер обидва рахуються від (матчі + стиль)
+  // — MVP додає ще й Rivals зверху. Рахуємо ОБИДВІ суми тут, ОДИН раз,
+  // і використовуємо і в списку дуелей нижче, і в картці MVP далі —
+  // щоб цифри в обох місцях гарантовано збігались з реальним підрахунком
+  // (Богдан 03.08.2026: «Rivals і MVP мають показувати розрахунки по
+  // всіх, як зараз зроблено для MVP»).
+  const matchTotals = {};
+  const addPts = (map, name, pts) => { map[name] = (map[name] || 0) + (pts || 0); };
+  S.matches.forEach(m => {
+    const mine = S.myPred[m.match_id];
+    if (mine && mine.points != null) addPts(matchTotals, S.me.display_name, mine.points);
+    (m.others || []).forEach(o => {
+      if (o.total_points != null) addPts(matchTotals, o.display_name, o.total_points);
+    });
+  });
+  const styleTotals = {};
+  (S.styleRows || []).forEach(r => {
+    if (r.points != null) addPts(styleTotals, r.display_name, r.points);
+  });
+  const rivalTotals = {};
+  (S.rivalPairs || []).forEach(r => {
+    if (r.points != null) addPts(rivalTotals, r.chooser_name, r.points);
+  });
+  const allNames = new Set([
+    ...Object.keys(matchTotals), ...Object.keys(styleTotals), ...Object.keys(rivalTotals),
+  ]);
+  // Це й вирішує дуелі Rivals — прогнози+бусти + стиль (без самих Rivals)
+  const rivalDecidingTotals = {};
+  allNames.forEach(n => { rivalDecidingTotals[n] = (matchTotals[n] || 0) + (styleTotals[n] || 0); });
+  // А це вирішує MVP — те саме, плюс сам Rivals зверху
+  const mvpDecidingTotals = {};
+  allNames.forEach(n => { mvpDecidingTotals[n] = rivalDecidingTotals[n] + (rivalTotals[n] || 0); });
+
   // Список усіх пар — тільки коли вікенд відкрито
   if (open && S.rivalPairs.length) {
     const rowsHtml = S.rivalPairs
@@ -1383,13 +1417,25 @@ function renderRivalBox(deadlinePassed, open){
       .sort((a,b) => esc(a.chooser_name).localeCompare(esc(b.chooser_name)))
       .map(r => `
         <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
-          <div><b>${esc(r.chooser_name)}</b> <span class="dim">проти</span> ${esc(r.rival_name)}</div>
+          <div><b>${esc(r.chooser_name)}</b> <span class="dim">${rivalDecidingTotals[r.chooser_name] ?? 0}</span>
+            <span class="dim">проти</span> ${esc(r.rival_name)} <span class="dim">${rivalDecidingTotals[r.rival_name] ?? 0}</span></div>
           <div>${rivalStatusMark(r.status, r.points)}</div>
+        </div>`).join('');
+    const rivalRankingHtml = [...allNames]
+      .sort((a, b) => rivalDecidingTotals[b] - rivalDecidingTotals[a])
+      .map(name => `
+        <div style="display:flex;justify-content:space-between;padding:4px 0">
+          <span>${esc(name)}</span>
+          <span class="mono dim">${rivalDecidingTotals[name]}</span>
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
         <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
+      </div>
+      <div style="margin-top:12px">
+        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Очки за вікенд (матчі + стиль) — саме це вирішує дуелі</div>
+        ${rivalRankingHtml}
       </div>`;
   }
 
@@ -1404,10 +1450,11 @@ function renderRivalBox(deadlinePassed, open){
 
 За етап дуелі дають щонайбільше ${rivalMax} очок — по 2 за кожен із ${S.gameweeks.length} вікендів.
 
-Порівнюються очки за матчі вікенда, без урахування Rivals і стилю:
+Порівнюються очки за матчі вікенда ПЛЮС Manager Style (без самого Rivals — інакше вийшло б саме на себе):
 • у тебе 7, у суперника 4 — тобі +2, йому 0
-• у вас по 5, але в тебе 1 точний рахунок, у нього жодного — тобі +2
-• у вас по 5 і точних порівну — по +1 обом
+• у вас по 5 за прогнозами, але в тебе +1 за стиль, а в нього стилю нема — тобі +2 завдяки стилю
+• у вас порівну і за прогнозами, і за стилем, але в тебе 1 точний рахунок, у нього жодного — тобі +2
+• рівно все, включно з точними — по +1 обом
 
 ⚠️ Нічия дає по одному очку кожному, тобто зовсім без очок дуель лишає тільки програного.
 
@@ -1424,22 +1471,14 @@ function renderRivalBox(deadlinePassed, open){
   // скільки набрав — MVP просто зʼявлявся нізвідки).
   let mvpHtml = '';
   if (open) {
-    const weekendTotals = {};
-    const add = (name, pts) => { weekendTotals[name] = (weekendTotals[name] || 0) + (pts || 0); };
-    S.matches.forEach(m => {
-      const mine = S.myPred[m.match_id];
-      if (mine && mine.points != null) add(S.me.display_name, mine.points);
-      (m.others || []).forEach(o => {
-        if (o.total_points != null) add(o.display_name, o.total_points);
-      });
-    });
-    const ranking = Object.entries(weekendTotals).sort((a, b) => b[1] - a[1]);
     const mvpNames = new Set((S.mvpRows || []).map(r => r.display_name));
 
-    const rankingHtml = ranking.map(([name, pts]) => `
+    const rankingHtml = [...allNames]
+      .sort((a, b) => mvpDecidingTotals[b] - mvpDecidingTotals[a])
+      .map(name => `
       <div style="display:flex;justify-content:space-between;padding:4px 0">
         <span style="${mvpNames.has(name) ? 'color:var(--gold);font-weight:700' : ''}">${esc(name)}</span>
-        <span class="mono ${mvpNames.has(name) ? '' : 'dim'}">${pts}</span>
+        <span class="mono ${mvpNames.has(name) ? '' : 'dim'}">${mvpDecidingTotals[name]}</span>
       </div>`).join('');
 
     mvpHtml = `<div class="card tight">
@@ -1449,21 +1488,22 @@ function renderRivalBox(deadlinePassed, open){
           ${[...mvpNames].map(esc).join(', ')} <span class="dim">+${S.mvpRows[0].points}</span></div>` : ''}
       </div>
       <div class="dim" style="margin:6px 0 8px;font-size:13px">
-        MVP вікенда — той, у кого найбільше очок за матчі цього вікенда
-        (без Rivals і стилю). Порівну очок — рахуються вгадані точні
-        рахунки; порівну і тут — MVP стають усі, хто ділить перше
-        місце, і кожен отримує повні очки.
+        MVP вікенда — той, у кого найбільше очок за цей вікенд разом:
+        матчі + бусти + Rivals + Manager Style. Порівну очок —
+        рахуються вгадані точні рахунки; порівну і тут — MVP стають усі,
+        хто ділить перше місце, і кожен отримує повні очки.
       </div>
       ${rankingHtml ? `<div style="margin-top:4px">${rankingHtml}</div>` : ''}
       <details class="bex" style="margin-top:8px">
         <summary>Як це рахується — приклади</summary>
         <div>${esc(
-`MVP вікенда рахується так само, як Rivals: спершу очки за матчі, при рівності — вгадані точні рахунки.
+`MVP вікенда рахується від суми ВСЬОГО за вікенд — матчі, бусти, Rivals, Manager Style разом. При рівності суми — вгадані точні рахунки.
 
-• у тебе 7 очок за матчі вікенда, у решти менше — ти MVP, +3
-• у двох по 7, але в тебе 1 точний рахунок, а в іншого 0 — MVP ти
-• у двох по 7 і точних порівну — MVP обидва, і кожен отримує повні +3
+• у тебе 10 очок разом (матчі+бусти+Rivals+стиль), у решти менше — ти MVP, +3
+• у двох по 10, але в тебе 1 точний рахунок, а в іншого 0 — MVP ти
+• у двох по 10 і точних порівну — MVP обидва, і кожен отримує повні +3
 
+⚠️ Бонусні питання в цю суму НЕ входять — вони не прив'язані до конкретного вікенда.
 ⚠️ MVP — не половина приза на двох. Коли ділять перше місце троє, кожен із трьох отримує +3, а не +1.`)}</div>
       </details>
     </div>`;
