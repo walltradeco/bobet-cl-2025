@@ -681,7 +681,7 @@ async function setStage(key){
 
 // На General матчів і бустів немає, там відкриваємо одразу Bonus.
 function defaultTab(){
-  if (S.stage.bonusOnly) return (S.tab === 'press') ? 'press' : 'bonus';
+  if (S.stage.bonusOnly) return ['press', 'mvprivals'].includes(S.tab) ? S.tab : 'bonus';
   return (S.tab === 'bonus' || S.tab === 'press' || S.tab === 'log' || S.tab === 'admin') ? S.tab : 'matches';
 }
 
@@ -835,7 +835,7 @@ function renderTabs(){
   // лишається доступним кнопкою «📋 Журнал» у шапці кабінету, той самий
   // viewLog(), просто не займає слот у головних вкладках.
   const tabs = S.stage.bonusOnly
-    ? [['bonus', 'Bonus'], ['press', 'News & Press']]
+    ? [['bonus', 'Bonus'], ['press', 'News & Press'], ['mvprivals', 'MVP & Rivals']]
     : [
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
@@ -881,6 +881,7 @@ async function go(tab){
     else if (tab === 'boosts') await viewBoosts();
     else if (tab === 'bonus') await viewBonus();
     else if (tab === 'press') await viewPress();
+    else if (tab === 'mvprivals') await viewMvpRivals();
     else if (tab === 'board') await viewBoard();
     else if (tab === 'log')   await viewLog();
     else if (tab === 'admin') await viewAdmin();
@@ -2565,6 +2566,47 @@ async function viewBoard(){
 
   $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
   $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
+}
+
+// =====================================================================
+//  MVP & RIVALS — дві окремі season-номінації призового фонду
+//  (🏆 найбільше Weekend MVP 7%, ⚔️ найбільше перемог Rivals 6% — Rules).
+//  Раніше лише текст у призовій таблиці, тепер рахує сама season_prize_board
+//  (файл 181) — той самий person_key, що в season_leaderboard, тож людина
+//  з кількох етапів рахується один раз. Той самий блок, що на test.html
+//  (Leaderboards) — щоб цифри не розходились між кабінетом і бордом.
+// =====================================================================
+async function viewMvpRivals(){
+  const { data } = await sb.from('season_prize_board').select('*');
+  const rows = data || [];
+
+  const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
+
+  const board = (title, icon, key, rankKey) => {
+    const sorted = [...rows].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0));
+    return `
+    <div class="card" style="margin-bottom:14px">
+      <h2>${icon} ${esc(title)}</h2>
+      ${!sorted.length ? '<p class="dim">Ще нема кого показати.</p>' : `
+      <table><thead><tr><th>№</th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
+      <tbody>${sorted.map(r => `<tr>
+        <td class="n">${medal(r[rankKey])}</td>
+        <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
+        <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r[key] ?? 0}</td>
+      </tr>`).join('')}</tbody></table>`}
+    </div>`;
+  };
+
+  $('view').innerHTML = `
+    <div class="card" style="margin-bottom:14px">
+      <h2>MVP & Rivals — за весь сезон</h2>
+      <p class="dim">Дві окремі номінації призового фонду (Rules): найбільше нагород
+      Weekend MVP і найбільше перемог у дуелях Rivals за серпень+вересень+жовтень
+      разом. Рахується саме, оновлюється щовікенда.</p>
+    </div>
+    ${board('Найбільше нагород Weekend MVP', '🏆', 'mvp_count', 'mvp_rank')}
+    ${board('Найбільше перемог у дуелях Rivals', '⚔️', 'rival_wins', 'rival_rank')}
+  `;
 }
 
 // =====================================================================
