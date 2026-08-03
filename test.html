@@ -2201,7 +2201,13 @@ async function fetchSupabaseTab(tab){
   LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
   LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   LIVE_STYLE_CAP = null;
-  if(tab.source === 'leaderboard') return { rows: await buildLeaderboardRows() };
+  if(tab.source === 'leaderboard') return {
+    rows: await buildLeaderboardRows(),
+    // Season-номінації призового фонду (🏆 MVP 7%, ⚔️ Rivals 6% — Rules),
+    // раніше лише текст без підрахунку. Лише на живій вкладці EuroSeason,
+    // тому окремим полем, не в rows: архівні борди (fetchSheet) його не мають.
+    prizeBoard: await sbGet('season_prize_board?select=display_name,mvp_count,rival_wins')
+  };
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
   if(tab.source === 'rules')       return { rows: buildRulesRows() };
@@ -2923,6 +2929,24 @@ function renderLeaderboard(data){
     finalBoards = boards.map((b, i) => ({ ...b, title: STD[i] || `Board ${i + 1}` }));
   }
   if(finalBoards.length === 0) return renderGenericTable(data);
+
+  // Season-номінації MVP/Rivals — лише коли є живі season-дані
+  // (fetchSupabaseTab кладе їх у data.prizeBoard; архівні борди цього
+  // поля не мають). Ті самі board/renderBoards — тайбрейк і медалі
+  // рахуються так само, як в August/September/October/General.
+  if(data.prizeBoard && data.prizeBoard.length){
+    finalBoards = finalBoards.concat([
+      {
+        title: '🏆 Найбільше MVP за сезон',
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: null }))
+      },
+      {
+        title: '⚔️ Найбільше перемог Rivals за сезон',
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: null }))
+      }
+    ]);
+  }
+
   return renderBoards(finalBoards);
 }
 
