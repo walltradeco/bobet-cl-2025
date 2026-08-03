@@ -1168,6 +1168,53 @@
     color:var(--text-dim);
   }
 
+  /* Rivals / Manager Style — EuroSeason, під основною таблицею Rules */
+  .rules-mech{padding:22px 24px;}
+  .rules-mech-head{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .rules-mech-head .ico{font-size:22px;}
+  .rules-mech-head h3{
+    font-family:'Space Grotesk',sans-serif;
+    font-size:20px;
+    margin:0;
+    color:var(--text);
+  }
+  .rules-mech-p{color:var(--text-dim); font-size:16px; line-height:1.7; margin:0 0 14px;}
+  .rules-styles{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+    gap:10px;
+    margin-bottom:16px;
+  }
+  .rules-style-card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+  }
+  .rules-style-card .st-name{font-weight:700; color:var(--text); font-size:15px; margin-bottom:6px;}
+  .rules-style-card .st-pts{
+    display:inline-block;
+    font-family:'JetBrains Mono',monospace;
+    font-weight:700;
+    font-size:14px;
+    color:var(--gold);
+    background:var(--gold-soft);
+    border-radius:20px;
+    padding:2px 12px;
+    margin-bottom:6px;
+  }
+  .rules-style-card .st-cond{color:var(--text-dim); font-size:14px; line-height:1.5;}
+  .rules-details{margin-top:4px; border-top:1px solid var(--line); padding-top:12px;}
+  .rules-details summary{cursor:pointer; font-size:14px; color:var(--gold); font-weight:600;}
+  .rules-details summary::marker{color:var(--text-dim);}
+  .rules-details > div{
+    white-space:pre-line;
+    color:var(--text-dim);
+    font-size:15px;
+    line-height:1.7;
+    padding-top:12px;
+  }
+
   .status-line{
     font-family:'JetBrains Mono',monospace;
     font-size:12px;
@@ -2137,9 +2184,145 @@ function buildRulesRows(){
     ['Бонусне питання YES/NO — правильна відповідь YES', '3'],
     ['Бонусне питання YES/NO — правильна відповідь NO', '1'],
     ["Ballon d'Or 2026 — вгадав переможця", '5'],
-    ['', ''],
-    ['Призовий фонд ділиться так. За місяць: переможцю серпня, вересня та жовтня — по 15% фонду, платить лише перше місце. За сезон, тобто за сумою очок усіх трьох місяців: перше місце 30%, друге 15%, третє 10%. При однаковій кількості очок учасники ділять місце й ділять приз порівну. Розмір внеску буде оголошено до старту.'],
   ];
+}
+
+/* ======== EUROSEASON RULES EXTRAS: MVP / Rivals / Manager Style / Призовий фонд ========
+   На відміну від архівних турнірів, тут немає стадій Group/Play-off — тому
+   таблиці простіші, лише Condition/Points, без стовпців видимості. */
+function miniRulesTable(headLeft, headRight, rows){
+  return `
+    <table class="sheet-table rules" style="margin-bottom:0;">
+      <thead><tr>
+        <th class="c-condition">${escapeHtml(headLeft)}</th>
+        <th style="text-align:center;">${escapeHtml(headRight)}</th>
+      </tr></thead>
+      <tbody>
+        ${rows.map(r => `<tr>
+          <td class="c-condition">${escapeHtml(r[0])}</td>
+          <td class="c-points">${escapeHtml(r[1])}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderEuroRulesExtras(){
+  const mvpBlock = `
+    <div class="rules-block table-card rules-mech">
+      <div class="rules-mech-head"><span class="ico">🏆</span><h3>Weekend MVP</h3></div>
+      <p class="rules-mech-p">
+        Одна нагорода за вікенд — тому, хто набрав найбільше очок за прогнозами
+        саме цього вікенда (без Rivals і стилю). Рівність очок вирішують вгадані
+        точні рахунки: у кого їх більше, той MVP. Якщо рівність лишається і після
+        цього — MVP отримують усі, хто ділить перший результат, і кожен отримує
+        повні очки. Якщо найкращий результат вікенда — 0 очок (буває в маленьких
+        вікендах на 2 матчі), MVP немає ні в кого.
+      </p>
+      ${miniRulesTable('Condition', 'Points', [
+        ['Найбільше очок за прогнозами вікенда (тайбрейк — точні рахунки)', '+3'],
+      ])}
+    </div>`;
+
+  const rivalsBlock = `
+    <div class="rules-block table-card rules-mech">
+      <div class="rules-mech-head"><span class="ico">⚔️</span><h3>Rivals — дуель на вікенд</h3></div>
+      <p class="rules-mech-p">
+        Перед кожним вікендом обираєш одного суперника з-поміж інших учасників.
+        Порівнюються очки, зароблені на матчах цього вікенда (без Rivals і стилю):
+        у кого більше — той виграв дуель. Порівну очок — рахуються вгадані точні
+        рахунки, у кого їх більше. Порівну і того, і того — нічия. Це твої власні
+        очки, не відібрані в суперника: обидва можете виграти свою дуель в одному
+        вікенді. Самого себе обрати не можна, а одного й того самого суперника за
+        весь етап можна взяти лише один раз. До підтвердження вікенда суперника
+        можна міняти скільки завгодно; коли вікенд відкриється і стануть видні
+        чужі прогнози — дозволена ще одна, остання зміна.
+      </p>
+      ${miniRulesTable('Condition', 'Points', [
+        ['Виграна дуель (більше очок вікенда, або порівну — більше точних рахунків)', '+2'],
+        ['Нічия дуелі (порівну і в очках, і в точних рахунках)', '+1 обом'],
+        ['Програна дуель', '0'],
+      ])}
+    </div>`;
+
+  const styleRows = [
+    ['🏰 Mourinho — господар переміг', '+1 за матч'],
+    ['🛡 Arteta — суха перемога (1:0, 2:0, 3:0…)', '+1 за матч'],
+    ['🔥 Flick — якась команда забила 3 голи або більше', '+1 за матч'],
+    ['🤏 Allegri — перемога рівно в 1 гол', '+1 за матч'],
+    ['✈️ Klopp — переміг гість', '+1 за матч'],
+    ['⚖️ Ancelotti — нічия, включно з 0:0', '+2 за матч'],
+    ['🎯 Guardiola (доступний з вересня) — вгаданий точний рахунок', '+2 за матч'],
+  ];
+  const styleBlock = `
+    <div class="rules-block table-card rules-mech">
+      <div class="rules-mech-head"><span class="ico">👔</span><h3>Manager Style — тренерський почерк</h3></div>
+      <p class="rules-mech-p">
+        Раз на вікенд обираєш один стиль — він діє одразу на всі матчі вікенда,
+        незалежно від того, за які клуби вболіваєш і що прогнозував. Нарахування
+        дивиться на фінальний рахунок матчів, а не на твій прогноз — виняток лише
+        Guardiola, єдиний стиль, який платить саме за вгаданий точний рахунок.
+        Кожен стиль можна взяти лише один раз за етап. Стеля очок за стиль на
+        вікенд — 3 у серпні, 4 у вересні та жовтні.
+      </p>
+      ${miniRulesTable('Condition', 'Points', styleRows)}
+      <details class="rules-details">
+        <summary>Чому це не прогноз — приклади</summary>
+        <div>${escapeHtml(
+`Стиль рахується від того, що сталося на полі, а не від того, що ти написав у прогнозі —
+тому один і той самий вікенд стиль і прогноз можуть дати протилежний результат:
+
+• Mourinho: поставив 0:2, матч закінчився 3:1 — за прогноз нуль, за стиль +1 (господар переміг)
+• Flick: поставив 3:0, вийшло 0:3 — прогноз нуль, стиль +1 (три голи забив гість)
+• Ancelotti: поставив 3:1, вийшло 1:1 — прогноз нуль, стиль +2 (нічия)
+
+Виняток — Guardiola: єдиний стиль, який платить за вгаданий точний рахунок,
+а не за факт на табло.`
+        )}</div>
+      </details>
+    </div>`;
+
+  const pct = n => (Math.round(n * 10) / 10) + '%';
+  const placesRow = (label, fundPct) => `<tr>
+      <td class="c-condition">${escapeHtml(label)} — ${pct(fundPct)} фонду</td>
+      <td class="c-points">${pct(fundPct * 0.5)}</td>
+      <td class="c-points">${pct(fundPct * 0.3)}</td>
+      <td class="c-points">${pct(fundPct * 0.2)}</td>
+    </tr>`;
+  const prizeBlock = `
+    <div class="rules-block table-card rules-mech">
+      <div class="rules-mech-head"><span class="ico">💰</span><h3>Призовий фонд</h3></div>
+      <p class="rules-mech-p">
+        Внесок кожного учасника йде у спільний фонд. 10% з нього — організаційна
+        комісія (сайт, автоматизація, адміністрування); решта 90% — призовий
+        фонд, і саме він ділиться між шістьма номінаціями нижче. Розмір внеску
+        буде оголошено до старту.
+      </p>
+      <table class="sheet-table rules" style="margin-bottom:14px;">
+        <thead><tr>
+          <th class="c-condition">Категорія</th>
+          <th style="text-align:center;">1 місце</th>
+          <th style="text-align:center;">2 місце</th>
+          <th style="text-align:center;">3 місце</th>
+        </tr></thead>
+        <tbody>
+          ${placesRow('Етап 1 (Серпень)', 24)}
+          ${placesRow('Етап 2 (Вересень)', 24)}
+          ${placesRow('Етап 3 (Жовтень)', 24)}
+          ${placesRow('General — сума очок за весь сезон', 15)}
+        </tbody>
+      </table>
+      ${miniRulesTable('Окрема номінація', 'Приз', [
+        ['🏆 Найбільше нагород Weekend MVP за сезон', '7% фонду'],
+        ['⚔️ Найбільше перемог у дуелях Rivals за сезон', '6% фонду'],
+      ])}
+      <div class="rules-note" style="margin-top:14px;">
+        Проценти в таблиці — частка від усього призового фонду (90% зібраного).
+        При однаковій кількості очок (або однаковій кількості нагород MVP /
+        перемог у Rivals) учасники ділять місце й приз порівну.
+      </div>
+    </div>`;
+
+  return mvpBlock + rivalsBlock + styleBlock + prizeBlock;
 }
 
 
@@ -3785,7 +3968,9 @@ function formatYesNo(v){
 /* ======== DISPATCH ======== */
 function renderTabContent(tab, data){
   if(tab.kind === 'leaderboard') return renderLeaderboard(data);
-  if(tab.kind === 'rules') return renderRules(data);
+  if(tab.kind === 'rules'){
+    return renderRules(data) + (tab.source === 'rules' ? renderEuroRulesExtras() : '');
+  }
   // explicit renderers (bypass auto-detect to avoid mis-routing)
   if(tab.kind === 'pairWinners'){ return renderPairWinners(data) || renderGenericTable(data); }
   if(tab.kind === 'special'){ return renderSpecialBets(data) || renderGenericTable(data); }
