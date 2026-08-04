@@ -141,7 +141,15 @@
   .feed-item .who{font-weight:700;color:var(--text);}
   .feed-item .a{font-size:14px;line-height:1.5;margin-top:7px;padding-top:7px;
     border-top:1px dashed var(--line);color:var(--text-dim);
-    display:flex;gap:6px;align-items:baseline;flex-wrap:wrap;}
+    display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
+  /* Відповідь учасника — той самий візуальний патерн, що бейдж репортера
+     (.rep) вище, лише зелений замість фіолетового: одразу видно «хто
+     каже» в обох рядках питання/відповіді, а не лише жирний текст. */
+  .feed-item .a .who{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+    text-transform:uppercase;letter-spacing:.04em;color:var(--green);
+    background:var(--green-soft);padding:2px 9px;border-radius:20px;
+    white-space:nowrap;flex:0 0 auto;}
+  .feed-item .a .qtext{color:var(--text);}
   /* Заяви репортерів + нитки реакцій (файл 137) */
   .feed-item.statement{border-left-color:var(--gold);}
   .feed-item.statement .stmt-line{font-size:14px;line-height:1.5;}
@@ -2582,11 +2590,11 @@ async function viewMvpRivals(){
 
   const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
 
-  const board = (title, icon, key, rankKey) => {
+  const board = (titleHtml, key, rankKey) => {
     const sorted = [...rows].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0));
     return `
     <div class="card" style="margin-bottom:14px">
-      <h2>${icon} ${esc(title)}</h2>
+      <h2>${titleHtml}</h2>
       ${!sorted.length ? '<p class="dim">Ще нема кого показати.</p>' : `
       <table><thead><tr><th>№</th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
       <tbody>${sorted.map(r => `<tr>
@@ -2599,13 +2607,13 @@ async function viewMvpRivals(){
 
   $('view').innerHTML = `
     <div class="card" style="margin-bottom:14px">
-      <h2>MVP & Rivals — за весь сезон</h2>
+      <h2>MVP & Rivals — за весь турнір</h2>
       <p class="dim">Дві окремі номінації призового фонду (Rules): найбільше нагород
-      Weekend MVP і найбільше перемог у дуелях Rivals за серпень+вересень+жовтень
-      разом. Рахується саме, оновлюється щовікенда.</p>
+      Weekend MVP і найбільше перемог у дуелях Rivals за August + September + October
+      разом. Рахується само, оновлюється щовікенда.</p>
     </div>
-    ${board('Найбільше нагород Weekend MVP', '🏆', 'mvp_count', 'mvp_rank')}
-    ${board('Найбільше перемог у дуелях Rivals', '⚔️', 'rival_wins', 'rival_rank')}
+    ${board('<span style="color:var(--gold);font-weight:700;letter-spacing:0.03em">MVP</span> — найбільше нагород', 'mvp_count', 'mvp_rank')}
+    ${board('⚔️ Rivals — найбільше перемог', 'rival_wins', 'rival_rank')}
   `;
 }
 
