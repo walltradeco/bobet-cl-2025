@@ -173,6 +173,16 @@
     gap:24px;
     align-items:start;
   }
+  .boards-subhead{
+    margin:28px 0 12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--text-dim);
+    border-top:1px solid var(--line);
+    padding-top:16px;
+  }
   .board{
     background:var(--panel);
     border:1px solid var(--line);
@@ -2220,11 +2230,11 @@ function buildRulesRows(){
   return [
     ['Condition', 'Points'],
     ['', ''],
-    ['Вгаданий результат матчу (перемога / нічия / поразка)', '1'],
-    ['Вгаданий точний рахунок матчу', '3'],
-    ['Бонусне питання YES/NO — правильна відповідь YES', '3'],
-    ['Бонусне питання YES/NO — правильна відповідь NO', '1'],
-    ["Ballon d'Or 2026 — вгадав переможця", '5'],
+    ['Вгаданий результат матчу (перемога / нічия / поразка) — однаково на кожному з трьох етапів', '1'],
+    ['Вгаданий точний рахунок матчу — однаково на кожному з трьох етапів', '3'],
+    ['Бонусне питання YES/NO (приклад із August) — правильна відповідь YES', '3'],
+    ['Бонусне питання YES/NO (приклад із August) — правильна відповідь NO', '1'],
+    ["Ballon d'Or 2026 (бонус August) — вгадав переможця", '5'],
   ];
 }
 
@@ -2293,7 +2303,6 @@ function renderEuroRulesExtras(){
     ['🤏 Allegri — перемога рівно в 1 гол', '+1 за матч'],
     ['✈️ Klopp — переміг гість', '+1 за матч'],
     ['⚖️ Ancelotti — нічия, включно з 0:0', '+2 за матч'],
-    ['🎯 Guardiola — вгаданий точний рахунок', '+2 за матч'],
   ];
   const styleBlock = `
     <div class="rules-block table-card rules-mech">
@@ -2301,10 +2310,9 @@ function renderEuroRulesExtras(){
       <p class="rules-mech-p">
         Раз на вікенд обираєш один стиль — він діє одразу на всі матчі вікенда,
         незалежно від того, за які клуби вболіваєш і що прогнозував. Нарахування
-        дивиться на фінальний рахунок матчів, а не на твій прогноз — виняток лише
-        Guardiola, єдиний стиль, який платить саме за вгаданий точний рахунок.
+        дивиться на фінальний рахунок матчів, а не на твій прогноз.
         Кожен стиль можна взяти лише один раз за етап. Стеля очок за стиль на
-        вікенд — 3 у серпні, 4 у вересні та жовтні.
+        вікенд у August — 3.
       </p>
       ${miniRulesTable('Condition', 'Points', styleRows)}
       <details class="rules-details">
@@ -2315,10 +2323,7 @@ function renderEuroRulesExtras(){
 
 • Mourinho: поставив 0:2, матч закінчився 3:1 — за прогноз нуль, за стиль +1 (господар переміг)
 • Flick: поставив 3:0, вийшло 0:3 — прогноз нуль, стиль +1 (три голи забив гість)
-• Ancelotti: поставив 3:1, вийшло 1:1 — прогноз нуль, стиль +2 (нічия)
-
-Виняток — Guardiola: єдиний стиль, який платить за вгаданий точний рахунок,
-а не за факт на табло.`
+• Ancelotti: поставив 3:1, вийшло 1:1 — прогноз нуль, стиль +2 (нічия)`
         )}</div>
       </details>
     </div>`;
@@ -2334,10 +2339,10 @@ function renderEuroRulesExtras(){
     <div class="rules-block table-card rules-mech">
       <div class="rules-mech-head"><span class="ico">💰</span><h3>Призовий фонд</h3></div>
       <p class="rules-mech-p">
-        Внесок кожного учасника йде у спільний фонд. 10% з нього — організаційна
-        комісія (сайт, автоматизація, адміністрування); решта 90% — призовий
-        фонд, і саме він ділиться між шістьма номінаціями нижче. Розмір внеску
-        буде оголошено до старту.
+        Призовий фонд ділиться між шістьма номінаціями нижче. Кожен з трьох
+        етапів дає 24% фонду і всередині свого етапу ділиться між 1-2-3 місцем
+        у пропорції 50 / 30 / 20. General (сума очок за весь турнір) дає ще
+        15% фонду — тим самим 50/30/20 між 1-2-3 місцем.
       </p>
       <table class="sheet-table rules" style="margin-bottom:14px;">
         <thead><tr>
@@ -2347,20 +2352,22 @@ function renderEuroRulesExtras(){
           <th style="text-align:center;">3 місце</th>
         </tr></thead>
         <tbody>
-          ${placesRow('Етап 1 (Серпень)', 24)}
-          ${placesRow('Етап 2 (Вересень)', 24)}
-          ${placesRow('Етап 3 (Жовтень)', 24)}
-          ${placesRow('General — сума очок за весь сезон', 15)}
+          ${placesRow('Етап 1 (August)', 24)}
+          ${placesRow('Етап 2 (September)', 24)}
+          ${placesRow('Етап 3 (October)', 24)}
+          ${placesRow('General — сума очок за весь турнір', 15)}
         </tbody>
       </table>
       ${miniRulesTable('Окрема номінація', 'Приз', [
-        ['🏆 Найбільше нагород Weekend MVP за сезон', '7% фонду'],
-        ['⚔️ Найбільше перемог у дуелях Rivals за сезон', '6% фонду'],
+        ['🏆 Найбільше нагород Weekend MVP за турнір', '7% фонду'],
+        ['⚔️ Найбільше перемог у дуелях Rivals за турнір', '6% фонду'],
       ])}
       <div class="rules-note" style="margin-top:14px;">
-        Проценти в таблиці — частка від усього призового фонду (90% зібраного).
+        Проценти в таблиці — частка від усього призового фонду.
         При однаковій кількості очок (або однаковій кількості нагород MVP /
-        перемог у Rivals) учасники ділять місце й приз порівну.
+        перемог у Rivals) учасники ділять місце й приз порівну — точні
+        рахунки тут ні на що не впливають (на відміну від MVP і Rivals вище,
+        де вони є тайбрейком).
       </div>
     </div>`;
 
@@ -2930,24 +2937,30 @@ function renderLeaderboard(data){
   }
   if(finalBoards.length === 0) return renderGenericTable(data);
 
-  // Season-номінації MVP/Rivals — лише коли є живі season-дані
-  // (fetchSupabaseTab кладе їх у data.prizeBoard; архівні борди цього
-  // поля не мають). Ті самі board/renderBoards — тайбрейк і медалі
-  // рахуються так само, як в August/September/October/General.
+  let out = renderBoards(finalBoards);
+
+  // Season-номінації MVP/Rivals призового фонду — лише коли є живі
+  // season-дані (fetchSupabaseTab кладе їх у data.prizeBoard; архівні
+  // борди цього поля не мають). Окремий рядок нижче основних чотирьох —
+  // не тулимо в той самий flex-ряд, інакше він ламається на п'ятому/
+  // шостому борді. Той самий renderBoards — тайбрейк і медалі рахуються
+  // так само, як в August/September/October/General.
   if(data.prizeBoard && data.prizeBoard.length){
-    finalBoards = finalBoards.concat([
+    const prizeBoards = [
       {
-        title: '🏆 Найбільше MVP за сезон',
+        title: 'MVP — найбільше нагород за турнір',
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: null }))
       },
       {
-        title: '⚔️ Найбільше перемог Rivals за сезон',
+        title: '⚔️ Rivals — найбільше перемог за турнір',
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: null }))
       }
-    ]);
+    ];
+    out += `<div class="boards-subhead">Окремі номінації призового фонду · рахується наскрізно за весь турнір</div>`
+         + renderBoards(prizeBoards);
   }
 
-  return renderBoards(finalBoards);
+  return out;
 }
 
 function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
@@ -3016,9 +3029,12 @@ function renderBoards(finalBoards){
       ${sorted.map((e, idx) => {
         const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
         const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
-        // podium places show ONLY a medal (shared across ties); others show the numeric place
+        // podium places show ONLY a medal (shared across ties); others show the numeric place.
+        // General — залік за весь турнір, не етап — тому перше місце отримує ще й
+        // 🏆 поруч із 🥇, щоб на око відрізнялось від будь-якого етапного 🥇.
+        const isGeneral = /general/i.test(b.title);
         const rankInner = place < 3
-          ? `<span class="crown">${MEDALS[place]}</span>`
+          ? `<span class="crown">${MEDALS[place]}${place === 0 && isGeneral ? '🏆' : ''}</span>`
           : escapeHtml(labels[idx]);
         return `
         <div class="lb-row ${placeCls}">
