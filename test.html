@@ -1523,7 +1523,7 @@
   #cabinet-bar .t{
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
   }
-  #cabinet-bar .t span{color:var(--gold);}
+  #cabinet-bar .t span{color:var(--green);}
   #cabinet-close{
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     font-family:'JetBrains Mono',monospace; font-size:13px;
@@ -2361,10 +2361,22 @@ function renderEuroRulesExtras(){
           ${placesRow('General — сума очок за весь турнір', 15)}
         </tbody>
       </table>
-      ${miniRulesTable('Окрема номінація', 'Приз', [
-        ['MVP — найбільше нагород Weekend MVP за турнір', '7% фонду'],
-        ['⚔️ Найбільше перемог у дуелях Rivals за турнір', '6% фонду'],
-      ])}
+      <table class="sheet-table rules" style="margin-bottom:0;">
+        <thead><tr>
+          <th class="c-condition">Окрема номінація</th>
+          <th style="text-align:center;">Приз</th>
+        </tr></thead>
+        <tbody>
+          <tr>
+            <td class="c-condition"><span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір</td>
+            <td class="c-points">7% фонду</td>
+          </tr>
+          <tr>
+            <td class="c-condition">⚔️ Rivals — найбільше перемог за турнір</td>
+            <td class="c-points">6% фонду</td>
+          </tr>
+        </tbody>
+      </table>
       <div class="rules-note" style="margin-top:14px;">
         1-2-3 місце в таблиці вище — частка від фонду ЦЬОГО рядка (50/30/20),
         не від усього призового фонду одразу.
@@ -2891,6 +2903,7 @@ function outcomeSign(pair){
 function stageClass(title){
   const t = title.toLowerCase();
   if(t.includes('general')) return 'stage-general';
+  if(t.includes('mvp')) return 'stage-general';   // той самий золотий, що General — це теж призова номінація
   if(t.includes('knockout')) return 'stage-knockout';
   if(t.includes('play')) return 'stage-playoff';
   if(t.includes('group')) return 'stage-group';
