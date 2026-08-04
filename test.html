@@ -689,34 +689,56 @@
     .boorbit-mark img{ max-width:280px; }
   }
 
-  /* Перемикач ліг під лого BoOrbit. BoBet — активна (зелена, як
-     nav.tournaments button.active), PSuper League — навмисно
-     неактивна (немає ще сторінки): дизейбл, курсор not-allowed. */
+  /* Перемикач ліг під лого BoOrbit — один трек, повзунок під активним
+     сегментом (як iOS-перемикач), а не дві окремі кнопки поруч. BoBet —
+     активний сегмент (зелений повзунок), PSuper League — навмисно
+     неактивна (немає ще сторінки): дизейбл, курсор not-allowed, повзунок
+     до неї не їде (нема куди перемикати, поки сторінки нема). */
   .league-switch{
-    display:flex; justify-content:center; gap:10px;
-    padding:0 16px 20px; flex-wrap:wrap;
+    display:flex; justify-content:center;
+    padding:0 16px 20px;
   }
-  .league-btn{
+  .league-track{
+    position:relative;
+    display:flex;
+    width:100%; max-width:340px;
+    border:1px solid var(--line);
+    border-radius:24px;
+    background:var(--panel);
+    padding:3px;
+  }
+  .league-thumb{
+    position:absolute;
+    top:3px; bottom:3px; left:3px;
+    width:calc(50% - 3px);
+    background:var(--green);
+    border-radius:20px;
+  }
+  .league-opt{
+    position:relative;
+    flex:1 1 0;
+    z-index:1;
     font-family:'Space Grotesk',sans-serif;
     font-size:13px; font-weight:700;
     text-transform:uppercase; letter-spacing:0.03em;
-    padding:8px 18px; border-radius:20px;
-    border:1px solid var(--line);
-    background:var(--panel);
+    padding:8px 12px;
+    border:0; background:none;
     cursor:pointer;
+    color:var(--text-dim);
+    text-align:center;
+    white-space:nowrap;
   }
-  .league-btn.active{
-    background:var(--green); border-color:var(--green); color:#0E1410;
+  .league-opt.active{
+    color:#0E1410;
     cursor:default;
   }
-  .league-btn.soon{
-    color:var(--blue); border-color:rgba(94,151,208,0.4);
-    background:rgba(94,151,208,0.08);
+  .league-opt.soon{
+    color:var(--blue);
     opacity:0.65; cursor:not-allowed;
   }
   @media (max-width:640px){
-    .league-switch{ padding:0 12px 14px; gap:8px; }
-    .league-btn{ font-size:12px; padding:7px 14px; }
+    .league-switch{ padding:0 12px 14px; }
+    .league-opt{ font-size:12px; padding:7px 8px; }
   }
 
   /* ================= HONORS — трофейна вітрина =================
@@ -1678,8 +1700,11 @@
   </div>
 
   <div class="league-switch">
-    <button type="button" class="league-btn active" aria-current="true">BoBet</button>
-    <button type="button" class="league-btn soon" disabled title="Скоро">PSuper League</button>
+    <div class="league-track">
+      <div class="league-thumb"></div>
+      <button type="button" class="league-opt active" aria-current="true">BoBet</button>
+      <button type="button" class="league-opt soon" disabled title="Скоро">PSuper League</button>
+    </div>
   </div>
 
   <header>
