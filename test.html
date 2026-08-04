@@ -2329,11 +2329,14 @@ function renderEuroRulesExtras(){
     </div>`;
 
   const pct = n => (Math.round(n * 10) / 10) + '%';
+  // Клітинки 1/2/3 місця показують ЧАСТКУ МІСЦЯ ВІД ФОНДУ ЦЬОГО РЯДКА
+  // (завжди 50/30/20, однаково для кожного етапу й General) — не
+  // перемножений % від УСЬОГО фонду. Сам розмір рядка — в назві категорії.
   const placesRow = (label, fundPct) => `<tr>
       <td class="c-condition">${escapeHtml(label)} — ${pct(fundPct)} фонду</td>
-      <td class="c-points">${pct(fundPct * 0.5)}</td>
-      <td class="c-points">${pct(fundPct * 0.3)}</td>
-      <td class="c-points">${pct(fundPct * 0.2)}</td>
+      <td class="c-points">50%</td>
+      <td class="c-points">30%</td>
+      <td class="c-points">20%</td>
     </tr>`;
   const prizeBlock = `
     <div class="rules-block table-card rules-mech">
@@ -2359,11 +2362,12 @@ function renderEuroRulesExtras(){
         </tbody>
       </table>
       ${miniRulesTable('Окрема номінація', 'Приз', [
-        ['🏆 Найбільше нагород Weekend MVP за турнір', '7% фонду'],
+        ['MVP — найбільше нагород Weekend MVP за турнір', '7% фонду'],
         ['⚔️ Найбільше перемог у дуелях Rivals за турнір', '6% фонду'],
       ])}
       <div class="rules-note" style="margin-top:14px;">
-        Проценти в таблиці — частка від усього призового фонду.
+        1-2-3 місце в таблиці вище — частка від фонду ЦЬОГО рядка (50/30/20),
+        не від усього призового фонду одразу.
         При однаковій кількості очок (або однаковій кількості нагород MVP /
         перемог у Rivals) учасники ділять місце й приз порівну — точні
         рахунки тут ні на що не впливають (на відміну від MVP і Rivals вище,
