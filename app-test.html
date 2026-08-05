@@ -1296,14 +1296,16 @@ function renderRivalBox(deadlinePassed, open){
   const confirmedLock = S.iConfirmed && !open;
   const locked = deadlinePassed || scored || usedUp || confirmedLock;
 
-  // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я,
-  // мінус ті, кого я вже брав в ІНШИХ вікендах цього етапу.
-  const usedNames = S.myRivalsStage
+  // Кандидати: учасники етапу (беремо з картки підтверджень) мінус я.
+  // Тих, кого я вже брав в ІНШИХ вікендах цього етапу, більше не
+  // ховаємо — показуємо вимкненими з номером вікенда, як витрачені
+  // стилі в Manager Style (Богдан 06.08.2026).
+  const usedGw = {};
+  S.myRivalsStage
     .filter(r => r.gameweek_id !== S.gw.gameweek_id)
-    .map(r => r.rival_name);
+    .forEach(r => { usedGw[r.rival_name] = r.gameweek_number; });
   const candidates = (S.checks || [])
     .filter(c => c.participant_id !== S.me.participant_id)
-    .filter(c => !usedNames.includes(c.display_name))
     .map(c => c.display_name);
 
   // Скільки очок дуелі вже взято за етап і скільки їх усього.
@@ -1354,9 +1356,13 @@ function renderRivalBox(deadlinePassed, open){
     // Вибір суперника — кнопками, як у бонусних питаннях і стилях.
     // Випадний список тут був єдиним білим елементом на всю сторінку
     // і вимагав двох дій (обрати в списку + натиснути «Обрати»).
-    const chips = candidates.map(n =>
-      `<button data-rival="${esc(n)}"
-        class="${myPick && myPick.rival_name === n ? 'on' : ''}">${esc(n)}</button>`).join('');
+    const chips = candidates.map(n => {
+      const isMine = myPick && myPick.rival_name === n;
+      const usedWk = !isMine ? usedGw[n] : null;
+      return `<button data-rival="${esc(n)}"
+        class="${isMine ? 'on' : ''}" ${usedWk != null ? 'disabled' : ''}>${esc(n)}${
+          usedWk != null ? ` · вк ${usedWk}` : ''}</button>`;
+    }).join('');
 
     // Правило зміни суперника різне до і після відкриття вікенда, і
     // це головна особливість механіки — тому пишемо обидві половини
