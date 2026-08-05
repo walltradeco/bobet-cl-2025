@@ -1544,8 +1544,8 @@
   }
   #cabinet-bar .t{
     font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:15px;
+    color:var(--green);
   }
-  #cabinet-bar .t span{color:var(--green);}
   #cabinet-close{
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     font-family:'JetBrains Mono',monospace; font-size:13px;
@@ -2236,13 +2236,27 @@ async function fetchSupabaseTab(tab){
   LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
   LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   LIVE_STYLE_CAP = null;
-  if(tab.source === 'leaderboard') return {
-    rows: await buildLeaderboardRows(),
-    // Season-номінації призового фонду (🏆 MVP 7%, ⚔️ Rivals 6% — Rules),
-    // раніше лише текст без підрахунку. Лише на живій вкладці EuroSeason,
-    // тому окремим полем, не в rows: архівні борди (fetchSheet) його не мають.
-    prizeBoard: await sbGet('season_prize_board?select=display_name,mvp_count,rival_wins')
-  };
+  if(tab.source === 'leaderboard'){
+    const prizeBoard = await sbGet('season_prize_board?select=person_key,display_name,mvp_count,rival_wins');
+    // Зміна рангу для MVP/Rivals season-бордів (файл 184) — той самий
+    // косметичний принцип, що monthlyDelta/seasonDelta вище: якщо в'юхи
+    // ще нема на проді чи запит впав, просто нічого не показуємо.
+    let prizeDelta = [];
+    try { prizeDelta = await sbGet('season_prize_rank_delta?select=person_key,mvp_delta,rival_delta'); } catch(e) {}
+    const prizeDeltaByPerson = {};
+    prizeDelta.forEach(d => { prizeDeltaByPerson[d.person_key] = d; });
+    return {
+      rows: await buildLeaderboardRows(),
+      // Season-номінації призового фонду (🏆 MVP 7%, ⚔️ Rivals 6% — Rules),
+      // раніше лише текст без підрахунку. Лише на живій вкладці EuroSeason,
+      // тому окремим полем, не в rows: архівні борди (fetchSheet) його не мають.
+      prizeBoard: prizeBoard.map(r => ({
+        ...r,
+        mvp_delta: prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].mvp_delta : null,
+        rival_delta: prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].rival_delta : null
+      }))
+    };
+  }
   if(tab.source === 'month')       return { rows: await buildMonthRows(tab.monthKey) };
   if(tab.source === 'special')     return { rows: await buildSpecialRows(tab.monthKey) };
   if(tab.source === 'rules')       return { rows: buildRulesRows() };
@@ -2927,8 +2941,7 @@ function outcomeSign(pair){
 }
 function stageClass(title){
   const t = title.toLowerCase();
-  if(t.includes('general')) return 'stage-general';
-  if(t.includes('mvp')) return 'stage-general';   // той самий золотий, що General — це теж призова номінація
+  if(t.includes('general')) return 'stage-general';   // золота смуга — лише справжній General
   if(t.includes('knockout')) return 'stage-knockout';
   if(t.includes('play')) return 'stage-playoff';
   if(t.includes('group')) return 'stage-group';
@@ -2991,11 +3004,11 @@ function renderLeaderboard(data){
     const prizeBoards = [
       {
         title: 'MVP — найбільше нагород за турнір',
-        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: null }))
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: r.mvp_delta ?? null }))
       },
       {
         title: '⚔️ Rivals — найбільше перемог за турнір',
-        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: null }))
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: r.rival_delta ?? null }))
       }
     ];
     out += `<div class="boards-subhead">Окремі номінації призового фонду · рахується наскрізно за весь турнір</div>`
