@@ -2546,12 +2546,37 @@ async function viewStock(){
 // =====================================================================
 //  ЛІДЕРБОРД (U-14)
 // =====================================================================
+
+// Зміна місця з останнього знімку (файл 116/184). null/undefined —
+// немає даних (в'юха ще не на проді, чи запит впав) — не показуємо
+// нічого, а не «=», щоб не брехати «нуль змін», коли просто нема історії.
+function lbDeltaHtml(d){
+  if(d === null || d === undefined) return '';
+  if(d > 0) return `<span style="color:var(--green)">▲${d}</span>`;
+  if(d < 0) return `<span style="color:var(--red)">▼${-d}</span>`;
+  return `<span class="dim">=</span>`;
+}
+
 async function viewBoard(){
   const season = S.boardSeason === true;
   const { data } = season
     ? await sb.from('season_leaderboard').select('*').order('place')
     : await sb.from('leaderboard').select('*')
         .eq('tournament_id', TOURNAMENT_ID).order('place');
+
+  // Той самий косметичний принцип, що на test.html: якщо в'юха ще не
+  // на проді чи запит впав — просто нічого не показуємо, борд і без
+  // цього працює.
+  let deltaByKey = {};
+  try {
+    const deltaRows = season
+      ? (await sb.from('season_leaderboard_rank_delta').select('person_key,delta')).data
+      : (await sb.from('leaderboard_rank_delta').select('participant_id,delta,tournament_key')
+          .eq('tournament_key', S.stage.key)).data;
+    (deltaRows || []).forEach(d => {
+      deltaByKey[season ? d.person_key : d.participant_id] = d.delta;
+    });
+  } catch(e) {}
 
   const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
   $('view').innerHTML = `
@@ -2562,9 +2587,10 @@ async function viewBoard(){
     <div class="card">
     <h2>${season ? 'Загальний залік сезону' : esc(S.stage.title) + ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
-    <table><thead><tr><th>№</th><th>Учасник</th><th>Точних</th><th class="n">Матчі</th><th class="n">Бонуси</th><th style="text-align:right">Разом</th></tr></thead>
+    <table><thead><tr><th>№</th><th></th><th>Учасник</th><th>Точних</th><th class="n">Матчі</th><th class="n">Бонуси</th><th style="text-align:right">Разом</th></tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
+      <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       <td class="n" style="color:var(--green)">${r.exact_count}</td>
       <td class="n dim">${r.match_points ?? 0}</td>
@@ -2588,17 +2614,27 @@ async function viewMvpRivals(){
   const { data } = await sb.from('season_prize_board').select('*');
   const rows = data || [];
 
+  // Зміна рангу (файл 184) — той самий косметичний принцип, що в
+  // viewBoard: немає в'юхи чи запит впав — просто нічого не показуємо.
+  let deltaByPerson = {};
+  try {
+    const { data: deltaRows } = await sb.from('season_prize_rank_delta')
+      .select('person_key,mvp_delta,rival_delta');
+    (deltaRows || []).forEach(d => { deltaByPerson[d.person_key] = d; });
+  } catch(e) {}
+
   const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
 
-  const board = (titleHtml, key, rankKey) => {
+  const board = (titleHtml, key, rankKey, deltaKey) => {
     const sorted = [...rows].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0));
     return `
     <div class="card" style="margin-bottom:14px">
       <h2>${titleHtml}</h2>
       ${!sorted.length ? '<p class="dim">Ще нема кого показати.</p>' : `
-      <table><thead><tr><th>№</th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
+      <table><thead><tr><th>№</th><th></th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
       <tbody>${sorted.map(r => `<tr>
         <td class="n">${medal(r[rankKey])}</td>
+        <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByPerson[r.person_key] ? deltaByPerson[r.person_key][deltaKey] : null)}</td>
         <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
         <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r[key] ?? 0}</td>
       </tr>`).join('')}</tbody></table>`}
@@ -2612,8 +2648,8 @@ async function viewMvpRivals(){
       Weekend MVP і найбільше перемог у дуелях Rivals за August + September + October
       разом. Рахується само, оновлюється щовікенда.</p>
     </div>
-    ${board('<span style="color:var(--gold);font-weight:700;letter-spacing:0.03em">MVP</span> — найбільше нагород', 'mvp_count', 'mvp_rank')}
-    ${board('⚔️ Rivals — найбільше перемог', 'rival_wins', 'rival_rank')}
+    ${board('<span style="color:var(--gold);font-weight:700;letter-spacing:0.03em">MVP</span> — найбільше нагород', 'mvp_count', 'mvp_rank', 'mvp_delta')}
+    ${board('⚔️ Rivals — найбільше перемог', 'rival_wins', 'rival_rank', 'rival_delta')}
   `;
 }
 
