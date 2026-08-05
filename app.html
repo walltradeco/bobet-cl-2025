@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>BoBet · Прогнози</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
     --bg:#1B1B1B; --panel:#151D17; --panel-2:#1B251D; --panel-3:#212D23;
@@ -20,26 +20,26 @@
   html,body{margin:0;padding:0;}
   body{
     background:repeating-linear-gradient(0deg,var(--field-line) 0px,var(--field-line) 1px,transparent 1px,transparent 64px),var(--bg);
-    color:var(--text); font-family:'Inter',sans-serif; min-height:100vh;
+    color:var(--text); font-family:'Onest',sans-serif; min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
   .wrap{max-width:1080px;margin:0 auto;padding:0 16px 120px;}
-  .mono{font-family:'JetBrains Mono',monospace;}
-  .grotesk{font-family:'Space Grotesk',sans-serif;}
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .grotesk{font-family:'Montserrat',sans-serif;}
 
   /* ---------- HEADER ---------- */
   header{padding:22px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px;}
   .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
-  .brand{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:15px;
+  .brand{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:15px;
     letter-spacing:0.12em;text-transform:uppercase;color:var(--green);}
-  .whoami{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);text-align:right;}
+  .whoami{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);text-align:right;}
   .whoami b{color:var(--purple);display:block;font-size:15px;}
 
   /* ---------- TABS ---------- */
   nav.tabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 18px;padding-bottom:4px;-webkit-overflow-scrolling:touch;}
   nav.tabs button{
     background:var(--panel);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'Space Grotesk',sans-serif;font-weight:500;font-size:15px;
+    font-family:'Montserrat',sans-serif;font-weight:500;font-size:15px;
     padding:9px 14px;border-radius:8px;white-space:nowrap;cursor:pointer;
   }
   nav.tabs button.on{background:var(--panel-3);color:var(--text);border-color:var(--gold);}
@@ -56,7 +56,7 @@
     -webkit-overflow-scrolling:touch;}
   nav.stages button{
     flex:1 1 0;background:transparent;border:1px solid var(--line);color:var(--text-dim);
-    font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.06em;
+    font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.06em;
     text-transform:uppercase;padding:8px 6px;border-radius:8px;white-space:nowrap;cursor:pointer;
   }
   nav.stages button.on{background:var(--gold-soft);color:var(--gold);border-color:var(--gold);}
@@ -68,12 +68,12 @@
     background:var(--panel-2);}
   .bq.locked{background:var(--panel);border-style:dashed;}
   .bq .q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:4px;}
-  .bq .meta{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
+  .bq .meta{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);
     margin-bottom:10px;}
   .yn{display:flex;gap:8px;}
   .yn button{
     flex:1;background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:16px;
     padding:12px;border-radius:9px;cursor:pointer;
   }
   .yn button.on{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
@@ -86,11 +86,11 @@
   .bq input.txt{
     width:100%;box-sizing:border-box;background:var(--panel-3);border:1px solid var(--line);
     border-radius:9px;color:var(--text);font-size:16px;padding:12px;
-    font-family:'Inter',sans-serif;
+    font-family:'Onest',sans-serif;
   }
   .bq input.txt:focus{outline:none;border-color:var(--gold);}
   .bq input.txt:disabled{opacity:0.6;}
-  .bq .res{font-family:'JetBrains Mono',monospace;font-size:13px;margin-top:9px;}
+  .bq .res{font-family:'IBM Plex Mono',monospace;font-size:13px;margin-top:9px;}
   .bq .res.ok{color:var(--teal);}
   .bq .res.no{color:var(--red);}
   .bq .res.wait{color:var(--text-dim);}
@@ -99,25 +99,25 @@
   .press-q{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px;
     background:var(--panel-2);}
   .press-q.answered{border-color:var(--gold);}
-  .press-q .slot{font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;
+  .press-q .slot{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
     letter-spacing:.05em;color:var(--text-dim);margin-bottom:5px;}
   .press-q .q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:9px;}
   .press-q textarea{width:100%;box-sizing:border-box;background:var(--panel-3);
     border:1px solid var(--line);border-radius:9px;color:var(--text);font-size:15px;padding:11px;
-    font-family:'Inter',sans-serif;resize:vertical;line-height:1.5;}
+    font-family:'Onest',sans-serif;resize:vertical;line-height:1.5;}
   .press-q textarea:focus{outline:none;border-color:var(--gold);}
-  .press-q .saved{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--teal);
+  .press-q .saved{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--teal);
     margin-top:6px;min-height:15px;}
   .press-q .btns{display:flex;gap:8px;margin-top:9px;}
   .press-q .btns button{flex:0 0 auto;padding:9px 16px;border-radius:9px;
-    font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
+    font-family:'Montserrat',sans-serif;font-weight:700;font-size:14px;cursor:pointer;
     border:1px solid var(--line);}
   .press-q .btns .confirm{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);}
   .press-q .btns .skip{background:var(--panel-3);color:var(--text-dim);}
   .press-note{font-size:13px;line-height:1.5;color:var(--text-dim);
     background:var(--panel-3);border:1px solid var(--line);border-radius:9px;
     padding:10px 12px;margin-bottom:12px;}
-  .gw-group h3{font-family:'Space Grotesk',sans-serif;font-size:15px;margin:18px 0 8px;
+  .gw-group h3{font-family:'Montserrat',sans-serif;font-size:15px;margin:18px 0 8px;
     color:var(--gold);}
 
   /* Стрічка Q&A — картки замість голих рядків з бордюром: питання
@@ -133,7 +133,7 @@
   .feed-item .body{font-size:14px;line-height:1.5;}
   .feed-item .q{font-size:14px;line-height:1.5;display:flex;gap:8px;
     align-items:baseline;flex-wrap:wrap;}
-  .feed-item .rep{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  .feed-item .rep{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--purple);
     background:var(--purple-soft);padding:2px 9px;border-radius:20px;
     white-space:nowrap;flex:0 0 auto;}
@@ -145,7 +145,7 @@
   /* Відповідь учасника — той самий візуальний патерн, що бейдж репортера
      (.rep) вище, лише зелений замість фіолетового: одразу видно «хто
      каже» в обох рядках питання/відповіді, а не лише жирний текст. */
-  .feed-item .a .who{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  .feed-item .a .who{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--green);
     background:var(--green-soft);padding:2px 9px;border-radius:20px;
     white-space:nowrap;flex:0 0 auto;}
@@ -155,11 +155,11 @@
   .feed-item.statement .stmt-line{font-size:14px;line-height:1.5;}
   .feed-item.statement .stmt-line.reaction{margin-top:6px;margin-left:16px;
     padding-left:10px;border-left:2px solid var(--line);color:var(--text-dim);}
-  .feed-item.statement .stmt-line .who{font-family:'JetBrains Mono',monospace;
+  .feed-item.statement .stmt-line .who{font-family:'IBM Plex Mono',monospace;
     font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
     color:var(--gold);background:var(--gold-soft);padding:2px 9px;border-radius:20px;}
   .feed-item.statement .stmt-line.reaction .who{color:var(--text-dim);background:none;padding:0;}
-  .press-q .interviewer{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;
+  .press-q .interviewer{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--purple);
     background:var(--purple-soft);display:inline-block;padding:2px 9px;
     border-radius:20px;margin-bottom:8px;}
@@ -170,7 +170,7 @@
   /* ---------- CARDS ---------- */
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
   .card.tight{padding:12px;}
-  h2{font-family:'Space Grotesk',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
+  h2{font-family:'Montserrat',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
   .dim{color:var(--text-dim);font-size:14px;line-height:1.5;}
 
   /* ---------- DEADLINE ---------- */
@@ -179,11 +179,11 @@
     background:var(--gold-soft);border:1px solid rgba(232,178,60,0.3);
     border-radius:10px;padding:14px 16px;margin-bottom:14px;gap:16px;
   }
-  .deadline .t{font-family:'JetBrains Mono',monospace;font-size:23px;color:var(--gold);font-weight:700;}
+  .deadline .t{font-family:'IBM Plex Mono',monospace;font-size:23px;color:var(--gold);font-weight:700;}
   .deadline.closed{background:var(--red-soft);border-color:rgba(199,92,74,0.35);}
   .deadline.closed .t{color:var(--red);font-size:17px;}
   /* Спільний дрібний заголовок над цифрою — був трьома копіями інлайн-стилів */
-  .cap{font-family:'JetBrains Mono',monospace;font-size:12px;letter-spacing:0.08em;
+  .cap{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;
     text-transform:uppercase;color:var(--text-dim);}
   .deadline .when{font-size:13px;color:var(--text-dim);margin-top:3px;}
 
@@ -194,8 +194,8 @@
   .gw-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
   .gw-chip{background:var(--panel-2);border:1px solid var(--line);color:var(--text-dim);
     border-radius:9px;padding:8px 14px;cursor:pointer;text-align:left;
-    font-family:'Inter',sans-serif;font-size:15px;font-weight:600;line-height:1.25;}
-  .gw-chip .d{display:block;font-family:'JetBrains Mono',monospace;
+    font-family:'Onest',sans-serif;font-size:15px;font-weight:600;line-height:1.25;}
+  .gw-chip .d{display:block;font-family:'IBM Plex Mono',monospace;
     font-size:12px;font-weight:400;color:var(--text-dim);margin-top:2px;}
   /* Обране скрізь у кабінеті золоте — і вибір (стиль, суперник,
      бонусна відповідь), і навігація (етап, вкладка, вікенд).
@@ -218,33 +218,33 @@
      не видно, який матч якого дня. */
   .match-meta{display:flex;justify-content:space-between;align-items:baseline;
     gap:10px;margin-bottom:6px;}
-  .match-when{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);}
+  .match-when{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);}
   .match.boosted{border-color:var(--purple);background:var(--purple-soft);}
   .match.autopilot{border-color:var(--gold);background:var(--gold-soft);}
   .match-teams{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
   .team{flex:1;font-size:17px;font-weight:600;line-height:1.3;}
   .team.away{text-align:right;}
-  .vs{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:13px;}
+  .vs{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);font-size:13px;}
   .score-in{display:flex;align-items:center;justify-content:center;gap:10px;}
   .score-in input{
     width:62px;height:52px;text-align:center;
-    font-family:'JetBrains Mono',monospace;font-size:25px;font-weight:700;
+    font-family:'IBM Plex Mono',monospace;font-size:25px;font-weight:700;
     background:var(--panel-3);border:1px solid var(--line);border-radius:9px;color:var(--text);
   }
   .score-in input:focus{outline:none;border-color:var(--gold);}
-  .score-in .sep{font-family:'JetBrains Mono',monospace;color:var(--text-dim);font-size:21px;}
-  .actual{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--teal);text-align:center;margin-top:8px;}
-  .pts{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--gold);font-weight:700;}
+  .score-in .sep{font-family:'IBM Plex Mono',monospace;color:var(--text-dim);font-size:21px;}
+  .actual{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--teal);text-align:center;margin-top:8px;}
+  .pts{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--gold);font-weight:700;}
 
   /* ---------- BOOST PICKER ---------- */
-  .ap-tag{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:0.08em;
+  .ap-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
     text-transform:uppercase;color:var(--gold);margin-bottom:7px;}
   .match.ap-pick{cursor:pointer;border-style:dashed;}
   .match.ap-blocked{opacity:0.4;cursor:not-allowed;border-style:solid;}
   .boost-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .boost-chip{
     background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
-    font-family:'JetBrains Mono',monospace;font-size:13px;padding:6px 10px;
+    font-family:'IBM Plex Mono',monospace;font-size:13px;padding:6px 10px;
     border-radius:7px;cursor:pointer;
   }
   /* Лишається для чіпів в адмінці (правильна відповідь на питання).
@@ -256,12 +256,12 @@
   /* ---------- BUTTONS ---------- */
   button.primary{
     width:100%;background:var(--gold);color:#1a1206;border:none;border-radius:10px;
-    padding:15px;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:17px;cursor:pointer;
+    padding:15px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:17px;cursor:pointer;
   }
   button.primary:disabled{background:var(--panel-3);color:var(--text-dim);cursor:not-allowed;}
   button.ghost{
     background:transparent;border:1px solid var(--line);color:var(--text-dim);
-    border-radius:8px;padding:10px 14px;font-size:15px;cursor:pointer;font-family:'Inter',sans-serif;
+    border-radius:8px;padding:10px 14px;font-size:15px;cursor:pointer;font-family:'Onest',sans-serif;
   }
 
   /* ---------- REVIEW MODAL ---------- */
@@ -270,7 +270,7 @@
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;
     padding:20px 16px 28px;width:100%;max-width:1080px;max-height:88vh;overflow-y:auto;}
   .rev-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px;}
-  .rev-line .s{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  .rev-line .s{font-family:'IBM Plex Mono',monospace;font-weight:700;}
 
   /* ---------- DRAFT ---------- */
   .budget{position:sticky;top:0;background:var(--panel-3);border:1px solid var(--gold);
@@ -281,23 +281,23 @@
   .qty{display:flex;align-items:center;gap:10px;}
   .qty button{width:34px;height:34px;border-radius:8px;background:var(--panel-3);
     border:1px solid var(--line);color:var(--text);font-size:19px;cursor:pointer;}
-  .qty .n{font-family:'JetBrains Mono',monospace;font-size:18px;min-width:22px;text-align:center;font-weight:700;}
+  .qty .n{font-family:'IBM Plex Mono',monospace;font-size:18px;min-width:22px;text-align:center;font-weight:700;}
 
   /* Розбір буста з прикладами. white-space:pre-line — текст лежить
      у базі рядками, і саме розбивка робить кейси читабельними. */
   .bex{margin-top:10px;border-top:1px solid var(--line);padding-top:8px;}
   .bex summary{cursor:pointer;font-size:13px;color:var(--gold);
-    font-family:'JetBrains Mono',monospace;letter-spacing:0.02em;}
+    font-family:'IBM Plex Mono',monospace;letter-spacing:0.02em;}
   .bex summary::marker{color:var(--text-dim);}
   .bex > div{white-space:pre-line;color:var(--text-dim);font-size:14px;
     line-height:1.6;margin-top:8px;}
 
   /* ---------- TABLE ---------- */
   table{width:100%;border-collapse:collapse;font-size:15px;}
-  th{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);
+  th{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
-  td.n{font-family:'JetBrains Mono',monospace;font-weight:700;}
+  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;}
   .medal{font-size:16px;}
 
   /* ---------- CHECKS ---------- */
@@ -309,21 +309,21 @@
 
   /* ---------- LOGIN ---------- */
   .login{max-width:380px;margin:8vh auto 0;text-align:center;}
-  .login h1{font-family:'JetBrains Mono',monospace;font-weight:700;font-size:20px;
+  .login h1{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;
     letter-spacing:0.14em;text-transform:uppercase;color:var(--green);margin:0 0 24px;}
   .login input{
     width:100%;padding:15px;margin:8px 0;background:var(--panel-2);
     border:1px solid var(--line);border-radius:10px;color:var(--text);font-size:17px;
-    font-family:'Inter',sans-serif;text-align:center;
+    font-family:'Onest',sans-serif;text-align:center;
   }
-  .login input.code{font-family:'JetBrains Mono',monospace;font-size:25px;letter-spacing:0.18em;font-weight:700;}
+  .login input.code{font-family:'IBM Plex Mono',monospace;font-size:25px;letter-spacing:0.18em;font-weight:700;}
   .login input:focus{outline:none;border-color:var(--gold);}
 
   .msg{padding:11px 13px;border-radius:9px;font-size:15px;margin:10px 0;}
   .msg.err{background:var(--red-soft);border:1px solid rgba(199,92,74,0.35);color:var(--red);}
   .msg.ok{background:var(--green-soft);border:1px solid rgba(76,174,107,0.35);color:var(--green);}
   .hide{display:none !important;}
-  .spin{text-align:center;padding:40px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;}
+  .spin{text-align:center;padding:40px;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;}
 
 </style>
 </head>
@@ -3321,7 +3321,7 @@ async function viewAdmin(){
       <div class="rev-line"><span>Номер</span>
         <input type="number" id="w-num" min="1" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
       <input type="datetime-local" id="w-dl" style="${AINP};margin:8px 0">
       <input type="text" id="w-title" placeholder="назва, напр. «Вікенд 4» (можна лишити порожнім)"
         style="${AINP}">
@@ -3389,28 +3389,28 @@ async function viewAdmin(){
       </select>
       <div id="q-opts-row" style="display:none;margin-bottom:8px">
         <textarea id="q-opts" rows="4" placeholder="Варіанти — по одному на рядок:&#10;Арсенал&#10;Манчестер Сіті"
-          style="${AINP};resize:vertical;font-family:'Inter',sans-serif"></textarea>
+          style="${AINP};resize:vertical;font-family:'Onest',sans-serif"></textarea>
         <p class="dim" style="margin-top:4px">Порядок такий, як напишеш. Мінімум два.
           Після першої відповіді варіанти вже не змінити.</p>
       </div>
       <div class="rev-line"><span id="q-pts-label">Балів за правильний YES</span>
         <input type="number" id="q-pts" value="3" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
       <div class="rev-line" id="q-no-row"><span>Балів за правильний NO</span>
         <input type="number" id="q-ptsno" value="1" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
       <div class="rev-line" id="q-near-row" style="display:none">
         <span>Балів за промах <span class="dim">(порожньо — тільки точно)</span></span>
         <input type="number" id="q-near" value="1" min="0" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
       <div class="rev-line" id="q-win-row" style="display:none">
         <span>На скільки можна промахнутись <span class="dim">(±)</span></span>
         <input type="number" id="q-win" value="1" min="1" max="10" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
       <button class="ghost" id="btn-qadd" style="margin-top:10px;width:100%">Додати питання</button>
       <div id="qadd-result"></div>
     </div>
@@ -4100,20 +4100,20 @@ async function renderAdminBonus(){
           <div class="rev-line"><span>Балів ${yn ? 'за правильний YES' : 'за влучну відповідь'}</span>
             <input type="number" data-bpts="${i}" value="${yn ? b.points_yes : b.points_if_correct}"
               style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
-              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+              border-radius:7px;color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
           ${yn ? `<div class="rev-line"><span>Балів за правильний NO</span>
             <input type="number" data-bptsno="${i}" value="${b.points_no}"
               style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
-              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>` : ''}
+              border-radius:7px;color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>` : ''}
           ${kind === 'number' ? `
           <div class="rev-line"><span>Балів за промах <span class="dim">(0 — тільки точно)</span></span>
             <input type="number" data-bnear="${i}" min="0" value="${b.points_near ?? 0}"
               style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
-              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+              border-radius:7px;color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
           <div class="rev-line"><span>На скільки можна промахнутись <span class="dim">(±)</span></span>
             <input type="number" data-bwin="${i}" min="1" max="10" value="${b.near_window ?? 1}"
               style="width:90px;padding:7px;background:var(--panel-3);border:1px solid var(--line);
-              border-radius:7px;color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>
+              border-radius:7px;color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>
           <button class="ghost" data-bnumsave="${i}" style="width:100%;margin-bottom:7px">
             Зберегти умову промаху</button>` : ''}
           <p class="dim" style="font-size:13px;margin:7px 0">
@@ -4426,11 +4426,11 @@ async function renderAdminExtras(){
       <div class="rev-line"><span><b>Бюджет турніру</b></span>
         <input type="number" id="pr-budget" value="${t.budget}" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--gold);font-family:'JetBrains Mono',monospace;text-align:right;font-weight:700"></div>` +
+          color:var(--gold);font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:700"></div>` +
       S.boostTypes.map(b => `<div class="rev-line"><span>${esc(b.title)}</span>
         <input type="number" data-price="${b.code}" value="${priceOf(b.code)}" style="width:90px;padding:7px;
           background:var(--panel-3);border:1px solid var(--line);border-radius:7px;
-          color:var(--text);font-family:'JetBrains Mono',monospace;text-align:right"></div>`).join('');
+          color:var(--text);font-family:'IBM Plex Mono',monospace;text-align:right"></div>`).join('');
 
     $('btn-prices').onclick = async () => {
       const b = Number($('pr-budget').value);
