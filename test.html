@@ -139,6 +139,31 @@
   nav.tournaments button[data-key="honors"].active{
     background:var(--gold); border-color:var(--gold); color:#0E1410;
   }
+  /* LIVE — турнір іде просто зараз (є хоч один незіграний матч серед
+     aug/sep/oct2026). Червоний навмисно, не зелений: зелений уже
+     означає «активна вкладка», бейдж мусить читатись окремо в обох
+     станах кнопки (активній і ні). Зникає сам, щойно останній матч
+     останнього вікенду отримає рахунок — рахується з бази, руками
+     не гасити. */
+  nav.tournaments button{ position:relative; }
+  .live-badge{
+    position:absolute; top:-9px; right:-9px;
+    display:flex; align-items:center; gap:4px;
+    background:var(--red); color:#fff;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:9px; font-weight:700; letter-spacing:0.06em;
+    padding:2px 6px 2px 5px; border-radius:8px;
+    box-shadow:0 0 0 2px var(--bg);
+    pointer-events:none;
+  }
+  .live-badge .dot{
+    width:5px; height:5px; border-radius:50%; background:#fff;
+    animation:live-pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes live-pulse{
+    0%, 100% { opacity:1; }
+    50%      { opacity:0.35; }
+  }
 
   nav.tabs{
     display:flex;
@@ -4746,11 +4771,29 @@ function renderTabs(){
   });
 }
 
+// EUROSEASON_LIVE: null поки не перевірено, true/false після відповіді
+// бази. Турнір «іде», доки лишається хоч один незіграний/нескасований
+// матч серед aug2026/sep2026/oct2026 — тобто аж до фінального свистка
+// останнього матчу останнього вікенду жовтня.
+let EUROSEASON_LIVE = null;
+
+async function checkEuroseasonLive(){
+  try{
+    const tours = await sbGet('tournaments?select=id&key=in.(aug2026,sep2026,oct2026)');
+    const ids = tours.map(t => t.id).join(',');
+    if(!ids) return false;
+    const gws = await sbGet('gameweeks?select=id,matches(status)&tournament_id=in.(' + ids + ')');
+    return gws.some(g => (g.matches || []).some(m => m.status !== 'played' && m.status !== 'cancelled'));
+  }catch(e){ return false; }   // мережа підвела — краще без бейджа, ніж хибний LIVE
+}
+
 function renderTournaments(){
   const nav = document.getElementById('tournaments');
-  nav.innerHTML = TOURNAMENTS.map(t =>
-    `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}</button>`
-  ).join('');
+  nav.innerHTML = TOURNAMENTS.map(t => {
+    const live = t.key === 'euroseason2026' && EUROSEASON_LIVE
+      ? '<span class="live-badge"><span class="dot"></span>LIVE</span>' : '';
+    return `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}${live}</button>`;
+  }).join('');
   nav.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => setTournament(btn.dataset.key));
   });
@@ -4850,6 +4893,7 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 /* ======== INIT ======== */
 renderTournaments();
 setTournament(activeTournament.key);
+checkEuroseasonLive().then(v => { EUROSEASON_LIVE = v; renderTournaments(); });
 setInterval(() => {
   if (!document.getElementById('cabinet-overlay').classList.contains('open')) refreshAll();
 }, 60000);
