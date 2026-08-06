@@ -190,6 +190,27 @@
   nav.tabs button:hover{color:var(--text);}
   nav.tabs button.active{color:var(--green); border-bottom-color:var(--green);}
   nav.tabs button:focus-visible{outline:2px solid var(--green); outline-offset:-2px;}
+  /* Кольорові вкладки-етапи EuroSeason: неактивна показує свій колір
+     приглушено, активна — на повну + підкреслення того ж кольору.
+     Специфічність .stage-*.active вища за базове .active, тож активний
+     етап лишається у власному кольорі, а не зеленому. Leaderboards і
+     Rules без stage-класу — там і далі зелена активність. */
+  nav.tabs button.stage-aug{color:var(--teal);}
+  nav.tabs button.stage-sep{color:var(--blue);}
+  nav.tabs button.stage-oct{color:var(--purple);}
+  nav.tabs button.stage-general{color:var(--gold);}
+  nav.tabs button.stage-aug,
+  nav.tabs button.stage-sep,
+  nav.tabs button.stage-oct,
+  nav.tabs button.stage-general{opacity:.55;}
+  nav.tabs button.stage-aug:hover,
+  nav.tabs button.stage-sep:hover,
+  nav.tabs button.stage-oct:hover,
+  nav.tabs button.stage-general:hover{opacity:1;}
+  nav.tabs button.stage-aug.active{color:var(--teal);   border-bottom-color:var(--teal);   opacity:1;}
+  nav.tabs button.stage-sep.active{color:var(--blue);   border-bottom-color:var(--blue);   opacity:1;}
+  nav.tabs button.stage-oct.active{color:var(--purple); border-bottom-color:var(--purple); opacity:1;}
+  nav.tabs button.stage-general.active{color:var(--gold); border-bottom-color:var(--gold); opacity:1;}
 
   /* ===== LEADERBOARDS ===== */
   .boards{
@@ -230,6 +251,9 @@
   .board.stage-playoff .board-head{color:var(--blue); box-shadow:inset 0 3px 0 var(--blue);}
   .board.stage-knockout .board-head{color:#B98FE0; box-shadow:inset 0 3px 0 #B98FE0;}
   .board.stage-general .board-head{color:var(--gold); box-shadow:inset 0 3px 0 var(--gold);}
+  .board.stage-aug .board-head{color:var(--teal);   box-shadow:inset 0 3px 0 var(--teal);}
+  .board.stage-sep .board-head{color:var(--blue);   box-shadow:inset 0 3px 0 var(--blue);}
+  .board.stage-oct .board-head{color:var(--purple); box-shadow:inset 0 3px 0 var(--purple);}
   .lb-row{
     display:flex;
     align-items:center;
@@ -2991,6 +3015,12 @@ function stageClass(title){
   if(t.includes('knockout')) return 'stage-knockout';
   if(t.includes('play')) return 'stage-playoff';
   if(t.includes('group')) return 'stage-group';
+  // Етапи EuroSeason 2026 — свій колір кожному місяцю (як архівні
+  // Group/Play-off/Knockout). Місяці не зустрічаються в назвах бордів
+  // архіву, тож ці гілки чіпають лише живий сезон.
+  if(t.includes('august'))    return 'stage-aug';
+  if(t.includes('september')) return 'stage-sep';
+  if(t.includes('october'))   return 'stage-oct';
   return '';
 }
 
@@ -4759,9 +4789,15 @@ async function loadActiveTab(){
 
 function renderTabs(){
   const nav = document.getElementById('tabs');
-  nav.innerHTML = activeTournament.tabs.map((t, idx) =>
-    `<button data-idx="${idx}" class="${idx === activeTabIndex ? 'active' : ''}">${escapeHtml(t.sheet)}</button>`
-  ).join('');
+  // Кольори вкладок-етапів — лише в EuroSeason: серпень/вересень/
+  // жовтень/General. Архівні вкладки лишаємо без акценту, щоб не
+  // фарбувати частину списку строкато.
+  const colorTabs = activeTournament.key === 'euroseason2026';
+  nav.innerHTML = activeTournament.tabs.map((t, idx) => {
+    const accent = colorTabs ? stageClass(t.sheet) : '';
+    const cls = [idx === activeTabIndex ? 'active' : '', accent].filter(Boolean).join(' ');
+    return `<button data-idx="${idx}" class="${cls}">${escapeHtml(t.sheet)}</button>`;
+  }).join('');
   nav.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
       activeTabIndex = Number(btn.dataset.idx);
