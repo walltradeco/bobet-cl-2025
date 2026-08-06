@@ -2815,7 +2815,16 @@ async function viewBonus(){
                : 'Після фіксації змінити не вийде.'}</p>`;
   }
 
-  $('view').innerHTML = `<div class="card"><h2>Bonus · ${esc(S.stage.title)}</h2></div>` + html;
+  const tieNote = `<div class="card" style="border-left:3px solid var(--gold)">
+    <div style="font-size:13px;line-height:1.6;color:var(--text-dim)">
+      <b style="color:var(--gold)">Якщо вийде нічия чи кілька переможців:</b>
+      у питаннях «хто кращий / хто переможе» є окремий варіант <b>«Нічия»</b> —
+      обирай його, якщо думаєш, що буде рівно. А в питаннях «хто набере найбільше»
+      серед клубів при рівності <b>правильні всі лідери одразу</b>: вгадав
+      будь-кого з них — береш повні бали, бали не діляться.
+    </div></div>`;
+
+  $('view').innerHTML = `<div class="card"><h2>Bonus · ${esc(S.stage.title)}</h2></div>` + tieNote + html;
 
   if (!openQ.length) return;
 
