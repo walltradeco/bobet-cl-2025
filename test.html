@@ -146,18 +146,21 @@
      останнього вікенду отримає рахунок — рахується з бази, руками
      не гасити. */
   nav.tournaments button{ position:relative; }
+  /* Кнопка з LIVE-бейджем: даємо праворуч місце під бейдж, щоб на вузьких
+     екранах (телефон, кнопка на всю ширину) текст «2026» не заходив під
+     нього. На десктопі кнопка й так широка — відступ непомітний. */
+  nav.tournaments button.has-live{ padding-right:52px; }
   .live-badge{
-    position:absolute; top:-9px; right:-9px;
-    display:flex; align-items:center; gap:4px;
+    position:absolute; top:6px; right:8px;   /* всередині клітинки, у куті */
+    display:flex; align-items:center; gap:3px;
     background:var(--red); color:#fff;
     font-family:'IBM Plex Mono',monospace;
-    font-size:9px; font-weight:700; letter-spacing:0.06em;
-    padding:2px 6px 2px 5px; border-radius:8px;
-    box-shadow:0 0 0 2px var(--bg);
+    font-size:8px; font-weight:700; letter-spacing:0.05em;
+    padding:1px 5px 1px 4px; border-radius:7px;
     pointer-events:none;
   }
   .live-badge .dot{
-    width:5px; height:5px; border-radius:50%; background:#fff;
+    width:4px; height:4px; border-radius:50%; background:#fff;
     animation:live-pulse 1.4s ease-in-out infinite;
   }
   @keyframes live-pulse{
@@ -1461,6 +1464,28 @@
     table.boosts{min-width:760px;}
     table.rules{min-width:720px;}
     table.sheet-table{min-width:640px;}
+
+    /* Тінь-натяк праворуч: видно, що таблиця прокручується далі, і
+       вона зникає, коли доскролив до кінця (cover-шар із local). */
+    .matches-card, .table-card, .gp-block{
+      background:
+        linear-gradient(to left, var(--panel), rgba(21,29,23,0)) 100% 0 / 26px 100% no-repeat local,
+        radial-gradient(farthest-side at 100% 50%, rgba(0,0,0,.5), rgba(0,0,0,0)) 100% 0 / 16px 100% no-repeat scroll,
+        var(--panel);
+    }
+    /* Приклеюємо першу колонку (питання / команда) — при свайпі вбік
+       контекст рядка лишається на місці. Заголовок і клітинки мають
+       непрозорий фон, щоб контент, який проїжджає під ними, не
+       просвічував. Таблицю матчів свідомо НЕ чіпаємо: там перша колонка
+       — вузька дата, і приклеєна вона накладалась би на назву гри. */
+    .table-card table th:first-child,
+    .gp-block   table th:first-child{
+      position:sticky; left:0; z-index:3; background:var(--panel-2);
+    }
+    .table-card table td:first-child,
+    .gp-block   table td:first-child{
+      position:sticky; left:0; z-index:1; background:var(--panel);
+    }
   }
 
   /* ===================================================================
@@ -4828,7 +4853,8 @@ function renderTournaments(){
   nav.innerHTML = TOURNAMENTS.map(t => {
     const live = t.key === 'euroseason2026' && EUROSEASON_LIVE
       ? '<span class="live-badge"><span class="dot"></span>LIVE</span>' : '';
-    return `<button data-key="${t.key}" class="${t.key === activeTournament.key ? 'active' : ''}">${escapeHtml(t.title)}${live}</button>`;
+    const cls = [t.key === activeTournament.key ? 'active' : '', live ? 'has-live' : ''].filter(Boolean).join(' ');
+    return `<button data-key="${t.key}" class="${cls}">${escapeHtml(t.title)}${live}</button>`;
   }).join('');
   nav.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => setTournament(btn.dataset.key));
