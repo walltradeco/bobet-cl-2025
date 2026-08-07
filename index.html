@@ -2871,7 +2871,11 @@ const LEADERBOARD_NAMES = {
   euroseason2026: ['August', 'September', 'October', 'General'],
 };
 
-let activeTournament = TOURNAMENTS[TOURNAMENTS.length - 1];
+// За замовчуванням відкриваємо активний турнір ЄвроСезон 2026 (це живий
+// сезон, а не архів/вітрина). Якщо його колись прибрати — падаємо на
+// останній у списку.
+let activeTournament = TOURNAMENTS.find(t => t.key === 'euroseason2026')
+  || TOURNAMENTS[TOURNAMENTS.length - 1];
 let activeTabIndex = 0;
 const cache = {};
 
