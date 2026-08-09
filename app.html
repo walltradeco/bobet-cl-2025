@@ -686,7 +686,7 @@ async function setStage(key){
 
 // На General матчів і бустів немає, там відкриваємо одразу Bonus.
 function defaultTab(){
-  if (S.stage.bonusOnly) return ['press', 'mvprivals'].includes(S.tab) ? S.tab : 'bonus';
+  if (S.stage.bonusOnly) return ['mvprivals'].includes(S.tab) ? S.tab : 'bonus';
   return (S.tab === 'bonus' || S.tab === 'press' || S.tab === 'log' || S.tab === 'admin') ? S.tab : 'matches';
 }
 
@@ -840,7 +840,7 @@ function renderTabs(){
   // лишається доступним кнопкою «📋 Журнал» у шапці кабінету, той самий
   // viewLog(), просто не займає слот у головних вкладках.
   const tabs = S.stage.bonusOnly
-    ? [['bonus', 'Bonus'], ['press', 'News & Press'], ['mvprivals', 'MVP & Rivals']]
+    ? [['bonus', 'Bonus'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
     : [
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
@@ -3011,7 +3011,10 @@ async function viewPress(){
 
   let html = `<div class="card"><h2>News & Press · ${esc(S.stage.title)}</h2>
     <p class="dim">Новини рахуються автоматично після кожного вікенда. Пресконференції —
-    добровільні. Балів не дає.</p></div>`;
+    добровільні, балів не дають.</p>
+    <p class="dim">Питання від репортерів приходять у три моменти: <b>знайомство</b> —
+    коли заходиш у етап; <b>після прогнозів</b> — щойно підтвердиш свій вибір на вікенд;
+    <b>після результатів</b> — коли підбито підсумки зіграного вікенда.</p></div>`;
 
   // ---------- 1. Стрічка (завжди згори) ----------
   const rolloutNote = rolloutActive
