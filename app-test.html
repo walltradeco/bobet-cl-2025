@@ -854,8 +854,8 @@ function renderTabs(){
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
-        ['board',   'Leaderboard'],
         ['press',   'News & Press'],
+        ['board',   'Leaderboard'],   // правіше за News & Press — рішення Богдана
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
@@ -2571,15 +2571,44 @@ function lbDeltaHtml(d){
 }
 
 async function viewBoard(){
-  // ⚠️ На General місячного борда не буває: `season2026` — це контейнер
-  // без вікендів, і запит `leaderboard` по ньому віддав би рядки з
-  // самими нулями (там законно живуть лише бали за `General · Bonus`).
-  // Тому на цьому етапі завжди показуємо наскрізний залік.
-  const season = S.stage.bonusOnly ? true : S.boardSeason === true;
+  // ДВА РІЗНІ БОРДИ, КОЖЕН НА СВОЄМУ МІСЦІ (рішення Богдана 11.08.2026):
+  //   • етап (August/September/October) — розклад ПО МЕХАНІКАХ:
+  //     матчі, бонуси, ⚔️, 🏆, 👔. Перемикача на General тут немає —
+  //     General має власну вкладку етапу.
+  //   • General — розклад ПО ЕТАПАХ: August + September + October +
+  //     власний General · Bonus. Механіки туди не дублюємо: вони вже
+  //     сидять усередині кожного етапного числа.
+  // ⚠️ `season2026` — контейнер без вікендів, тож місячний запит по
+  // ньому віддав би рядки з самими нулями. Звідси прив'язка до
+  // `bonusOnly`, а не до перемикача.
+  const season = S.stage.bonusOnly;
   const { data } = season
     ? await sb.from('season_leaderboard').select('*').order('place')
     : await sb.from('leaderboard').select('*')
         .eq('tournament_id', TOURNAMENT_ID).order('place');
+
+  // Для General — очки кожного етапу окремо. Зіставляємо за іменем:
+  // двох однакових імен в етапі не буває (це стереже health_check),
+  // а `season_leaderboard` віддає те саме `display_name`.
+  const stageCols = STAGES.filter(s => !s.bonusOnly);
+  let byName = {};
+  if (season) {
+    try {
+      const { data: st } = await sb.from('leaderboard')
+        .select('display_name,tournament_id,total_points,bonus_points');
+      (st || []).forEach(r => {
+        (byName[r.display_name] = byName[r.display_name] || {})[r.tournament_id] = r;
+      });
+    } catch(e) {}
+  }
+  // Бонуси самого General = усі бонуси людини мінус ті, що вже враховані
+  // всередині етапних сум. Інакше та сама цифра рахувалась би двічі.
+  const generalBonus = (r) => {
+    const mine = byName[r.display_name] || {};
+    const inStages = stageCols.reduce((s, st) => s + ((mine[st.id] || {}).bonus_points || 0), 0);
+    return (r.bonus_points ?? 0) - inStages;
+  };
+  const stagePts = (r, st) => ((byName[r.display_name] || {})[st.id] || {}).total_points ?? 0;
 
   // Той самий косметичний принцип, що на test.html: якщо в'юха ще не
   // на проді чи запит впав — просто нічого не показуємо, борд і без
@@ -2595,7 +2624,10 @@ async function viewBoard(){
     });
   } catch(e) {}
 
-  const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
+  // ⚠️ Кубок першому місцю ТІЛЬКИ в General — точно як на публічному
+  // борді (`test.html`: «place === 0 && isGeneral`). Сенс той самий:
+  // 🥇 за етап і 🥇 за весь сезон мають відрізнятись на око.
+  const medal = (p) => p === 1 ? ('🥇' + (season ? '🏆' : '')) : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
   // ⚠️ Окремої мапи назв тут НЕ ТРЕБА: `STAGES` (вгорі файлу) уже
   // тримає англійські титули — August / September / October / General,
   // ті самі, що борди на публічному сайті. Я був спробував завести
@@ -2603,29 +2635,48 @@ async function viewBoard(){
   // Українською лишалась тільки кнопка «Сезон» і заголовок «Загальний
   // залік сезону» — саме вони й стали General.
   const boardName = season ? 'General' : S.stage.title;
+  const th = (t) => `<th style="text-align:right">${t}</th>`;
+  const td = (v, c) => `<td class="n" style="text-align:right${c ? ';color:' + c : ''}">${v}</td>`;
+
+  const head = season
+    ? th('Точних') + stageCols.map(s => th(esc(s.title))).join('') + th('Bonus')
+    : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️') + th('🏆') + th('👔');
+
+  const cells = (r) => season
+    ? td(r.exact_count, 'var(--green)')
+      + stageCols.map(s => td(stagePts(r, s), 'var(--teal)')).join('')
+      + td(generalBonus(r))
+    : td(r.exact_count, 'var(--green)')
+      + `<td class="n dim" style="text-align:right">${r.match_points ?? 0}</td>`
+      + `<td class="n dim" style="text-align:right">${r.bonus_points ?? 0}</td>`
+      + td(r.rival_points ?? 0, 'var(--teal)')
+      + td(r.mvp_points ?? 0, 'var(--teal)')
+      + td(r.style_points ?? 0, 'var(--teal)');
+
   $('view').innerHTML = `
-    ${S.stage.bonusOnly ? '' : `
-    <div class="boost-row" style="margin-bottom:14px">
-      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(S.stage.title)}</button>
-      <button class="boost-chip ${season ? 'on' : ''}" id="lb-season">General</button>
-    </div>`}
     <div class="card">
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
     <div style="overflow-x:auto">
-    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th><th style="text-align:right">Точних</th><th style="text-align:right">Матчі</th><th style="text-align:right">Бонуси</th><th style="text-align:right">⚔️</th><th style="text-align:right">🏆</th><th style="text-align:right">👔</th><th style="text-align:right">Разом</th></tr></thead>
+    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
-      <td class="n" style="text-align:right;color:var(--green)">${r.exact_count}</td>
-      <td class="n dim" style="text-align:right">${r.match_points ?? 0}</td>
-      <td class="n dim" style="text-align:right">${r.bonus_points ?? 0}</td>
-      <td class="n" style="text-align:right;color:var(--teal)">${r.rival_points ?? 0}</td>
-      <td class="n" style="text-align:right;color:var(--teal)">${r.mvp_points ?? 0}</td>
-      <td class="n" style="text-align:right;color:var(--teal)">${r.style_points ?? 0}</td>
+      ${cells(r)}
       <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
     </tr>`).join('')}</tbody></table></div>
+    ${season ? `
+    <p class="dim" style="margin:12px 0 0;font-size:12px">
+      Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
+      <b style="color:var(--text)">Bonus</b> — це власні бонусні питання General,
+      ті, що на сайті у вкладці <b style="color:var(--text)">General · Bonus</b>.
+      Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
+    </p>
+    <p class="dim" style="margin:8px 0 0;font-size:12px">
+      Розклад по механіках (⚔️ 🏆 👔) — на вкладці Leaderboard кожного етапу.
+      <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
+    </p>` : `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
       <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. Це тайбрейк у
       <b style="color:var(--text)">⚔️ Rivals</b> і <b style="color:var(--text)">🏆 MVP</b>:
@@ -2636,13 +2687,7 @@ async function viewBoard(){
     <p class="dim" style="margin:8px 0 0;font-size:12px">
       Разом = Матчі + Бонуси + ⚔️ + 🏆 + 👔. Це те саме число, що
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
-    </p>`}</div>`;
-
-  // На General чіпів немає — вішати обробники нема на що
-  if (!S.stage.bonusOnly) {
-    $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
-    $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
-  }
+    </p>`}`}</div>`;
 }
 
 // =====================================================================
