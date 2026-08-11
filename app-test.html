@@ -2586,24 +2586,49 @@ async function viewBoard(){
   } catch(e) {}
 
   const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
+  // Назви етапів тут — АНГЛІЙСЬКІ, як на публічному сайті (August /
+  // September / October / General). Саме з тими бордами гравець і
+  // звіряє цифри, тож «Серпень» проти «August» щоразу створювало б
+  // сумнів, чи це те саме число.
+  // ⚠️ `tournaments.title` НЕ чіпаємо: він іде в теми листів (111/171)
+  // і в тексти преси. Це показ, не дані.
+  const stageLabel = (key) => ({ aug2026:'August', sep2026:'September',
+                                 oct2026:'October', season2026:'General' })[key]
+                              || S.stage.title;
+  const boardName = season ? 'General' : stageLabel(S.stage.key);
   $('view').innerHTML = `
     <div class="boost-row" style="margin-bottom:14px">
-      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(S.stage.title)}</button>
-      <button class="boost-chip ${season ? 'on' : ''}" id="lb-season">Сезон</button>
+      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(stageLabel(S.stage.key))}</button>
+      <button class="boost-chip ${season ? 'on' : ''}" id="lb-season">General</button>
     </div>
     <div class="card">
-    <h2>${season ? 'Загальний залік сезону' : esc(S.stage.title) + ' 2026'}</h2>
+    <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
-    <table><thead><tr><th>№</th><th></th><th>Учасник</th><th>Точних</th><th class="n">Матчі</th><th class="n">Бонуси</th><th style="text-align:right">Разом</th></tr></thead>
+    <div style="overflow-x:auto">
+    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th><th style="text-align:right">Точних</th><th style="text-align:right">Матчі</th><th style="text-align:right">Бонуси</th><th style="text-align:right">⚔️</th><th style="text-align:right">🏆</th><th style="text-align:right">👔</th><th style="text-align:right">Разом</th></tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
-      <td class="n" style="color:var(--green)">${r.exact_count}</td>
-      <td class="n dim">${r.match_points ?? 0}</td>
-      <td class="n dim">${r.bonus_points ?? 0}</td>
+      <td class="n" style="text-align:right;color:var(--green)">${r.exact_count}</td>
+      <td class="n dim" style="text-align:right">${r.match_points ?? 0}</td>
+      <td class="n dim" style="text-align:right">${r.bonus_points ?? 0}</td>
+      <td class="n" style="text-align:right;color:var(--teal)">${r.rival_points ?? 0}</td>
+      <td class="n" style="text-align:right;color:var(--teal)">${r.mvp_points ?? 0}</td>
+      <td class="n" style="text-align:right;color:var(--teal)">${r.style_points ?? 0}</td>
       <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
-    </tr>`).join('')}</tbody></table>`}</div>`;
+    </tr>`).join('')}</tbody></table></div>
+    <p class="dim" style="margin:12px 0 0;font-size:12px">
+      <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. Це тайбрейк у
+      <b style="color:var(--text)">⚔️ Rivals</b> і <b style="color:var(--text)">🏆 MVP</b>:
+      при рівності очок вікенда виграє той, у кого їх більше.
+      У <b style="color:var(--text)">Разом</b> тайбрейків немає — однакові очки означають
+      спільне місце, і точні рахунки на нього не впливають.
+    </p>
+    <p class="dim" style="margin:8px 0 0;font-size:12px">
+      Разом = Матчі + Бонуси + ⚔️ + 🏆 + 👔. Це те саме число, що
+      <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
+    </p>`}</div>`;
 
   $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
   $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
