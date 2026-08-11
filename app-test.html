@@ -843,12 +843,18 @@ function renderTabs(){
   // Журнал прибрано з цього ряду (рішення Богдана 30.07.2026) — він
   // лишається доступним кнопкою «📋 Журнал» у шапці кабінету, той самий
   // viewLog(), просто не займає слот у головних вкладках.
+  // ⚠️ `Leaderboard` доданий 11.08.2026. До цього `viewBoard()` була
+  // МЕРТВИМ КОДОМ: у меню пункту не було, а обидва `go('board')` сидять
+  // усередині самої таблиці (чіпи August/General), тобто зайти в неї
+  // було неможливо взагалі — ні в STAGE, ні в PROD. Гравці бачили
+  // залік лише на публічному сайті.
   const tabs = S.stage.bonusOnly
-    ? [['bonus', 'Bonus'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
+    ? [['bonus', 'Bonus'], ['board', 'Leaderboard'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
     : [
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
+        ['board',   'Leaderboard'],
         ['press',   'News & Press'],
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
@@ -2565,7 +2571,11 @@ function lbDeltaHtml(d){
 }
 
 async function viewBoard(){
-  const season = S.boardSeason === true;
+  // ⚠️ На General місячного борда не буває: `season2026` — це контейнер
+  // без вікендів, і запит `leaderboard` по ньому віддав би рядки з
+  // самими нулями (там законно живуть лише бали за `General · Bonus`).
+  // Тому на цьому етапі завжди показуємо наскрізний залік.
+  const season = S.stage.bonusOnly ? true : S.boardSeason === true;
   const { data } = season
     ? await sb.from('season_leaderboard').select('*').order('place')
     : await sb.from('leaderboard').select('*')
@@ -2586,21 +2596,19 @@ async function viewBoard(){
   } catch(e) {}
 
   const medal = (p) => p === 1 ? '🥇' : p === 2 ? '🥈' : p === 3 ? '🥉' : '';
-  // Назви етапів тут — АНГЛІЙСЬКІ, як на публічному сайті (August /
-  // September / October / General). Саме з тими бордами гравець і
-  // звіряє цифри, тож «Серпень» проти «August» щоразу створювало б
-  // сумнів, чи це те саме число.
-  // ⚠️ `tournaments.title` НЕ чіпаємо: він іде в теми листів (111/171)
-  // і в тексти преси. Це показ, не дані.
-  const stageLabel = (key) => ({ aug2026:'August', sep2026:'September',
-                                 oct2026:'October', season2026:'General' })[key]
-                              || S.stage.title;
-  const boardName = season ? 'General' : stageLabel(S.stage.key);
+  // ⚠️ Окремої мапи назв тут НЕ ТРЕБА: `STAGES` (вгорі файлу) уже
+  // тримає англійські титули — August / September / October / General,
+  // ті самі, що борди на публічному сайті. Я був спробував завести
+  // `stageLabel(key)` і продублював цим готовий список; прибрано.
+  // Українською лишалась тільки кнопка «Сезон» і заголовок «Загальний
+  // залік сезону» — саме вони й стали General.
+  const boardName = season ? 'General' : S.stage.title;
   $('view').innerHTML = `
+    ${S.stage.bonusOnly ? '' : `
     <div class="boost-row" style="margin-bottom:14px">
-      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(stageLabel(S.stage.key))}</button>
+      <button class="boost-chip ${!season ? 'on' : ''}" id="lb-month">${esc(S.stage.title)}</button>
       <button class="boost-chip ${season ? 'on' : ''}" id="lb-season">General</button>
-    </div>
+    </div>`}
     <div class="card">
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
@@ -2630,8 +2638,11 @@ async function viewBoard(){
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
     </p>`}</div>`;
 
-  $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
-  $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
+  // На General чіпів немає — вішати обробники нема на що
+  if (!S.stage.bonusOnly) {
+    $('lb-month').onclick = () => { S.boardSeason = false; go('board'); };
+    $('lb-season').onclick = () => { S.boardSeason = true; go('board'); };
+  }
 }
 
 // =====================================================================
