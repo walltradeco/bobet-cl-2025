@@ -2374,7 +2374,13 @@ function miniRulesTable(headLeft, headRight, rows){
 function renderEuroRulesExtras(){
   const mvpBlock = `
     <div class="rules-block table-card rules-mech">
-      <div class="rules-mech-head"><span class="ico">🏆</span><h3>Weekend MVP</h3></div>
+      <!-- ⚠️ Тут НЕ 🏆. Кубок у нас означає рівно одне — перше місце в
+           General (див. renderBoards: place===0 && isGeneral). Значок
+           самого MVP — золоте слово «MVP», як у бейджі біля імені
+           (mvpBadge) і в призовій таблиці. Тому заголовок без емодзі,
+           золотим — рішення Богдана 11.08.2026. ⚔️ і 👔 у сусідніх
+           блоках лишаються: вони збігаються зі своїми бейджами. -->
+      <div class="rules-mech-head"><h3 style="color:var(--gold)">Weekend MVP</h3></div>
       <p class="rules-mech-p">
         Одна нагорода за вікенд — тому, хто набрав найбільше очок за цей вікенд
         РАЗОМ: прогнози, бусти, Rivals і Manager Style. Рівність очок вирішують
