@@ -1505,7 +1505,7 @@ function renderRivalBox(deadlinePassed, open){
 
     mvpHtml = `<div class="card tight">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
-        <div><b style="color:var(--text);font-size:14px">🏆 MVP вікенда</b></div>
+        <div><b style="color:var(--gold);font-size:14px">MVP</b><b style="color:var(--text);font-size:14px"> вікенда</b></div>
         ${mvpNames.size ? `<div style="font-weight:700;color:var(--gold)">
           ${[...mvpNames].map(esc).join(', ')} <span class="dim">+${S.mvpRows[0].points}</span></div>` : ''}
       </div>
@@ -2640,7 +2640,14 @@ async function viewBoard(){
 
   const head = season
     ? th('Точних') + stageCols.map(s => th(esc(s.title))).join('') + th('Bonus')
-    : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️') + th('🏆') + th('👔');
+    // ⚠️ MVP — це СЛОВО «MVP» золотим, а не 🏆. Рівно як бейджі на
+    // публічному борді (`test.html`: rivalBadge ⚔️, styleBadge 👔,
+    // mvpBadge — текст «MVP» кольором var(--gold)). 🏆 у нас означає
+    // тільки одне — кубок за перше місце в General; якщо ним же
+    // підписати колонку MVP, у тій самій таблиці зʼявиться два різні
+    // сенси одного значка.
+    : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️')
+      + th('<span style="color:var(--gold)">MVP</span>') + th('👔');
 
   const cells = (r) => season
     ? td(r.exact_count, 'var(--green)')
@@ -2674,18 +2681,18 @@ async function viewBoard(){
       Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:12px">
-      Розклад по механіках (⚔️ 🏆 👔) — на вкладці Leaderboard кожного етапу.
+      Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці Leaderboard кожного етапу.
       <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
     </p>` : `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
       <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. Це тайбрейк у
-      <b style="color:var(--text)">⚔️ Rivals</b> і <b style="color:var(--text)">🏆 MVP</b>:
+      <b style="color:var(--text)">⚔️ Rivals</b> і <b style="color:var(--gold)">MVP</b>:
       при рівності очок вікенда виграє той, у кого їх більше.
       У <b style="color:var(--text)">Разом</b> тайбрейків немає — однакові очки означають
       спільне місце, і точні рахунки на нього не впливають.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:12px">
-      Разом = Матчі + Бонуси + ⚔️ + 🏆 + 👔. Це те саме число, що
+      Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔. Це те саме число, що
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
     </p>`}`}</div>`;
 }
