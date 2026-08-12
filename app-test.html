@@ -849,13 +849,13 @@ function renderTabs(){
   // було неможливо взагалі — ні в STAGE, ні в PROD. Гравці бачили
   // залік лише на публічному сайті.
   const tabs = S.stage.bonusOnly
-    ? [['bonus', 'Bonus'], ['board', 'Leaderboard'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
+    ? [['bonus', 'Bonus'], ['board', 'Leaderboard & Prize'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
     : [
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
         ['press',   'News & Press'],
-        ['board',   'Leaderboard'],   // правіше за News & Press — рішення Богдана
+        ['board',   'Leaderboard & Prize'],   // правіше за News & Press — рішення Богдана
       ];
   if (S.me.is_admin) tabs.push(['admin', 'Адмінка']);
 
@@ -2702,10 +2702,17 @@ async function viewBoard(){
     : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️')
       + th('<span style="color:var(--gold)">MVP</span>') + th('👔');
 
-  // ⚠️ Колонка ₴ стоїть ПІСЛЯ «Разом» — гроші є наслідком очок, а не
-  // ще однією їх складовою. Якби вона стояла серед складових, її
-  // читали б як те, що додається в суму.
-  const headMoney = prizeOk ? th('₴') : '';
+  // ⚠️ Колонка ₴ — ТІЛЬКИ на вкладці етапу, і стоїть після «Разом»:
+  // гроші є наслідком очок, а не ще однією їх складовою.
+  //
+  // ⚠️ У General її НЕМАЄ свідомо (Богдан 12.08.2026: «навіщо колонка,
+  // якщо знизу таблиця»). Там під заліком стоїть повна таблиця
+  // «Призові» з шістьма складовими, яка й закінчується колонкою
+  // «Разом» — тобто колонка вгорі показувала б рівно те саме число
+  // вдруге. На етапі таблиці немає, там ₴ — єдине місце, де видно
+  // гроші за місце.
+  const showMoneyCol = prizeOk && !season;
+  const headMoney = showMoneyCol ? th('₴') : '';
 
   const cells = (r) => season
     ? td(r.exact_count, 'var(--green)')
@@ -2751,7 +2758,7 @@ async function viewBoard(){
       <table style="min-width:560px"><thead><tr>
         <th>Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
         ${mh('За очки', 'частка від усіх')}${mh('За точні', 'частка від усіх')}
-        ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом')}
+        ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом ₴')}
       </tr></thead>
       <tbody>${byMoney.map(m => `<tr${m.display_name === myName ? ' style="background:var(--panel-3)"' : ''}>
         <td style="color:var(--purple);font-weight:600">${esc(m.display_name)}</td>
@@ -2763,8 +2770,10 @@ async function viewBoard(){
         Тут <b style="color:var(--text)">усе разом</b>: місця трьох етапів + місце в General +
         за очки + за точні + <b style="color:var(--gold)">MVP</b> + ⚔️ Rivals. Останні чотири
         за етапи не платяться взагалі — вони наскрізні й рахуються один раз, по всьому турніру.
-        «Очки» тут — те саме число, що <b style="color:var(--text)">Разом</b>: матчі з бустами,
-        бонусні питання, ⚔️, <b style="color:var(--gold)">MVP</b> і 👔 Manager Style.
+        «Очки» тут — це <b style="color:var(--text)">Разом</b> із заліку
+        <b style="color:var(--text)">General</b> вище: матчі з бустами, бонусні питання, ⚔️,
+        <b style="color:var(--gold)">MVP</b> і 👔 Manager Style. Остання колонка тут —
+        <b style="color:var(--text)">Разом ₴</b>, тобто гроші, а не очки.
       </p>
       <p class="dim" style="margin:8px 0 0;font-size:12px">
         ⚠️ Це <b style="color:var(--text)">не</b> «вже зароблено», а «стільки вийшло б, якби сезон
@@ -2789,9 +2798,8 @@ async function viewBoard(){
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       ${cells(r)}
       <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
-      ${prizeOk ? `<td class="n" style="text-align:right;color:var(--teal)">${
-        money(season ? (prizeByName[r.display_name] || {}).total_uah
-                     : prizeById[r.participant_id])}</td>` : ''}
+      ${showMoneyCol ? `<td class="n" style="text-align:right;color:var(--teal)">${
+        money(prizeById[r.participant_id])}</td>` : ''}
     </tr>`).join('')}</tbody></table></div>
     ${season ? `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
@@ -2801,7 +2809,7 @@ async function viewBoard(){
       Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:12px">
-      Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці Leaderboard кожного етапу.
+      Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці <b style="color:var(--text)">Leaderboard &amp; Prize</b> кожного етапу.
       <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
     </p>` : `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
