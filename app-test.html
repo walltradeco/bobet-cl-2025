@@ -23,7 +23,7 @@
     color:var(--text); font-family:'Onest',sans-serif; min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1080px;margin:0 auto;padding:0 16px 120px;}
+  .wrap{max-width:1240px;margin:0 auto;padding:0 16px 120px;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   .grotesk{font-family:'Montserrat',sans-serif;}
 
@@ -31,7 +31,7 @@
   header{padding:22px 0 16px;border-bottom:1px solid var(--line);margin-bottom:18px;}
   .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
   .whoami{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);text-align:right;margin-left:auto;}
-  .stage-badge{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+  .stage-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;
     letter-spacing:0.08em;color:var(--red);border:1px solid var(--red);
     border-radius:5px;padding:2px 7px;vertical-align:middle;}
   .whoami b{color:var(--purple);display:block;font-size:15px;}
@@ -100,7 +100,7 @@
   .press-q{border:1px solid var(--line);border-radius:10px;padding:13px;margin-bottom:10px;
     background:var(--panel-2);}
   .press-q.answered{border-color:var(--gold);}
-  .press-q .slot{font-family:'IBM Plex Mono',monospace;font-size:11px;text-transform:uppercase;
+  .press-q .slot{font-family:'IBM Plex Mono',monospace;font-size:12px;text-transform:uppercase;
     letter-spacing:.05em;color:var(--text-dim);margin-bottom:5px;}
   .press-q .q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:9px;}
   .press-q textarea{width:100%;box-sizing:border-box;background:var(--panel-3);
@@ -115,7 +115,7 @@
     border:1px solid var(--line);}
   .press-q .btns .confirm{background:var(--gold-soft);border-color:var(--gold);color:var(--gold);}
   .press-q .btns .skip{background:var(--panel-3);color:var(--text-dim);}
-  .press-note{font-size:13px;line-height:1.5;color:var(--text-dim);
+  .press-note{font-size:14px;line-height:1.5;color:var(--text-dim);
     background:var(--panel-3);border:1px solid var(--line);border-radius:9px;
     padding:10px 12px;margin-bottom:12px;}
   .gw-group h3{font-family:'Montserrat',sans-serif;font-size:15px;margin:18px 0 8px;
@@ -131,36 +131,36 @@
   .feed-item.news{border-left-color:var(--teal);}
   .feed-item.press{border-left-color:var(--purple);}
   .feed-item.press.status-skipped,.feed-item.press.status-ignored{opacity:.6;border-left-color:var(--text-dim);}
-  .feed-item .body{font-size:14px;line-height:1.5;}
-  .feed-item .q{font-size:14px;line-height:1.5;display:flex;gap:8px;
+  .feed-item .body{font-size:15px;line-height:1.5;}
+  .feed-item .q{font-size:15px;line-height:1.5;display:flex;gap:8px;
     align-items:baseline;flex-wrap:wrap;}
-  .feed-item .rep{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+  .feed-item .rep{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--purple);
     background:var(--purple-soft);padding:2px 9px;border-radius:20px;
     white-space:nowrap;flex:0 0 auto;}
   .feed-item .qtext{flex:1 1 220px;}
   .feed-item .who{font-weight:700;color:var(--text);}
-  .feed-item .a{font-size:14px;line-height:1.5;margin-top:7px;padding-top:7px;
+  .feed-item .a{font-size:15px;line-height:1.5;margin-top:7px;padding-top:7px;
     border-top:1px dashed var(--line);color:var(--text-dim);
     display:flex;gap:8px;align-items:baseline;flex-wrap:wrap;}
   /* Відповідь учасника — той самий візуальний патерн, що бейдж репортера
      (.rep) вище, лише зелений замість фіолетового: одразу видно «хто
      каже» в обох рядках питання/відповіді, а не лише жирний текст. */
-  .feed-item .a .who{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+  .feed-item .a .who{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--green);
     background:var(--green-soft);padding:2px 9px;border-radius:20px;
     white-space:nowrap;flex:0 0 auto;}
   .feed-item .a .qtext{color:var(--text);}
   /* Заяви репортерів + нитки реакцій (файл 137) */
   .feed-item.statement{border-left-color:var(--gold);}
-  .feed-item.statement .stmt-line{font-size:14px;line-height:1.5;}
+  .feed-item.statement .stmt-line{font-size:15px;line-height:1.5;}
   .feed-item.statement .stmt-line.reaction{margin-top:6px;margin-left:16px;
     padding-left:10px;border-left:2px solid var(--line);color:var(--text-dim);}
   .feed-item.statement .stmt-line .who{font-family:'IBM Plex Mono',monospace;
-    font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+    font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
     color:var(--gold);background:var(--gold-soft);padding:2px 9px;border-radius:20px;}
   .feed-item.statement .stmt-line.reaction .who{color:var(--text-dim);background:none;padding:0;}
-  .press-q .interviewer{font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;
+  .press-q .interviewer{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;
     text-transform:uppercase;letter-spacing:.04em;color:var(--purple);
     background:var(--purple-soft);display:inline-block;padding:2px 9px;
     border-radius:20px;margin-bottom:8px;}
@@ -172,7 +172,7 @@
   .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-bottom:12px;}
   .card.tight{padding:12px;}
   h2{font-family:'Montserrat',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
-  .dim{color:var(--text-dim);font-size:14px;line-height:1.5;}
+  .dim{color:var(--text-dim);font-size:15px;line-height:1.5;}
 
   /* ---------- DEADLINE ---------- */
   .deadline{
@@ -211,7 +211,7 @@
      ⚠️ У потоці, а не absolute: назва гостя теж вирівняна праворуч,
      тож накладний підпис перекривав би її на довгих назвах
      («Суперкубок Англії»). */
-  .comp-tag{text-align:right;font-size:11px;font-weight:600;
+  .comp-tag{text-align:right;font-size:12px;font-weight:600;
     letter-spacing:0.03em;color:var(--green);opacity:0.7;
     white-space:nowrap;pointer-events:none;}
   /* Час початку матчу — ліворуч у тому ж рядку, що й турнір. Раніше
@@ -238,7 +238,7 @@
   .pts{font-family:'IBM Plex Mono',monospace;font-size:14px;color:var(--gold);font-weight:700;}
 
   /* ---------- BOOST PICKER ---------- */
-  .ap-tag{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:0.08em;
+  .ap-tag{font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:0.08em;
     text-transform:uppercase;color:var(--gold);margin-bottom:7px;}
   .match.ap-pick{cursor:pointer;border-style:dashed;}
   .match.ap-blocked{opacity:0.4;cursor:not-allowed;border-style:solid;}
@@ -269,7 +269,7 @@
   .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.75);display:flex;
     align-items:flex-end;justify-content:center;z-index:100;padding:0;}
   .modal{background:var(--panel);border:1px solid var(--line);border-radius:14px 14px 0 0;
-    padding:20px 16px 28px;width:100%;max-width:1080px;max-height:88vh;overflow-y:auto;}
+    padding:20px 16px 28px;width:100%;max-width:1240px;max-height:88vh;overflow-y:auto;}
   .rev-line{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);font-size:15px;}
   .rev-line .s{font-family:'IBM Plex Mono',monospace;font-weight:700;}
 
@@ -294,8 +294,8 @@
     line-height:1.6;margin-top:8px;}
 
   /* ---------- TABLE ---------- */
-  table{width:100%;border-collapse:collapse;font-size:15px;}
-  th{font-family:'IBM Plex Mono',monospace;font-size:12px;color:var(--text-dim);
+  table{width:100%;border-collapse:collapse;font-size:16px;}
+  th{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
   td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;}
@@ -361,8 +361,8 @@
         <b id="my-name">—</b>
         <span id="my-email"></span>
         <div style="margin-top:5px">
-          <button class="ghost" id="btn-log" style="padding:3px 8px;font-size:12px">📋 Журнал</button>
-          <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:12px">вийти</button>
+          <button class="ghost" id="btn-log" style="padding:3px 8px;font-size:13px">📋 Журнал</button>
+          <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:13px">вийти</button>
         </div>
       </div>
     </div>
@@ -1223,7 +1223,7 @@ async function viewMatches(){
     const styleLine = myStyle
       ? `<div class="rev-line" style="border:none;padding:4px 0">
            <span class="dim">👔 ${esc(myStyle.style_title)}${
-             myStyle.capped ? ` <span style="font-size:12px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
+             myStyle.capped ? ` <span style="font-size:13px">(стеля ${myStyle.weekend_cap}, сирих ${myStyle.raw_points})</span>` : ''}</span>
            <span class="s" style="color:${stylePts > 0 ? 'var(--green)' : 'var(--text-dim)'}">
              ${myStyle.scored ? '+' + stylePts : 'очікує'}</span>
          </div>`
@@ -1361,7 +1361,7 @@ function renderRivalBox(deadlinePassed, open){
         style="font-size:14px;font-weight:700;color:${rivalGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${rivalGot}/${rivalMax}</div>
     </div>
-    ${rivalBreakdown ? `<div class="dim" style="font-size:12px;margin-top:2px">${rivalBreakdown}</div>` : ''}`;
+    ${rivalBreakdown ? `<div class="dim" style="font-size:13px;margin-top:2px">${rivalBreakdown}</div>` : ''}`;
 
   if (locked) {
     // Read-only: мій суперник (якщо був)
@@ -1477,11 +1477,11 @@ function renderRivalBox(deadlinePassed, open){
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
-        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
+        <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
       </div>
       <div style="margin-top:12px">
-        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Очки за вікенд (матчі + стиль) — саме це вирішує дуелі</div>
+        <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Очки за вікенд (матчі + стиль) — саме це вирішує дуелі</div>
         ${rivalRankingHtml}
       </div>`;
   }
@@ -1672,7 +1672,7 @@ function renderStyleBox(locked, open){
         style="font-size:14px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
         ${styleGot}/${styleMax}</div>` : ''}
     </div>
-    ${styleBreakdown ? `<div class="dim" style="font-size:12px;margin-top:2px">${styleBreakdown}</div>` : ''}
+    ${styleBreakdown ? `<div class="dim" style="font-size:13px;margin-top:2px">${styleBreakdown}</div>` : ''}
     <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Очки за стиль нараховуються за <b>фінальними рахунками матчів</b> вікенда —
       твої прогнози тут не враховуються взагалі${
@@ -1715,7 +1715,7 @@ function renderStyleBox(locked, open){
            Натисни на тренера — під списком з'явиться, за що саме він дає очки.
            Стиль обов'язковий: без нього вікенд не підтвердити.
          </div>`;
-    inner += `<div class="dim" style="margin-top:4px;font-size:12px">
+    inner += `<div class="dim" style="margin-top:4px;font-size:13px">
         Вільних стилів на решту етапу: ${left}.</div>
       <div id="style-msg"></div>`;
   }
@@ -1754,11 +1754,11 @@ function renderStyleBox(locked, open){
             <span class="dim">·</span> ${styleFace(r, 18)}${esc(r.style_title)}</div>
           <div class="s" style="color:${r.points > 0 ? 'var(--green)' : 'var(--text-dim)'}">
             ${r.scored ? '+' + r.points : 'очікує'}${
-              r.capped ? ` <span class="dim" style="font-size:12px">(зі ${r.raw_points})</span>` : ''}</div>
+              r.capped ? ` <span class="dim" style="font-size:13px">(зі ${r.raw_points})</span>` : ''}</div>
         </div>`).join('');
     inner += `
       <div style="margin-top:12px">
-        <div class="dim" style="font-size:12px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
+        <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
         ${rowsHtml}
       </div>`;
   }
@@ -2766,7 +2766,7 @@ async function viewBoard(){
         ${mc(m.money_mvp)}${mc(m.money_rivals)}
         <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${money(m.total_uah)}</td>
       </tr>`).join('')}</tbody></table></div>
-      <p class="dim" style="margin:12px 0 0;font-size:12px">
+      <p class="dim" style="margin:12px 0 0;font-size:13px">
         Тут <b style="color:var(--text)">усе разом</b>: місця трьох етапів + місце в General +
         за очки + за точні + <b style="color:var(--gold)">MVP</b> + ⚔️ Rivals. Останні чотири
         за етапи не платяться взагалі — вони наскрізні й рахуються один раз, по всьому турніру.
@@ -2775,7 +2775,7 @@ async function viewBoard(){
         <b style="color:var(--gold)">MVP</b> і 👔 Manager Style. Остання колонка тут —
         <b style="color:var(--text)">Разом ₴</b>, тобто гроші, а не очки.
       </p>
-      <p class="dim" style="margin:8px 0 0;font-size:12px">
+      <p class="dim" style="margin:8px 0 0;font-size:13px">
         ⚠️ Це <b style="color:var(--text)">не</b> «вже зароблено», а «стільки вийшло б, якби сезон
         закінчився зараз». Місця й номінації ще змінюються, а ціна очка плаває:
         сума за очки фіксована, а ділиться вона на всі очки, які набере ліга —
@@ -2794,7 +2794,7 @@ async function viewBoard(){
     <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
-      <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
+      <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       ${cells(r)}
       <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
@@ -2802,28 +2802,28 @@ async function viewBoard(){
         money(prizeById[r.participant_id])}</td>` : ''}
     </tr>`).join('')}</tbody></table></div>
     ${season ? `
-    <p class="dim" style="margin:12px 0 0;font-size:12px">
+    <p class="dim" style="margin:12px 0 0;font-size:13px">
       Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
       <b style="color:var(--text)">Bonus</b> — це власні бонусні питання General,
       ті, що на сайті у вкладці <b style="color:var(--text)">General · Bonus</b>.
       Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
     </p>
-    <p class="dim" style="margin:8px 0 0;font-size:12px">
+    <p class="dim" style="margin:8px 0 0;font-size:13px">
       Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці <b style="color:var(--text)">Leaderboard &amp; Prize</b> кожного етапу.
       <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
     </p>` : `
-    <p class="dim" style="margin:12px 0 0;font-size:12px">
+    <p class="dim" style="margin:12px 0 0;font-size:13px">
       <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. Це тайбрейк у
       <b style="color:var(--text)">⚔️ Rivals</b> і <b style="color:var(--gold)">MVP</b>:
       при рівності очок вікенда виграє той, у кого їх більше.
       У <b style="color:var(--text)">Разом</b> тайбрейків немає — однакові очки означають
       спільне місце, і точні рахунки на нього не впливають.
     </p>
-    <p class="dim" style="margin:8px 0 0;font-size:12px">
+    <p class="dim" style="margin:8px 0 0;font-size:13px">
       Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔. Це те саме число, що
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
     </p>
-    ${prizeOk ? `<p class="dim" style="margin:8px 0 0;font-size:12px">
+    ${prizeOk ? `<p class="dim" style="margin:8px 0 0;font-size:13px">
       <b style="color:var(--text)">₴</b> на етапі — це <b style="color:var(--text)">тільки гроші за
       1-2-3 місце цього етапу</b>. За очки, за точні, <b style="color:var(--gold)">MVP</b> і ⚔️ Rivals
       за етапи не виплачуються: це наскрізні номінації всього турніру, вони рахуються один раз
@@ -2865,7 +2865,7 @@ async function viewMvpRivals(){
       <table><thead><tr><th>№</th><th></th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
       <tbody>${sorted.map(r => `<tr>
         <td class="n">${medal(r[rankKey])}</td>
-        <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByPerson[r.person_key] ? deltaByPerson[r.person_key][deltaKey] : null)}</td>
+        <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByPerson[r.person_key] ? deltaByPerson[r.person_key][deltaKey] : null)}</td>
         <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
         <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r[key] ?? 0}</td>
       </tr>`).join('')}</tbody></table>`}
