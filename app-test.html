@@ -888,9 +888,25 @@ async function go(tab){
   // завдяки цьому рядку він далі працює без правок.
   if (tab === 'draft' || tab === 'stock') tab = 'boosts';
 
+  // ⚠️ ПЕРЕМАЛЬОВУВАННЯ ТОГО САМОГО ЕКРАНА НЕ МАЄ ВИГЛЯДАТИ ЯК
+  // ПЕРЕЗАВАНТАЖЕННЯ. Скарга учасника 12.08.2026: «при виборі релоадить
+  // сторінку». Сторінка не перезавантажується — але спінер на весь
+  // екран стискає вміст у один рядок, браузер від того втрачає позицію
+  // прокрутки, а всі розгорнуті <details> («як це працює») закриваються.
+  // Виглядає це рівно як перезавантаження.
+  // Тому: при поверненні на ТОЙ САМИЙ екран спінера немає (дані й так
+  // вантажаться швидко, а кнопку в цей час вимкнено), а прокрутку й
+  // розгорнуті блоки повертаємо на місце.
+  const sameTab = (S.tab === tab);
+  const keepScroll = window.scrollY;
+  const openIdx = sameTab
+    ? Array.from($('view').querySelectorAll('details'))
+        .map((d, i) => d.open ? i : -1).filter(i => i >= 0)
+    : [];
+
   S.tab = tab;
   renderTabs();
-  $('view').innerHTML = '<div class="spin">завантаження…</div>';
+  if (!sameTab) $('view').innerHTML = '<div class="spin">завантаження…</div>';
   try {
     if (tab === 'matches') await viewMatches();
     else if (tab === 'boosts') await viewBoosts();
@@ -902,6 +918,15 @@ async function go(tab){
     else if (tab === 'admin') await viewAdmin();
   } catch (e) {
     $('view').innerHTML = `<div class="msg err">${esc(e.message || e)}</div>`;
+  }
+
+  // ⚠️ Індекс, а не id: <details> тут анонімні й генеруються в семи
+  // місцях. Порядок при перемальовуванні ТОГО САМОГО екрана стабільний,
+  // тож індекс працює; на зміні вкладки ми сюди не заходимо взагалі.
+  if (sameTab) {
+    const ds = $('view').querySelectorAll('details');
+    openIdx.forEach(i => { if (ds[i]) ds[i].open = true; });
+    window.scrollTo(0, keepScroll);
   }
 }
 
@@ -2610,6 +2635,34 @@ async function viewBoard(){
   };
   const stagePts = (r, st) => ((byName[r.display_name] || {})[st.id] || {}).total_points ?? 0;
 
+  // ГРОШІ (238). Той самий косметичний принцип, що нижче для дельти:
+  // якщо в'юхи ще нема на проді — колонка просто не з'явиться.
+  // ⚠️ На ЕТАПІ показуємо лише гроші за місце ЦЬОГО етапу: пули «за
+  // очки», «за точні», MVP і Rivals наскрізні на весь сезон, і ділити
+  // їх на етапи можна тільки вигадкою (рішення Богдана 12.08.2026).
+  // ⚠️ `amount_uah`/`total_uah` = null, поки не зіграно жодного
+  // вікенда. Це НЕ нуль: усі мають 0 очок, ділять перше місце, і
+  // будь-яка цифра там була б однаково неправдою.
+  let prizeByName = {}, prizeById = {}, prizeOk = false;
+  try {
+    if (season) {
+      const { data: pr } = await sb.from('prize_board').select('*');
+      (pr || []).forEach(r => { prizeByName[r.display_name] = r; });
+      prizeOk = !!(pr && pr.length);
+    } else {
+      const { data: pr } = await sb.from('prize_stage_board')
+        .select('participant_id,amount_uah').eq('tournament_id', TOURNAMENT_ID);
+      (pr || []).forEach(r => { prizeById[r.participant_id] = r.amount_uah; });
+      prizeOk = !!(pr && pr.length);
+    }
+  } catch(e) {}
+
+  // ⚠️ null ≠ 0. Прочерк означає «сезон ще не почався», нуль — «поки
+  // не заробив». Одне плутати з іншим не можна.
+  const money = (v) => (v === null || v === undefined)
+    ? '<span class="dim">—</span>'
+    : Math.round(v).toLocaleString('uk-UA') + ' ₴';
+
   // Той самий косметичний принцип, що на test.html: якщо в'юха ще не
   // на проді чи запит впав — просто нічого не показуємо, борд і без
   // цього працює.
@@ -2649,6 +2702,11 @@ async function viewBoard(){
     : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️')
       + th('<span style="color:var(--gold)">MVP</span>') + th('👔');
 
+  // ⚠️ Колонка ₴ стоїть ПІСЛЯ «Разом» — гроші є наслідком очок, а не
+  // ще однією їх складовою. Якби вона стояла серед складових, її
+  // читали б як те, що додається в суму.
+  const headMoney = prizeOk ? th('₴') : '';
+
   const cells = (r) => season
     ? td(r.exact_count, 'var(--green)')
       + stageCols.map(s => td(stagePts(r, s), 'var(--teal)')).join('')
@@ -2660,19 +2718,61 @@ async function viewBoard(){
       + td(r.mvp_points ?? 0, 'var(--teal)')
       + td(r.style_points ?? 0, 'var(--teal)');
 
+  // Картка «Твої гроші» — тільки в General і тільки СВІЙ розклад.
+  // ⚠️ Колонку ₴ бачать усі (рішення Богдана 12.08.2026: очки й місця
+  // й так відкриті, гроші — просто їх перерахунок), а от із чого саме
+  // склалась сума — своє. Тут же й єдине місце, де взагалі згадується
+  // розмір фонду; у Rules на сайті сум немає свідомо.
+  const prizeMine = () => {
+    if (!season || !prizeOk) return '';
+    const m = prizeByName[(S.me || {}).display_name];
+    if (!m) return '';
+    if (!m.has_results) return `
+      <p class="dim" style="margin:14px 0 0;font-size:12px">
+        <b style="color:var(--text)">Твої призові</b> порахуються після першого зіграного вікенда.
+      </p>`;
+    const line = (label, v, note) => `<tr>
+      <td style="padding:3px 0">${label}${note ? ` <span class="dim" style="font-size:11px">${note}</span>` : ''}</td>
+      <td class="n" style="text-align:right;padding:3px 0">${money(v)}</td></tr>`;
+    return `
+    <div style="margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:10px">
+      <div style="font-weight:700;margin-bottom:8px">Твої гроші <span class="dim" style="font-weight:400;font-size:12px">за поточного розкладу</span></div>
+      <table style="width:100%;font-size:14px"><tbody>
+        ${line('Місця етапів', m.money_stages, 'August · September · October')}
+        ${line('Місце в General', m.money_general)}
+        ${line('За очки', m.money_points, 'частка від усіх очок ліги')}
+        ${line('За точні', m.money_exact, 'частка від усіх точних')}
+        ${line('MVP', m.money_mvp, 'найбільше нагород за сезон')}
+        ${line('⚔️ Rivals', m.money_rivals, 'найбільше перемог у дуелях')}
+        <tr><td style="padding:8px 0 0;border-top:1px solid var(--line);font-weight:700">Разом</td>
+            <td class="n" style="text-align:right;padding:8px 0 0;border-top:1px solid var(--line);color:var(--gold);font-size:17px">${money(m.total_uah)}</td></tr>
+      </tbody></table>
+      <p class="dim" style="margin:10px 0 0;font-size:12px">
+        ⚠️ Це <b style="color:var(--text)">не</b> «ти заробив», а «стільки вийшло б, якби сезон
+        закінчився зараз». Місця й номінації ще змінюються, а ціна очка плаває:
+        сума за очки фіксована, а ділиться вона на всі очки, які набере ліга.
+        Наберемо більше — очко коштуватиме менше.
+      </p>
+    </div>`;
+  };
+
   $('view').innerHTML = `
     <div class="card">
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
     <div style="overflow-x:auto">
-    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}</tr></thead>
+    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:12px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       ${cells(r)}
       <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${r.total_points}</td>
+      ${prizeOk ? `<td class="n" style="text-align:right;color:var(--teal)">${
+        money(season ? (prizeByName[r.display_name] || {}).total_uah
+                     : prizeById[r.participant_id])}</td>` : ''}
     </tr>`).join('')}</tbody></table></div>
+    ${prizeMine()}
     ${season ? `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
       Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
@@ -2699,7 +2799,8 @@ async function viewBoard(){
 
 // =====================================================================
 //  MVP & RIVALS — дві окремі season-номінації призового фонду
-//  (🏆 найбільше Weekend MVP 7%, ⚔️ найбільше перемог Rivals 6% — Rules).
+//  (найбільше Weekend MVP 5%, ⚔️ найбільше перемог Rivals 5% — Rules,
+//  нова модель від 12.08.2026; було 7% і 6%).
 //  Раніше лише текст у призовій таблиці, тепер рахує сама season_prize_board
 //  (файл 181) — той самий person_key, що в season_leaderboard, тож людина
 //  з кількох етапів рахується один раз. Той самий блок, що на test.html
@@ -3191,11 +3292,19 @@ async function viewPress(){
       shown.map(p => {
         const icLine = p.interviewer_code
           ? `<div class="interviewer">🎤 ${esc(interviewerName(p.interviewer_code))}</div>` : '';
+        // ⚠️ Якщо людина вже щось пише в це питання — показуємо ТОЙ
+        // текст питання, який вона бачила, а не свіжий із бази.
+        // AI-преса (крон `press-ai-fill`, кожні 2 хв) переписує
+        // формулювання просто в базі, тож без цього питання мінялось
+        // під людиною посеред відповіді. Саме на це поскаржився
+        // учасник 12.08.2026: «поменяло вопросы, суть та же».
+        const typed = (S.pressTyped || {})[p.id];
+        const shownBody = typed && typed.body ? typed.body : p.body;
         return `
         <div class="press-q" data-pwrap="${p.id}">
           <div class="slot">${esc(PRESS_SLOT[p.slot] || p.slot)} · ${esc(gwTitle(p.gameweek_id))}</div>
           ${icLine}
-          <div class="q">${esc(p.body)}</div>
+          <div class="q">${esc(shownBody)}</div>
           <textarea data-prompt="${p.id}" rows="2" placeholder="пиши що хочеш…"></textarea>
           <div class="btns">
             <button class="confirm" data-confirm="${p.id}">Відповісти</button>
@@ -3207,6 +3316,17 @@ async function viewPress(){
   }
 
   $('view').innerHTML = html;
+
+  // ⚠️ ПОВЕРНУТИ НАБРАНЕ. Той самий клас помилки, що `keepTyped()` для
+  // прогнозів, тільки тут він коштував дорожче: людина відповіла на всі
+  // три питання, натиснула «Відповісти» на першому — і два інші
+  // стерлись, бо `viewPress()` перебудовує весь екран, а textarea
+  // народжується порожньою. Скарга учасника 12.08.2026, реальна втрата
+  // тексту.
+  Object.entries(S.pressTyped || {}).forEach(([id, v]) => {
+    const ta = $('view').querySelector(`[data-prompt="${id}"]`);
+    if (ta && v && v.text) ta.value = v.text;
+  });
 
   const setNote = (id, txt, color) => {
     const n = $('view').querySelector(`[data-saved="${id}"]`);
@@ -3222,8 +3342,11 @@ async function viewPress(){
       const val = (ta ? ta.value : '').trim();
       if (!val){ setNote(id, 'напиши відповідь або натисни «Пропустити»', 'var(--red)'); return; }
       btn.disabled = true;
+      keepPressTyped();
       const { error } = await sb.rpc('save_press_answer', { p_prompt: id, p_body: val });
       if (error){ btn.disabled = false; setNote(id, 'не збереглось: ' + error.message, 'var(--red)'); return; }
+      // Це питання вже збережене — його чернетку тримати нема сенсу.
+      if (S.pressTyped) delete S.pressTyped[id];
       await viewPress();
     };
   });
@@ -3233,8 +3356,10 @@ async function viewPress(){
     btn.onclick = async () => {
       const id = btn.dataset.skip;
       btn.disabled = true;
+      keepPressTyped();
       const { error } = await sb.rpc('skip_press_prompt', { p_prompt: id });
       if (error){ btn.disabled = false; setNote(id, 'не вийшло: ' + error.message, 'var(--red)'); return; }
+      if (S.pressTyped) delete S.pressTyped[id];
       await viewPress();
     };
   });
@@ -3247,6 +3372,29 @@ async function viewPress(){
       if (error) return alert('Не вийшло: ' + error.message);
       await viewPress();
     };
+  });
+}
+
+// Забрати набране в прес-полях перед перемальовуванням екрана — рівно
+// те саме, що `keepTyped()` робить для рахунків у прогнозах.
+//
+// ⚠️ Разом із текстом запамʼятовуємо й ФОРМУЛЮВАННЯ питання. AI-преса
+// переписує `press_prompts.body` у базі своїм кроном, тож інакше
+// людина, дописуючи відповідь, побачила б уже інше питання.
+//
+// ⚠️ Чернетки живуть лише в памʼяті вкладки: перезавантажив сторінку —
+// зникли. Це свідомо: класти недописане в базу означало б показати його
+// в стрічці (`press_answers` публічні) або заводити окреме сховище
+// чернеток заради випадку, який лікується цими двома рядками.
+function keepPressTyped(){
+  const box = $('view');
+  if (!box) return;
+  S.pressTyped = S.pressTyped || {};
+  box.querySelectorAll('[data-prompt]').forEach(ta => {
+    const id = ta.dataset.prompt;
+    if (!ta.value.trim()) { delete S.pressTyped[id]; return; }
+    const q = box.querySelector(`[data-pwrap="${id}"] .q`);
+    S.pressTyped[id] = { text: ta.value, body: q ? q.textContent : null };
   });
 }
 
