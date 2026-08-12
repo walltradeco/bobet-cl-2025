@@ -2858,7 +2858,14 @@ async function viewMvpRivals(){
     <div class="card" style="margin-bottom:14px">
       <h2>${titleHtml}</h2>
       ${!sorted.length ? '<p class="dim">Ще нема кого показати.</p>' : `
-      <table><thead><tr><th>№</th><th></th><th>Учасник</th><th style="text-align:right">Разом</th></tr></thead>
+      <!-- ⚠️ width:1% / width:100% — не декорація. Таблиця має лише
+           чотири колонки, і після переходу кабінету на 1240 px браузер
+           почав рівномірно розтягувати ВСІ, через що між «Учасник» і
+           «Разом» зʼявлялась порожня дірка в пів-екрана (помітив Богдан
+           12.08.2026). Тепер зайву ширину забирає колонка з іменем,
+           а № і стрілка лишаються вузькими. -->
+      <table><thead><tr><th style="width:1%">№</th><th style="width:1%"></th>
+        <th style="width:100%">Учасник</th><th style="text-align:right">Разом</th></tr></thead>
       <tbody>${sorted.map(r => `<tr>
         <td class="n">${medal(r[rankKey])}</td>
         <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByPerson[r.person_key] ? deltaByPerson[r.person_key][deltaKey] : null)}</td>
@@ -3450,7 +3457,8 @@ async function viewLog(){
       Журнал бачать усі учасники.</p>
     ${!data || !data.length
       ? '<p class="dim">Записів немає.</p>'
-      : `<table><thead><tr><th>Коли</th><th>Хто</th><th>Чий</th><th>Дія</th></tr></thead><tbody>
+      : `<table><thead><tr><th style="width:1%">Коли</th><th style="width:1%">Хто</th>
+           <th style="width:1%">Чий</th><th style="width:100%">Дія</th></tr></thead><tbody>
          ${data.map(r => `<tr>
            <td class="dim mono" style="font-size:13px">${new Date(r.created_at).toLocaleString('uk-UA')}</td>
            <td>${esc(r.адмін)}</td><td>${esc(r.чий_прогноз)}</td>
