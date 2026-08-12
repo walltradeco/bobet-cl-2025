@@ -2734,15 +2734,12 @@ async function viewBoard(){
     if (!season || !prizeOk) return '';
     const rows = data.map(r => prizeByName[r.display_name]).filter(Boolean);
     if (!rows.length) return '';
-    // ⚠️ Своя картка, а не рядок під заліком: таблиця грошей стоїть
-    // ПОЗА карткою заліку, тож голий <p> висів би на фоні сторінки.
-    if (!rows[0].has_results) return `
-      <div class="card" style="margin-top:14px">
-        <p class="dim" style="margin:0;font-size:13px">
-          <b style="color:var(--text)">Призові</b> порахуються після першого зіграного вікенда —
-          зараз усі на нулях і ділять перше місце, тож будь-яка сума була б вигадкою.
-        </p>
-      </div>`;
+    // ⚠️ Заглушки «порахується після першого вікенда» тут БІЛЬШЕ НЕМАЄ.
+    // Рішення Богдана 12.08.2026 ввечері (файл 240): суми показуються
+    // одразу, ще до старту. До 15.08 усі на нулях і ділять місця, тож
+    // числа в усіх однакові — це не помилка, а буквальна відповідь на
+    // «скільки вийшло б, якби сезон закінчився зараз». Підпис під
+    // таблицею це пояснює.
     const myName = (S.me || {}).display_name;
     const mh = (t, note) => `<th style="text-align:right">${t}${note ? `<div class="dim" style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">${note}</div>` : ''}</th>`;
     const mc = (v) => `<td class="n" style="text-align:right">${money(v)}</td>`;
@@ -2763,11 +2760,19 @@ async function viewBoard(){
         <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${money(m.total_uah)}</td>
       </tr>`).join('')}</tbody></table></div>
       <p class="dim" style="margin:12px 0 0;font-size:12px">
+        Тут <b style="color:var(--text)">усе разом</b>: місця трьох етапів + місце в General +
+        за очки + за точні + <b style="color:var(--gold)">MVP</b> + ⚔️ Rivals. Останні чотири
+        за етапи не платяться взагалі — вони наскрізні й рахуються один раз, по всьому турніру.
+        «Очки» тут — те саме число, що <b style="color:var(--text)">Разом</b>: матчі з бустами,
+        бонусні питання, ⚔️, <b style="color:var(--gold)">MVP</b> і 👔 Manager Style.
+      </p>
+      <p class="dim" style="margin:8px 0 0;font-size:12px">
         ⚠️ Це <b style="color:var(--text)">не</b> «вже зароблено», а «стільки вийшло б, якби сезон
         закінчився зараз». Місця й номінації ще змінюються, а ціна очка плаває:
         сума за очки фіксована, а ділиться вона на всі очки, які набере ліга —
         наберемо більше, очко коштуватиме менше. Важлива не кількість очок,
-        а твоя частка від усіх.
+        а твоя частка від усіх.${!rows[0].has_results ? ` <b style="color:var(--text)">Сезон ще не
+        починався</b>, тож поки що всі на нулях і ділять місця порівну — звідси однакові суми.` : ''}
       </p>
     </div>`;
   };
@@ -2809,7 +2814,13 @@ async function viewBoard(){
     <p class="dim" style="margin:8px 0 0;font-size:12px">
       Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔. Це те саме число, що
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
-    </p>`}`}</div>
+    </p>
+    ${prizeOk ? `<p class="dim" style="margin:8px 0 0;font-size:12px">
+      <b style="color:var(--text)">₴</b> на етапі — це <b style="color:var(--text)">тільки гроші за
+      1-2-3 місце цього етапу</b>. За очки, за точні, <b style="color:var(--gold)">MVP</b> і ⚔️ Rivals
+      за етапи не виплачуються: це наскрізні номінації всього турніру, вони рахуються один раз
+      і видно їх у <b style="color:var(--text)">General</b>.
+    </p>` : ''}`}`}</div>
     ${prizeTable()}`;
 }
 
