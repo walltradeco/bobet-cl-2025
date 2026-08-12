@@ -2326,7 +2326,8 @@ async function fetchSupabaseTab(tab){
     prizeDelta.forEach(d => { prizeDeltaByPerson[d.person_key] = d; });
     return {
       rows: await buildLeaderboardRows(),
-      // Season-номінації призового фонду (🏆 MVP 7%, ⚔️ Rivals 6% — Rules),
+      // Season-номінації призового фонду (MVP 5%, ⚔️ Rivals 5% — Rules,
+      // нова модель від 12.08.2026; було 7% і 6%),
       // раніше лише текст без підрахунку. Лише на живій вкладці EuroSeason,
       // тому окремим полем, не в rows: архівні борди (fetchSheet) його не мають.
       prizeBoard: prizeBoard.map(r => ({
@@ -2452,7 +2453,10 @@ function renderEuroRulesExtras(){
       </details>
     </div>`;
 
-  const pct = n => (Math.round(n * 10) / 10) + '%';
+  // ⚠️ Кома, не крапка: «15,2% фонду». Раніше всі частки були цілими
+  // (24 / 15), тож питання не стояло; у новій моделі 12.08.2026 етап
+  // важить 15,2%, і крапка в українському тексті читається як помилка.
+  const pct = n => String(Math.round(n * 10) / 10).replace('.', ',') + '%';
   // Клітинки 1/2/3 місця показують ЧАСТКУ МІСЦЯ ВІД ФОНДУ ЦЬОГО РЯДКА
   // (завжди 50/30/20, однаково для кожного етапу й General) — не
   // перемножений % від УСЬОГО фонду. Сам розмір рядка — в назві категорії.
@@ -2462,52 +2466,68 @@ function renderEuroRulesExtras(){
       <td class="c-points">30%</td>
       <td class="c-points">20%</td>
     </tr>`;
+  // ⚠️ МОДЕЛЬ ЗМІНЕНА 12.08.2026, погоджена з усіма учасниками.
+  // Було: етапи 24+24+24%, General 15%, MVP 7%, Rivals 6% — тобто 87%
+  // фонду за місця, і після другого етапу половина складу математично
+  // поза грошима. Стало: 55% за місця, а решта — за саму гру.
+  // ⚠️ СУМ ТУТ НЕМАЄ СВІДОМО (рішення Богдана 12.08): на публічній
+  // сторінці лише відсотки, гривні людина бачить у кабінеті, за
+  // логіном. Це не косметика — в'юхи `prize_board`/`prize_config`
+  // (238) взагалі не видані ролі `anon`, тож ця сторінка технічно не
+  // може показати суму, навіть якщо колись хтось допише запит.
   const prizeBlock = `
     <div class="rules-block table-card rules-mech">
       <div class="rules-mech-head"><span class="ico">💰</span><h3>Призовий фонд</h3></div>
       <p class="rules-mech-p">
-        Призовий фонд ділиться між шістьма номінаціями нижче. Кожен з трьох
-        етапів дає 24% фонду і всередині свого етапу ділиться між 1-2-3 місцем
-        у пропорції 50 / 30 / 20. General (сума очок за весь турнір) дає ще
-        15% фонду — тим самим 50/30/20 між 1-2-3 місцем.
+        Фонд ділиться на п'ять частин. Три з них — за місця й окремі номінації,
+        дві — за саму гру: за кожне набране очко і за кожен вгаданий точний рахунок.
+        Тобто гроші приносить не лише подіум.
       </p>
       <table class="sheet-table rules" style="margin-bottom:14px;">
         <thead><tr>
-          <th class="c-condition">Категорія</th>
+          <th class="c-condition">Частина фонду</th>
+          <th style="text-align:center;">Розмір</th>
+        </tr></thead>
+        <tbody>
+          <tr><td class="c-condition">🏆 Місця — етапи й General</td><td class="c-points">55%</td></tr>
+          <tr><td class="c-condition">💰 За очки — пропорційно набраним очкам</td><td class="c-points">30%</td></tr>
+          <tr><td class="c-condition">🎯 За точні рахунки — пропорційно вгаданим</td><td class="c-points">5%</td></tr>
+          <tr><td class="c-condition"><span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір</td><td class="c-points">5%</td></tr>
+          <tr><td class="c-condition">⚔️ Rivals — найбільше перемог за турнір</td><td class="c-points">5%</td></tr>
+        </tbody>
+      </table>
+      <p class="rules-mech-p">
+        Частина «Місця» (55%) ділиться між чотирма заліками у пропорції
+        24 / 24 / 24 / 15 — три етапи й General, — а всередині кожного
+        1-2-3 місце беруть 50 / 30 / 20.
+      </p>
+      <table class="sheet-table rules" style="margin-bottom:0;">
+        <thead><tr>
+          <th class="c-condition">Залік</th>
           <th style="text-align:center;">1 місце</th>
           <th style="text-align:center;">2 місце</th>
           <th style="text-align:center;">3 місце</th>
         </tr></thead>
         <tbody>
-          ${placesRow('Етап 1 (August)', 24)}
-          ${placesRow('Етап 2 (September)', 24)}
-          ${placesRow('Етап 3 (October)', 24)}
-          ${placesRow('General — сума очок за весь турнір', 15)}
-        </tbody>
-      </table>
-      <table class="sheet-table rules" style="margin-bottom:0;">
-        <thead><tr>
-          <th class="c-condition">Окрема номінація</th>
-          <th style="text-align:center;">Приз</th>
-        </tr></thead>
-        <tbody>
-          <tr>
-            <td class="c-condition"><span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір</td>
-            <td class="c-points">7% фонду</td>
-          </tr>
-          <tr>
-            <td class="c-condition">⚔️ Rivals — найбільше перемог за турнір</td>
-            <td class="c-points">6% фонду</td>
-          </tr>
+          ${placesRow('Етап 1 (August)', 15.2)}
+          ${placesRow('Етап 2 (September)', 15.2)}
+          ${placesRow('Етап 3 (October)', 15.2)}
+          ${placesRow('General — сума очок за весь турнір', 9.5)}
         </tbody>
       </table>
       <div class="rules-note" style="margin-top:14px;">
-        1-2-3 місце в таблиці вище — частка від фонду ЦЬОГО рядка (50/30/20),
-        не від усього призового фонду одразу.
-        При однаковій кількості очок (або однаковій кількості нагород MVP /
-        перемог у Rivals) учасники ділять місце й приз порівну — точні
-        рахунки тут ні на що не впливають (на відміну від MVP і Rivals вище,
-        де вони є тайбрейком).
+        50 / 30 / 20 — це частка від фонду ЦЬОГО заліку, не від усього
+        призового фонду одразу.<br><br>
+        <b>Однакові очки — місця діляться, і гроші за них теж.</b> Якщо двоє
+        поділили перше місце, вони ділять навпіл суму призів за 1 і 2 місце,
+        а наступний отримує приз за 3 місце. Так само в MVP і Rivals: двоє з
+        однаковою кількістю беруть по половині. Точні рахунки на поділ місця
+        не впливають — вони тайбрейк лише в MVP і Rivals вище.<br><br>
+        <b>Ціну очка наперед знати неможливо.</b> Сума за очки фіксована, а
+        ділиться вона на всі очки, які набере ліга: наберемо більше — очко
+        коштуватиме менше. Тому важлива не кількість очок сама по собі, а
+        твоя частка від усіх. Своє число в гривнях кожен бачить у кабінеті,
+        у вкладці <b>Leaderboard &amp; Prize</b>.
       </div>
     </div>`;
 
