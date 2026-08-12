@@ -2718,40 +2718,56 @@ async function viewBoard(){
       + td(r.mvp_points ?? 0, 'var(--teal)')
       + td(r.style_points ?? 0, 'var(--teal)');
 
-  // Картка «Твої гроші» — тільки в General і тільки СВІЙ розклад.
-  // ⚠️ Колонку ₴ бачать усі (рішення Богдана 12.08.2026: очки й місця
-  // й так відкриті, гроші — просто їх перерахунок), а от із чого саме
-  // склалась сума — своє. Тут же й єдине місце, де взагалі згадується
-  // розмір фонду; у Rules на сайті сум немає свідомо.
-  const prizeMine = () => {
+  // ОКРЕМА ТАБЛИЦЯ ГРОШЕЙ під заліком — тільки в General.
+  //
+  // ⚠️ Богдан 12.08.2026, побачивши першу версію: «зараз лише сума, а
+  // хочу детальніше — за що зароблено». Спершу тут була картка тільки
+  // ЗІ СВОЇМ розкладом, але це суперечило його ж рішенню тієї самої
+  // доби: колонку ₴ бачать усі, отже й розклад видно всім. Ховати
+  // складові, показуючи підсумок, — гірше з двох світів: сума видна,
+  // а звідки вона взялась, ні.
+  //
+  // ⚠️ У таблицю заліку вгорі ці шість колонок НЕ додаємо: там уже 9
+  // своїх, на 920 px і на телефоні воно б поїхало в скрол. Тому гроші
+  // окремою таблицею, з тим самим порядком людей.
+  const prizeTable = () => {
     if (!season || !prizeOk) return '';
-    const m = prizeByName[(S.me || {}).display_name];
-    if (!m) return '';
-    if (!m.has_results) return `
-      <p class="dim" style="margin:14px 0 0;font-size:12px">
-        <b style="color:var(--text)">Твої призові</b> порахуються після першого зіграного вікенда.
-      </p>`;
-    const line = (label, v, note) => `<tr>
-      <td style="padding:3px 0">${label}${note ? ` <span class="dim" style="font-size:11px">${note}</span>` : ''}</td>
-      <td class="n" style="text-align:right;padding:3px 0">${money(v)}</td></tr>`;
+    const rows = data.map(r => prizeByName[r.display_name]).filter(Boolean);
+    if (!rows.length) return '';
+    // ⚠️ Своя картка, а не рядок під заліком: таблиця грошей стоїть
+    // ПОЗА карткою заліку, тож голий <p> висів би на фоні сторінки.
+    if (!rows[0].has_results) return `
+      <div class="card" style="margin-top:14px">
+        <p class="dim" style="margin:0;font-size:13px">
+          <b style="color:var(--text)">Призові</b> порахуються після першого зіграного вікенда —
+          зараз усі на нулях і ділять перше місце, тож будь-яка сума була б вигадкою.
+        </p>
+      </div>`;
+    const myName = (S.me || {}).display_name;
+    const mh = (t, note) => `<th style="text-align:right">${t}${note ? `<div class="dim" style="font-weight:400;font-size:10px;text-transform:none;letter-spacing:0">${note}</div>` : ''}</th>`;
+    const mc = (v) => `<td class="n" style="text-align:right">${money(v)}</td>`;
+    const byMoney = [...rows].sort((a, b) => (b.total_uah ?? 0) - (a.total_uah ?? 0));
     return `
-    <div style="margin-top:18px;padding:14px 16px;border:1px solid var(--line);border-radius:10px">
-      <div style="font-weight:700;margin-bottom:8px">Твої гроші <span class="dim" style="font-weight:400;font-size:12px">за поточного розкладу</span></div>
-      <table style="width:100%;font-size:14px"><tbody>
-        ${line('Місця етапів', m.money_stages, 'August · September · October')}
-        ${line('Місце в General', m.money_general)}
-        ${line('За очки', m.money_points, 'частка від усіх очок ліги')}
-        ${line('За точні', m.money_exact, 'частка від усіх точних')}
-        ${line('MVP', m.money_mvp, 'найбільше нагород за сезон')}
-        ${line('⚔️ Rivals', m.money_rivals, 'найбільше перемог у дуелях')}
-        <tr><td style="padding:8px 0 0;border-top:1px solid var(--line);font-weight:700">Разом</td>
-            <td class="n" style="text-align:right;padding:8px 0 0;border-top:1px solid var(--line);color:var(--gold);font-size:17px">${money(m.total_uah)}</td></tr>
-      </tbody></table>
-      <p class="dim" style="margin:10px 0 0;font-size:12px">
-        ⚠️ Це <b style="color:var(--text)">не</b> «ти заробив», а «стільки вийшло б, якби сезон
+    <div class="card" style="margin-top:14px">
+      <h2>Призові <span class="dim" style="font-weight:400;font-size:13px">за поточного розкладу</span></h2>
+      <div style="overflow-x:auto">
+      <table style="min-width:560px"><thead><tr>
+        <th>Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
+        ${mh('За очки', 'частка від усіх')}${mh('За точні', 'частка від усіх')}
+        ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом')}
+      </tr></thead>
+      <tbody>${byMoney.map(m => `<tr${m.display_name === myName ? ' style="background:var(--panel-3)"' : ''}>
+        <td style="color:var(--purple);font-weight:600">${esc(m.display_name)}</td>
+        ${mc(m.money_stages)}${mc(m.money_general)}${mc(m.money_points)}${mc(m.money_exact)}
+        ${mc(m.money_mvp)}${mc(m.money_rivals)}
+        <td class="n" style="text-align:right;color:var(--gold);font-size:17px">${money(m.total_uah)}</td>
+      </tr>`).join('')}</tbody></table></div>
+      <p class="dim" style="margin:12px 0 0;font-size:12px">
+        ⚠️ Це <b style="color:var(--text)">не</b> «вже зароблено», а «стільки вийшло б, якби сезон
         закінчився зараз». Місця й номінації ще змінюються, а ціна очка плаває:
-        сума за очки фіксована, а ділиться вона на всі очки, які набере ліга.
-        Наберемо більше — очко коштуватиме менше.
+        сума за очки фіксована, а ділиться вона на всі очки, які набере ліга —
+        наберемо більше, очко коштуватиме менше. Важлива не кількість очок,
+        а твоя частка від усіх.
       </p>
     </div>`;
   };
@@ -2772,7 +2788,6 @@ async function viewBoard(){
         money(season ? (prizeByName[r.display_name] || {}).total_uah
                      : prizeById[r.participant_id])}</td>` : ''}
     </tr>`).join('')}</tbody></table></div>
-    ${prizeMine()}
     ${season ? `
     <p class="dim" style="margin:12px 0 0;font-size:12px">
       Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
@@ -2794,7 +2809,8 @@ async function viewBoard(){
     <p class="dim" style="margin:8px 0 0;font-size:12px">
       Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔. Це те саме число, що
       <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
-    </p>`}`}</div>`;
+    </p>`}`}</div>
+    ${prizeTable()}`;
 }
 
 // =====================================================================
