@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>PSuper League · Кабінет (STAGE)</title>
+<!-- Палітра й шрифти — ті самі, що на публічній сторінці PSL
+     (psl-src/page.template.html), щоб кабінет не виглядав чужим до
+     власної ліги. Кабінет BoBet НЕ чіпається взагалі: там своя зелена
+     тема й 4778 рядків живого коду. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F172A; --panel:#14243F; --panel2:#1B3358; --line:#24476F;
+    --blue:#0077CC; --sky:#0EA5E9; --deep:#004A80;
+    --white:#FFFFFF; --grey:#F8FAFC; --muted:#8FA9C4;
+    --gold:#F5C542; --red:#E4707A; --green:#3FB27F;
+    --f-body:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --f-head:'Montserrat','Satoshi',-apple-system,sans-serif;
+    --f-num:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--grey);font-family:var(--f-body);
+    font-size:16px;line-height:1.55;min-height:100vh;-webkit-text-size-adjust:100%;}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 16px 100px;}
+  .mono{font-family:var(--f-num);}
+  .hide{display:none !important;}
+  .dim{color:var(--muted);}
+
+  header{padding:20px 0 14px;border-bottom:1px solid var(--line);margin-bottom:16px;}
+  .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  h1{font-family:var(--f-head);font-size:22px;margin:0;letter-spacing:-0.01em;}
+  .whoami{font-family:var(--f-num);font-size:13px;color:var(--muted);text-align:right;}
+  .whoami b{color:var(--sky);display:block;font-size:15px;}
+  .stage-badge{font-family:var(--f-num);font-size:12px;font-weight:700;
+    letter-spacing:0.08em;color:var(--red);border:1px solid var(--red);
+    border-radius:5px;padding:2px 7px;vertical-align:middle;}
+
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 4px;padding-bottom:4px;}
+  nav.tabs button{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    font-family:var(--f-head);font-weight:600;font-size:15px;padding:9px 14px;
+    border-radius:8px;white-space:nowrap;cursor:pointer;}
+  nav.tabs button.on{background:var(--panel2);color:var(--white);border-color:var(--sky);}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:12px;}
+  .card h2{font-family:var(--f-head);font-size:16px;margin:0 0 10px;color:var(--white);}
+  .sect-title{font-family:var(--f-head);font-size:15px;color:var(--muted);
+    margin:22px 0 10px;letter-spacing:0.02em;}
+
+  input,button{font-family:inherit;font-size:16px;}
+  input[type=email],input[type=text]{width:100%;padding:11px 12px;border-radius:9px;
+    border:1px solid var(--line);background:var(--panel);color:var(--grey);margin-bottom:10px;}
+  button.primary{background:var(--blue);border:1px solid var(--blue);color:#fff;
+    font-weight:700;padding:10px 16px;border-radius:9px;cursor:pointer;}
+  button.primary:disabled{opacity:0.5;cursor:default;}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:8px 13px;border-radius:9px;cursor:pointer;}
+  button.ghost:hover{color:var(--grey);border-color:var(--sky);}
+
+  .login{max-width:360px;margin:14vh auto 0;}
+  .login h1{margin-bottom:18px;}
+  .code{font-family:var(--f-num);letter-spacing:0.3em;text-align:center;font-size:20px;}
+
+  .msg{border-radius:9px;padding:10px 12px;margin-top:10px;font-size:14px;}
+  .msg.err{background:rgba(228,112,122,0.14);border:1px solid var(--red);color:#ffd9dd;}
+  .msg.ok{background:rgba(63,178,127,0.14);border:1px solid var(--green);color:#d6f5e7;}
+  .spin{color:var(--muted);padding:30px 0;text-align:center;}
+
+  /* ---------- Матч ---------- */
+  .match{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:12px 14px;margin-bottom:9px;}
+  .match.waiting{border-color:var(--gold);background:rgba(245,197,66,0.06);}
+  .match .who{flex:1 1 190px;min-width:0;}
+  .match .who b{color:var(--white);}
+  .match .score{font-family:var(--f-num);font-size:20px;font-weight:700;white-space:nowrap;}
+  .match .acts{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;}
+  .tag{font-family:var(--f-num);font-size:11px;letter-spacing:0.06em;
+    border-radius:5px;padding:2px 7px;border:1px solid var(--line);color:var(--muted);}
+  .tag.wait{color:var(--gold);border-color:var(--gold);}
+  .tag.ok{color:var(--green);border-color:var(--green);}
+  .tag.mine{color:var(--sky);border-color:var(--sky);}
+  .sc-in{width:56px;padding:7px 8px;text-align:center;font-family:var(--f-num);
+    font-size:17px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--grey);}
+
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
+  th{font-family:var(--f-head);font-size:13px;color:var(--muted);font-weight:600;
+    text-transform:uppercase;letter-spacing:0.05em;}
+  td.num,th.num{text-align:right;font-family:var(--f-num);}
+  .tbl-scroll{overflow-x:auto;}
+  tr.me td{background:rgba(14,165,233,0.10);}
+</style>
+</head>
+<body>
+
+<!-- ============ ВХІД ============ -->
+<div id="screen-login" class="wrap">
+  <div class="login">
+    <h1>PSuper League <span class="stage-badge">STAGE</span></h1>
+    <div id="step-email">
+      <p class="dim" style="margin-bottom:14px">Вкажи пошту — надішлемо код</p>
+      <input type="email" id="in-email" placeholder="пошта" autocomplete="email" inputmode="email">
+      <button class="primary" id="btn-send" style="width:100%">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p class="dim" style="margin-bottom:14px">Код із листа. Перевір і спам.</p>
+      <input type="text" id="in-code" class="code" placeholder="000000" maxlength="12" inputmode="numeric" autocomplete="one-time-code">
+      <button class="primary" id="btn-verify" style="width:100%">Увійти</button>
+      <button class="ghost" id="btn-back" style="margin-top:10px;width:100%">Інша пошта</button>
+    </div>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ============ ЗАСТОСУНОК ============ -->
+<div id="screen-app" class="wrap hide">
+  <header>
+    <div class="head-row">
+      <h1>PSuper League <span class="stage-badge">STAGE</span></h1>
+      <div class="whoami">
+        <b id="my-name">—</b>
+        <span id="my-season" class="dim"></span>
+        <div style="margin-top:5px">
+          <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:13px">вийти</button>
+        </div>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+  <div id="view"><div class="spin">завантаження…</div></div>
+</div>
+
+<script type="module">
+// =====================================================================
+//  Налаштування. anon-ключ публічний — захист не в ньому, а в RLS.
+//  service_role сюди НЕ КЛАСТИ НІКОЛИ.
+// =====================================================================
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// ⚠️ Сезон НЕ зашитий константою, на відміну від етапів BoBet. Там UUID
+// фіксовані сидом (05_seed), тут сезони заводяться з адмінки, і зашитий
+// id означав би правку фронту на кожен новий сезон.
+const S = { me: null, season: null, tab: 'my', my: [], board: [], table: [], draft: {} };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(host, text, kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
+
+// =====================================================================
+//  ВХІД — той самий шлях, що в кабінеті BoBet
+// =====================================================================
+$('btn-send').onclick = async () => {
+  const email = $('in-email').value.trim().toLowerCase();
+  if (!email) return msg($('login-msg'), 'Вкажи пошту');
+  $('btn-send').disabled = true; $('btn-send').textContent = 'надсилаю…';
+
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+
+  $('btn-send').disabled = false; $('btn-send').textContent = 'Надіслати код';
+  if (error) {
+    // Тригер бази (243) відбиває пошту, якої немає ні в BoBet, ні в PSL
+    console.error('signInWithOtp:', error);
+    const t = /не.*доступ|not allowed|Database error/i.test(error.message)
+      ? 'Немає доступу — цієї пошти немає в списку учасників'
+      : error.message;
+    return msg($('login-msg'), t);
+  }
+  window.__email = email;
+  $('step-email').classList.add('hide');
+  $('step-code').classList.remove('hide');
+  $('login-msg').innerHTML = '';
+  $('in-code').focus();
+};
+
+$('btn-verify').onclick = async () => {
+  const token = $('in-code').value.trim();
+  if (token.length < 4) return msg($('login-msg'), 'Код закороткий');
+  $('btn-verify').disabled = true;
+
+  // Перший вхід шле лист типу signup, повторні — email. Ззовні не
+  // видно, який саме випадок, тому пробуємо всі три.
+  let error = null;
+  for (const type of ['email', 'signup', 'magiclink']) {
+    const res = await sb.auth.verifyOtp({ email: window.__email, token, type });
+    if (!res.error) { error = null; break; }
+    error = res.error;
+  }
+  $('btn-verify').disabled = false;
+  if (error) { console.error('verifyOtp:', error); return msg($('login-msg'), 'Не вийшло: ' + (error.message || '')); }
+  await boot();
+};
+
+$('btn-back').onclick = () => {
+  $('step-code').classList.add('hide');
+  $('step-email').classList.remove('hide');
+  $('login-msg').innerHTML = '';
+};
+
+$('btn-logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+// =====================================================================
+//  Старт
+// =====================================================================
+async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  // Активний сезон. Їх може бути кілька за історію — беремо найновіший.
+  const { data: seasons, error: se } = await sb
+    .from('psl_seasons').select('id,number,title,status,uses_clubs')
+    .eq('status', 'active').order('number', { ascending: false }).limit(1);
+  if (se) { console.error(se); }
+
+  $('screen-login').classList.add('hide');
+  $('screen-app').classList.remove('hide');
+
+  if (!seasons || seasons.length === 0) {
+    $('tabs').innerHTML = '';
+    $('view').innerHTML = `<div class="card"><h2>Сезон ще не відкрито</h2>
+      <p class="dim">Активного сезону PSuper League зараз немає. Щойно адмін
+      його заведе, тут з'являться твої матчі.</p></div>`;
+    return;
+  }
+  S.season = seasons[0];
+
+  const { data: me } = await sb.rpc('psl_me', { p_season: S.season.id });
+  S.me = (me && me[0]) || null;
+
+  $('my-name').textContent = S.me ? S.me.display_name : '—';
+  $('my-season').textContent = S.season.title;
+
+  renderTabs();
+  go(S.tab);
+}
+
+function renderTabs(){
+  const tabs = [
+    ['my',    'Мої матчі'],
+    ['table', 'Таблиця'],
+    ['all',   'Усі матчі'],
+  ];
+  if (S.me && S.me.is_admin) tabs.push(['admin', 'Адмінка']);
+  $('tabs').innerHTML = tabs.map(([k, t]) =>
+    `<button data-tab="${k}" class="${k === S.tab ? 'on' : ''}">${t}</button>`).join('');
+  [...$('tabs').querySelectorAll('button')].forEach(b => b.onclick = () => go(b.dataset.tab));
+}
+
+async function go(tab){
+  S.tab = tab;
+  renderTabs();
+  $('view').innerHTML = '<div class="spin">завантаження…</div>';
+  if (tab === 'my')    return viewMy();
+  if (tab === 'table') return viewTable();
+  if (tab === 'all')   return viewAll();
+  if (tab === 'admin') return viewAdmin();
+}
+
+// =====================================================================
+//  МОЇ МАТЧІ
+//
+//  ⚠️ Рахунок приходить із бази вже «моїми очима» (my_score/opp_score,
+//  вьюха psl_my_matches, файл 244). Фронт НЕ розбирає, з якого боку
+//  пари стоїть людина — саме там і робилися б помилки.
+// =====================================================================
+async function viewMy(){
+  if (!S.me) {
+    return $('view').innerHTML = `<div class="card"><h2>Тебе немає в складі сезону</h2>
+      <p class="dim">Пошта підійшла, але в складі «${esc(S.season.title)}» тебе немає.
+      Напиши адміну — він додасть.</p></div>`;
+  }
+
+  const { data, error } = await sb.from('psl_my_matches')
+    .select('*').eq('season_id', S.season.id);
+  if (error) { console.error(error); return msg($('view'), 'Не вдалось завантажити матчі'); }
+  S.my = data || [];
+
+  const waiting = S.my.filter(m => m.waiting_for_me);
+  const mine    = S.my.filter(m => m.state === 'proposed' && m.i_proposed);
+  const todo    = S.my.filter(m => m.state === 'pending');
+  const done    = S.my.filter(m => m.state === 'confirmed');
+
+  let h = '';
+
+  if (waiting.length) {
+    h += `<div class="sect-title">Чекають на тебе — ${waiting.length}</div>`;
+    h += waiting.map(rowWaiting).join('');
+  }
+  if (mine.length) {
+    h += `<div class="sect-title">Ти вніс, чекаємо суперника — ${mine.length}</div>`;
+    h += mine.map(rowProposedByMe).join('');
+  }
+  h += `<div class="sect-title">Ще не зіграно — ${todo.length}</div>`;
+  h += todo.length ? todo.map(rowTodo).join('')
+                   : `<div class="card dim">Усі матчі зіграні 🎉</div>`;
+  if (done.length) {
+    h += `<div class="sect-title">Зіграно — ${done.length}</div>`;
+    h += done.map(rowDone).join('');
+  }
+
+  $('view').innerHTML = h;
+  wireScoreForms();
+}
+
+function stageTag(m){ return `<span class="tag">${esc(m.stage_title)}</span>`; }
+
+function rowTodo(m){
+  return `<div class="match" data-match="${m.match_id}">
+    <div class="who">проти <b>${esc(m.opponent_name)}</b> ${stageTag(m)}</div>
+    <div class="acts">
+      <input class="sc-in" data-a="${m.match_id}" inputmode="numeric" placeholder="ти">
+      <input class="sc-in" data-b="${m.match_id}" inputmode="numeric" placeholder="він">
+      <button class="primary" data-save="${m.match_id}">Внести</button>
+    </div>
+  </div>`;
+}
+
+function rowWaiting(m){
+  return `<div class="match waiting" data-match="${m.match_id}">
+    <div class="who">
+      <b>${esc(m.opponent_name)}</b> вніс рахунок ${stageTag(m)}
+      <span class="tag wait">чекає тебе</span>
+    </div>
+    <div class="score">${m.my_score} : ${m.opp_score}</div>
+    <div class="acts">
+      <button class="primary" data-confirm="${m.match_id}">Підтвердити</button>
+      <button class="ghost" data-fix="${m.match_id}">Не так</button>
+    </div>
+  </div>`;
+}
+
+function rowProposedByMe(m){
+  return `<div class="match" data-match="${m.match_id}">
+    <div class="who">проти <b>${esc(m.opponent_name)}</b> ${stageTag(m)}
+      <span class="tag mine">чекаємо суперника</span></div>
+    <div class="score">${m.my_score} : ${m.opp_score}</div>
+    <div class="acts"><button class="ghost" data-fix="${m.match_id}">Виправити</button></div>
+  </div>`;
+}
+
+function rowDone(m){
+  const res = m.my_score > m.opp_score ? 'ok' : (m.my_score === m.opp_score ? '' : 'wait');
+  return `<div class="match" data-match="${m.match_id}">
+    <div class="who">проти <b>${esc(m.opponent_name)}</b> ${stageTag(m)}
+      <span class="tag ${res}">${m.my_score > m.opp_score ? 'перемога'
+        : (m.my_score === m.opp_score ? 'нічия' : 'поразка')}</span></div>
+    <div class="score">${m.my_score} : ${m.opp_score}</div>
+  </div>`;
+}
+
+// Форма виправлення = та сама форма внесення, просто відкрита на місці
+function openFix(id){
+  const row = document.querySelector(`.match[data-match="${id}"]`);
+  const m = S.my.find(x => x.match_id === id);
+  if (!row || !m) return;
+  row.querySelector('.acts').innerHTML =
+    `<input class="sc-in" data-a="${id}" inputmode="numeric" value="${m.my_score ?? ''}">
+     <input class="sc-in" data-b="${id}" inputmode="numeric" value="${m.opp_score ?? ''}">
+     <button class="primary" data-save="${id}">Зберегти</button>`;
+  wireScoreForms();
+}
+
+function wireScoreForms(){
+  document.querySelectorAll('[data-save]').forEach(b => b.onclick = () => saveScore(b.dataset.save));
+  document.querySelectorAll('[data-confirm]').forEach(b => b.onclick = () => confirmScore(b.dataset.confirm));
+  document.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => openFix(b.dataset.fix));
+}
+
+async function saveScore(id){
+  const a = document.querySelector(`[data-a="${id}"]`);
+  const b = document.querySelector(`[data-b="${id}"]`);
+  const va = parseInt(a?.value, 10), vb = parseInt(b?.value, 10);
+  if (Number.isNaN(va) || Number.isNaN(vb)) {
+    return alert('Впиши обидва числа');
+  }
+  // ⚠️ Шлемо «мої голи / голи суперника» і про порядок пари не знаємо
+  // взагалі — розворот робить база (psl_propose_my_score, файл 246).
+  // Перевертати в JS означало б повторювати цю логіку в кожному екрані,
+  // а перевернутий рахунок виглядає правдоподібно й помічається пізно.
+  const { error } = await sb.rpc('psl_propose_my_score', {
+    p_match: id, p_my: va, p_opp: vb,
+  });
+  if (error) { console.error(error); return alert(error.message || 'Не вдалось зберегти'); }
+  go('my');
+}
+
+async function confirmScore(id){
+  const { error } = await sb.rpc('psl_confirm_score', { p_match: id });
+  if (error) { console.error(error); return alert(error.message || 'Не вдалось підтвердити'); }
+  go('my');
+}
+
+// =====================================================================
+//  ТАБЛИЦЯ
+// =====================================================================
+async function viewTable(){
+  const { data, error } = await sb.from('psl_standings')
+    .select('*').eq('season_id', S.season.id).order('place');
+  if (error) { console.error(error); return msg($('view'), 'Не вдалось завантажити таблицю'); }
+  S.table = data || [];
+
+  const rows = S.table.map(r => `
+    <tr class="${S.me && r.player_id === S.me.player_id ? 'me' : ''}">
+      <td class="num">${r.place}</td>
+      <td>${esc(r.display_name)}</td>
+      <td class="num">${r.games}</td>
+      <td class="num">${r.wins}</td>
+      <td class="num">${r.draws}</td>
+      <td class="num">${r.losses}</td>
+      <td class="num">${r.goals_for}:${r.goals_against}</td>
+      <td class="num">${r.goal_diff > 0 ? '+' : ''}${r.goal_diff}</td>
+      <td class="num"><b>${r.points}</b></td>
+    </tr>`).join('');
+
+  $('view').innerHTML = `
+    <div class="card">
+      <h2>${esc(S.season.title)} — таблиця</h2>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th class="num">#</th><th>Гравець</th><th class="num">І</th>
+          <th class="num">В</th><th class="num">Н</th><th class="num">П</th>
+          <th class="num">Голи</th><th class="num">±</th><th class="num">Очки</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+      <p class="dim" style="margin:10px 0 0;font-size:14px">
+        У таблицю йдуть лише підтверджені матчі.</p>
+    </div>`;
+}
+
+// =====================================================================
+//  УСІ МАТЧІ — внесене, але не підтверджене видно всім із позначкою
+//  (рішення Богдана 13.08.2026)
+// =====================================================================
+async function viewAll(){
+  const { data, error } = await sb.from('psl_match_board')
+    .select('*').eq('season_id', S.season.id);
+  if (error) { console.error(error); return msg($('view'), 'Не вдалось завантажити матчі'); }
+  S.board = data || [];
+
+  const played  = S.board.filter(m => m.state === 'confirmed');
+  const pending = S.board.filter(m => m.state === 'proposed');
+  const rest    = S.board.filter(m => m.state === 'pending');
+
+  const row = (m) => `<div class="match ${m.state === 'proposed' ? 'waiting' : ''}">
+    <div class="who"><b>${esc(m.player_a_name ?? '—')}</b> — <b>${esc(m.player_b_name ?? '—')}</b>
+      ${stageTag(m)}
+      ${m.state === 'proposed'
+        ? `<span class="tag wait">чекає підтвердження · вніс ${esc(m.proposed_by_name ?? '')}</span>` : ''}
+    </div>
+    ${m.state === 'pending' ? '<div class="dim">не зіграно</div>'
+      : `<div class="score">${m.score_a} : ${m.score_b}</div>`}
+  </div>`;
+
+  $('view').innerHTML =
+    (pending.length ? `<div class="sect-title">Чекають підтвердження — ${pending.length}</div>` + pending.map(row).join('') : '') +
+    `<div class="sect-title">Зіграно — ${played.length}</div>` +
+    (played.length ? played.map(row).join('') : '<div class="card dim">Ще нічого</div>') +
+    `<div class="sect-title">Попереду — ${rest.length}</div>` +
+    (rest.length ? rest.map(row).join('') : '<div class="card dim">Порожньо</div>');
+}
+
+// =====================================================================
+//  АДМІНКА — мінімум, який потрібен, щоб сезон поїхав
+// =====================================================================
+async function viewAdmin(){
+  $('view').innerHTML = `
+    <div class="card">
+      <h2>Склад і розклад</h2>
+      <p class="dim" style="font-size:14px">
+        Додати учасника: пошта + ім'я. Він з'явиться у складі одразу, ще до
+        першого входу — щоб коло можна було збудувати, не чекаючи всіх.</p>
+      <input type="email" id="ad-email" placeholder="пошта">
+      <input type="text" id="ad-name" placeholder="ім'я в таблиці">
+      <button class="primary" id="ad-add">Додати учасника</button>
+      <div id="ad-msg"></div>
+    </div>
+    <div class="card">
+      <h2>Згенерувати коло</h2>
+      <p class="dim" style="font-size:14px">
+        Кожен з кожним двічі. Безпечно тиснути кілька разів: дописуються
+        лише пари, яких ще немає — тож нових учасників можна додавати й
+        потім.</p>
+      <button class="primary" id="ad-gen">Побудувати розклад</button>
+      <div id="ad-gen-msg"></div>
+    </div>`;
+
+  $('ad-add').onclick = async () => {
+    const email = $('ad-email').value.trim().toLowerCase();
+    const name  = $('ad-name').value.trim();
+    if (!email || !name) return msg($('ad-msg'), 'Треба і пошта, і ім\'я');
+    const { error } = await sb.rpc('psl_admin_add_allowed', {
+      p_season: S.season.id, p_email: email, p_name: name, p_is_admin: false });
+    if (error) { console.error(error); return msg($('ad-msg'), error.message); }
+    msg($('ad-msg'), `Додано: ${name}`, 'ok');
+    $('ad-email').value = ''; $('ad-name').value = '';
+  };
+
+  $('ad-gen').onclick = async () => {
+    const { data, error } = await sb.rpc('psl_generate_league', { p_season: S.season.id });
+    if (error) { console.error(error); return msg($('ad-gen-msg'), error.message); }
+    msg($('ad-gen-msg'), data === 0 ? 'Нових пар немає — розклад уже повний'
+                                    : `Додано матчів: ${data}`, 'ok');
+  };
+}
+
+// =====================================================================
+sb.auth.onAuthStateChange((_e, session) => { if (session) boot(); });
+boot();
+</script>
+</body>
+</html>
