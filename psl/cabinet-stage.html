@@ -88,6 +88,41 @@
     font-size:17px;border-radius:8px;border:1px solid var(--line);
     background:var(--bg);color:var(--grey);}
 
+  /* ---------- Пара матчів з одним суперником ----------
+     Учасники зазвичай грають два матчі підряд, тож два матчі однієї
+     пари стоять разом і мають спільну шапку з іменем — інакше те саме
+     імʼя двічі підряд читається як помилка розкладу. */
+  .pair{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:11px 13px;margin-bottom:11px;}
+  .pair-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .pair-head b{color:var(--white);}
+  .pair .match{background:transparent;border:0;border-radius:0;
+    padding:5px 0;margin:0;}
+  .pair .match + .match{border-top:1px solid rgba(255,255,255,0.05);}
+  .leg{font-family:var(--f-num);font-size:12px;color:var(--muted);
+    min-width:64px;}
+
+  /* Підпис над полем: «Ти забив» у placeholder не влазить */
+  .sc-box{display:flex;flex-direction:column;gap:3px;}
+  .sc-lab{font-size:11px;color:var(--muted);letter-spacing:0.02em;text-align:center;}
+
+  /* ---------- Модалка підтвердження ----------
+     Той самий принцип, що «Перевір, що обрав» у кабінеті BoBet:
+     рахунок їде суперникові й показується всім, тож одрук помітять
+     не одразу. Крок підтвердження робить одрук видимим ДО відправки. */
+  .ovl{position:fixed;inset:0;background:rgba(4,8,14,0.72);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:18px;}
+  .dlg{background:var(--panel);border:1px solid var(--line);border-radius:13px;
+    padding:20px 22px;max-width:390px;width:100%;}
+  .dlg h3{margin:0 0 4px;font-family:var(--f-head);font-size:19px;color:var(--white);}
+  .dlg .sub{color:var(--muted);font-size:14px;margin-bottom:14px;}
+  .dlg .big{font-family:var(--f-num);font-size:34px;font-weight:700;
+    text-align:center;color:var(--white);margin:6px 0 4px;}
+  .dlg .lines{font-size:14px;color:var(--grey);text-align:center;margin-bottom:16px;}
+  .dlg .row{display:flex;gap:9px;}
+  .dlg .row button{flex:1;}
+
   table{width:100%;border-collapse:collapse;font-size:15px;}
   th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
   th{font-family:var(--f-head);font-size:13px;color:var(--muted);font-weight:600;
@@ -300,7 +335,7 @@ async function viewMy(){
     h += mine.map(rowProposedByMe).join('');
   }
   h += `<div class="sect-title">Ще не зіграно — ${todo.length}</div>`;
-  h += todo.length ? todo.map(rowTodo).join('')
+  h += todo.length ? groupByOpponent(todo)
                    : `<div class="card dim">Усі матчі зіграні 🎉</div>`;
   if (done.length) {
     h += `<div class="sect-title">Зіграно — ${done.length}</div>`;
@@ -313,13 +348,49 @@ async function viewMy(){
 
 function stageTag(m){ return `<span class="tag">${esc(m.stage_title)}</span>`; }
 
-function rowTodo(m){
+// Два матчі з одним суперником — в одному блоці, зі спільною шапкою.
+// ⚠️ Ключ групи — суперник ПЛЮС етап: у кубку може випасти той самий
+// суперник, і без етапу кубковий матч приклеївся б до лігових.
+// ⚠️ Етап беремо через `stage_kind`, а НЕ `stage_id` — вьюха
+// `psl_my_matches` (244) віддає лише kind і title, id там немає. З
+// `stage_id` ключ був би `undefined` в усіх рядків, тобто етап у
+// групуванні не брав би участі взагалі — мовчки, бо на самій лізі
+// різниці не видно.
+// Порядок усередині групи фіксований (match_id), інакше «1-й/2-й» на
+// перемальовуванні могли б помінятись місцями.
+function groupByOpponent(list){
+  const groups = new Map();
+  list.forEach(m => {
+    const key = `${m.stage_kind || ''}|${m.opponent_name}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(m);
+  });
+  return [...groups.values()].map(ms => {
+    ms.sort((x, y) => String(x.match_id).localeCompare(String(y.match_id)));
+    const head = ms[0];
+    const many = ms.length > 1;
+    return `<div class="pair">
+      <div class="pair-head">проти <b>${esc(head.opponent_name)}</b> ${stageTag(head)}
+        ${many ? `<span class="tag">${ms.length} матчі</span>` : ''}</div>
+      ${ms.map((m, i) => rowTodo(m, many ? i + 1 : 0)).join('')}
+    </div>`;
+  }).join('');
+}
+
+function rowTodo(m, leg){
   return `<div class="match" data-match="${m.match_id}">
-    <div class="who">проти <b>${esc(m.opponent_name)}</b> ${stageTag(m)}</div>
+    ${leg ? `<div class="leg">${leg}-й матч</div>` : ''}
     <div class="acts">
-      <input class="sc-in" data-a="${m.match_id}" inputmode="numeric" placeholder="ти">
-      <input class="sc-in" data-b="${m.match_id}" inputmode="numeric" placeholder="він">
-      <button class="primary" data-save="${m.match_id}">Внести</button>
+      <div class="sc-box">
+        <span class="sc-lab">Ти забив</span>
+        <input class="sc-in" data-a="${m.match_id}" inputmode="numeric">
+      </div>
+      <div class="sc-box">
+        <span class="sc-lab">Він забив</span>
+        <input class="sc-in" data-b="${m.match_id}" inputmode="numeric">
+      </div>
+      <button class="primary" data-save="${m.match_id}"
+        style="align-self:flex-end">Внести</button>
     </div>
   </div>`;
 }
@@ -363,9 +434,11 @@ function openFix(id){
   const m = S.my.find(x => x.match_id === id);
   if (!row || !m) return;
   row.querySelector('.acts').innerHTML =
-    `<input class="sc-in" data-a="${id}" inputmode="numeric" value="${m.my_score ?? ''}">
-     <input class="sc-in" data-b="${id}" inputmode="numeric" value="${m.opp_score ?? ''}">
-     <button class="primary" data-save="${id}">Зберегти</button>`;
+    `<div class="sc-box"><span class="sc-lab">Ти забив</span>
+       <input class="sc-in" data-a="${id}" inputmode="numeric" value="${m.my_score ?? ''}"></div>
+     <div class="sc-box"><span class="sc-lab">Він забив</span>
+       <input class="sc-in" data-b="${id}" inputmode="numeric" value="${m.opp_score ?? ''}"></div>
+     <button class="primary" data-save="${id}" style="align-self:flex-end">Зберегти</button>`;
   wireScoreForms();
 }
 
@@ -375,6 +448,39 @@ function wireScoreForms(){
   document.querySelectorAll('[data-fix]').forEach(b => b.onclick = () => openFix(b.dataset.fix));
 }
 
+// ---------------------------------------------------------------------
+//  Модалка підтвердження. Той самий крок, що «Перевір, що обрав» у
+//  кабінеті BoBet: рахунок одразу видно суперникові й усій лізі, тож
+//  одрук («12» замість «1:2») помітять нескоро. Дешевше показати його
+//  до відправки, ніж розплутувати спірний матч потім.
+// ---------------------------------------------------------------------
+function askConfirm(m, va, vb){
+  return new Promise(resolve => {
+    const ovl = document.createElement('div');
+    ovl.className = 'ovl';
+    ovl.innerHTML = `<div class="dlg">
+      <h3>Перевір рахунок</h3>
+      <div class="sub">проти <b>${esc(m.opponent_name)}</b> · ${esc(m.stage_title)}</div>
+      <div class="big">${va} : ${vb}</div>
+      <div class="lines">ти забив <b>${va}</b> · ${esc(m.opponent_name)} забив <b>${vb}</b></div>
+      <div class="row">
+        <button class="ghost" data-no>Виправити</button>
+        <button class="primary" data-yes>Так, зберегти</button>
+      </div>
+    </div>`;
+    const close = v => { ovl.remove(); document.removeEventListener('keydown', onKey); resolve(v); };
+    const onKey = e => { if (e.key === 'Escape') close(false); };
+    ovl.querySelector('[data-yes]').onclick = () => close(true);
+    ovl.querySelector('[data-no]').onclick  = () => close(false);
+    // Клік повз картку = відмова: випадкове збереження тут дорожче,
+    // ніж зайвий раз натиснути кнопку.
+    ovl.onclick = e => { if (e.target === ovl) close(false); };
+    document.addEventListener('keydown', onKey);
+    document.body.appendChild(ovl);
+    ovl.querySelector('[data-yes]').focus();
+  });
+}
+
 async function saveScore(id){
   const a = document.querySelector(`[data-a="${id}"]`);
   const b = document.querySelector(`[data-b="${id}"]`);
@@ -382,6 +488,8 @@ async function saveScore(id){
   if (Number.isNaN(va) || Number.isNaN(vb)) {
     return alert('Впиши обидва числа');
   }
+  const m = S.my.find(x => x.match_id === id);
+  if (m && !await askConfirm(m, va, vb)) return;
   // ⚠️ Шлемо «мої голи / голи суперника» і про порядок пари не знаємо
   // взагалі — розворот робить база (psl_propose_my_score, файл 246).
   // Перевертати в JS означало б повторювати цю логіку в кожному екрані,
@@ -473,10 +581,16 @@ async function viewAll(){
 async function viewAdmin(){
   $('view').innerHTML = `
     <div class="card">
-      <h2>Склад і розклад</h2>
+      <h2>Склад сезону</h2>
+      <div id="ad-roster" class="spin">Вантажу склад…</div>
+    </div>
+    <div class="card">
+      <h2>Додати учасника</h2>
       <p class="dim" style="font-size:14px">
-        Додати учасника: пошта + ім'я. Він з'явиться у складі одразу, ще до
-        першого входу — щоб коло можна було збудувати, не чекаючи всіх.</p>
+        Пошта + ім'я. Він з'явиться у складі одразу, ще до
+        першого входу — щоб коло можна було збудувати, не чекаючи всіх.
+        ⚠️ Якщо людина вже є у складі, введи її ім'я <b>точно так само</b> —
+        тоді пошта ляже на наявного, а не створить другого.</p>
       <input type="email" id="ad-email" placeholder="пошта">
       <input type="text" id="ad-name" placeholder="ім'я в таблиці">
       <button class="primary" id="ad-add">Додати учасника</button>
@@ -501,6 +615,7 @@ async function viewAdmin(){
     if (error) { console.error(error); return msg($('ad-msg'), error.message); }
     msg($('ad-msg'), `Додано: ${name}`, 'ok');
     $('ad-email').value = ''; $('ad-name').value = '';
+    await renderAdminRoster();
   };
 
   $('ad-gen').onclick = async () => {
@@ -508,7 +623,86 @@ async function viewAdmin(){
     if (error) { console.error(error); return msg($('ad-gen-msg'), error.message); }
     msg($('ad-gen-msg'), data === 0 ? 'Нових пар немає — розклад уже повний'
                                     : `Додано матчів: ${data}`, 'ok');
+    await renderAdminRoster();
   };
+
+  await renderAdminRoster();
+}
+
+// ---------------------------------------------------------------------
+//  Склад: хто є, у кого яка пошта, кого прибрати.
+//  Патерн і кириличні назви колонок — з адмінки BoBet (файл 52/56/58),
+//  щоб два кабінети не розʼїжджались у тому самому за змістом екрані.
+// ---------------------------------------------------------------------
+async function renderAdminRoster(){
+  const host = $('ad-roster');
+  if (!host) return;
+
+  const { data: rows, error } = await sb.rpc('psl_admin_roster', {
+    p_season: S.season.id
+  });
+  if (error) { host.className = ''; host.innerHTML =
+    `<div class="msg err">${esc(error.message)}</div>`; return; }
+
+  host.className = '';
+  host.innerHTML = !rows || !rows.length
+    ? '<p class="dim">У сезоні ще нікого немає.</p>'
+    : rows.map(p => {
+        const nm = p["імʼя"], em = p['пошта'] || '';
+        // «зіграно» — саме підтверджені: людину з такими матчами база
+        // на видалення не віддасть, і краще сказати це заздалегідь.
+        const played = Number(p['зіграно']) || 0;
+        return `<div style="border-bottom:1px solid var(--line);padding:10px 0">
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span style="flex:1 1 160px">${esc(nm)}${p['адмін'] ? ' · адмін' : ''}
+              <span class="dim" style="font-size:13px">${
+                p['заходив'] ? '' : ' · ще не заходив'} · матчів ${p['матчів']}${
+                played ? `, зіграно ${played}` : ''}</span></span>
+            <button class="ghost" data-rrm="${esc(nm)}"
+              style="padding:6px 12px;font-size:14px">прибрати</button>
+          </div>
+          <div style="display:flex;gap:6px;margin-top:7px">
+            <input type="email" data-em="${esc(nm)}" value="${esc(em)}"
+              placeholder="пошти немає" style="flex:1">
+            <button class="ghost" data-emsave="${esc(nm)}"
+              style="padding:6px 12px;font-size:14px;white-space:nowrap">зберегти</button>
+          </div></div>`;
+      }).join('');
+
+  host.querySelectorAll('[data-emsave]').forEach(btn => btn.onclick = async () => {
+    const name = btn.dataset.emsave;
+    const val  = (host.querySelector(`[data-em="${CSS.escape(name)}"]`)?.value || '').trim();
+    if (!val) return alert('Порожня пошта. Щоб прибрати людину — кнопка «прибрати».');
+    if (!confirm(`Пошта «${name}» → ${val}\n\n` +
+                 'Якщо стара пошта була і людина під нею заходила, привʼязку ' +
+                 'буде замінено: далі вона заходить новою. Матчі й рахунки ' +
+                 'лишаться на місці.')) return;
+    btn.disabled = true;
+    const { data, error } = await sb.rpc('psl_admin_set_email', {
+      p_season: S.season.id, p_name: name, p_email: val
+    });
+    btn.disabled = false;
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+    await renderAdminRoster();
+  });
+
+  host.querySelectorAll('[data-rrm]').forEach(btn => btn.onclick = async () => {
+    const name = btn.dataset.rrm;
+    // ⚠️ Формулювання навмисно різке: у PSL матч належить ДВОМ, і
+    // видалення людини забирає її матчі каскадом. База не віддасть
+    // того, у кого є матчі з рахунком, але порожні пари зникнуть.
+    if (!confirm(`Прибрати ${name} із сезону?\n\n` +
+                 'Разом з ним зникнуть усі його НЕЗІГРАНІ матчі. ' +
+                 'Якщо є хоч один матч із внесеним рахунком — база відмовить, ' +
+                 'бо це стерло б і результат суперника.')) return;
+    const { data, error } = await sb.rpc('psl_admin_remove_player', {
+      p_season: S.season.id, p_name: name
+    });
+    if (error) return alert('Помилка: ' + error.message);
+    alert(data);
+    await renderAdminRoster();
+  });
 }
 
 // =====================================================================
