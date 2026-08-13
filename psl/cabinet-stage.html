@@ -581,6 +581,14 @@ async function viewAll(){
 async function viewAdmin(){
   $('view').innerHTML = `
     <div class="card">
+      <h2>Чекають рішення</h2>
+      <p class="dim" style="font-size:14px">
+        Матчі, де рахунок внесли, але друга сторона ще не підтвердила.
+        <b>Спірні</b> (рахунок уже перекидали) стоять угорі — вони самі
+        не розсмокчуться.</p>
+      <div id="ad-stuck" class="spin">Дивлюсь, що зависло…</div>
+    </div>
+    <div class="card">
       <h2>Склад сезону</h2>
       <div id="ad-roster" class="spin">Вантажу склад…</div>
     </div>
@@ -626,7 +634,76 @@ async function viewAdmin(){
     await renderAdminRoster();
   };
 
+  await renderAdminStuck();
   await renderAdminRoster();
+}
+
+// ---------------------------------------------------------------------
+//  Що зависло. Підвислий матч не кричить: він просто не потрапляє в
+//  таблицю, а той, хто вніс рахунок, вважає питання закритим. На 132
+//  матчах знайти таке очима неможливо — звідси окремий блок (251).
+// ---------------------------------------------------------------------
+async function renderAdminStuck(){
+  const host = $('ad-stuck');
+  if (!host) return;
+
+  const { data: rows, error } = await sb.rpc('psl_admin_stuck', {
+    p_season: S.season.id
+  });
+  if (error) { host.className = ''; host.innerHTML =
+    `<div class="msg err">${esc(error.message)}</div>`; return; }
+
+  host.className = '';
+  if (!rows || !rows.length) {
+    host.innerHTML = '<p class="dim">Нічого не висить — усе або зіграно, або ще попереду.</p>';
+    return;
+  }
+
+  host.innerHTML = rows.map(r => {
+    const hot = r['спірний'];
+    return `<div class="match${hot ? ' waiting' : ''}" data-stuck="${r['матч']}">
+      <div class="who">
+        <b>${esc(r['пара'])}</b> <span class="tag">${esc(r['етап'])}</span>
+        ${hot ? '<span class="tag wait">спірний</span>' : ''}
+        <div class="dim" style="font-size:13px;margin-top:3px">
+          вніс ${esc(r['вніс'])} · висить ${r['днів']} дн.${
+            hot ? ` · версії: ${esc(r['історія'])}` : ''}</div>
+      </div>
+      <div class="score">${esc(r['рахунок'])}</div>
+      <div class="acts">
+        <button class="ghost" data-accept="${r['матч']}"
+          style="padding:6px 12px;font-size:14px">затвердити</button>
+        <button class="ghost" data-reset="${r['матч']}"
+          style="padding:6px 12px;font-size:14px">скинути</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // «Затвердити» = прийняти рахунок, який зараз стоїть, владою адміна.
+  // Кличемо psl_admin_set_score тими самими цифрами: сам матч уже їх
+  // тримає, бракує лише підтвердження другої сторони.
+  host.querySelectorAll('[data-accept]').forEach(btn => btn.onclick = async () => {
+    const id = btn.dataset.accept;
+    const r  = rows.find(x => x['матч'] === id);
+    const [a, b] = String(r['рахунок']).split(':').map(s => parseInt(s, 10));
+    if (Number.isNaN(a) || Number.isNaN(b)) return alert('У матчі немає рахунку');
+    if (!confirm(`Затвердити ${r['пара']} — ${r['рахунок']}?\n\n` +
+                 'Матч піде в таблицю без підтвердження другої сторони.')) return;
+    const { error } = await sb.rpc('psl_admin_set_score', {
+      p_match: id, p_score_a: a, p_score_b: b });
+    if (error) return alert('Помилка: ' + error.message);
+    await renderAdminStuck();
+  });
+
+  host.querySelectorAll('[data-reset]').forEach(btn => btn.onclick = async () => {
+    const id = btn.dataset.reset;
+    const r  = rows.find(x => x['матч'] === id);
+    if (!confirm(`Скинути рахунок ${r['пара']}?\n\n` +
+                 'Матч знову стане незіграним, і вносити доведеться наново.')) return;
+    const { error } = await sb.rpc('psl_reset_score', { p_match: id });
+    if (error) return alert('Помилка: ' + error.message);
+    await renderAdminStuck();
+  });
 }
 
 // ---------------------------------------------------------------------
