@@ -57,6 +57,31 @@ a{color:var(--sky); text-decoration:none;}
    «PSuper League» — звичайним написанням. Інакше перемикач видно як
    дві різні кнопки, хоч це той самий елемент. */
 .league-switch{display:flex; justify-content:center; padding:0 16px 20px;}
+
+/* Кнопка кабінету. ⚠️ Сама розмітка приходить ПІДСТАНОВКОЮ з
+   build_data.py, і на бойовій сторінці її поки НЕМАЄ: кабінет існує
+   лише в стейджі (cabinet-test.html). Битого посилання на сайті бути
+   не має — тому кнопку не «ховаємо», а не малюємо взагалі. Коли
+   зʼявиться бойовий cabinet.html, вмикають CABINET_PROD.
+   ⚠️ Назву підстановки тут НЕ писати дослівно: заміна спрацює й у
+   коментарі, і всередину CSS потрапить HTML. Уже спіймався. */
+.cabinet-cta{display:flex; justify-content:center; padding:0 16px 22px;}
+.cabinet-cta a{
+  font-family:'Montserrat',sans-serif; font-size:13px; font-weight:700;
+  text-transform:uppercase; letter-spacing:0.04em;
+  color:var(--white); background:var(--blue); text-decoration:none;
+  padding:10px 20px; border-radius:22px; border:1px solid var(--blue);
+  display:inline-flex; align-items:center; gap:8px;
+}
+.cabinet-cta a:hover{background:var(--deep); border-color:var(--deep);}
+.cabinet-cta .cab-note{
+  font-family:var(--f-num); font-size:12px; color:var(--muted);
+  margin-left:10px; align-self:center;
+}
+@media (max-width:520px){
+  .cabinet-cta{flex-direction:column; align-items:center; gap:6px;}
+  .cabinet-cta .cab-note{margin-left:0;}
+}
 .league-track{
   position:relative; display:flex; width:100%; max-width:340px;
   border:1px solid var(--line); border-radius:24px;
@@ -310,6 +335,11 @@ td.name,th.name{text-align:left;}
     <button type="button" class="league-opt" onclick="location.href='../test.html'">BoBet</button>
     <button type="button" class="league-opt active" aria-current="true">PSuper League</button>
   </div>
+</div>
+
+<div class="cabinet-cta">
+  <a href="../cabinet-test.html">🎮 Мій кабінет</a>
+  <span class="cab-note">Season 4 · внести рахунок</span>
 </div>
 
 <div class="wrap">
