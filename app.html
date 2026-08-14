@@ -23,7 +23,11 @@
     color:var(--text); font-family:'Onest',sans-serif; min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1240px;margin:0 auto;padding:0 16px 120px;}
+  /* ⚠️ 1240 → 1440 (14.08.2026, прохання Богдана «місце ще є»). Друга
+     стеля — вікно модалки в test.html/index.html (`#cabinet-shell`);
+     самої цієї цифри мало. На 13" нічого не псує: max-width це стеля, а
+     не фіксована ширина — вужче вікно кабінет просто займе повністю. */
+  .wrap{max-width:1440px;margin:0 auto;padding:0 16px 120px;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   .grotesk{font-family:'Montserrat',sans-serif;}
 
@@ -170,6 +174,54 @@
   .card.tight{padding:12px;}
   h2{font-family:'Montserrat',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
   .dim{color:var(--text-dim);font-size:15px;line-height:1.5;}
+  /* ⚠️ Стеля довжини рядка для суцільного тексту (14.08.2026, разом із
+     розширенням до 1440). Таблиці мусять користуватись усією шириною, а
+     абзаци — ні: на 1440 пояснення в News & Press і в правилах ішли
+     рядками під 170 символів, і око губило початок наступного. Чіпає
+     ЛИШЕ <p> усередині вмісту — на таблиці, картки й кнопки не впливає. */
+  #view p{max-width:92ch;}
+
+  /* ---------- ALL GAMES ----------
+     Борд із сайту, вставлений сторінкою (див. viewGames). Висота — «до
+     низу екрана»: таблиця етапу довга (23 матчі в серпні), і гортається
+     вона ВСЕРЕДИНІ цієї рамки. Саме тому там працює прилипла шапка —
+     вона клеїться до верху рамки, а не до сторінки кабінету.
+     ⚠️ Точну висоту ставить JS (`fitBoardFrame`) — тут лише запасна на
+     випадок, якщо скрипт не встиг відпрацювати. */
+  #board-frame{
+    display:block; width:100%; border:0; border-radius:12px;
+    height:calc(100vh - 380px); min-height:440px;
+    background:var(--bg);
+  }
+  body.tab-games .wrap{padding-bottom:16px;}
+
+  /* ===================================================================
+     ЯК ВИКОРИСТОВУЄТЬСЯ ШИРИНА 1440 (14.08.2026)
+
+     ⚠️ ІСТОРІЯ РІШЕННЯ, ЩОБ НЕ ХОДИТИ ЦИМ КОЛОМ УДРУГЕ. Спершу я звузив
+     стовпець вкладки (`#view`) до 1120px по центру — щоб форми й списки
+     не тягнулись «сильно справа й сильно зліва». Богдан подивився на
+     живому кабінеті й сказав: НІ, «розведи їх як зараз на проді» —
+     тобто вміст має займати всю ширину, як без звуження. Звуження
+     `#view` ПРИБРАНО повністю: списки дуелей/стилів/MVP знову йдуть на
+     всю ширину, значення стоять біля правого краю рівним стовпчиком.
+
+     Лишились тільки НЕШКІДЛИВІ збільшення — розмір тексту й центрування
+     САМОЇ форми рахунку. Вони ширину блоків не міняють, тож питання
+     «сильно справа/зліва» не повертають.
+     =================================================================== */
+  @media(min-width:1200px){
+    /* Форма рахунку: назви команд ближче до центру й помітно більші —
+       саме на них дивишся, коли вписуєш рахунок. Це центрування САМОЇ
+       пари назв (не всієї вкладки), тож решта блоків лишається на всю
+       ширину. */
+    .match-teams{max-width:780px;margin-left:auto;margin-right:auto;}
+    .team{font-size:21px;}
+
+    /* Текст на крок більший — місце дозволяє. */
+    table{font-size:17px;}
+    .rev-line{font-size:16px;}
+  }
 
   /* ---------- DEADLINE ---------- */
   .deadline{
@@ -295,7 +347,26 @@
   th{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
-  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;}
+  /* ⚠️ nowrap — не косметика: без нього «2 048 ₴» ламалось на два рядки,
+     сума окремо, гривня окремо. Числа не переносяться ніде й ніколи. */
+  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;white-space:nowrap;}
+
+  /* ⚠️ ТАБЛИЦІ ЗАЛІКУ Й ПРИЗОВИХ — фіксована розкладка (14.08.2026).
+     Богдан: «можеш більше місця для колонок взяти, місце ж є ліворуч».
+     Було: імʼя width:100% забирало весь залишок, і цифри тулились до
+     правого краю, а пів-таблиці стояло порожнє. Стало: `fixed` +
+     частка для імені, решта колонок ділить залишок ПОРІВНУ й
+     розходиться по всій ширині — рівно як борд на сайті, який
+     виглядає добре. Кількість цифрових колонок різна (етап 8, General
+     6, ще й ₴ буває) — при `fixed` рахувати нічого не треба, браузер
+     ділить залишок сам. */
+  table.lb-table{table-layout:fixed;}
+  table.lb-table th:nth-child(1){width:5%;}
+  table.lb-table th:nth-child(2){width:5%;}
+  table.lb-table th:nth-child(3){width:24%;}
+  /* У призовій таблиці колонка з імʼям — ПЕРША, тож свої частки. */
+  table.prize-table{table-layout:fixed;}
+  table.prize-table th:nth-child(1){width:22%;}
   .medal{font-size:16px;}
 
   /* ---------- CHECKS ---------- */
@@ -850,6 +921,7 @@ function renderTabs(){
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
+        ['games',   'All Games'],
         ['press',   'News & Press'],
         ['board',   'Leaderboard & Prize'],   // правіше за News & Press — рішення Богдана
       ];
@@ -901,10 +973,22 @@ async function go(tab){
     : [];
 
   S.tab = tab;
+  // ⚠️ Клас вкладки на <body> — щоб CSS міг розводити ДВА різні типи
+  // екранів (14.08.2026, після переходу на 1440):
+  //   · таблиці й борд — на всю ширину, цифрам це на користь;
+  //   · форми та списки «підпис ліворуч / поле праворуч» — навпаки,
+  //     вужчою смугою по центру: розтягнуті на 1400px вони читаються
+  //     гірше, ніж були на 1240 (Богдан: «щоб не було прям сильно
+  //     справа та сильно зліва»).
+  // Заразом на All Games гортається таблиця ВСЕРЕДИНІ рамки, а сторінка
+  // кабінету стоїть — звичайний нижній відступ у 120px додав би їй власну
+  // смугу прокрутки на порожньому місці, тобто дві смуги одночасно.
+  document.body.className = 'tab-' + tab;
   renderTabs();
   if (!sameTab) $('view').innerHTML = '<div class="spin">завантаження…</div>';
   try {
     if (tab === 'matches') await viewMatches();
+    else if (tab === 'games') await viewGames();
     else if (tab === 'boosts') await viewBoosts();
     else if (tab === 'bonus') await viewBonus();
     else if (tab === 'press') await viewPress();
@@ -1472,11 +1556,11 @@ function renderRivalBox(deadlinePassed, open){
           <span class="mono dim">${rivalDecidingTotals[name]}</span>
         </div>`).join('');
     inner += `
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
       </div>
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Очки за вікенд (матчі + стиль) — саме це вирішує дуелі</div>
         ${rivalRankingHtml}
       </div>`;
@@ -1536,7 +1620,7 @@ function renderRivalBox(deadlinePassed, open){
         рахуються вгадані точні рахунки; порівну і тут — MVP стають усі,
         хто ділить перше місце, і кожен отримує повні очки.
       </div>
-      ${rankingHtml ? `<div style="margin-top:4px">${rankingHtml}</div>` : ''}
+      ${rankingHtml ? `<div class="wk-list" style="margin-top:4px">${rankingHtml}</div>` : ''}
       <details class="bex" style="margin-top:8px">
         <summary>Як це рахується — приклади</summary>
         <div>${esc(
@@ -1753,7 +1837,7 @@ function renderStyleBox(locked, open){
               r.capped ? ` <span class="dim" style="font-size:13px">(зі ${r.raw_points})</span>` : ''}</div>
         </div>`).join('');
     inner += `
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
         ${rowsHtml}
       </div>`;
@@ -2374,9 +2458,19 @@ async function viewBoosts(){
     .maybeSingle();
   const locked = !!(ds && ds.confirmed_at);
 
-  $('view').innerHTML = locked
-    ? '<div id="pane-stock"></div><div id="pane-draft"></div>'
-    : '<div id="pane-draft"></div><div id="pane-stock"></div>';
+  // ⚠️ ОБИДВА БЛОКИ МАЛЮЮТЬСЯ ПРИХОВАНИМИ І ПОКАЗУЮТЬСЯ РАЗОМ.
+  // Богдан 14.08.2026: «вкладку Boosts перевір, там зіскакує на початку».
+  // Причина: блоки вантажаться по черзі, кожен своїм запитом, і сторінка
+  // між ними встигала перебудуватись — виміряно, висота стрибала 1465 →
+  // 1140 px уже після появи вмісту. Тобто людина бачила текст, а він
+  // з-під неї від'їжджав. Поки не готові обидва — показуємо спінер.
+  // ⚠️ display:none ставиться САМЕ на панель, а не на її вміст:
+  // `renderInto` перейменовує id і переписує innerHTML усередині, а
+  // інлайновий стиль самої панелі це переживає.
+  const v = $('view');
+  v.innerHTML = '<div class="spin">завантаження…</div>' + (locked
+    ? '<div id="pane-stock" style="display:none"></div><div id="pane-draft" style="display:none"></div>'
+    : '<div id="pane-draft" style="display:none"></div><div id="pane-stock" style="display:none"></div>');
 
   if (locked) {
     await renderInto('pane-stock', viewStock);
@@ -2385,6 +2479,13 @@ async function viewBoosts(){
     await renderInto('pane-draft', viewDraft);
     await renderInto('pane-stock', viewStock);
   }
+
+  const spin = v.querySelector('.spin');
+  if (spin) spin.remove();
+  ['pane-draft', 'pane-stock'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
 
   // Крапка «є оновлення» (файл 147). У Boosts немає чіпів по вікендах
   // (склад — один на весь етап, а «використано» видно тут же, без
@@ -2591,6 +2692,92 @@ function lbDeltaHtml(d){
   return `<span class="dim">=</span>`;
 }
 
+// =====================================================================
+//  ALL GAMES — усі матчі етапу з прогнозами всіх учасників
+//
+//  ⚠️ ЦЕ НЕ ДРУГА КОПІЯ БОРДА, А САМ БОРД ІЗ САЙТУ, вставлений сюди
+//  сторінкою (`test.html?board=<етап>` у режимі `body.embed` — без
+//  логотипа, шапки й навігації). Рішення Богдана 14.08.2026 з трьох
+//  варіантів: перенести код борда в кабінет означало б ~1500 рядків
+//  копії, яка мовчки розійшлася б із сайтом при першій же правці
+//  самого борда (як-от прилипла шапка того ж дня).
+//
+//  ⚠️ Сторінка всередині ходить у базу ПІД АНОНІМОМ — вона публічна й
+//  сесії кабінету не бачить. Наслідок, погоджений із Богданом: чужі
+//  прогнози до відкриття вікенда не видно (RLS), і свої власні теж —
+//  свої дивись у «Predictions & Results». Домовленість була буквально
+//  «рівно як зараз на сайті».
+//
+//  ⚠️ Адреса рахується з імені ФАЙЛУ КАБІНЕТУ, а не зашита. Інакше
+//  промоут `app-test.html` → `app.html` лишив би в бойовому кабінеті
+//  посилання на тестову сторінку — і `promote.py` цього не спіймав би,
+//  бо він звіряє лише свій список відомих відмінностей (бейдж STAGE).
+//  ⚠️ Умова саме «файл називається рівно app.html», а не «в імені є
+//  -test»: бойовий кабінет один, а не-бойових кілька — `app-test.html`
+//  і `preview_app.html` (локальний передпоказ, tools/mkpreview_app.py).
+//  За правилом «є -test» передпоказ вантажив би PROD-сторінку.
+// =====================================================================
+async function viewGames(){
+  const src = (/\/app\.html$/.test(location.pathname) ? 'index.html' : 'test.html')
+            + '?board=' + encodeURIComponent(S.stage.key);
+  $('view').innerHTML = `
+    <p class="dim" style="margin:0 0 10px;font-size:13px">
+      Прогнози всіх учасників, результати й бусти — той самий борд, що на
+      сайті. Чужі прогнози з'являються, коли вікенд відкривається; доти там
+      прочерки. Свої — у вкладці «Predictions&nbsp;&amp;&nbsp;Results».
+    </p>
+    <iframe id="board-frame" title="Борд етапу ${esc(S.stage.title)}" src="${esc(src)}"></iframe>`;
+  // ⚠️ Слухач вішаємо КОДОМ, а не атрибутом `onload=` у розмітці: скрипт
+  // кабінету — модуль, його функції не лежать у `window`, і атрибут падав
+  // би з «watchBoardFrame is not defined» (спіймано на передпоказі).
+  $('board-frame').addEventListener('load', ev => watchBoardFrame(ev.target));
+  fitBoardFrame();
+}
+
+/* Борд усередині малюється ПІСЛЯ запитів у базу, тобто вже після
+   `onload` рамки. Тому на вузькому екрані (де висота = висоті вмісту)
+   стежимо за вмістом далі: сторінка своя ж, того самого походження, тож
+   спостерігач ставиться напряму, без листування між вікнами.
+   ⚠️ Усе в try/catch: якщо доступ до вмісту колись зникне (інший домен),
+   рамка просто лишиться фіксованої висоти — вкладка не поламається. */
+function watchBoardFrame(f){
+  try{
+    const d = f.contentDocument;
+    if(d && d.body && window.ResizeObserver) new ResizeObserver(fitBoardFrame).observe(d.body);
+  }catch(e){}
+  fitBoardFrame();
+}
+
+/* Рамка борда розтягується рівно до низу екрана, щоб не було ДВОХ смуг
+   прокрутки одночасно: гортається таблиця всередині, сторінка кабінету
+   під нею стоїть.
+   ⚠️ Висота рахується, а не задається в CSS: над рамкою стоять шапка,
+   чіпи етапів, вкладки й підпис, і їхня сумарна висота гуляє від ширини
+   вікна (вкладки переносяться на другий рядок).
+   ⚠️ `rect.top + scrollY` — позиція в ДОКУМЕНТІ, не у вікні: інакше
+   рамка виходила б різної висоти залежно від того, чи сторінка була
+   прокручена в момент відкриття вкладки. */
+function fitBoardFrame(){
+  const f = $('board-frame');
+  if(!f) return;
+  // ⚠️ Вузький екран (той самий поріг 1101px, що й у клею шапки на
+  // борді): клеїти там нічого, а окреме вікно прокрутки всередині
+  // сторінки лише заважає — на 390px рамка виходила 440px заввишки, тобто
+  // чотири рядки. Тому там рамка росте під вміст, і прокрутка одна.
+  if(window.innerWidth < 1101){
+    try{
+      const d = f.contentDocument;
+      if(d && d.documentElement){
+        f.style.height = Math.max(440, d.documentElement.scrollHeight) + 'px';
+        return;
+      }
+    }catch(e){}
+  }
+  const top = f.getBoundingClientRect().top + window.scrollY;
+  f.style.height = Math.max(440, Math.round(window.innerHeight - top - 16)) + 'px';
+}
+window.addEventListener('resize', fitBoardFrame);
+
 async function viewBoard(){
   // ДВА РІЗНІ БОРДИ, КОЖЕН НА СВОЄМУ МІСЦІ (рішення Богдана 11.08.2026):
   //   • етап (August/September/October) — розклад ПО МЕХАНІКАХ:
@@ -2751,7 +2938,7 @@ async function viewBoard(){
     <div class="card" style="margin-top:14px">
       <h2>Призові <span class="dim" style="font-weight:400;font-size:13px">за поточного розкладу</span></h2>
       <div style="overflow-x:auto">
-      <table style="min-width:560px"><thead><tr>
+      <table class="prize-table" style="min-width:560px"><thead><tr>
         <th>Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
         ${mh('За очки', 'частка від усіх')}${mh('За точні', 'частка від усіх')}
         ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом ₴')}
@@ -2787,7 +2974,16 @@ async function viewBoard(){
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
     <div style="overflow-x:auto">
-    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
+    <!-- ⚠️ width:1% / width:100% — той самий прийом, що в таблиці MVP &
+         Rivals нижче, і з тієї ж причини: зайву ширину браузер ділить між
+         УСІМА колонками порівну, тож після 1440 між «Учасник» і цифрами
+         зяяла б діра. Ширина 1% означає «стиснути до вмісту», а все
+         вільне місце забирає колонка з імʼям.
+         ⚠️ У цьому коментарі НЕ МОЖНА зворотних лапок: він живе всередині
+         JS-шаблону, і перша ж така лапка обриває рядок — сторінка падає
+         з «Missing } in template expression» і кабінет не відкривається
+         взагалі. Спіймано рівно на цьому 14.08.2026. -->
+    <table class="lb-table" style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
