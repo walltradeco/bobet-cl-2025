@@ -198,6 +198,47 @@
   }
   body.tab-games .wrap{padding-bottom:16px;}
 
+  /* ===================================================================
+     ЯК ВИКОРИСТОВУЄТЬСЯ ШИРИНА 1440 (14.08.2026)
+     Богдан, побачивши кабінет на новій ширині: «щоб не було прям сильно
+     справа та сильно зліва», «збільшити трішки тексти», «щоб дані були
+     більш читабельними».
+
+     Правило одне, і воно розводить два різні типи екранів:
+       · ТАБЛИЦІ Й БОРД — на всю ширину. Там багато колонок, і зайве
+         місце йде їм на користь (див. `table-layout:fixed` вище);
+       · ФОРМИ ТА СПИСКИ «підпис ліворуч / поле праворуч» — навпаки,
+         вужчою смугою по центру. Розтягнуті на 1400px вони читаються
+         ГІРШЕ, ніж були на 1240: очі мандрують через пів-екрана від
+         назви до поля.
+     Вкладки News & Press і All Games не чіпаємо взагалі — Богдан прямо
+     сказав, що там площа використана добре.
+     =================================================================== */
+  @media(min-width:1200px){
+    /* ⚠️ Звужується ВЕСЬ стовпець вкладки (`#view`), а не окремі картки.
+       Перша спроба чіпала `.card` — і вийшло гірше за вихідне: банер
+       дедлайну й чіпи вікендів лишились на всю ширину, а картки під
+       ними стали вужчими, тобто ліві краї перестали збігатись. Одна
+       смуга на весь екран виглядає цільно. */
+    body.tab-matches   #view,
+    body.tab-mvprivals #view,
+    body.tab-bonus     #view,
+    body.tab-boosts    #view,
+    body.tab-admin     #view{max-width:1120px;margin-left:auto;margin-right:auto;}
+
+    /* Матч: назви команд ближче до центру й помітно більші — саме те,
+       на що дивишся, коли вписуєш рахунок. Смуга вужча за поле вводу
+       не стане: воно й далі по центру картки. */
+    .match-teams{max-width:780px;margin-left:auto;margin-right:auto;}
+    .team{font-size:21px;}
+    .match-when,.comp-tag{font-size:13px;}
+
+    /* Текст на крок більший — місце дозволяє. */
+    table{font-size:17px;}
+    .dim{font-size:16px;}
+    .rev-line{font-size:16px;}
+  }
+
   /* ---------- DEADLINE ---------- */
   .deadline{
     display:flex;justify-content:space-between;align-items:center;
@@ -322,12 +363,26 @@
   th{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
-  /* ⚠️ nowrap — не косметика: після 1440 колонка з іменем забирає все
-     вільне місце (width:100%), і цифрові колонки стискаються до вмісту.
-     Без цього «2 048 ₴» ламалось на два рядки — сума окремо, гривня
-     окремо. Числа не переносяться ніде й ніколи. */
-  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;white-space:nowrap;
-    padding-left:18px;}
+  /* ⚠️ nowrap — не косметика: без нього «2 048 ₴» ламалось на два рядки,
+     сума окремо, гривня окремо. Числа не переносяться ніде й ніколи. */
+  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;white-space:nowrap;}
+
+  /* ⚠️ ТАБЛИЦІ ЗАЛІКУ Й ПРИЗОВИХ — фіксована розкладка (14.08.2026).
+     Богдан: «можеш більше місця для колонок взяти, місце ж є ліворуч».
+     Було: імʼя width:100% забирало весь залишок, і цифри тулились до
+     правого краю, а пів-таблиці стояло порожнє. Стало: `fixed` +
+     частка для імені, решта колонок ділить залишок ПОРІВНУ й
+     розходиться по всій ширині — рівно як борд на сайті, який
+     виглядає добре. Кількість цифрових колонок різна (етап 8, General
+     6, ще й ₴ буває) — при `fixed` рахувати нічого не треба, браузер
+     ділить залишок сам. */
+  table.lb-table{table-layout:fixed;}
+  table.lb-table th:nth-child(1){width:5%;}
+  table.lb-table th:nth-child(2){width:5%;}
+  table.lb-table th:nth-child(3){width:24%;}
+  /* У призовій таблиці колонка з імʼям — ПЕРША, тож свої частки. */
+  table.prize-table{table-layout:fixed;}
+  table.prize-table th:nth-child(1){width:22%;}
   .medal{font-size:16px;}
 
   /* ---------- CHECKS ---------- */
@@ -935,10 +990,17 @@ async function go(tab){
     : [];
 
   S.tab = tab;
-  // На вкладці All Games гортається таблиця ВСЕРЕДИНІ рамки, а сторінка
-  // кабінету стоїть. Звичайний нижній відступ у 120px додав би їй власну
-  // смугу прокрутки на порожньому місці — тобто дві смуги одночасно.
-  document.body.classList.toggle('tab-games', tab === 'games');
+  // ⚠️ Клас вкладки на <body> — щоб CSS міг розводити ДВА різні типи
+  // екранів (14.08.2026, після переходу на 1440):
+  //   · таблиці й борд — на всю ширину, цифрам це на користь;
+  //   · форми та списки «підпис ліворуч / поле праворуч» — навпаки,
+  //     вужчою смугою по центру: розтягнуті на 1400px вони читаються
+  //     гірше, ніж були на 1240 (Богдан: «щоб не було прям сильно
+  //     справа та сильно зліва»).
+  // Заразом на All Games гортається таблиця ВСЕРЕДИНІ рамки, а сторінка
+  // кабінету стоїть — звичайний нижній відступ у 120px додав би їй власну
+  // смугу прокрутки на порожньому місці, тобто дві смуги одночасно.
+  document.body.className = 'tab-' + tab;
   renderTabs();
   if (!sameTab) $('view').innerHTML = '<div class="spin">завантаження…</div>';
   try {
@@ -2876,8 +2938,8 @@ async function viewBoard(){
     <div class="card" style="margin-top:14px">
       <h2>Призові <span class="dim" style="font-weight:400;font-size:13px">за поточного розкладу</span></h2>
       <div style="overflow-x:auto">
-      <table style="min-width:560px"><thead><tr>
-        <th style="width:100%">Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
+      <table class="prize-table" style="min-width:560px"><thead><tr>
+        <th>Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
         ${mh('За очки', 'частка від усіх')}${mh('За точні', 'частка від усіх')}
         ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом ₴')}
       </tr></thead>
@@ -2921,7 +2983,7 @@ async function viewBoard(){
          JS-шаблону, і перша ж така лапка обриває рядок — сторінка падає
          з «Missing } in template expression» і кабінет не відкривається
          взагалі. Спіймано рівно на цьому 14.08.2026. -->
-    <table style="min-width:520px"><thead><tr><th style="width:1%">№</th><th style="width:1%"></th><th style="width:100%">Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
+    <table class="lb-table" style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
