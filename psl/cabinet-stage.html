@@ -160,13 +160,23 @@
     /* ⚠️ Звужуємо весь стовпець вкладки, а не окремі картки — інакше
        заголовки груп («Ще не зіграно — 20») лишаються на всю ширину, а
        картки під ними вужчі, і ліві краї розходяться. */
-    /* «Мої матчі» — вужче за решту: у рядку лише підпис «1-й матч» і два
-       поля з кнопкою, і на 1120px між ними лишалась порожня прірва. */
-    body.tab-my #view{max-width:860px;margin-left:auto;margin-right:auto;}
-    /* Рядок матчу: підпис і поля мають бути поруч, а не по краях. */
-    body.tab-my #view .card{font-size:16px;}
+    /* ⚠️ Смуга ОДНАКОВА на всіх вкладках. 14.08.2026 спробували звузити
+       «Мої матчі» до 860px — Богдан: «навіщо ти аж так зменшив». Замість
+       звуження блоку працює інше: збільшити те, що ВСЕРЕДИНІ нього. */
+    body.tab-my #view,
     body.tab-all #view,
     body.tab-admin #view{max-width:1120px;margin-left:auto;margin-right:auto;}
+
+    /* Усередині блоку матчу все на крок більше — це головна робоча
+       форма кабінету, у неї вносять рахунки. */
+    .pair-head{font-size:18px;}
+    .leg{font-size:15px;min-width:86px;}
+    .sc-in{width:70px;padding:10px 8px;font-size:20px;}
+    .sc-lab{font-size:13px;}
+    .match .who{font-size:17px;}
+    .match .score{font-size:23px;}
+    .tag{font-size:12px;padding:3px 9px;}
+    .match button{font-size:15px;}
     table{font-size:16px;}
     .dim,.muted{font-size:15px;}
   }
