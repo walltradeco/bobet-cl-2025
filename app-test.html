@@ -220,11 +220,17 @@
        дедлайну й чіпи вікендів лишились на всю ширину, а картки під
        ними стали вужчими, тобто ліві краї перестали збігатись. Одна
        смуга на весь екран виглядає цільно. */
-    body.tab-matches   #view,
-    body.tab-mvprivals #view,
-    body.tab-bonus     #view,
-    body.tab-boosts    #view,
-    body.tab-admin     #view{max-width:1120px;margin-left:auto;margin-right:auto;}
+    /* ⚠️ `#view-outer` у списку — не зайве. `renderInto` (вкладка Boosts)
+       на час малювання ПЕРЕЙМЕНОВУЄ контейнери: зовнішній стає
+       `view-outer`, а панель усередині — `view`. Без цього імені зовнішній
+       блок на ті частки секунди лишався б без стелі й стрибав на всю
+       ширину. */
+    body.tab-matches   #view, body.tab-matches   #view-outer,
+    body.tab-mvprivals #view, body.tab-mvprivals #view-outer,
+    body.tab-bonus     #view, body.tab-bonus     #view-outer,
+    body.tab-boosts    #view, body.tab-boosts    #view-outer,
+    body.tab-admin     #view, body.tab-admin     #view-outer{
+      max-width:1120px;margin-left:auto;margin-right:auto;}
 
     /* Матч: назви команд ближче до центру й помітно більші — саме те,
        на що дивишся, коли вписуєш рахунок. Смуга вужча за поле вводу
@@ -233,10 +239,25 @@
     .team{font-size:21px;}
     .match-when,.comp-tag{font-size:13px;}
 
+    /* ⚠️ СПИСКИ ВІКЕНДА (дуелі · очки · стилі · MVP) — ще вужче за саму
+       вкладку. У кожному рядку лише «імʼя … значення», і навіть на смузі
+       1120px між ними лишалась порожня прірва (Богдан 14.08: «в самих
+       цих блоках можна ближче та більше»). Разом із цим більший шрифт —
+       це головні цифри вікенда, їх читають найчастіше. */
+    .wk-list{max-width:700px;}
+    .wk-list > div{font-size:17px;}
+    .wk-list > .dim{font-size:13px;}   /* підпис-заголовок лишається дрібним */
+
     /* Текст на крок більший — місце дозволяє. */
     table{font-size:17px;}
     .dim{font-size:16px;}
     .rev-line{font-size:16px;}
+
+    /* ⚠️ Пояснення під ЗАЛІКОМ — ширші за решту прози. Там мова про
+       колонки таблиці, яка сама на всю ширину, тож коротка смуга
+       обривала рядок задовго до її краю (Богдан: «текста можна
+       протягнути далі»). На вкладках-формах стеля лишається 92ch. */
+    body.tab-board #view p{max-width:132ch;}
   }
 
   /* ---------- DEADLINE ---------- */
@@ -1573,11 +1594,11 @@ function renderRivalBox(deadlinePassed, open){
           <span class="mono dim">${rivalDecidingTotals[name]}</span>
         </div>`).join('');
     inner += `
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Дуелі вікенда</div>
         ${rowsHtml}
       </div>
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Очки за вікенд (матчі + стиль) — саме це вирішує дуелі</div>
         ${rivalRankingHtml}
       </div>`;
@@ -1637,7 +1658,7 @@ function renderRivalBox(deadlinePassed, open){
         рахуються вгадані точні рахунки; порівну і тут — MVP стають усі,
         хто ділить перше місце, і кожен отримує повні очки.
       </div>
-      ${rankingHtml ? `<div style="margin-top:4px">${rankingHtml}</div>` : ''}
+      ${rankingHtml ? `<div class="wk-list" style="margin-top:4px">${rankingHtml}</div>` : ''}
       <details class="bex" style="margin-top:8px">
         <summary>Як це рахується — приклади</summary>
         <div>${esc(
@@ -1854,7 +1875,7 @@ function renderStyleBox(locked, open){
               r.capped ? ` <span class="dim" style="font-size:13px">(зі ${r.raw_points})</span>` : ''}</div>
         </div>`).join('');
     inner += `
-      <div style="margin-top:12px">
+      <div class="wk-list" style="margin-top:12px">
         <div class="dim" style="font-size:13px;letter-spacing:0.08em;text-transform:uppercase;margin-bottom:2px">Стилі вікенда</div>
         ${rowsHtml}
       </div>`;
@@ -2475,9 +2496,19 @@ async function viewBoosts(){
     .maybeSingle();
   const locked = !!(ds && ds.confirmed_at);
 
-  $('view').innerHTML = locked
-    ? '<div id="pane-stock"></div><div id="pane-draft"></div>'
-    : '<div id="pane-draft"></div><div id="pane-stock"></div>';
+  // ⚠️ ОБИДВА БЛОКИ МАЛЮЮТЬСЯ ПРИХОВАНИМИ І ПОКАЗУЮТЬСЯ РАЗОМ.
+  // Богдан 14.08.2026: «вкладку Boosts перевір, там зіскакує на початку».
+  // Причина: блоки вантажаться по черзі, кожен своїм запитом, і сторінка
+  // між ними встигала перебудуватись — виміряно, висота стрибала 1465 →
+  // 1140 px уже після появи вмісту. Тобто людина бачила текст, а він
+  // з-під неї від'їжджав. Поки не готові обидва — показуємо спінер.
+  // ⚠️ display:none ставиться САМЕ на панель, а не на її вміст:
+  // `renderInto` перейменовує id і переписує innerHTML усередині, а
+  // інлайновий стиль самої панелі це переживає.
+  const v = $('view');
+  v.innerHTML = '<div class="spin">завантаження…</div>' + (locked
+    ? '<div id="pane-stock" style="display:none"></div><div id="pane-draft" style="display:none"></div>'
+    : '<div id="pane-draft" style="display:none"></div><div id="pane-stock" style="display:none"></div>');
 
   if (locked) {
     await renderInto('pane-stock', viewStock);
@@ -2486,6 +2517,13 @@ async function viewBoosts(){
     await renderInto('pane-draft', viewDraft);
     await renderInto('pane-stock', viewStock);
   }
+
+  const spin = v.querySelector('.spin');
+  if (spin) spin.remove();
+  ['pane-draft', 'pane-stock'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = '';
+  });
 
   // Крапка «є оновлення» (файл 147). У Boosts немає чіпів по вікендах
   // (склад — один на весь етап, а «використано» видно тут же, без
