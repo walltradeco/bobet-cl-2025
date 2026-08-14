@@ -129,21 +129,45 @@
   th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
   th{font-family:var(--f-head);font-size:13px;color:var(--muted);font-weight:600;
     text-transform:uppercase;letter-spacing:0.05em;}
-  /* ⚠️ width:1% на цифрах — НЕ декорація (14.08.2026, після розширення
-     кабінету до 1440). Браузер інакше ділить зайву ширину МІЖ УСІМА
-     колонками порівну, і між «Гравець» та «І» зʼявляється діра на
-     пів-екрана. `1%` означає «стисни до вмісту», а всю решту місця
-     забирає колонка з імʼям (`th:not(.num){width:100%}` нижче).
-     Та сама пастка вже була в BoBet при переході на 1240. */
-  /* ⚠️ Разом із width:1% обовʼязково ширше поле: стиснуті «до вмісту»
-     однознакові колонки (І В Н П) інакше злипаються в суцільний рядок
-     цифр — на 1440 це видно одразу. */
-  td.num,th.num{text-align:right;font-family:var(--f-num);
-    width:1%;white-space:nowrap;padding-left:20px;padding-right:20px;}
-  table thead th:not(.num){width:100%;}
+  td.num,th.num{text-align:right;font-family:var(--f-num);white-space:nowrap;}
+
+  /* ⚠️ ТАБЛИЦЯ ЗАЛІКУ — фіксована розкладка (14.08.2026, після 1440).
+     Три спроби, і лише третя правильна:
+       1. як було — браузер ділить зайву ширину МІЖ УСІМА колонками
+          порівну, і між «Гравець» та «І» зяє діра на пів-екрана;
+       2. цифри `width:1%` — навпаки, злипаються в купку біля правого
+          краю, а ліворуч порожньо (Богдан: «місце ж є ліворуч»);
+       3. `table-layout:fixed` + частка для імені: решта колонок ділить
+          залишок ПОРІВНУ й розходиться по всій ширині. Саме так
+          влаштований борд на сайті, який виглядає добре.
+     ⚠️ Клас потрібен: `fixed` не можна вішати на всі таблиці кабінету —
+     у «Усі матчі» й в адмінці колонки різної природи. */
+  table.psl-standings{table-layout:fixed;}
+  table.psl-standings th:first-child{width:5%;}
+  table.psl-standings th:nth-child(2){width:28%;}
   /* Стеля довжини рядка для суцільного тексту — те саме, що в кабінеті
      BoBet: таблиці на всю ширину, абзаци вужчі. */
   #view p{max-width:92ch;}
+
+  /* ===================================================================
+     ШИРИНА 1440: таблиця користується всією, списки — ні (14.08.2026)
+     Богдан про цей самий кабінет: «можна трохи ближче зробити,
+     збільшити трішки тексти, щоб не було прям сильно справа та сильно
+     зліва». У «Моїх матчах» підпис «1-й матч» стояв ліворуч, а поля й
+     кнопка «Внести» — біля правого краю, через увесь екран.
+     =================================================================== */
+  @media(min-width:1200px){
+    /* ⚠️ Звужуємо весь стовпець вкладки, а не окремі картки — інакше
+       заголовки груп («Ще не зіграно — 20») лишаються на всю ширину, а
+       картки під ними вужчі, і ліві краї розходяться. */
+    /* «Мої матчі» — вужче за решту: у рядку лише підпис «1-й матч» і два
+       поля з кнопкою, і на 1120px між ними лишалась порожня прірва. */
+    body.tab-my #view{max-width:960px;margin-left:auto;margin-right:auto;}
+    body.tab-all #view,
+    body.tab-admin #view{max-width:1120px;margin-left:auto;margin-right:auto;}
+    table{font-size:16px;}
+    .dim,.muted{font-size:15px;}
+  }
   .tbl-scroll{overflow-x:auto;}
   tr.me td{background:rgba(14,165,233,0.10);}
 </style>
@@ -308,6 +332,11 @@ function renderTabs(){
 
 async function go(tab){
   S.tab = tab;
+  // Клас вкладки на <body> — щоб CSS розводив таблицю (на всю ширину)
+  // і списки матчів (вужчою смугою по центру). Те саме, що в кабінеті
+  // BoBet; причина та сама — після 1440 підпис і поле опинялись на
+  // протилежних краях екрана.
+  document.body.className = 'tab-' + tab;
   renderTabs();
   $('view').innerHTML = '<div class="spin">завантаження…</div>';
   if (tab === 'my')    return viewMy();
@@ -548,7 +577,7 @@ async function viewTable(){
   $('view').innerHTML = `
     <div class="card">
       <h2>${esc(S.season.title)} — таблиця</h2>
-      <div class="tbl-scroll"><table>
+      <div class="tbl-scroll"><table class="psl-standings">
         <thead><tr><th class="num">#</th><th>Гравець</th><th class="num">І</th>
           <th class="num">В</th><th class="num">Н</th><th class="num">П</th>
           <th class="num">Голи</th><th class="num">±</th><th class="num">Очки</th></tr></thead>
