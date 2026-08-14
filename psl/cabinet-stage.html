@@ -25,7 +25,9 @@
   html,body{margin:0;padding:0;}
   body{background:var(--bg);color:var(--grey);font-family:var(--f-body);
     font-size:16px;line-height:1.55;min-height:100vh;-webkit-text-size-adjust:100%;}
-  .wrap{max-width:1000px;margin:0 auto;padding:0 16px 100px;}
+  /* ⚠️ 1000 → 1440 (14.08.2026), як у кабінеті BoBet. Друга стеля —
+     вікно модалки (`#cabinet-shell` у psl-src/page.template.html). */
+  .wrap{max-width:1440px;margin:0 auto;padding:0 16px 100px;}
   .mono{font-family:var(--f-num);}
   .hide{display:none !important;}
   .dim{color:var(--muted);}
@@ -127,7 +129,21 @@
   th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
   th{font-family:var(--f-head);font-size:13px;color:var(--muted);font-weight:600;
     text-transform:uppercase;letter-spacing:0.05em;}
-  td.num,th.num{text-align:right;font-family:var(--f-num);}
+  /* ⚠️ width:1% на цифрах — НЕ декорація (14.08.2026, після розширення
+     кабінету до 1440). Браузер інакше ділить зайву ширину МІЖ УСІМА
+     колонками порівну, і між «Гравець» та «І» зʼявляється діра на
+     пів-екрана. `1%` означає «стисни до вмісту», а всю решту місця
+     забирає колонка з імʼям (`th:not(.num){width:100%}` нижче).
+     Та сама пастка вже була в BoBet при переході на 1240. */
+  /* ⚠️ Разом із width:1% обовʼязково ширше поле: стиснуті «до вмісту»
+     однознакові колонки (І В Н П) інакше злипаються в суцільний рядок
+     цифр — на 1440 це видно одразу. */
+  td.num,th.num{text-align:right;font-family:var(--f-num);
+    width:1%;white-space:nowrap;padding-left:20px;padding-right:20px;}
+  table thead th:not(.num){width:100%;}
+  /* Стеля довжини рядка для суцільного тексту — те саме, що в кабінеті
+     BoBet: таблиці на всю ширину, абзаци вужчі. */
+  #view p{max-width:92ch;}
   .tbl-scroll{overflow-x:auto;}
   tr.me td{background:rgba(14,165,233,0.10);}
 </style>
