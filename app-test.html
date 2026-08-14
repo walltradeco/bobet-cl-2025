@@ -23,7 +23,11 @@
     color:var(--text); font-family:'Onest',sans-serif; min-height:100vh;
     -webkit-text-size-adjust:100%;
   }
-  .wrap{max-width:1240px;margin:0 auto;padding:0 16px 120px;}
+  /* ⚠️ 1240 → 1440 (14.08.2026, прохання Богдана «місце ще є»). Друга
+     стеля — вікно модалки в test.html/index.html (`#cabinet-shell`);
+     самої цієї цифри мало. На 13" нічого не псує: max-width це стеля, а
+     не фіксована ширина — вужче вікно кабінет просто займе повністю. */
+  .wrap{max-width:1440px;margin:0 auto;padding:0 16px 120px;}
   .mono{font-family:'IBM Plex Mono',monospace;}
   .grotesk{font-family:'Montserrat',sans-serif;}
 
@@ -173,6 +177,12 @@
   .card.tight{padding:12px;}
   h2{font-family:'Montserrat',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
   .dim{color:var(--text-dim);font-size:15px;line-height:1.5;}
+  /* ⚠️ Стеля довжини рядка для суцільного тексту (14.08.2026, разом із
+     розширенням до 1440). Таблиці мусять користуватись усією шириною, а
+     абзаци — ні: на 1440 пояснення в News & Press і в правилах ішли
+     рядками під 170 символів, і око губило початок наступного. Чіпає
+     ЛИШЕ <p> усередині вмісту — на таблиці, картки й кнопки не впливає. */
+  #view p{max-width:92ch;}
 
   /* ---------- ALL GAMES ----------
      Борд із сайту, вставлений сторінкою (див. viewGames). Висота — «до
@@ -312,7 +322,12 @@
   th{font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--text-dim);
     text-transform:uppercase;letter-spacing:0.06em;text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);}
   td{padding:9px 6px;border-bottom:1px solid var(--line);}
-  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;}
+  /* ⚠️ nowrap — не косметика: після 1440 колонка з іменем забирає все
+     вільне місце (width:100%), і цифрові колонки стискаються до вмісту.
+     Без цього «2 048 ₴» ламалось на два рядки — сума окремо, гривня
+     окремо. Числа не переносяться ніде й ніколи. */
+  td.n{font-family:'IBM Plex Mono',monospace;font-weight:700;white-space:nowrap;
+    padding-left:18px;}
   .medal{font-size:16px;}
 
   /* ---------- CHECKS ---------- */
@@ -2862,7 +2877,7 @@ async function viewBoard(){
       <h2>Призові <span class="dim" style="font-weight:400;font-size:13px">за поточного розкладу</span></h2>
       <div style="overflow-x:auto">
       <table style="min-width:560px"><thead><tr>
-        <th>Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
+        <th style="width:100%">Учасник</th>${mh('Місця етапів', 'Aug · Sep · Oct')}${mh('General', 'місце в сезоні')}
         ${mh('За очки', 'частка від усіх')}${mh('За точні', 'частка від усіх')}
         ${mh('<span style="color:var(--gold)">MVP</span>')}${mh('⚔️')}${mh('Разом ₴')}
       </tr></thead>
@@ -2897,7 +2912,16 @@ async function viewBoard(){
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
     ${!data || !data.length ? '<p class="dim">Балів ще немає.</p>' : `
     <div style="overflow-x:auto">
-    <table style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
+    <!-- ⚠️ width:1% / width:100% — той самий прийом, що в таблиці MVP &
+         Rivals нижче, і з тієї ж причини: зайву ширину браузер ділить між
+         УСІМА колонками порівну, тож після 1440 між «Учасник» і цифрами
+         зяяла б діра. Ширина 1% означає «стиснути до вмісту», а все
+         вільне місце забирає колонка з імʼям.
+         ⚠️ У цьому коментарі НЕ МОЖНА зворотних лапок: він живе всередині
+         JS-шаблону, і перша ж така лапка обриває рядок — сторінка падає
+         з «Missing } in template expression» і кабінет не відкривається
+         взагалі. Спіймано рівно на цьому 14.08.2026. -->
+    <table style="min-width:520px"><thead><tr><th style="width:1%">№</th><th style="width:1%"></th><th style="width:100%">Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
     <tbody>${data.map(r => `<tr>
       <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
       <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>

@@ -1669,7 +1669,12 @@
   #cabinet-overlay.open{display:block;}
   #cabinet-shell{
     position:relative;
-    max-width:1200px; height:100%; margin:0 auto;
+    /* ⚠️ 1200 → 1440 (14.08.2026). ЦЕ ПЕРША З ДВОХ СТЕЛЬ, і без неї
+       розширення кабінету не видно взагалі: коли він відкритий модалкою
+       звідси, ширину ріже саме це вікно, ще до власних `.wrap` у
+       app.html. Міняти треба ОБИДВА числа, інакше здається, що правка
+       «не спрацювала». */
+    max-width:1440px; height:100%; margin:0 auto;
     background:var(--bg);
     border:1px solid var(--line);
     border-radius:14px;
@@ -2134,10 +2139,23 @@ async function buildMonthRows(tournamentKey){
     'participants?select=display_name&tournament_id=in.(' + seasonIds + ')' +
     '&order=display_name.asc');
 
-  const board = await sbGet(
+  // ⚠️ ФІЛЬТР ПО ВІКЕНДАХ ЦЬОГО ЕТАПУ — ОБОВ'ЯЗКОВИЙ (правка 14.08.2026).
+  // Раніше тягнувся ВЕСЬ match_board сезону. Для самої таблиці це було
+  // непомітно (рядки нижче фільтруються по вікенду), але блок бустів під
+  // нею бере `board.filter(b => b.boost_code)` — тобто збирав бусти ВСІХ
+  // етапів. Наслідок, який побачив Богдан 14.08.2026: у вересні й жовтні
+  // під таблицею висіли СЕРПНЕВІ бусти, і — гірше — таблиця показувала
+  // лише трьох учасників замість шести. Друге виходило звідси ж:
+  // `filterActivePlayers` викидає колонки людей, у яких у цьому турнірі
+  // все порожнє, а непорожніми виявлялись рівно ті троє, що поставили
+  // буст у СЕРПНІ. На бали це не впливало — борд лише показує пораховане.
+  // ⚠️ Заразом менше даних по мережі: було «весь сезон» на кожній вкладці.
+  const gwIds = weeks.map(w => w.gameweek_id).join(',');
+  const board = gwIds ? await sbGet(
     'match_board?select=gameweek_id,position,home_team,away_team,kickoff_at,' +
     'home_score,away_score,display_name,pred_home,pred_away,' +
-    'pred_home_2,pred_away_2,boost_code,competition');
+    'pred_home_2,pred_away_2,boost_code,competition' +
+    '&gameweek_id=in.(' + gwIds + ')') : [];
 
   const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
 
