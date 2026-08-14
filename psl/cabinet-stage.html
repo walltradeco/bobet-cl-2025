@@ -150,33 +150,91 @@
   #view p{max-width:92ch;}
 
   /* ===================================================================
-     ШИРИНА 1440: таблиця користується всією, списки — ні (14.08.2026)
-     Богдан про цей самий кабінет: «можна трохи ближче зробити,
-     збільшити трішки тексти, щоб не було прям сильно справа та сильно
-     зліва». У «Моїх матчах» підпис «1-й матч» стояв ліворуч, а поля й
-     кнопка «Внести» — біля правого краю, через увесь екран.
+     ЗОНИ В ТАБЛИЦІ (файл 253). Богдан 14.08.2026: «всім участникам це
+     з самого початку показується / підсвічується». Тому смужка стоїть
+     від першого туру, а не з'являється наприкінці сезону.
+     ⚠️ Колір береться з колонки `zone` вьюхи, а не рахується тут:
+     кабінет і публічна сторінка мусять показувати те саме.
+     =================================================================== */
+  tr.z-promote  td:first-child{box-shadow:inset 3px 0 var(--green);}
+  tr.z-playoff  td:first-child{box-shadow:inset 3px 0 var(--gold);}
+  tr.z-relegate td:first-child{box-shadow:inset 3px 0 var(--red);}
+  .zone-key{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);
+    margin-top:10px;}
+  .zone-key i{display:inline-block;width:10px;height:10px;border-radius:2px;
+    margin-right:5px;vertical-align:middle;font-style:normal;}
+  .zone-key .p{background:var(--green);} .zone-key .o{background:var(--gold);}
+  .zone-key .r{background:var(--red);}
+
+  /* ===================================================================
+     КУБКОВА СІТКА. Раунди — колонки, пари всередині розтягнуті по
+     висоті, тож фінал стоїть навпроти середини попереднього раунду.
+     ⚠️ Горизонтальна прокрутка ОБОВ'ЯЗКОВА: сітка на 16 не влазить
+     навіть у 1440, а сторінка сама горизонтально їхати не має.
+     =================================================================== */
+  .bracket{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;}
+  .br-col{display:flex;flex-direction:column;justify-content:space-around;
+    gap:10px;min-width:210px;}
+  .br-col h3{font-family:var(--f-head);font-size:13px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;}
+  .br-tie{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;font-size:14px;}
+  .br-tie.done{border-color:var(--sky);}
+  .br-tie.bye{opacity:0.55;border-style:dashed;}
+  .br-side{display:flex;justify-content:space-between;gap:8px;}
+  .br-side.win b{color:var(--white);}
+  .br-side.lose{color:var(--muted);}
+  .br-side .g{font-family:var(--f-num);}
+  .br-empty{color:var(--muted);font-style:italic;}
+
+  /* ===================================================================
+     КОНСТРУКТОР. Блоки етапів один під одним, поля в два стовпці.
+     =================================================================== */
+  .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:10px 14px;align-items:end;}
+  .fld label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;}
+  .fld input,.fld select{width:100%;padding:9px 10px;border-radius:8px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--grey);
+    font-size:15px;margin:0;}
+  .stage-card{border-left:3px solid var(--sky);}
+  .stage-card.k-cup{border-left-color:var(--gold);}
+  .stage-card.k-supercup{border-left-color:var(--red);}
+  .stage-card.k-playoff{border-left-color:var(--green);}
+  .row-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;}
+  button.ghost:hover{color:var(--white);border-color:var(--sky);}
+  button.danger{background:transparent;border:1px solid var(--red);color:var(--red);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;}
+  .balance{font-family:var(--f-num);font-size:14px;padding:7px 11px;border-radius:8px;
+    display:inline-block;margin-top:8px;}
+  .balance.ok{color:var(--green);border:1px solid var(--green);}
+  .balance.bad{color:var(--red);border:1px solid var(--red);}
+  .prize-rows td{padding:6px 8px;}
+  .prize-rows input{width:80px;padding:6px 8px;border-radius:7px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--grey);}
+
+  /* ===================================================================
+     ШИРИНА 1440 (14.08.2026)
+     ⚠️ ІСТОРІЯ, ЩОБ НЕ ХОДИТИ КОЛОМ. Спершу звузив «Мої матчі» до 860,
+     потім до 1120 — Богдан обидва рази відхилив («навіщо аж так
+     зменшив», «розтянули блоки, але всередині зроби більше»). Рішення
+     те саме, що в кабінеті BoBet: блоки НЕ звужуємо взагалі — вони
+     йдуть на всю ширину, як на проді, — а замість того збільшуємо те,
+     що ВСЕРЕДИНІ них. Значення («Внести», рахунок) стоять біля правого
+     краю рівним стовпчиком, і це нормально.
      =================================================================== */
   @media(min-width:1200px){
-    /* ⚠️ Звужуємо весь стовпець вкладки, а не окремі картки — інакше
-       заголовки груп («Ще не зіграно — 20») лишаються на всю ширину, а
-       картки під ними вужчі, і ліві краї розходяться. */
-    /* ⚠️ Смуга ОДНАКОВА на всіх вкладках. 14.08.2026 спробували звузити
-       «Мої матчі» до 860px — Богдан: «навіщо ти аж так зменшив». Замість
-       звуження блоку працює інше: збільшити те, що ВСЕРЕДИНІ нього. */
-    body.tab-my #view,
-    body.tab-all #view,
-    body.tab-admin #view{max-width:1120px;margin-left:auto;margin-right:auto;}
-
-    /* Усередині блоку матчу все на крок більше — це головна робоча
+    /* Усередині блоку матчу все помітно більше — це головна робоча
        форма кабінету, у неї вносять рахунки. */
-    .pair-head{font-size:18px;}
-    .leg{font-size:15px;min-width:86px;}
-    .sc-in{width:70px;padding:10px 8px;font-size:20px;}
-    .sc-lab{font-size:13px;}
-    .match .who{font-size:17px;}
-    .match .score{font-size:23px;}
-    .tag{font-size:12px;padding:3px 9px;}
-    .match button{font-size:15px;}
+    .pair-head{font-size:19px;}
+    .leg{font-size:16px;min-width:92px;}
+    .sc-in{width:76px;padding:11px 8px;font-size:22px;}
+    .sc-lab{font-size:14px;}
+    .match .who{font-size:18px;}
+    .match .score{font-size:25px;}
+    .tag{font-size:13px;padding:4px 10px;}
+    .match button{font-size:16px;padding:10px 18px;}
     table{font-size:16px;}
     .dim,.muted{font-size:15px;}
   }
@@ -323,11 +381,35 @@ async function boot(){
   const { data: me } = await sb.rpc('psl_me', { p_season: S.season.id });
   S.me = (me && me[0]) || null;
 
+  await loadStages();
+
   $('my-name').textContent = S.me ? S.me.display_name : '—';
   $('my-season').textContent = S.season.title;
 
   renderTabs();
   go(S.tab);
+}
+
+// Етапи сезону — з них будується половина екранів, тож тягнемо один раз.
+// ⚠️ Перечитувати треба після КОЖНОЇ правки структури: інакше вкладки
+// лишаються старими, і щойно доданий кубок не з'являється, доки не
+// перезавантажиш сторінку.
+async function loadStages(){
+  const { data, error } = await sb.from('psl_stages')
+    .select('*').eq('season_id', S.season.id).order('sort_order');
+  if (error) { console.error(error); S.stages = []; return; }
+  S.stages = data || [];
+  S.hasBracket = S.stages.some(s => ['cup','supercup','playoff'].includes(s.kind));
+
+  // Призові бачить лише учасник сезону — anon до psl_prize_* не має
+  // доступу взагалі (файл 260), тож для гостя запит просто впаде.
+  S.hasPrize = false;
+  if (S.me) {
+    const { data: pc } = await sb.from('psl_prize_config')
+      .select('season_id,fund_uah').eq('season_id', S.season.id).maybeSingle();
+    S.prizeCfg = pc || null;
+    S.hasPrize = !!(pc && Number(pc.fund_uah) > 0);
+  }
 }
 
 function renderTabs(){
@@ -336,7 +418,15 @@ function renderTabs(){
     ['table', 'Таблиця'],
     ['all',   'Усі матчі'],
   ];
-  if (S.me && S.me.is_admin) tabs.push(['admin', 'Адмінка']);
+  // Сітка й призові з'являються, лише коли їм є що показати: у сезоні
+  // без кубка вкладка «Сітка» була б порожньою обіцянкою, а призові
+  // до заведення фонду — нулями в усіх.
+  if (S.hasBracket) tabs.push(['bracket', 'Сітка']);
+  if (S.hasPrize)   tabs.push(['prize',   'Призові']);
+  if (S.me && S.me.is_admin) {
+    tabs.push(['builder', 'Турнір']);
+    tabs.push(['admin',   'Адмінка']);
+  }
   $('tabs').innerHTML = tabs.map(([k, t]) =>
     `<button data-tab="${k}" class="${k === S.tab ? 'on' : ''}">${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b => b.onclick = () => go(b.dataset.tab));
@@ -351,10 +441,23 @@ async function go(tab){
   document.body.className = 'tab-' + tab;
   renderTabs();
   $('view').innerHTML = '<div class="spin">завантаження…</div>';
-  if (tab === 'my')    return viewMy();
-  if (tab === 'table') return viewTable();
-  if (tab === 'all')   return viewAll();
-  if (tab === 'admin') return viewAdmin();
+  if (tab === 'my')      return viewMy();
+  if (tab === 'table')   return viewTable();
+  if (tab === 'all')     return viewAll();
+  if (tab === 'bracket') return viewBracket();
+  if (tab === 'prize')   return viewPrize();
+  // ⚠️ ЗАПОБІЖНИК (14.08.2026). `viewBuilder` — конструктор турнірів,
+  // ще НЕ написаний (робота іншої сесії). Виклик стояв прямий, тож
+  // клік по вкладці «Турнір» (лише в адміна) валив увесь екран
+  // «viewBuilder is not defined». `typeof`-перевірка сама підхопить
+  // справжню функцію, щойно її додадуть, а доти показує «в роботі».
+  if (tab === 'builder') {
+    if (typeof viewBuilder === 'function') return viewBuilder();
+    $('view').innerHTML = '<div class="card"><h2>Турнір</h2>'
+      + '<p class="dim" style="margin:0">Конструктор турнірів у розробці.</p></div>';
+    return;
+  }
+  if (tab === 'admin')   return viewAdmin();
 }
 
 // =====================================================================
@@ -573,30 +676,202 @@ async function viewTable(){
   if (error) { console.error(error); return msg($('view'), 'Не вдалось завантажити таблицю'); }
   S.table = data || [];
 
-  const rows = S.table.map(r => `
+  // Цілі показуються колонкою, лише коли їх узагалі задано — так само,
+  // як у архівних сезонах PSL: немає цілей, немає й колонки.
+  const { data: goals } = await sb.from('psl_goal_board')
+    .select('*').eq('season_id', S.season.id);
+  const goalBy = {};
+  (goals || []).forEach(g => { goalBy[g.stage_id + '|' + g.player_id] = g; });
+
+  // ⚠️ Групуємо по ЕТАПУ, а не показуємо одним списком: місце
+  // рахується в межах етапу (файл 253), тож два дивізіони дали б два
+  // перших місця підряд і виглядало б це як помилка.
+  const byStage = new Map();
+  S.table.forEach(r => {
+    if (!byStage.has(r.stage_id)) byStage.set(r.stage_id, []);
+    byStage.get(r.stage_id).push(r);
+  });
+
+  const blocks = [...byStage.entries()].map(([sid, rows]) => {
+    const st       = S.stages.find(s => s.id === sid);
+    const title    = rows[0].stage_title || (st && st.title) || 'Таблиця';
+    const hasGoals = rows.some(r => goalBy[sid + '|' + r.player_id]);
+    const hasZone  = rows.some(r => r.zone);
+
+    const body = rows.sort((a, b) => a.place - b.place).map(r => {
+      const g   = goalBy[sid + '|' + r.player_id];
+      const mine = S.me && r.player_id === S.me.player_id;
+      return `
+      <tr class="${mine ? 'me' : ''} ${r.zone ? 'z-' + r.zone : ''}">
+        <td class="num">${r.place}</td>
+        <td>${esc(r.display_name)}</td>
+        <td class="num">${r.games}</td>
+        <td class="num">${r.wins}</td>
+        <td class="num">${r.draws}</td>
+        <td class="num">${r.losses}</td>
+        <td class="num">${r.goals_for}:${r.goals_against}</td>
+        <td class="num">${r.goal_diff > 0 ? '+' : ''}${r.goal_diff}</td>
+        <td class="num"><b>${r.points}</b></td>
+        ${hasGoals ? `<td class="num">${g
+            ? (g.achieved ? '✅' : (g.is_final ? '❌' : '—')) + ' <span class="dim">'
+              + g.target_place + '</span>'
+            : '<span class="dim">—</span>'}</td>` : ''}
+      </tr>`;
+    }).join('');
+
+    return `
+      <div class="card">
+        <h2>${esc(title)}</h2>
+        <div class="tbl-scroll"><table class="psl-standings">
+          <thead><tr><th class="num">#</th><th>Гравець</th><th class="num">І</th>
+            <th class="num">В</th><th class="num">Н</th><th class="num">П</th>
+            <th class="num">Голи</th><th class="num">±</th><th class="num">Очки</th>
+            ${hasGoals ? '<th class="num">Ціль</th>' : ''}</tr></thead>
+          <tbody>${body}</tbody>
+        </table></div>
+        ${hasZone ? `<div class="zone-key">
+          <span><i class="p"></i>підйом</span>
+          <span><i class="o"></i>перехідні матчі</span>
+          <span><i class="r"></i>виліт</span></div>` : ''}
+      </div>`;
+  }).join('');
+
+  $('view').innerHTML = (blocks || '<div class="card dim">Таблиці ще немає</div>') +
+    `<p class="dim" style="font-size:14px">У таблицю йдуть лише підтверджені матчі.</p>`;
+}
+
+// =====================================================================
+//  СІТКА — кубок, Суперкубок, перехідні
+//
+//  Раунд у сітці не має власної назви в базі: там лише номер. «1/4» і
+//  «Фінал» рахуються від того, скільки раундів ЩЕ ПОПЕРЕДУ — так одна
+//  функція обслуговує сітку будь-якого розміру.
+// =====================================================================
+function roundName(r, total, isDouble, br){
+  if (isDouble && br === 'w') {
+    if (r === total)     return 'Гранд-фінал';
+    if (r === total - 1) return 'Фінал сітки';
+  }
+  const left = total - r;
+  if (left === 0) return 'Фінал';
+  if (left === 1) return 'Півфінали';
+  if (left === 2) return '1/4';
+  if (left === 3) return '1/8';
+  if (left === 4) return '1/16';
+  return 'Раунд ' + r;
+}
+
+function tieCard(t){
+  // ⚠️ Рахунок беремо СУМАРНИЙ (agg_a/agg_b): у парі з двох ігор саме
+  // він вирішує, хто пройшов далі. Скільки було ігор — підписом, щоб
+  // «4:4 і третя гра» не читалось як дивна нічия.
+  const done  = !!t.winner_id;
+  const bye   = t.is_bye;
+  const side  = (name, goals, id) => {
+    if (!name) return '<div class="br-side br-empty">чекає</div>';
+    const cls = !done ? '' : (t.winner_id === id ? 'win' : 'lose');
+    return `<div class="br-side ${cls}"><b>${esc(name)}</b>`
+         + `<span class="g">${t.games_done > 0 ? goals : ''}</span></div>`;
+  };
+  return `<div class="br-tie ${done ? 'done' : ''} ${bye ? 'bye' : ''}">
+    ${side(t.player_a_name, t.agg_a, t.player_a)}
+    ${bye ? '<div class="br-side dim">без суперника</div>'
+          : side(t.player_b_name, t.agg_b, t.player_b)}
+    ${!bye && t.games_total > 1
+        ? `<div class="dim" style="font-size:12px;margin-top:3px">`
+          + `${t.games_done} з ${t.games_total} ігор</div>` : ''}
+  </div>`;
+}
+
+async function viewBracket(){
+  const { data, error } = await sb.from('psl_bracket')
+    .select('*').eq('season_id', S.season.id);
+  if (error) { console.error(error); return msg($('view'), 'Не вдалось завантажити сітку'); }
+  const all = data || [];
+
+  if (!all.length) {
+    return $('view').innerHTML = `<div class="card"><h2>Сітки ще немає</h2>
+      <p class="dim">Кубок з'явиться тут, щойно адмін його побудує.
+      Порожню сітку видно одразу — імена підставляться самі.</p></div>`;
+  }
+
+  const byStage = new Map();
+  all.forEach(t => {
+    if (!byStage.has(t.stage_id)) byStage.set(t.stage_id, []);
+    byStage.get(t.stage_id).push(t);
+  });
+
+  const blocks = [...byStage.entries()].map(([sid, ties]) => {
+    const st       = S.stages.find(s => s.id === sid);
+    const isDouble = st && st.format === 'double_elim';
+    const title    = ties[0].stage_title || (st && st.title) || 'Сітка';
+
+    const draw = (br) => {
+      const part = ties.filter(t => t.bracket === br);
+      if (!part.length) return '';
+      const total = Math.max(...part.map(t => t.round));
+      const rounds = [...new Set(part.map(t => t.round))].sort((a, b) => a - b);
+      const cols = rounds.map(r => `
+        <div class="br-col">
+          <h3>${br === '3' ? 'За 3-тє місце' : roundName(r, total, isDouble, br)}</h3>
+          ${part.filter(t => t.round === r).sort((a, b) => a.slot - b.slot)
+                .map(tieCard).join('')}
+        </div>`).join('');
+      return `${br === 'l' ? '<div class="sect-title">Сітка тих, хто програв</div>' : ''}
+              <div class="bracket">${cols}</div>`;
+    };
+
+    return `<div class="card">
+      <h2>${esc(title)}</h2>
+      ${draw('w')}${draw('l')}${draw('3')}
+    </div>`;
+  }).join('');
+
+  $('view').innerHTML = blocks;
+}
+
+// =====================================================================
+//  ПРИЗОВІ — «скільки вийшло б зараз» (вибір Богдана 14.08.2026)
+//
+//  ⚠️ Колонку ₴ бачать усі учасники, як у BoBet. Публічна сторінка не
+//  бачить нічого: у anon немає прав на psl_prize_* (файл 260).
+// =====================================================================
+async function viewPrize(){
+  const { data, error } = await sb.from('psl_prize_board')
+    .select('*').eq('season_id', S.season.id);
+  if (error) { console.error(error); return msg($('view'), 'Не вдалось порахувати призові'); }
+  const rows = (data || []).sort((a, b) => b.amount_total - a.amount_total);
+
+  const { data: sum } = await sb.from('psl_prize_summary')
+    .select('*').eq('season_id', S.season.id).maybeSingle();
+
+  const money = (v) => Number(v || 0).toLocaleString('uk-UA') + ' ₴';
+
+  const body = rows.map(r => `
     <tr class="${S.me && r.player_id === S.me.player_id ? 'me' : ''}">
-      <td class="num">${r.place}</td>
       <td>${esc(r.display_name)}</td>
-      <td class="num">${r.games}</td>
-      <td class="num">${r.wins}</td>
-      <td class="num">${r.draws}</td>
-      <td class="num">${r.losses}</td>
-      <td class="num">${r.goals_for}:${r.goals_against}</td>
-      <td class="num">${r.goal_diff > 0 ? '+' : ''}${r.goal_diff}</td>
-      <td class="num"><b>${r.points}</b></td>
+      <td class="num">${money(r.amount_place)}</td>
+      <td class="num">${money(r.amount_points)}</td>
+      <td class="num">${money(r.amount_goals)}</td>
+      <td class="num">${money(r.amount_cup)}</td>
+      <td class="num"><b>${money(r.amount_total)}</b></td>
     </tr>`).join('');
 
   $('view').innerHTML = `
     <div class="card">
-      <h2>${esc(S.season.title)} — таблиця</h2>
-      <div class="tbl-scroll"><table class="psl-standings">
-        <thead><tr><th class="num">#</th><th>Гравець</th><th class="num">І</th>
-          <th class="num">В</th><th class="num">Н</th><th class="num">П</th>
-          <th class="num">Голи</th><th class="num">±</th><th class="num">Очки</th></tr></thead>
-        <tbody>${rows}</tbody>
+      <h2>Скільки вийшло б зараз</h2>
+      <div class="tbl-scroll"><table>
+        <thead><tr><th>Гравець</th><th class="num">Місце</th><th class="num">За очки</th>
+          <th class="num">Ціль</th><th class="num">Кубок</th><th class="num">Разом</th></tr></thead>
+        <tbody>${body || '<tr><td colspan="6" class="dim">Поки нічого</td></tr>'}</tbody>
       </table></div>
       <p class="dim" style="margin:10px 0 0;font-size:14px">
-        У таблицю йдуть лише підтверджені матчі.</p>
+        Це не підсумок, а поточний розклад: числа міняються після кожного
+        зіграного матчу. Гроші за місця рахуються від таблиці, за очки —
+        пропорційно набраному, за ціль — порівну між тими, хто виконав.</p>
+      ${sum ? `<p class="dim" style="font-size:14px">
+        Фонд ${money(sum.fund_uah)} · роздано ${money(sum.allocated)} ·
+        ще без власника ${money(sum.unallocated)}.</p>` : ''}
     </div>`;
 }
 
