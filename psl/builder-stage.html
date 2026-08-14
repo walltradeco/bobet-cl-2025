@@ -512,7 +512,7 @@ const chkF = (id, val) => `<label style="display:flex;gap:8px;align-items:center
 
 async function viewBuilder(){
   const sid = S.season.id;
-  const [lc, cc, tb, slots, pairs, pc, prow, goals, log, players] = await Promise.all([
+  const [lc, cc, tb, slots, pairs, pc, prow, goals, log, players, sp] = await Promise.all([
     sb.from('psl_league_config').select('*'),
     sb.from('psl_cup_config').select('*'),
     sb.from('psl_tiebreak').select('*').order('sort_order'),
@@ -523,7 +523,8 @@ async function viewBuilder(){
     sb.from('psl_goals').select('*'),
     sb.from('psl_structure_log').select('*').eq('season_id', sid)
       .order('created_at', { ascending: false }).limit(15),
-    sb.from('psl_players').select('id,display_name').eq('season_id', sid).order('display_name'),
+    sb.from('psl_players').select('id,display_name,is_admin').eq('season_id', sid).order('display_name'),
+    sb.from('psl_stage_players').select('*'),
   ]);
 
   const B = {
@@ -531,7 +532,7 @@ async function viewBuilder(){
     tb: group(tb.data, 'stage_id'),   slots: group(slots.data, 'stage_id'),
     pairs: group(pairs.data, 'stage_id'), goals: group(goals.data, 'stage_id'),
     prize: pc.data || null, rows: prow.data || [], log: log.data || [],
-    players: players.data || [],
+    players: players.data || [], sp: group(sp.data, 'stage_id'),
   };
   S.builder = B;
 
@@ -543,8 +544,21 @@ async function viewBuilder(){
     fc[st.id] = (data && data[0]) || null;
   }));
 
+  // Скільки в етапі вже зіграно. ⚠️ Це найважливіша підказка з усіх:
+  // Богдан дозволив правити структуру посеред сезону, і система мусить
+  // казати, коли правка вже щось перепише — а не мовчки перерахувати
+  // таблицю під людьми.
+  B.played = {};
+  await Promise.all(S.stages.map(async st => {
+    const { count } = await sb.from('psl_match_board')
+      .select('match_id', { count: 'exact', head: true })
+      .eq('stage_slug', st.slug).eq('season_id', sid).eq('state', 'confirmed');
+    B.played[st.id] = count || 0;
+  }));
+
   $('view').innerHTML =
       builderSeasonCard()
+    + builderRoster(B)
     + `<div class="sect-title">Етапи</div>`
     + (S.stages.length
         ? S.stages.map(st => builderStageCard(st, B, fc[st.id])).join('')
@@ -673,6 +687,118 @@ function builderStageCard(st, B, fc){
 
   }
 
+  // ---- Склад етапу ----------------------------------------------
+  // ⚠️ БЕЗ ЦЬОГО БЛОКУ КОНСТРУКТОР БУВ НЕПРИДАТНИЙ, і показала це
+  // обкатка 14.08: `psl_create_season` робить автора сезону гравцем,
+  // тож 12 запрошених перетворювались на 13, і швейцарська відмовлялась
+  // («непарне число»). Плюс дивізіони без явного складу неможливі в
+  // принципі — обидві ліги брали б усіх.
+  const inStage = new Set((B.sp[st.id] || []).map(x => x.player_id));
+  const roster  = st.kind === 'supercup' ? '' : `
+    <div class="sect-title" style="margin:16px 0 8px">Хто грає (${inStage.size} з ${B.players.length})</div>
+    <div class="fields">${B.players.map(pl => `
+      <label style="display:flex;gap:8px;align-items:center;font-size:15px">
+        <input type="checkbox" data-inst="${st.id}|${pl.id}" style="width:auto"
+          ${inStage.size === 0 || inStage.has(pl.id) ? 'checked' : ''}>
+        ${esc(pl.display_name)}${pl.is_admin ? ' <span class="dim">· адмін</span>' : ''}
+      </label>`).join('')}</div>
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Порожній склад
+    означає «усі учасники сезону» — зокрема й ти, якщо сам не граєш.</p>`;
+
+  // ---- Що не спрацює і на що зважити ------------------------------
+  // ⚠️ Два рівні навмисно різні. STOP — побудова впаде або дасть
+  // безглуздий результат; NOTE — спрацює, але людина, найпевніше, мала
+  // на увазі інше. Змішувати їх шкідливо: якщо все червоне, червоне
+  // перестають читати.
+  const n = inStage.size || B.players.length;
+  const ligas = S.stages.filter(s => s.kind === 'liga');
+  const cups  = S.stages.filter(s => s.kind === 'cup');
+  const stop = [], note = [];
+
+  if (n < 2) stop.push('учасників менше двох — грати нема з ким');
+
+  // ⚠️ Найважливіше попередження: етап уже грають. Богдан дозволив
+  // правити структуру посеред сезону — отже система зобов'язана
+  // сказати, що саме перепишеться, а не мовчки перерахувати таблицю.
+  const played = (B.played || {})[st.id] || 0;
+  if (played > 0) {
+    note.push(`<b>в етапі вже ${played} зіграних матч(ів)</b> — зміна очок або `
+            + 'тайбрейку перерахує таблицю заднім числом, а зміна формату '
+            + 'зробить наявні матчі несумісними з новим розкладом. '
+            + '«Очистити розклад» тут уже не спрацює — воно не чіпає зіграного');
+  }
+
+  if (st.kind === 'liga' || st.kind === 'playoff') {
+    const c = B.league[st.id] || {};
+    const zones = Number(c.promote_slots || 0) + Number(c.relegate_slots || 0)
+                + Number(c.playoff_slots || 0) * 2;
+    if (zones > n)
+      stop.push(`зони (підйом + виліт + перехідні) займають ${zones} місць із ${n}`);
+    if (st.format === 'swiss') {
+      if (n % 2 === 1)
+        stop.push(`у складі ${n} — непарне число, а швейцарська пару всім не знайде`);
+      if (!c.swiss_rounds && !(c.swiss_win_target && c.swiss_loss_out))
+        stop.push('не задано, коли швейцарська закінчується: або «N перемог / M поразок», або число турів');
+      if (c.swiss_win_target && c.swiss_win_target > Math.ceil(Math.log2(n || 2)) + 2)
+        note.push(`${c.swiss_win_target} перемог на ${n} учасниках — турів буде багато`);
+    }
+    if (st.format === 'round_robin' && Number(c.rounds) === 2 && n >= 10)
+      note.push(`два кола на ${n} осіб — це ${n * (n - 1)} матчів, по ${(n - 1) * 2} на людину`);
+    if (st.format === 'series')
+      note.push(`серії до ${c.series_to_wins || 2} перемог: щонайменше `
+              + `${n * (n - 1) / 2 * (c.series_to_wins || 2)} ігор, точне число залежить від результатів`);
+    if (ligas.length < 2 && (Number(c.promote_slots) > 0 || Number(c.relegate_slots) > 0))
+      note.push('підйом і виліт мають сенс, коли дивізіонів два — зараз він один');
+    const tbs = (B.tb[st.id] || []).map(x => x.criterion);
+    if (tbs.includes('buchholz') && st.format !== 'swiss')
+      note.push('«сила суперників» — критерій швейцарської; у круговій усі грають з усіма, тож він нічого не розводить');
+    if (tbs.includes('head_to_head') && st.format === 'round_robin' && Number(c.rounds) === 1)
+      note.push('«очні зустрічі» в одне коло вирішує одна гра — критерій слабкий');
+  }
+
+  if (st.kind === 'cup') {
+    const c = B.cup[st.id] || {};
+    const ent = c.entrants_count || n;
+    if (ent > n) stop.push(`у сітці задано ${ent}, а в складі лише ${n}`);
+    if (st.format === 'double_elim' && (ent & (ent - 1)) !== 0)
+      stop.push(`подвійному вибуванню потрібна степінь двійки (4, 8, 16), а тут ${ent}`);
+    if (c.seeding === 'league' && !st.source_stage_id)
+      stop.push('посів «за місцем у лізі», але етап-джерело не вказано — місця брати нізвідки');
+    if (st.format === 'single_elim') {
+      let size = 2; while (size < ent) size *= 2;
+      if (size > ent)
+        note.push(`сітка на ${size}, учасників ${ent} — ${size - ent} найкращих пропустять перший раунд`);
+    }
+    if (Number(c.legs_early) === 2)
+      note.push('дві гри в парі: матчів удвічі більше, а при рівній сумі додається третя');
+  }
+
+  if (st.kind === 'supercup') {
+    const list = B.slots[st.id] || [];
+    if (!list.length) stop.push('не задано, хто грає — додай учасників нижче');
+    else if (list.length !== 2 && list.length !== 4)
+      stop.push(`учасників ${list.length} — Суперкубок грають двоє або четверо`);
+    if (list.some(x => x.source_kind !== 'league_place') && !cups.length)
+      stop.push('серед учасників є «переможець кубка», а кубкового етапу в сезоні немає');
+    if (list.some(x => x.source_kind === 'league_place') && !ligas.length)
+      stop.push('серед учасників є «місце в лізі», а лігового етапу немає');
+    list.filter(x => x.source_kind === 'league_place' && x.place > n).forEach(x =>
+      stop.push(`задано ${x.place}-те місце ліги, а в ній лише ${n} учасників`));
+  }
+
+  if (st.kind === 'playoff') {
+    const prs = B.pairs[st.id] || [];
+    if (!prs.length) stop.push('пар ще немає — перехідним матчам нема з чого будуватись');
+    if (ligas.length < 2)
+      stop.push('перехідні матчі зводять два дивізіони, а ліга в сезоні одна');
+  }
+
+  const stopHtml = stop.length
+    ? `<div class="balance bad" style="display:block">⛔ ${stop.join('<br>⛔ ')}</div>` : '';
+  const noteHtml = note.length
+    ? `<p class="dim" style="font-size:13px;margin:8px 0 0">💡 ${note.join('<br>💡 ')}</p>` : '';
+  const warnHtml = stopHtml + noteHtml;
+
   return `<div class="card stage-card k-${st.kind}">
     <h2>${esc(st.title)} <span class="tag">${KIND_TITLE[st.kind] || st.kind}</span></h2>
     <div class="fields" style="margin-bottom:12px">
@@ -680,6 +806,8 @@ function builderStageCard(st, B, fc){
       ${fld('Формат', selF(p + '_fmt', st.format, FORMAT_BY_KIND[st.kind] || []))}
     </div>
     ${body}
+    ${roster}
+    ${warnHtml}
     ${fc ? `<p class="dim" style="font-size:13px;margin:12px 0 0">Вийде
       <b>${fc['матчів']}</b> матч(ів) на ${fc['людей']} учасник(ів)${
       fc['точно'] ? '' : ' — <b>щонайменше</b>, точне число залежить від результатів'}.</p>` : ''}
@@ -704,6 +832,36 @@ function builderAddStage(){
       ${fld('&nbsp;', `<button class="primary" id="b-addstage">Додати</button>`)}
     </div>
     <div id="b-add-msg"></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Склад сезону
+//
+//  ⚠️ Без цього блоку конструктор замикався сам на себе: сезон тут
+//  створюється, а додати в нього людей можна було тільки в кабінеті —
+//  тобто в порожній сезон нема кого ставити в етапи.
+//  ⚠️ Ім'я додається БЕЗ пошти. Пошта потрібна лише для входу, а щоб
+//  побудувати розклад — досить імені (так само заведено 11 гравців
+//  Season 4 файлом 249).
+// ---------------------------------------------------------------------
+function builderRoster(B){
+  return `<div class="card">
+    <h2>Склад сезону · ${B.players.length}</h2>
+    <div class="tbl-scroll"><table>
+      <thead><tr><th>Гравець</th><th class="num"></th></tr></thead>
+      <tbody>${B.players.map(p => `<tr>
+        <td>${esc(p.display_name)}${p.is_admin ? ' <span class="tag">адмін</span>' : ''}</td>
+        <td class="num"><button class="danger" data-delplayer="${p.id}">×</button></td>
+      </tr>`).join('') || '<tr><td colspan="2" class="dim">Ще нікого</td></tr>'}</tbody>
+    </table></div>
+    <div class="fields" style="margin-top:10px">
+      ${fld("Ім'я", `<input type="text" id="rs-name" placeholder="як у таблиці">`)}
+      ${fld('&nbsp;', `<button class="primary" id="rs-add">Додати гравця</button>`)}
+    </div>
+    <p class="dim" style="font-size:13px">Пошта потрібна лише для входу в кабінет —
+    її додають окремо, в адмінці кабінету. Для розкладу досить імені.</p>
+    <div id="rs-msg"></div>
   </div>`;
 }
 
@@ -757,6 +915,39 @@ function builderPrize(B){
     </div>
     <div class="balance ${sum === 100 ? 'ok' : 'bad'}" id="pz-balance">
       ${sum === 100 ? 'розподілено рівно 100%' : `сума ${sum}% — має бути 100%`}</div>
+    ${(() => {
+      // ⚠️ Пул без жодного рядка виплат — гроші, які нікому не
+      // дістануться. Обкатка 14.08 дала саме це: 10% на Суперкубок
+      // виділено, рядків немає, 3000 ₴ зависли «без власника», і
+      // система про це мовчала.
+      const hasRow = (kind) => B.rows.some(r => {
+        const st = S.stages.find(s => s.id === r.stage_id);
+        return st && st.kind === kind;
+      });
+      const dead = [];
+      if (Number(c.fund_uah) <= 0) dead.push('фонд нульовий — рахувати нічого');
+      // Усередині «місць» відсотки теж мусять дати 100, інакше частина
+      // бюджету місць просто не роздасться.
+      const placeSum = B.rows.filter(r => r.kind === 'place')
+        .reduce((a, r) => a + Number(r.pct || 0), 0);
+      if (placeSum > 0 && placeSum !== 100)
+        dead.push(`рядки місць дають ${placeSum}% замість 100% — решта бюджету місць зависне`);
+      // Місце, якого в складі не буває
+      const maxN = B.players.length;
+      B.rows.filter(r => r.kind === 'place' && r.place > maxN).forEach(r =>
+        dead.push(`є рядок на ${r.place}-те місце, а учасників лише ${maxN}`));
+      if (Number(c.pct_places) > 0 && !B.rows.some(r => r.kind === 'place'))
+        dead.push('«місця» — немає жодного рядка з місцем');
+      if (Number(c.pct_cup) > 0 && !hasRow('cup'))
+        dead.push('«кубок» — немає рядка для кубкового етапу');
+      if (Number(c.pct_supercup) > 0 && !hasRow('supercup'))
+        dead.push('«Суперкубок» — немає рядка для нього');
+      if (Number(c.pct_goals) > 0 && !S.stages.some(s => s.kind === 'liga'))
+        dead.push('«цілі» — немає лігового етапу, де їх ставити');
+      return dead.length
+        ? `<div class="balance bad" style="display:block;margin-left:8px">
+             ⚠️ Ці частки нікому не дістануться: ${dead.join('; ')}</div>` : '';
+    })()}
     <div class="row-acts"><button class="primary" id="b-savepz">Зберегти фонд</button></div>
     <div id="b-pz-msg"></div>
 
@@ -851,6 +1042,28 @@ function bindBuilder(B){
       + '». Структура перенесена, склад і матчі — ні.', 'ok');
   });
 
+  on('rs-add', async () => {
+    const name = (v('rs-name') || '').trim();
+    if (!name) return msg($('rs-msg'), 'Вкажи ім\'я');
+    const { error } = await sb.from('psl_players')
+      .insert({ season_id: S.season.id, display_name: name });
+    if (error) return msg($('rs-msg'),
+      /duplicate|unique/i.test(error.message)
+        ? 'Такий гравець у сезоні вже є' : error.message);
+    await reload();
+  });
+
+  document.querySelectorAll('[data-delplayer]').forEach(btn => btn.onclick = async () => {
+    if (!confirm('Прибрати гравця із сезону?')) return;
+    // ⚠️ Через RPC, а не delete: psl_admin_remove_player (250) відмовляє,
+    // якщо в людини вже є матч із рахунком. Прямий delete забрав би ті
+    // матчі каскадом — разом з очками СУПЕРНИКА.
+    const { error } = await sb.rpc('psl_admin_remove_player', {
+      p_season: S.season.id, p_player: btn.dataset.delplayer });
+    if (error) return msg($('rs-msg'), error.message);
+    await reload();
+  });
+
   on('b-addstage', async () => {
     const kind  = v('b-newkind');
     const title = (v('b-newtitle') || '').trim() || KIND_TITLE[kind];
@@ -879,6 +1092,21 @@ function bindBuilder(B){
     let e1 = (await sb.from('psl_stages').update({
       title: v(p + '_title'), format: v(p + '_fmt') }).eq('id', id)).error;
     if (e1) return msg(box, e1.message);
+
+    // Склад етапу: переписуємо цілком за галочками.
+    // ⚠️ Якщо відмічені ВСІ — лишаємо таблицю порожньою, тобто «весь
+    // сезон». Так склад етапу сам підхопить нового учасника, доданого
+    // потім, і не доведеться згадувати, що його треба десь відмітити.
+    const boxes = [...document.querySelectorAll(`[data-inst^="${id}|"]`)];
+    if (boxes.length) {
+      const picked = boxes.filter(b => b.checked).map(b => b.dataset.inst.split('|')[1]);
+      await sb.from('psl_stage_players').delete().eq('stage_id', id);
+      if (picked.length && picked.length < boxes.length) {
+        const e0 = (await sb.from('psl_stage_players')
+          .insert(picked.map(pid => ({ stage_id: id, player_id: pid })))).error;
+        if (e0) return msg(box, e0.message);
+      }
+    }
 
     if (st.kind === 'playoff') {
       await sb.from('psl_playoff_pair').delete().eq('stage_id', id);
