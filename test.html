@@ -1492,6 +1492,70 @@
   }
 
   /* ===================================================================
+     ВБУДОВАНИЙ БОРД — `?board=<етап>` (14.08.2026)
+     Цю саму сторінку показує кабінет у вкладці «All Games»: борд існує
+     в ОДНОМУ примірнику, тож правка тут одразу видна і на сайті, і в
+     кабінеті. Ховаємо все, що в кабінеті зайве або дублюється — логотип,
+     перемикач ліг, шапку з кнопками, обидві навігації.
+     ⚠️ Елементи саме ХОВАЮТЬСЯ, а не прибираються з розмітки: код
+     сторінки звертається до `#tournament-title`, `#refresh-btn`,
+     `#updated-at` і `#cabinet-overlay` без перевірок, і видалення
+     будь-якого з них поклало б сторінку і в звичайному режимі теж.
+     =================================================================== */
+  body.embed .boorbit-mark,
+  body.embed .league-switch,
+  body.embed header,
+  body.embed .nav-lbl,
+  body.embed nav.tabs,
+  body.embed #cabinet-overlay{display:none !important;}
+  /* Поля прибираємо: відступ навколо дає вже сам кабінет, а зайві 48px
+     з кожного боку тут з'їдали б ширину таблиці. */
+  body.embed .wrap{max-width:none; padding:0 0 24px;}
+
+  /* ===================================================================
+     ПРИЛИПЛА ШАПКА БОРДА — десктоп, від 1101 px (14.08.2026)
+     Прохання Богдана: «щоб коли гортали вниз, він теж рухався, щоб було
+     легше порівнювати». Прилипає РАЗОМ картка з очками кожного гравця і
+     рядок заголовків таблиці (Date · Game · Result · імена); роздільники
+     вікендів і самі матчі їдуть під ними.
+
+     ⚠️ ЧОМУ ЦЕ НЕ «ОДИН РЯДОК CSS». `position:sticky` у `thead` стояв
+     тут завжди — і не працював ЖОДНОГО разу: `.matches-card` має
+     `overflow:auto`, а скрол-контейнер стає власним «вікном» для sticky.
+     Шапка клеїлась до верху картки, а сама картка їхала вгору разом зі
+     сторінкою. Тому тут прибирається саме контейнер прокрутки.
+
+     ⚠️ ЧОМУ `clip`, А НЕ `visible`. Картка має закруглені кути, і без
+     обрізки кутик таблиці стирчав би за них. `overflow:clip` обрізає так
+     само, як `auto`, але контейнером прокрутки НЕ стає — клей рахується
+     від вікна. Браузер без підтримки `clip` просто лишить `auto`: шапка
+     не приклеїться, більше нічого не зміниться.
+
+     ⚠️ ЧОМУ ВІД 1101 px. Нижче таблиця має ВЛАСНУ горизонтальну
+     прокрутку (`table.matches{min-width:820px}` у блоці max-width:1100px)
+     — прибрати її не можна, а разом із нею неможливий і клей до сторінки.
+     Рішення Богдана 14.08.2026: на телефоні лишаємо як є.
+
+     ⚠️ `--gp-sum-h` рахує JS (`syncStickyOffset`) — висота карток
+     залежить від ширини вікна й кількості гравців, зашити її не можна.
+     =================================================================== */
+  @media(min-width:1101px){
+    .gp-summary{
+      position:sticky;
+      top:0;
+      z-index:6;
+      /* Непрозора підкладка обов'язкова: між картками є проміжки (gap),
+         і крізь них просвічували б рядки, що проїжджають знизу. */
+      background:var(--bg);
+      padding:12px 0 14px;
+      margin:-12px 0 8px;      /* 14 + 8 = ті самі 22px відступу знизу */
+    }
+    .matches-card, .table-card{overflow:clip;}
+    table.matches thead th,
+    table.sheet-table thead th{top:var(--gp-sum-h, 0px);}
+  }
+
+  /* ===================================================================
      iPhone (15 / 16 / 17, у т.ч. Pro Max) — 390-440pt
      =================================================================== */
   @media(max-width:640px){
@@ -4768,6 +4832,28 @@ function plural(n, one, few, many){
 }
 
 /* ======== UI ======== */
+/* ---------------------------------------------------------------------
+   Висота прилиплих карток → CSS-змінна для шапки таблиці (14.08.2026).
+   Картки клеяться до верху вікна, а шапка таблиці — ПІД ними, тож їй
+   треба знати їхню висоту. Зашити число не можна: картки переносяться
+   на другий рядок залежно від ширини вікна й кількості гравців (6 у
+   EuroSeason, 9 в архівних турнірах).
+   ⚠️ Слухаємо саме ResizeObserver, а не `resize` вікна: висота
+   змінюється ще й коли дозавантажились шрифти, а події вікна тоді немає.
+   --------------------------------------------------------------------- */
+let stickyRO = null;
+function syncStickyOffset(){
+  const sum = document.querySelector('.gp-summary');
+  const put = () => document.documentElement.style.setProperty(
+    '--gp-sum-h', (sum ? Math.round(sum.getBoundingClientRect().height) : 0) + 'px');
+  put();
+  if(stickyRO){ stickyRO.disconnect(); stickyRO = null; }
+  if(sum && window.ResizeObserver){
+    stickyRO = new ResizeObserver(put);
+    stickyRO.observe(sum);
+  }
+}
+
 async function loadActiveTab(){
   const content = document.getElementById('content');
 
@@ -4825,6 +4911,7 @@ async function loadActiveTab(){
                          dnaLeague: (dnaLeague || [])[0] || null };
       }
       content.innerHTML = renderHonorsSection(kind, HONORS_CACHE);
+      syncStickyOffset();
     }catch(err){
       content.innerHTML = `<div class="status-line err">Не вдалося завантажити HONORS: ${escapeHtml(err.message)}</div>`;
     }
@@ -4841,6 +4928,7 @@ async function loadActiveTab(){
       : await fetchSheet(activeTournament.sheetId, tab.sheet, tab.gid);
     if(activeTournament.tabs[activeTabIndex] !== tab) return;
     content.innerHTML = renderTabContent(tab, data);
+    syncStickyOffset();
   }catch(err){
     content.innerHTML = `<div class="status-line err">Не вдалося завантажити вкладку «${escapeHtml(tab.sheet)}»: ${escapeHtml(err.message)}</div>`;
   }
@@ -4987,9 +5075,37 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 })();
 
 /* ======== INIT ======== */
-renderTournaments();
-setTournament(activeTournament.key);
-checkEuroseasonLive().then(v => { EUROSEASON_LIVE = v; renderTournaments(); });
+/* ⚠️ ВБУДОВАНИЙ БОРД: `test.html?board=aug2026` — та сама сторінка, але
+   лише таблиця етапу, без шапки й навігації (CSS `body.embed`). Її
+   показує кабінет у вкладці «All Games».
+
+   Рішення Богдана 14.08.2026 з трьох варіантів: скопіювати код борда в
+   кабінет означало б ~1500 рядків другої копії, яка розійшлася б із
+   сайтом мовчки при першій же правці самого борда.
+
+   ⚠️ Тут НЕ кличеться `setTournament()` — він, крім вибору турніру,
+   малює обидві навігації й пише заголовок, тобто робить рівно те, що в
+   кабінеті зайве. Ставимо турнір і вкладку напряму й одразу вантажимо
+   вміст. `checkEuroseasonLive()` теж пропускаємо: це запит у базу
+   заради бейджа LIVE на кнопці, якої тут не видно. */
+const EMBED_BOARD = new URLSearchParams(location.search).get('board');
+if(EMBED_BOARD){
+  document.body.classList.add('embed');
+  const et = TOURNAMENTS.find(x => x.key === 'euroseason2026');
+  const ei = et ? et.tabs.findIndex(tb => tb.source === 'month' && tb.monthKey === EMBED_BOARD) : -1;
+  if(ei >= 0){
+    activeTournament = et;
+    activeTabIndex   = ei;
+    loadActiveTab();
+  }else{
+    document.getElementById('content').innerHTML =
+      '<div class="status-line err">Невідомий етап: ' + escapeHtml(EMBED_BOARD) + '</div>';
+  }
+}else{
+  renderTournaments();
+  setTournament(activeTournament.key);
+  checkEuroseasonLive().then(v => { EUROSEASON_LIVE = v; renderTournaments(); });
+}
 setInterval(() => {
   if (!document.getElementById('cabinet-overlay').classList.contains('open')) refreshAll();
 }, 60000);

@@ -174,6 +174,20 @@
   h2{font-family:'Montserrat',sans-serif;font-size:18px;margin:0 0 12px;font-weight:700;}
   .dim{color:var(--text-dim);font-size:15px;line-height:1.5;}
 
+  /* ---------- ALL GAMES ----------
+     Борд із сайту, вставлений сторінкою (див. viewGames). Висота — «до
+     низу екрана»: таблиця етапу довга (23 матчі в серпні), і гортається
+     вона ВСЕРЕДИНІ цієї рамки. Саме тому там працює прилипла шапка —
+     вона клеїться до верху рамки, а не до сторінки кабінету.
+     ⚠️ Точну висоту ставить JS (`fitBoardFrame`) — тут лише запасна на
+     випадок, якщо скрипт не встиг відпрацювати. */
+  #board-frame{
+    display:block; width:100%; border:0; border-radius:12px;
+    height:calc(100vh - 380px); min-height:440px;
+    background:var(--bg);
+  }
+  body.tab-games .wrap{padding-bottom:16px;}
+
   /* ---------- DEADLINE ---------- */
   .deadline{
     display:flex;justify-content:space-between;align-items:center;
@@ -854,6 +868,7 @@ function renderTabs(){
         ['bonus',   'Bonus'],
         ['boosts',  'Boosts'],
         ['matches', 'Predictions & Results'],
+        ['games',   'All Games'],
         ['press',   'News & Press'],
         ['board',   'Leaderboard & Prize'],   // правіше за News & Press — рішення Богдана
       ];
@@ -905,10 +920,15 @@ async function go(tab){
     : [];
 
   S.tab = tab;
+  // На вкладці All Games гортається таблиця ВСЕРЕДИНІ рамки, а сторінка
+  // кабінету стоїть. Звичайний нижній відступ у 120px додав би їй власну
+  // смугу прокрутки на порожньому місці — тобто дві смуги одночасно.
+  document.body.classList.toggle('tab-games', tab === 'games');
   renderTabs();
   if (!sameTab) $('view').innerHTML = '<div class="spin">завантаження…</div>';
   try {
     if (tab === 'matches') await viewMatches();
+    else if (tab === 'games') await viewGames();
     else if (tab === 'boosts') await viewBoosts();
     else if (tab === 'bonus') await viewBonus();
     else if (tab === 'press') await viewPress();
@@ -2594,6 +2614,92 @@ function lbDeltaHtml(d){
   if(d < 0) return `<span style="color:var(--red)">▼${-d}</span>`;
   return `<span class="dim">=</span>`;
 }
+
+// =====================================================================
+//  ALL GAMES — усі матчі етапу з прогнозами всіх учасників
+//
+//  ⚠️ ЦЕ НЕ ДРУГА КОПІЯ БОРДА, А САМ БОРД ІЗ САЙТУ, вставлений сюди
+//  сторінкою (`test.html?board=<етап>` у режимі `body.embed` — без
+//  логотипа, шапки й навігації). Рішення Богдана 14.08.2026 з трьох
+//  варіантів: перенести код борда в кабінет означало б ~1500 рядків
+//  копії, яка мовчки розійшлася б із сайтом при першій же правці
+//  самого борда (як-от прилипла шапка того ж дня).
+//
+//  ⚠️ Сторінка всередині ходить у базу ПІД АНОНІМОМ — вона публічна й
+//  сесії кабінету не бачить. Наслідок, погоджений із Богданом: чужі
+//  прогнози до відкриття вікенда не видно (RLS), і свої власні теж —
+//  свої дивись у «Predictions & Results». Домовленість була буквально
+//  «рівно як зараз на сайті».
+//
+//  ⚠️ Адреса рахується з імені ФАЙЛУ КАБІНЕТУ, а не зашита. Інакше
+//  промоут `app-test.html` → `app.html` лишив би в бойовому кабінеті
+//  посилання на тестову сторінку — і `promote.py` цього не спіймав би,
+//  бо він звіряє лише свій список відомих відмінностей (бейдж STAGE).
+//  ⚠️ Умова саме «файл називається рівно app.html», а не «в імені є
+//  -test»: бойовий кабінет один, а не-бойових кілька — `app-test.html`
+//  і `preview_app.html` (локальний передпоказ, tools/mkpreview_app.py).
+//  За правилом «є -test» передпоказ вантажив би PROD-сторінку.
+// =====================================================================
+async function viewGames(){
+  const src = (/\/app\.html$/.test(location.pathname) ? 'index.html' : 'test.html')
+            + '?board=' + encodeURIComponent(S.stage.key);
+  $('view').innerHTML = `
+    <p class="dim" style="margin:0 0 10px;font-size:13px">
+      Прогнози всіх учасників, результати й бусти — той самий борд, що на
+      сайті. Чужі прогнози з'являються, коли вікенд відкривається; доти там
+      прочерки. Свої — у вкладці «Predictions&nbsp;&amp;&nbsp;Results».
+    </p>
+    <iframe id="board-frame" title="Борд етапу ${esc(S.stage.title)}" src="${esc(src)}"></iframe>`;
+  // ⚠️ Слухач вішаємо КОДОМ, а не атрибутом `onload=` у розмітці: скрипт
+  // кабінету — модуль, його функції не лежать у `window`, і атрибут падав
+  // би з «watchBoardFrame is not defined» (спіймано на передпоказі).
+  $('board-frame').addEventListener('load', ev => watchBoardFrame(ev.target));
+  fitBoardFrame();
+}
+
+/* Борд усередині малюється ПІСЛЯ запитів у базу, тобто вже після
+   `onload` рамки. Тому на вузькому екрані (де висота = висоті вмісту)
+   стежимо за вмістом далі: сторінка своя ж, того самого походження, тож
+   спостерігач ставиться напряму, без листування між вікнами.
+   ⚠️ Усе в try/catch: якщо доступ до вмісту колись зникне (інший домен),
+   рамка просто лишиться фіксованої висоти — вкладка не поламається. */
+function watchBoardFrame(f){
+  try{
+    const d = f.contentDocument;
+    if(d && d.body && window.ResizeObserver) new ResizeObserver(fitBoardFrame).observe(d.body);
+  }catch(e){}
+  fitBoardFrame();
+}
+
+/* Рамка борда розтягується рівно до низу екрана, щоб не було ДВОХ смуг
+   прокрутки одночасно: гортається таблиця всередині, сторінка кабінету
+   під нею стоїть.
+   ⚠️ Висота рахується, а не задається в CSS: над рамкою стоять шапка,
+   чіпи етапів, вкладки й підпис, і їхня сумарна висота гуляє від ширини
+   вікна (вкладки переносяться на другий рядок).
+   ⚠️ `rect.top + scrollY` — позиція в ДОКУМЕНТІ, не у вікні: інакше
+   рамка виходила б різної висоти залежно від того, чи сторінка була
+   прокручена в момент відкриття вкладки. */
+function fitBoardFrame(){
+  const f = $('board-frame');
+  if(!f) return;
+  // ⚠️ Вузький екран (той самий поріг 1101px, що й у клею шапки на
+  // борді): клеїти там нічого, а окреме вікно прокрутки всередині
+  // сторінки лише заважає — на 390px рамка виходила 440px заввишки, тобто
+  // чотири рядки. Тому там рамка росте під вміст, і прокрутка одна.
+  if(window.innerWidth < 1101){
+    try{
+      const d = f.contentDocument;
+      if(d && d.documentElement){
+        f.style.height = Math.max(440, d.documentElement.scrollHeight) + 'px';
+        return;
+      }
+    }catch(e){}
+  }
+  const top = f.getBoundingClientRect().top + window.scrollY;
+  f.style.height = Math.max(440, Math.round(window.innerHeight - top - 16)) + 'px';
+}
+window.addEventListener('resize', fitBoardFrame);
 
 async function viewBoard(){
   // ДВА РІЗНІ БОРДИ, КОЖЕН НА СВОЄМУ МІСЦІ (рішення Богдана 11.08.2026):
