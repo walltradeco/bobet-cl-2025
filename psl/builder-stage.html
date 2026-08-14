@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<title>Конструктор турнірів (STAGE)</title>
+<!-- Палітра й шрифти — ті самі, що на публічній сторінці PSL
+     (psl-src/page.template.html), щоб кабінет не виглядав чужим до
+     власної ліги. Кабінет BoBet НЕ чіпається взагалі: там своя зелена
+     тема й 4778 рядків живого коду. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0F172A; --panel:#14243F; --panel2:#1B3358; --line:#24476F;
+    --blue:#0077CC; --sky:#0EA5E9; --deep:#004A80;
+    --white:#FFFFFF; --grey:#F8FAFC; --muted:#8FA9C4;
+    --gold:#F5C542; --red:#E4707A; --green:#3FB27F;
+    --f-body:'Satoshi',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --f-head:'Montserrat','Satoshi',-apple-system,sans-serif;
+    --f-num:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--grey);font-family:var(--f-body);
+    font-size:16px;line-height:1.55;min-height:100vh;-webkit-text-size-adjust:100%;}
+  /* ⚠️ 1000 → 1440 (14.08.2026), як у кабінеті BoBet. Друга стеля —
+     вікно модалки (`#cabinet-shell` у psl-src/page.template.html). */
+  .wrap{max-width:1440px;margin:0 auto;padding:0 16px 100px;}
+  .mono{font-family:var(--f-num);}
+  .hide{display:none !important;}
+  .dim{color:var(--muted);}
+
+  header{padding:20px 0 14px;border-bottom:1px solid var(--line);margin-bottom:16px;}
+  .head-row{display:flex;justify-content:space-between;align-items:center;gap:12px;}
+  h1{font-family:var(--f-head);font-size:22px;margin:0;letter-spacing:-0.01em;}
+  .whoami{font-family:var(--f-num);font-size:13px;color:var(--muted);text-align:right;}
+  .whoami b{color:var(--sky);display:block;font-size:15px;}
+  .stage-badge{font-family:var(--f-num);font-size:12px;font-weight:700;
+    letter-spacing:0.08em;color:var(--red);border:1px solid var(--red);
+    border-radius:5px;padding:2px 7px;vertical-align:middle;}
+
+  nav.tabs{display:flex;gap:6px;overflow-x:auto;margin:14px 0 4px;padding-bottom:4px;}
+  nav.tabs button{background:var(--panel);border:1px solid var(--line);color:var(--muted);
+    font-family:var(--f-head);font-weight:600;font-size:15px;padding:9px 14px;
+    border-radius:8px;white-space:nowrap;cursor:pointer;}
+  nav.tabs button.on{background:var(--panel2);color:var(--white);border-color:var(--sky);}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+    padding:14px 16px;margin-bottom:12px;}
+  .card h2{font-family:var(--f-head);font-size:16px;margin:0 0 10px;color:var(--white);}
+  .sect-title{font-family:var(--f-head);font-size:15px;color:var(--muted);
+    margin:22px 0 10px;letter-spacing:0.02em;}
+
+  input,button{font-family:inherit;font-size:16px;}
+  input[type=email],input[type=text]{width:100%;padding:11px 12px;border-radius:9px;
+    border:1px solid var(--line);background:var(--panel);color:var(--grey);margin-bottom:10px;}
+  button.primary{background:var(--blue);border:1px solid var(--blue);color:#fff;
+    font-weight:700;padding:10px 16px;border-radius:9px;cursor:pointer;}
+  button.primary:disabled{opacity:0.5;cursor:default;}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:8px 13px;border-radius:9px;cursor:pointer;}
+  button.ghost:hover{color:var(--grey);border-color:var(--sky);}
+
+  .login{max-width:360px;margin:14vh auto 0;}
+  .login h1{margin-bottom:18px;}
+  .code{font-family:var(--f-num);letter-spacing:0.3em;text-align:center;font-size:20px;}
+
+  .msg{border-radius:9px;padding:10px 12px;margin-top:10px;font-size:14px;}
+  .msg.err{background:rgba(228,112,122,0.14);border:1px solid var(--red);color:#ffd9dd;}
+  .msg.ok{background:rgba(63,178,127,0.14);border:1px solid var(--green);color:#d6f5e7;}
+  .spin{color:var(--muted);padding:30px 0;text-align:center;}
+
+  /* ---------- Матч ---------- */
+  .match{display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+    background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:12px 14px;margin-bottom:9px;}
+  .match.waiting{border-color:var(--gold);background:rgba(245,197,66,0.06);}
+  .match .who{flex:1 1 190px;min-width:0;}
+  .match .who b{color:var(--white);}
+  .match .score{font-family:var(--f-num);font-size:20px;font-weight:700;white-space:nowrap;}
+  .match .acts{display:flex;gap:7px;flex-wrap:wrap;margin-left:auto;}
+  .tag{font-family:var(--f-num);font-size:11px;letter-spacing:0.06em;
+    border-radius:5px;padding:2px 7px;border:1px solid var(--line);color:var(--muted);}
+  .tag.wait{color:var(--gold);border-color:var(--gold);}
+  .tag.ok{color:var(--green);border-color:var(--green);}
+  .tag.mine{color:var(--sky);border-color:var(--sky);}
+  .sc-in{width:56px;padding:7px 8px;text-align:center;font-family:var(--f-num);
+    font-size:17px;border-radius:8px;border:1px solid var(--line);
+    background:var(--bg);color:var(--grey);}
+
+  /* ---------- Пара матчів з одним суперником ----------
+     Учасники зазвичай грають два матчі підряд, тож два матчі однієї
+     пари стоять разом і мають спільну шапку з іменем — інакше те саме
+     імʼя двічі підряд читається як помилка розкладу. */
+  .pair{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+    padding:11px 13px;margin-bottom:11px;}
+  .pair-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+    margin-bottom:9px;padding-bottom:8px;border-bottom:1px solid var(--line);}
+  .pair-head b{color:var(--white);}
+  .pair .match{background:transparent;border:0;border-radius:0;
+    padding:5px 0;margin:0;}
+  .pair .match + .match{border-top:1px solid rgba(255,255,255,0.05);}
+  .leg{font-family:var(--f-num);font-size:12px;color:var(--muted);
+    min-width:64px;}
+
+  /* Підпис над полем: «Ти забив» у placeholder не влазить */
+  .sc-box{display:flex;flex-direction:column;gap:3px;}
+  .sc-lab{font-size:11px;color:var(--muted);letter-spacing:0.02em;text-align:center;}
+
+  /* ---------- Модалка підтвердження ----------
+     Той самий принцип, що «Перевір, що обрав» у кабінеті BoBet:
+     рахунок їде суперникові й показується всім, тож одрук помітять
+     не одразу. Крок підтвердження робить одрук видимим ДО відправки. */
+  .ovl{position:fixed;inset:0;background:rgba(4,8,14,0.72);z-index:50;
+    display:flex;align-items:center;justify-content:center;padding:18px;}
+  .dlg{background:var(--panel);border:1px solid var(--line);border-radius:13px;
+    padding:20px 22px;max-width:390px;width:100%;}
+  .dlg h3{margin:0 0 4px;font-family:var(--f-head);font-size:19px;color:var(--white);}
+  .dlg .sub{color:var(--muted);font-size:14px;margin-bottom:14px;}
+  .dlg .big{font-family:var(--f-num);font-size:34px;font-weight:700;
+    text-align:center;color:var(--white);margin:6px 0 4px;}
+  .dlg .lines{font-size:14px;color:var(--grey);text-align:center;margin-bottom:16px;}
+  .dlg .row{display:flex;gap:9px;}
+  .dlg .row button{flex:1;}
+
+  table{width:100%;border-collapse:collapse;font-size:15px;}
+  th,td{padding:8px 9px;border-bottom:1px solid var(--line);text-align:left;}
+  th{font-family:var(--f-head);font-size:13px;color:var(--muted);font-weight:600;
+    text-transform:uppercase;letter-spacing:0.05em;}
+  td.num,th.num{text-align:right;font-family:var(--f-num);white-space:nowrap;}
+
+  /* ⚠️ ТАБЛИЦЯ ЗАЛІКУ — фіксована розкладка (14.08.2026, після 1440).
+     Три спроби, і лише третя правильна:
+       1. як було — браузер ділить зайву ширину МІЖ УСІМА колонками
+          порівну, і між «Гравець» та «І» зяє діра на пів-екрана;
+       2. цифри `width:1%` — навпаки, злипаються в купку біля правого
+          краю, а ліворуч порожньо (Богдан: «місце ж є ліворуч»);
+       3. `table-layout:fixed` + частка для імені: решта колонок ділить
+          залишок ПОРІВНУ й розходиться по всій ширині. Саме так
+          влаштований борд на сайті, який виглядає добре.
+     ⚠️ Клас потрібен: `fixed` не можна вішати на всі таблиці кабінету —
+     у «Усі матчі» й в адмінці колонки різної природи. */
+  table.psl-standings{table-layout:fixed;}
+  table.psl-standings th:first-child{width:5%;}
+  table.psl-standings th:nth-child(2){width:28%;}
+  /* Стеля довжини рядка для суцільного тексту — те саме, що в кабінеті
+     BoBet: таблиці на всю ширину, абзаци вужчі. */
+  #view p{max-width:92ch;}
+
+  /* ===================================================================
+     ЗОНИ В ТАБЛИЦІ (файл 253). Богдан 14.08.2026: «всім участникам це
+     з самого початку показується / підсвічується». Тому смужка стоїть
+     від першого туру, а не з'являється наприкінці сезону.
+     ⚠️ Колір береться з колонки `zone` вьюхи, а не рахується тут:
+     кабінет і публічна сторінка мусять показувати те саме.
+     =================================================================== */
+  tr.z-promote  td:first-child{box-shadow:inset 3px 0 var(--green);}
+  tr.z-playoff  td:first-child{box-shadow:inset 3px 0 var(--gold);}
+  tr.z-relegate td:first-child{box-shadow:inset 3px 0 var(--red);}
+  .zone-key{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted);
+    margin-top:10px;}
+  .zone-key i{display:inline-block;width:10px;height:10px;border-radius:2px;
+    margin-right:5px;vertical-align:middle;font-style:normal;}
+  .zone-key .p{background:var(--green);} .zone-key .o{background:var(--gold);}
+  .zone-key .r{background:var(--red);}
+
+  /* ===================================================================
+     КУБКОВА СІТКА. Раунди — колонки, пари всередині розтягнуті по
+     висоті, тож фінал стоїть навпроти середини попереднього раунду.
+     ⚠️ Горизонтальна прокрутка ОБОВ'ЯЗКОВА: сітка на 16 не влазить
+     навіть у 1440, а сторінка сама горизонтально їхати не має.
+     =================================================================== */
+  .bracket{display:flex;gap:14px;overflow-x:auto;padding-bottom:8px;}
+  .br-col{display:flex;flex-direction:column;justify-content:space-around;
+    gap:10px;min-width:210px;}
+  .br-col h3{font-family:var(--f-head);font-size:13px;color:var(--muted);
+    text-transform:uppercase;letter-spacing:0.05em;margin:0 0 2px;}
+  .br-tie{background:var(--panel);border:1px solid var(--line);border-radius:9px;
+    padding:8px 10px;font-size:14px;}
+  .br-tie.done{border-color:var(--sky);}
+  .br-tie.bye{opacity:0.55;border-style:dashed;}
+  .br-side{display:flex;justify-content:space-between;gap:8px;}
+  .br-side.win b{color:var(--white);}
+  .br-side.lose{color:var(--muted);}
+  .br-side .g{font-family:var(--f-num);}
+  .br-empty{color:var(--muted);font-style:italic;}
+
+  /* ===================================================================
+     КОНСТРУКТОР. Блоки етапів один під одним, поля в два стовпці.
+     =================================================================== */
+  .fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:10px 14px;align-items:end;}
+  .fld label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px;}
+  .fld input,.fld select{width:100%;padding:9px 10px;border-radius:8px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--grey);
+    font-size:15px;margin:0;}
+  .stage-card{border-left:3px solid var(--sky);}
+  .stage-card.k-cup{border-left-color:var(--gold);}
+  .stage-card.k-supercup{border-left-color:var(--red);}
+  .stage-card.k-playoff{border-left-color:var(--green);}
+  .row-acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  button.ghost{background:transparent;border:1px solid var(--line);color:var(--muted);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;}
+  button.ghost:hover{color:var(--white);border-color:var(--sky);}
+  button.danger{background:transparent;border:1px solid var(--red);color:var(--red);
+    padding:8px 12px;border-radius:8px;cursor:pointer;font-size:14px;}
+  .balance{font-family:var(--f-num);font-size:14px;padding:7px 11px;border-radius:8px;
+    display:inline-block;margin-top:8px;}
+  .balance.ok{color:var(--green);border:1px solid var(--green);}
+  .balance.bad{color:var(--red);border:1px solid var(--red);}
+  .prize-rows td{padding:6px 8px;}
+  .prize-rows input{width:80px;padding:6px 8px;border-radius:7px;
+    border:1px solid var(--line);background:var(--panel2);color:var(--grey);}
+
+  /* ===================================================================
+     ШИРИНА 1440 (14.08.2026)
+     ⚠️ ІСТОРІЯ, ЩОБ НЕ ХОДИТИ КОЛОМ. Спершу звузив «Мої матчі» до 860,
+     потім до 1120 — Богдан обидва рази відхилив («навіщо аж так
+     зменшив», «розтянули блоки, але всередині зроби більше»). Рішення
+     те саме, що в кабінеті BoBet: блоки НЕ звужуємо взагалі — вони
+     йдуть на всю ширину, як на проді, — а замість того збільшуємо те,
+     що ВСЕРЕДИНІ них. Значення («Внести», рахунок) стоять біля правого
+     краю рівним стовпчиком, і це нормально.
+     =================================================================== */
+  @media(min-width:1200px){
+    /* Усередині блоку матчу все помітно більше — це головна робоча
+       форма кабінету, у неї вносять рахунки. */
+    .pair-head{font-size:19px;}
+    .leg{font-size:16px;min-width:92px;}
+    .sc-in{width:76px;padding:11px 8px;font-size:22px;}
+    .sc-lab{font-size:14px;}
+    .match .who{font-size:18px;}
+    .match .score{font-size:25px;}
+    .tag{font-size:13px;padding:4px 10px;}
+    .match button{font-size:16px;padding:10px 18px;}
+    table{font-size:16px;}
+    .dim,.muted{font-size:15px;}
+  }
+  .tbl-scroll{overflow-x:auto;}
+  tr.me td{background:rgba(14,165,233,0.10);}
+</style>
+</head>
+<body>
+
+<!-- ============ ВХІД ============ -->
+<div id="screen-login" class="wrap">
+  <div class="login">
+    <h1>Конструктор турнірів <span class="stage-badge">STAGE</span></h1>
+    <div id="step-email">
+      <p class="dim" style="margin-bottom:14px">Вкажи пошту — надішлемо код</p>
+      <input type="email" id="in-email" placeholder="пошта" autocomplete="email" inputmode="email">
+      <button class="primary" id="btn-send" style="width:100%">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p class="dim" style="margin-bottom:14px">Код із листа. Перевір і спам.</p>
+      <input type="text" id="in-code" class="code" placeholder="000000" maxlength="12" inputmode="numeric" autocomplete="one-time-code">
+      <button class="primary" id="btn-verify" style="width:100%">Увійти</button>
+      <button class="ghost" id="btn-back" style="margin-top:10px;width:100%">Інша пошта</button>
+    </div>
+    <div id="login-msg"></div>
+  </div>
+</div>
+
+<!-- ============ КОНСТРУКТОР ============ -->
+<div id="screen-app" class="wrap hide">
+  <header>
+    <div class="head-row">
+      <h1>Конструктор турнірів <span class="stage-badge">STAGE</span></h1>
+      <div class="whoami">
+        <b id="my-name">—</b>
+        <span id="my-league" class="dim"></span>
+        <div style="margin-top:5px">
+          <a class="ghost" id="lnk-cabinet" href="cabinet-stage.html"
+             style="padding:3px 8px;font-size:13px;text-decoration:none">кабінет</a>
+          <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:13px">вийти</button>
+        </div>
+      </div>
+    </div>
+    <nav class="tabs" id="leagues"></nav>
+  </header>
+  <div id="view"><div class="spin">завантаження…</div></div>
+</div>
+
+<script type="module">
+// =====================================================================
+//  КОНСТРУКТОР ТУРНІРІВ — окрема сторінка, не вкладка кабінету.
+//
+//  ⚠️ ЧОМУ ОКРЕМО (рішення Богдана 14.08.2026). Конструктор потрібен
+//  ОДНІЙ людині з дванадцяти, а вкладку в кабінеті бачили б усі. І
+//  головне — конструктор буде ще й для BoBet, а кабінет BoBet це 4778
+//  рядків коду, які працюють під час живого сезону: вставляти туди
+//  другий конструктор означало б ризикувати робочою системою заради
+//  економії верстки.
+//
+//  ⚠️ ПЕРЕМИКАЧ ЛІГ УГОРІ Є ВІД ПОЧАТКУ, хоч у ньому поки один пункт.
+//  Це не прикраса: коли з'явиться конструктор BoBet, він стане другим
+//  пунктом тут, а не окремою сторінкою. Схеми в ліг різні
+//  (`tournaments/gameweeks/matches` проти `psl_*`), тож спільною буде
+//  оболонка, а не форма.
+//
+//  anon-ключ публічний — захист не в ньому, а в RLS.
+//  service_role сюди НЕ КЛАСТИ НІКОЛИ.
+// =====================================================================
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const S = { me: null, season: null, seasons: [], stages: [], builder: null };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+function msg(host, text, kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
+
+// =====================================================================
+//  ВХІД — той самий шлях, що в кабінеті BoBet
+// =====================================================================
+$('btn-send').onclick = async () => {
+  const email = $('in-email').value.trim().toLowerCase();
+  if (!email) return msg($('login-msg'), 'Вкажи пошту');
+  $('btn-send').disabled = true; $('btn-send').textContent = 'надсилаю…';
+
+  const { error } = await sb.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+
+  $('btn-send').disabled = false; $('btn-send').textContent = 'Надіслати код';
+  if (error) {
+    // Тригер бази (243) відбиває пошту, якої немає ні в BoBet, ні в PSL
+    console.error('signInWithOtp:', error);
+    const t = /не.*доступ|not allowed|Database error/i.test(error.message)
+      ? 'Немає доступу — цієї пошти немає в списку учасників'
+      : error.message;
+    return msg($('login-msg'), t);
+  }
+  window.__email = email;
+  $('step-email').classList.add('hide');
+  $('step-code').classList.remove('hide');
+  $('login-msg').innerHTML = '';
+  $('in-code').focus();
+};
+
+$('btn-verify').onclick = async () => {
+  const token = $('in-code').value.trim();
+  if (token.length < 4) return msg($('login-msg'), 'Код закороткий');
+  $('btn-verify').disabled = true;
+
+  // Перший вхід шле лист типу signup, повторні — email. Ззовні не
+  // видно, який саме випадок, тому пробуємо всі три.
+  let error = null;
+  for (const type of ['email', 'signup', 'magiclink']) {
+    const res = await sb.auth.verifyOtp({ email: window.__email, token, type });
+    if (!res.error) { error = null; break; }
+    error = res.error;
+  }
+  $('btn-verify').disabled = false;
+  if (error) { console.error('verifyOtp:', error); return msg($('login-msg'), 'Не вийшло: ' + (error.message || '')); }
+  await boot();
+};
+
+$('btn-back').onclick = () => {
+  $('step-code').classList.add('hide');
+  $('step-email').classList.remove('hide');
+  $('login-msg').innerHTML = '';
+};
+
+$('btn-logout').onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+
+// =====================================================================
+//  Старт
+//
+//  ⚠️ Конструктор бачить і ЧЕРНЕТКИ, і активний сезон — на відміну від
+//  кабінету, який чернетку показує лише адмінові й лише за відсутності
+//  активного. Тут це головний робочий стан: сезон збирається саме в
+//  чернетці.
+// =====================================================================
+async function boot(){
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+
+  $('screen-login').classList.add('hide');
+  $('screen-app').classList.remove('hide');
+
+  const { data: seasons } = await sb.from('psl_seasons')
+    .select('id,number,title,status,uses_clubs')
+    .in('status', ['active', 'draft'])
+    .order('number', { ascending: false });
+
+  // Адмінство перевіряється по КОЖНОМУ сезону окремо: людина може бути
+  // адміном одного й звичайним учасником іншого.
+  S.seasons = [];
+  for (const s of (seasons || [])) {
+    const { data: me } = await sb.rpc('psl_me', { p_season: s.id });
+    const my = (me && me[0]) || null;
+    if (my && my.is_admin) { S.seasons.push(s); S.me = S.me || my; }
+  }
+
+  $('my-name').textContent  = S.me ? S.me.display_name : '—';
+  $('my-league').textContent = 'PSuper League';
+  renderLeagues();
+
+  if (!S.seasons.length) {
+    // Жодного сезону, де ти адмін. Створити перший усе одно можна —
+    // psl_create_season (261) пускає того, хто адмін ХОЧ ДЕСЬ у PSL.
+    $('view').innerHTML = newSeasonCard(
+      'Сезонів, якими ти керуєш, поки немає. Створи перший.');
+    bindNewSeason();
+    return;
+  }
+  S.season = S.seasons[0];
+  await loadStages();
+  await viewBuilder();
+}
+
+function renderLeagues(){
+  // Поки одна ліга. Другий пункт з'явиться разом із конструктором BoBet.
+  $('leagues').innerHTML = `<button class="on" disabled>PSuper League</button>`;
+}
+
+async function loadStages(){
+  const { data, error } = await sb.from('psl_stages')
+    .select('*').eq('season_id', S.season.id).order('sort_order');
+  if (error) { console.error(error); S.stages = []; return; }
+  S.stages = data || [];
+}
+
+// ---------------------------------------------------------------------
+//  Створення сезону з нуля й перемикач сезонів
+//
+//  ⚠️ Цього не було у вкладці кабінету — там сезон завжди вже існував.
+//  Окремій сторінці без цього нічого показати в порожній базі.
+// ---------------------------------------------------------------------
+function newSeasonCard(note){
+  const next = S.seasons.length ? Math.max(...S.seasons.map(s => s.number)) + 1 : 1;
+  return `<div class="card">
+    <h2>Новий сезон</h2>
+    ${note ? `<p class="dim" style="font-size:14px">${esc(note)}</p>` : ''}
+    <div class="fields">
+      ${fld('Номер', numF('ns-num', next, 1, 999))}
+      ${fld('Назва', `<input type="text" id="ns-title" value="Season ${next}">`)}
+      ${fld('Клуби в сезоні', chkF('ns-clubs', false))}
+      ${fld('&nbsp;', `<button class="primary" id="ns-create">Створити чернетку</button>`)}
+    </div>
+    <p class="dim" style="font-size:13px">Сезон народжується чернеткою: його не
+    бачить ніхто, крім тебе, доки не натиснеш «Опублікувати».</p>
+    <div id="ns-msg"></div>
+  </div>`;
+}
+
+function bindNewSeason(){
+  const b = $('ns-create'); if (!b) return;
+  b.onclick = async () => {
+    const { data, error } = await sb.rpc('psl_create_season', {
+      p_number: Number($('ns-num').value),
+      p_title: ($('ns-title').value || '').trim(),
+      p_uses_clubs: $('ns-clubs').checked });
+    if (error) return msg($('ns-msg'), error.message);
+    location.reload();
+  };
+}
+
+function seasonSwitcher(){
+  if (S.seasons.length < 2) return '';
+  return `<div class="card"><h2>Сезон</h2><div class="row-acts">${
+    S.seasons.map(s => `<button class="${s.id === S.season.id ? 'primary' : 'ghost'}"
+      data-season="${s.id}">${esc(s.title)}${s.status === 'draft' ? ' · чернетка' : ''}</button>`)
+      .join('')}</div></div>`;
+}
+
+
+// =====================================================================
+//  КОНСТРУКТОР ТУРНІРУ
+//
+//  Структура екрана повторює те, як Богдан це описав 14.08.2026:
+//  «турнір, його назва, потім етапи — ліга, кубок, суперкубок… блок,
+//  блок, блок. Потім окремо блок про призові».
+//
+//  ⚠️ Кожен блок зберігається СВОЄЮ кнопкою, а не однією внизу. Форма
+//  на весь сезон означала б, що правка очок за перемогу й правка фонду
+//  їдуть одним запитом — і незрозуміло, що саме не збереглось, коли
+//  база щось відхилить.
+// =====================================================================
+
+const KIND_TITLE  = { liga:'Ліга', cup:'Кубок', supercup:'Суперкубок', playoff:'Перехідні матчі' };
+const FORMAT_BY_KIND = {
+  liga:     [['round_robin','кожен з кожним'], ['series','серії до N перемог'], ['swiss','швейцарська']],
+  cup:      [['single_elim','олімпійська'], ['double_elim','подвійне вибування']],
+  supercup: [['single_elim','олімпійська']],
+  playoff:  [['single_elim','олімпійська']],
+};
+const TIEBREAKS = [
+  ['goal_diff','різниця голів'], ['goals_for','забиті'],
+  ['goals_against','менше пропущених'], ['wins','перемоги'],
+  ['head_to_head','очні зустрічі'], ['buchholz','сила суперників'],
+];
+const SLOT_SOURCES = [
+  ['league_place','місце в лізі'], ['cup_winner','переможець кубка'],
+  ['cup_runner_up','фіналіст кубка'], ['cup_third','третє місце кубка'],
+];
+
+const esc2 = (v) => (v === null || v === undefined) ? '' : esc(String(v));
+const fld  = (label, inner) => `<div class="fld"><label>${label}</label>${inner}</div>`;
+const numF = (id, val, min, max, step) =>
+  `<input type="number" id="${id}" value="${esc2(val)}" min="${min}" max="${max}" step="${step || 1}">`;
+const selF = (id, val, opts) => `<select id="${id}">` +
+  opts.map(([v, t]) => `<option value="${v}" ${String(v) === String(val) ? 'selected' : ''}>${t}</option>`).join('') +
+  `</select>`;
+const chkF = (id, val) => `<label style="display:flex;gap:8px;align-items:center">
+  <input type="checkbox" id="${id}" ${val ? 'checked' : ''} style="width:auto"> так</label>`;
+
+async function viewBuilder(){
+  const sid = S.season.id;
+  const [lc, cc, tb, slots, pairs, pc, prow, goals, log, players] = await Promise.all([
+    sb.from('psl_league_config').select('*'),
+    sb.from('psl_cup_config').select('*'),
+    sb.from('psl_tiebreak').select('*').order('sort_order'),
+    sb.from('psl_supercup_slot').select('*').order('sort_order'),
+    sb.from('psl_playoff_pair').select('*').order('sort_order'),
+    sb.from('psl_prize_config').select('*').eq('season_id', sid).maybeSingle(),
+    sb.from('psl_prize_row').select('*').eq('season_id', sid).order('sort_order'),
+    sb.from('psl_goals').select('*'),
+    sb.from('psl_structure_log').select('*').eq('season_id', sid)
+      .order('created_at', { ascending: false }).limit(15),
+    sb.from('psl_players').select('id,display_name').eq('season_id', sid).order('display_name'),
+  ]);
+
+  const B = {
+    league: idx(lc.data, 'stage_id'), cup: idx(cc.data, 'stage_id'),
+    tb: group(tb.data, 'stage_id'),   slots: group(slots.data, 'stage_id'),
+    pairs: group(pairs.data, 'stage_id'), goals: group(goals.data, 'stage_id'),
+    prize: pc.data || null, rows: prow.data || [], log: log.data || [],
+    players: players.data || [],
+  };
+  S.builder = B;
+
+  // Передпоказ рахує база (psl_stage_forecast, файл 261) — щоб число в
+  // конструкторі й число після побудови не розходились.
+  const fc = {};
+  await Promise.all(S.stages.map(async st => {
+    const { data } = await sb.rpc('psl_stage_forecast', { p_stage: st.id });
+    fc[st.id] = (data && data[0]) || null;
+  }));
+
+  $('view').innerHTML =
+      builderSeasonCard()
+    + `<div class="sect-title">Етапи</div>`
+    + (S.stages.length
+        ? S.stages.map(st => builderStageCard(st, B, fc[st.id])).join('')
+        : `<div class="card dim">Етапів ще немає. Додай перший — з нього почнеться сезон.</div>`)
+    + builderAddStage()
+    + builderGoals(B)
+    + builderPrize(B)
+    + builderLog(B);
+
+  bindBuilder(B);
+}
+
+function idx(rows, key){ const m = {}; (rows || []).forEach(r => m[r[key]] = r); return m; }
+function group(rows, key){
+  const m = {}; (rows || []).forEach(r => { (m[r[key]] = m[r[key]] || []).push(r); }); return m;
+}
+
+// ---------------------------------------------------------------------
+//  Сезон
+// ---------------------------------------------------------------------
+function builderSeasonCard(){
+  const s = S.season;
+  const draft = s.status === 'draft';
+  return `<div class="card">
+    <h2>${esc(s.title)} <span class="tag ${draft ? 'wait' : 'ok'}">${
+      draft ? 'чернетка' : 'іде'}</span></h2>
+    <p class="dim" style="font-size:14px">${draft
+      ? 'Сезону поки не бачить ніхто, крім тебе. Збери структуру, потім тисни «Опублікувати».'
+      : 'Сезон уже йде. Правки структури дозволені, але вони перерахують таблицю — система попередить, що саме.'}</p>
+    <div class="row-acts">
+      ${draft ? `<button class="primary" id="b-publish">Опублікувати сезон</button>` : ''}
+      <button class="ghost" id="b-clone">Створити новий як цей</button>
+      ${draft ? '' : `<button class="ghost" id="b-finish">Завершити сезон</button>`}
+    </div>
+    <div id="b-season-msg"></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Етап
+// ---------------------------------------------------------------------
+function builderStageCard(st, B, fc){
+  const p = 's_' + st.id.slice(0, 8);
+  let body = '';
+
+  if (st.kind === 'playoff') {
+    // ⚠️ Перехідним потрібні НЕ лігові правила, а пари «місце проти
+    // місця» — Богдан 14.08: «N-е місце Ліги А проти M-го Ліги Б».
+    // 253 заводить їм psl_league_config за компанію (kind у переліку),
+    // але редагувати там нічого: очки в перехідному матчі не рахуються.
+    const list  = B.pairs[st.id] || [];
+    const ligas = S.stages.filter(s => s.kind === 'liga');
+    if (ligas.length < 2) {
+      body = `<p class="dim">Перехідні матчі мають сенс, коли дивізіонів два.
+        Додай другу лігу — тоді тут з'являться пари.</p>`;
+    } else {
+      body = `<p class="dim" style="font-size:14px;margin:0 0 10px">Кожен рядок —
+        одна пара. Порожній «звідки» вимикає рядок.</p>
+        ${[0,1,2].map(i => {
+          const cur = list[i] || {};
+          return `<div class="fields" style="margin-bottom:8px">
+            ${fld('Дивізіон A', selF(p + '_pa' + i, cur.stage_a,
+                [['','—']].concat(ligas.map(s => [s.id, s.title]))))}
+            ${fld('місце', numF(p + '_ma' + i, cur.place_a, 1, 30))}
+            ${fld('Дивізіон Б', selF(p + '_pb' + i, cur.stage_b,
+                [['','—']].concat(ligas.map(s => [s.id, s.title]))))}
+            ${fld('місце', numF(p + '_mb' + i, cur.place_b, 1, 30))}
+            ${fld('Ігор', selF(p + '_pg' + i, cur.legs, [[1,'одна'],[2,'дві']]))}
+          </div>`;
+        }).join('')}`;
+    }
+
+  } else if (st.kind === 'liga') {
+    const c = B.league[st.id] || {};
+    body = `<div class="fields">
+      ${fld('Очки за перемогу', selF(p + '_pw', c.points_win, [[3,'3'],[2,'2']]))}
+      ${fld('За нічию', selF(p + '_pd', c.points_draw, [[1,'1'],[0,'0']]))}
+      ${st.format === 'round_robin' ? fld('Кіл', selF(p + '_rounds', c.rounds, [[1,'одне'],[2,'два']])) : ''}
+      ${st.format === 'series' ? fld('Серія до перемог', numF(p + '_stw', c.series_to_wins, 2, 5)) : ''}
+      ${st.format === 'series' ? fld('Очки рахувати', selF(p + '_ssc', c.series_scoring,
+          [['series','за серію'],['match','за кожен матч']])) : ''}
+      ${st.format === 'swiss' ? fld('Проходить при N перемогах', numF(p + '_swt', c.swiss_win_target, 1, 10)) : ''}
+      ${st.format === 'swiss' ? fld('Вилітає при M поразках', numF(p + '_slo', c.swiss_loss_out, 1, 10)) : ''}
+      ${st.format === 'swiss' ? fld('або рівно турів', numF(p + '_swr', c.swiss_rounds, 1, 15)) : ''}
+      ${fld('Підіймається місць', numF(p + '_pro', c.promote_slots, 0, 20))}
+      ${fld('Вилітає місць', numF(p + '_rel', c.relegate_slots, 0, 20))}
+      ${fld('Перехідні матчі, місць', numF(p + '_pof', c.playoff_slots, 0, 20))}
+    </div>
+    <div class="sect-title" style="margin:16px 0 8px">Порядок при рівних очках</div>
+    <div class="fields">${[0,1,2].map(i => {
+      const cur = (B.tb[st.id] || [])[i];
+      return fld(i === 0 ? 'спершу' : (i === 1 ? 'потім' : 'далі'),
+        selF(p + '_tb' + i, cur && cur.criterion, [['','—']].concat(TIEBREAKS)));
+    }).join('')}</div>
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Очки завжди перший критерій,
+    ім'я — останній. Тут лише те, що між ними.</p>`;
+
+  } else if (st.kind === 'cup') {
+    const c = B.cup[st.id] || {};
+    body = `<div class="fields">
+      ${fld('Учасників у сітці', numF(p + '_ent', c.entrants_count, 2, 64)
+        + `<p class="dim" style="font-size:12px;margin:4px 0 0">порожньо — усі з ліги</p>`)}
+      ${fld('Посів', selF(p + '_seed', c.seeding, [['league','за місцем у лізі'],['random','жереб']]))}
+      ${fld('Ігор у парі', selF(p + '_legs', c.legs_early, [[1,'одна'],[2,'дві']]))}
+      ${st.format === 'double_elim'
+        ? fld('Ігор у сітці лузерів', selF(p + '_legsl', c.legs_early_l, [[1,'одна'],[2,'дві']])) : ''}
+      ${st.format === 'single_elim' ? fld('Матч за 3-тє місце', chkF(p + '_third', c.third_place)) : ''}
+      ${st.format === 'double_elim' ? fld('Половина стартує в лузерах', chkF(p + '_split', c.split_start)) : ''}
+    </div>
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Фінал і матч за 3-тє —
+    завжди одна гра. Пара з двох ігор вирішується сумою; рівна сума додає ще одну.</p>`;
+
+  } else if (st.kind === 'supercup') {
+    const list = B.slots[st.id] || [];
+    body = `<p class="dim" style="font-size:14px;margin:0 0 10px">Хто грає: два або
+      чотири учасники. Якщо ті самі люди збіглись у двох ролях — добираються
+      наступні за місцями в лізі. Пари в півфіналах жеребкуються.</p>
+      ${[0,1,2,3].map(i => {
+        const cur = list[i] || {};
+        return `<div class="fields" style="margin-bottom:8px">
+          ${fld('Учасник ' + (i + 1), selF(p + '_src' + i, cur.source_kind,
+              [['','—']].concat(SLOT_SOURCES)))}
+          ${fld('Місце (для ліги)', numF(p + '_pl' + i, cur.place, 1, 20))}
+        </div>`;
+      }).join('')}`;
+
+  }
+
+  return `<div class="card stage-card k-${st.kind}">
+    <h2>${esc(st.title)} <span class="tag">${KIND_TITLE[st.kind] || st.kind}</span></h2>
+    <div class="fields" style="margin-bottom:12px">
+      ${fld('Назва етапу', `<input type="text" id="${p}_title" value="${esc2(st.title)}">`)}
+      ${fld('Формат', selF(p + '_fmt', st.format, FORMAT_BY_KIND[st.kind] || []))}
+    </div>
+    ${body}
+    ${fc ? `<p class="dim" style="font-size:13px;margin:12px 0 0">Вийде
+      <b>${fc['матчів']}</b> матч(ів) на ${fc['людей']} учасник(ів)${
+      fc['точно'] ? '' : ' — <b>щонайменше</b>, точне число залежить від результатів'}.</p>` : ''}
+    <div class="row-acts">
+      <button class="primary" data-save="${st.id}">Зберегти</button>
+      <button class="ghost"   data-build="${st.id}">Побудувати</button>
+      <button class="ghost"   data-clear="${st.id}">Очистити розклад</button>
+      <button class="danger"  data-delstage="${st.id}">Видалити етап</button>
+    </div>
+    <div id="${p}_msg"></div>
+  </div>`;
+}
+
+function builderAddStage(){
+  return `<div class="card">
+    <h2>Додати етап</h2>
+    <div class="fields">
+      ${fld('Що додаємо', selF('b-newkind', 'liga',
+        [['liga','Ліга / дивізіон'],['cup','Кубок'],['supercup','Суперкубок'],
+         ['playoff','Перехідні матчі']]))}
+      ${fld('Назва', `<input type="text" id="b-newtitle" placeholder="напр. Ліга А">`)}
+      ${fld('&nbsp;', `<button class="primary" id="b-addstage">Додати</button>`)}
+    </div>
+    <div id="b-add-msg"></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Цілі — місце, якого учасник має досягти у своєму етапі
+// ---------------------------------------------------------------------
+function builderGoals(B){
+  const ligas = S.stages.filter(s => s.kind === 'liga');
+  if (!ligas.length) return '';
+  return `<div class="card">
+    <h2>Цілі учасників</h2>
+    <p class="dim" style="font-size:14px">Ціль — місце в таблиці свого етапу.
+    Досяг його або кращого — ціль виконана. Порожньо означає «цілі немає»;
+    колонка в таблиці з'явиться, лише коли хоч комусь ціль задано.</p>
+    ${ligas.map(st => {
+      const mine = B.goals[st.id] || [];
+      const by = {}; mine.forEach(g => by[g.player_id] = g);
+      return `<div class="sect-title">${esc(st.title)}</div>
+        <div class="fields">${B.players.map(pl => fld(esc(pl.display_name),
+          numF('g_' + st.id.slice(0,8) + '_' + pl.id.slice(0,8),
+               by[pl.id] ? by[pl.id].target_place : '', 1, 30))).join('')}</div>`;
+    }).join('')}
+    <div class="row-acts"><button class="primary" id="b-savegoals">Зберегти цілі</button></div>
+    <div id="b-goals-msg"></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Призові
+//
+//  ⚠️ Сума відсотків мусить дорівнювати 100 — це CHECK у базі (файл
+//  260), а не підказка тут. Індикатор лише показує стан наперед, щоб
+//  не тикатись у відмову збереження.
+// ---------------------------------------------------------------------
+function builderPrize(B){
+  const c = B.prize || { fund_uah:0, pct_places:60, pct_points:20, pct_goals:10,
+                         pct_cup:10, pct_supercup:0 };
+  const sum = ['pct_places','pct_points','pct_goals','pct_cup','pct_supercup']
+    .reduce((a, k) => a + Number(c[k] || 0), 0);
+  const stagesForRows = S.stages.filter(s => ['liga','cup','supercup','playoff'].includes(s.kind));
+
+  return `<div class="card">
+    <h2>Призові</h2>
+    <div class="fields">
+      ${fld('Фонд, ₴', numF('pz_fund', c.fund_uah, 0, 9999999, 100))}
+      ${fld('Місця, %', numF('pz_places', c.pct_places, 0, 100, 0.5))}
+      ${fld('За очки, %', numF('pz_points', c.pct_points, 0, 100, 0.5))}
+      ${fld('За цілі, %', numF('pz_goals', c.pct_goals, 0, 100, 0.5))}
+      ${fld('Кубок, %', numF('pz_cup', c.pct_cup, 0, 100, 0.5))}
+      ${fld('Суперкубок, %', numF('pz_super', c.pct_supercup, 0, 100, 0.5))}
+    </div>
+    <div class="balance ${sum === 100 ? 'ok' : 'bad'}" id="pz-balance">
+      ${sum === 100 ? 'розподілено рівно 100%' : `сума ${sum}% — має бути 100%`}</div>
+    <div class="row-acts"><button class="primary" id="b-savepz">Зберегти фонд</button></div>
+    <div id="b-pz-msg"></div>
+
+    <div class="sect-title">Рядки виплат</div>
+    <p class="dim" style="font-size:14px">Скільки місць нагороджуємо й у якій
+    пропорції — вирішуєш сам. Відсотки всередині «місць» рахуються від
+    бюджету місць, а не від усього фонду; те саме для кубка.</p>
+    <div class="tbl-scroll"><table class="prize-rows">
+      <thead><tr><th>Етап</th><th>За що</th><th class="num">%</th><th></th></tr></thead>
+      <tbody>${(B.rows.length ? B.rows : []).map(r => {
+        const st = S.stages.find(s => s.id === r.stage_id);
+        return `<tr>
+          <td>${esc(st ? st.title : '—')}</td>
+          <td>${r.kind === 'place' ? r.place + '-е місце'
+                : ({winner:'переможець', runner_up:'фіналіст', third:'третє місце'}[r.role] || r.role)}</td>
+          <td class="num"><input type="number" data-pctrow="${r.id}" value="${r.pct}"
+              min="0.5" max="100" step="0.5"></td>
+          <td class="num"><button class="danger" data-delrow="${r.id}">×</button></td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="4" class="dim">Рядків ще немає</td></tr>'}</tbody>
+    </table></div>
+    <div class="fields" style="margin-top:10px">
+      ${fld('Етап', selF('pr-stage', '', stagesForRows.map(s => [s.id, s.title])))}
+      ${fld('За що', selF('pr-kind', 'place',
+        [['place','місце в таблиці'],['winner','переможець кубка'],
+         ['runner_up','фіналіст кубка'],['third','третє місце кубка']]))}
+      ${fld('Місце (якщо за місце)', numF('pr-place', 1, 1, 20))}
+      ${fld('Відсоток', numF('pr-pct', 50, 0.5, 100, 0.5))}
+      ${fld('&nbsp;', `<button class="primary" id="b-addrow">Додати рядок</button>`)}
+    </div>
+    <div id="b-row-msg"></div>
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Журнал змін — плата за дозвіл правити правила посеред сезону
+// ---------------------------------------------------------------------
+function builderLog(B){
+  if (!B.log.length) return '';
+  const ENT = { psl_stages:'етап', psl_league_config:'правила ліги',
+    psl_cup_config:'правила кубка', psl_tiebreak:'тайбрейк',
+    psl_supercup_slot:'склад Суперкубка', psl_playoff_pair:'перехідна пара',
+    psl_prize_config:'фонд', psl_prize_row:'виплата', psl_goals:'ціль' };
+  const ACT = { insert:'додано', update:'змінено', delete:'прибрано' };
+  return `<div class="card">
+    <h2>Журнал змін</h2>
+    <p class="dim" style="font-size:14px">Останні 15 правок структури.
+    Пише сама база, тож зміни через SQL теж видно.</p>
+    ${B.log.map(l => `<div class="match"><div class="who">
+      ${ACT[l.action] || l.action} · <b>${ENT[l.entity] || l.entity}</b>
+      </div><div class="dim">${new Date(l.created_at).toLocaleString('uk-UA')}</div></div>`).join('')}
+  </div>`;
+}
+
+// ---------------------------------------------------------------------
+//  Обробники конструктора
+//
+//  ⚠️ Після будь-якої зміни структури перечитуємо етапи (loadStages) і
+//  малюємо екран заново. Інакше вкладки лишаються старими: доданий
+//  кубок не з'являється в меню «Сітка», доки не перезавантажиш
+//  сторінку.
+// ---------------------------------------------------------------------
+function bindBuilder(B){
+  const v   = (id) => { const e = $(id); return e ? e.value : null; };
+  const chk = (id) => { const e = $(id); return e ? e.checked : null; };
+  const nOrNull = (x) => (x === null || x === '' ? null : Number(x));
+  const on  = (id, fn) => { const e = $(id); if (e) e.onclick = fn; };
+  const reload = async () => { await loadStages(); await viewBuilder(); };
+
+  on('b-publish', async () => {
+    const { error } = await sb.rpc('psl_publish_season', { p_season: S.season.id });
+    if (error) return msg($('b-season-msg'), error.message);
+    S.season.status = 'active';
+    msg($('b-season-msg'), 'Сезон опубліковано', 'ok');
+    await reload();
+  });
+
+  on('b-finish', async () => {
+    if (!confirm('Завершити сезон? Після цього розклад не змінюється.')) return;
+    const { error } = await sb.rpc('psl_finish_season', { p_season: S.season.id });
+    if (error) return msg($('b-season-msg'), error.message);
+    msg($('b-season-msg'), 'Сезон завершено', 'ok');
+  });
+
+  on('b-clone', async () => {
+    const title = prompt('Назва нового сезону:', 'Season ' + (Number(S.season.number) + 1));
+    if (!title) return;
+    const { error } = await sb.rpc('psl_clone_season', {
+      p_from: S.season.id, p_number: Number(S.season.number) + 1, p_title: title });
+    if (error) return msg($('b-season-msg'), error.message);
+    msg($('b-season-msg'), 'Створено чернетку «' + title
+      + '». Структура перенесена, склад і матчі — ні.', 'ok');
+  });
+
+  on('b-addstage', async () => {
+    const kind  = v('b-newkind');
+    const title = (v('b-newtitle') || '').trim() || KIND_TITLE[kind];
+    // slug має бути унікальним у межах сезону — беремо kind і, якщо
+    // такий уже є, додаємо номер. Саме заради цього 252 зняв
+    // unique(season_id, kind): дивізіонів буває два.
+    const same = S.stages.filter(s => s.kind === kind).length;
+    const slug = kind + (same ? '_' + (same + 1) : '');
+    const src  = S.stages.find(s => s.kind === 'liga');
+    const { error } = await sb.from('psl_stages').insert({
+      season_id: S.season.id, kind, slug, title,
+      format: FORMAT_BY_KIND[kind][0][0],
+      sort_order: S.stages.length + 1,
+      source_stage_id: (kind === 'liga' ? null : (src ? src.id : null)),
+    });
+    if (error) return msg($('b-add-msg'), error.message);
+    await reload();
+  });
+
+  document.querySelectorAll('[data-save]').forEach(btn => btn.onclick = async () => {
+    const id = btn.dataset.save;
+    const st = S.stages.find(s => s.id === id);
+    const p  = 's_' + id.slice(0, 8);
+    const box = $(p + '_msg');
+
+    let e1 = (await sb.from('psl_stages').update({
+      title: v(p + '_title'), format: v(p + '_fmt') }).eq('id', id)).error;
+    if (e1) return msg(box, e1.message);
+
+    if (st.kind === 'playoff') {
+      await sb.from('psl_playoff_pair').delete().eq('stage_id', id);
+      const rows = [];
+      for (let i = 0; i < 3; i++) {
+        const sa = v(p + '_pa' + i), sbb = v(p + '_pb' + i);
+        if (!sa || !sbb) continue;
+        rows.push({ stage_id: id, sort_order: rows.length + 1,
+          stage_a: sa, place_a: Number(v(p + '_ma' + i) || 1),
+          stage_b: sbb, place_b: Number(v(p + '_mb' + i) || 1),
+          legs: Number(v(p + '_pg' + i) || 1) });
+      }
+      if (rows.length) {
+        const e2 = (await sb.from('psl_playoff_pair').insert(rows)).error;
+        if (e2) return msg(box, e2.message);
+      }
+
+    } else if (st.kind === 'liga') {
+      const upd = {
+        points_win: Number(v(p + '_pw')), points_draw: Number(v(p + '_pd')),
+        promote_slots: Number(v(p + '_pro') || 0),
+        relegate_slots: Number(v(p + '_rel') || 0),
+        playoff_slots: Number(v(p + '_pof') || 0),
+      };
+      if ($(p + '_rounds')) upd.rounds = Number(v(p + '_rounds'));
+      if ($(p + '_stw'))    upd.series_to_wins = Number(v(p + '_stw'));
+      if ($(p + '_ssc'))    upd.series_scoring = v(p + '_ssc');
+      if ($(p + '_swt'))    upd.swiss_win_target = nOrNull(v(p + '_swt'));
+      if ($(p + '_slo'))    upd.swiss_loss_out   = nOrNull(v(p + '_slo'));
+      if ($(p + '_swr'))    upd.swiss_rounds     = nOrNull(v(p + '_swr'));
+      const e2 = (await sb.from('psl_league_config').update(upd).eq('stage_id', id)).error;
+      if (e2) return msg(box, e2.message);
+
+      // Тайбрейк переписуємо цілком: порядок задається трьома полями, і
+      // часткове оновлення дало б дірки в sort_order.
+      await sb.from('psl_tiebreak').delete().eq('stage_id', id);
+      const rows = [0,1,2].map(i => v(p + '_tb' + i))
+        .filter(Boolean)
+        .filter((c, i, arr) => arr.indexOf(c) === i)   // unique(stage_id, criterion)
+        .map((c, i) => ({ stage_id: id, sort_order: i + 1, criterion: c }));
+      if (rows.length) {
+        const e3 = (await sb.from('psl_tiebreak').insert(rows)).error;
+        if (e3) return msg(box, e3.message);
+      }
+
+    } else if (st.kind === 'cup') {
+      const upd = {
+        entrants_count: nOrNull(v(p + '_ent')),
+        seeding: v(p + '_seed'), legs_early: Number(v(p + '_legs')),
+      };
+      if ($(p + '_legsl')) upd.legs_early_l = Number(v(p + '_legsl'));
+      if ($(p + '_third')) upd.third_place  = chk(p + '_third');
+      if ($(p + '_split')) upd.split_start  = chk(p + '_split');
+      const e2 = (await sb.from('psl_cup_config').update(upd).eq('stage_id', id)).error;
+      if (e2) return msg(box, e2.message);
+
+    } else if (st.kind === 'supercup') {
+      await sb.from('psl_supercup_slot').delete().eq('stage_id', id);
+      const rows = [];
+      for (let i = 0; i < 4; i++) {
+        const src = v(p + '_src' + i);
+        if (!src) continue;
+        rows.push({ stage_id: id, sort_order: rows.length + 1, source_kind: src,
+          from_stage: (S.stages.find(s => s.kind === 'liga') || {}).id || null,
+          place: src === 'league_place' ? nOrNull(v(p + '_pl' + i)) : null });
+      }
+      if (rows.length && rows.length !== 2 && rows.length !== 4) {
+        return msg(box, 'Суперкубок грають двоє або четверо — зараз ' + rows.length);
+      }
+      if (rows.length) {
+        const e2 = (await sb.from('psl_supercup_slot').insert(rows)).error;
+        if (e2) return msg(box, e2.message);
+      }
+    }
+    msg(box, 'Збережено', 'ok');
+    await reload();
+  });
+
+  document.querySelectorAll('[data-build]').forEach(btn => btn.onclick = async () => {
+    const id  = btn.dataset.build;
+    const st  = S.stages.find(s => s.id === id);
+    const box = $('s_' + id.slice(0, 8) + '_msg');
+    const rpc =
+      st.kind === 'supercup' ? 'psl_build_supercup' :
+      st.kind === 'playoff'  ? 'psl_build_playoff'  :
+      st.format === 'double_elim' ? 'psl_build_double_elim' :
+      st.kind === 'cup'      ? 'psl_build_cup'      :
+      st.format === 'swiss'  ? 'psl_swiss_next_round' : 'psl_generate_stage';
+    const { data, error } = await sb.rpc(rpc, { p_stage: id });
+    if (error) return msg(box, error.message);
+    msg(box, st.format === 'swiss'
+      ? 'Тур згенеровано: пар ' + (data ?? 0)
+      : 'Готово, створено ' + (data ?? 0) + ' матч(ів)/пар', 'ok');
+    await reload();
+  });
+
+  document.querySelectorAll('[data-clear]').forEach(btn => btn.onclick = async () => {
+    if (!confirm('Прибрати незіграний розклад цього етапу?')) return;
+    const id = btn.dataset.clear;
+    const { error } = await sb.rpc('psl_clear_stage', { p_stage: id });
+    if (error) return msg($('s_' + id.slice(0, 8) + '_msg'), error.message);
+    await reload();
+  });
+
+  document.querySelectorAll('[data-delstage]').forEach(btn => btn.onclick = async () => {
+    if (!confirm('Видалити етап разом з усіма його матчами?')) return;
+    const id = btn.dataset.delstage;
+    const { error } = await sb.from('psl_stages').delete().eq('id', id);
+    if (error) return msg($('s_' + id.slice(0, 8) + '_msg'), error.message);
+    await reload();
+  });
+
+  on('b-savegoals', async () => {
+    const box = $('b-goals-msg');
+    for (const st of S.stages.filter(s => s.kind === 'liga')) {
+      for (const pl of B.players) {
+        const el = $('g_' + st.id.slice(0,8) + '_' + pl.id.slice(0,8));
+        if (!el) continue;
+        const val = el.value === '' ? null : Number(el.value);
+        if (val === null) {
+          await sb.from('psl_goals').delete().eq('stage_id', st.id).eq('player_id', pl.id);
+        } else {
+          const { error } = await sb.from('psl_goals').upsert(
+            { stage_id: st.id, player_id: pl.id, target_place: val },
+            { onConflict: 'stage_id,player_id' });
+          if (error) return msg(box, pl.display_name + ': ' + error.message);
+        }
+      }
+    }
+    msg(box, 'Цілі збережено', 'ok');
+  });
+
+  on('b-savepz', async () => {
+    const box = $('b-pz-msg');
+    const row = {
+      season_id: S.season.id,
+      fund_uah: Number(v('pz_fund') || 0),
+      pct_places: Number(v('pz_places') || 0), pct_points: Number(v('pz_points') || 0),
+      pct_goals: Number(v('pz_goals') || 0),   pct_cup: Number(v('pz_cup') || 0),
+      pct_supercup: Number(v('pz_super') || 0),
+    };
+    const { error } = await sb.from('psl_prize_config')
+      .upsert(row, { onConflict: 'season_id' });
+    if (error) return msg(box, error.message);
+    msg(box, 'Фонд збережено', 'ok');
+    await reload();
+  });
+
+  on('b-addrow', async () => {
+    const kind = v('pr-kind');
+    const { error } = await sb.from('psl_prize_row').insert({
+      season_id: S.season.id, stage_id: v('pr-stage'),
+      kind: kind === 'place' ? 'place' : 'cup_role',
+      place: kind === 'place' ? Number(v('pr-place')) : null,
+      role:  kind === 'place' ? null : kind,
+      pct: Number(v('pr-pct')),
+      sort_order: (S.builder.rows.length || 0) + 1,
+    });
+    if (error) return msg($('b-row-msg'), error.message);
+    await reload();
+  });
+
+  document.querySelectorAll('[data-delrow]').forEach(btn => btn.onclick = async () => {
+    const { error } = await sb.from('psl_prize_row').delete().eq('id', btn.dataset.delrow);
+    if (error) return msg($('b-row-msg'), error.message);
+    await reload();
+  });
+
+  document.querySelectorAll('[data-pctrow]').forEach(inp => inp.onchange = async () => {
+    const { error } = await sb.from('psl_prize_row')
+      .update({ pct: Number(inp.value) }).eq('id', inp.dataset.pctrow);
+    if (error) return msg($('b-row-msg'), error.message);
+  });
+
+  // Індикатор балансу перераховується на льоту — щоб не тикатись у
+  // відмову збереження, коли сума не 100%.
+  ['pz_places','pz_points','pz_goals','pz_cup','pz_super'].forEach(id => {
+    const e = $(id); if (!e) return;
+    e.oninput = () => {
+      const s = ['pz_places','pz_points','pz_goals','pz_cup','pz_super']
+        .reduce((a, k) => a + Number(($(k) || {}).value || 0), 0);
+      const b = $('pz-balance');
+      b.className = 'balance ' + (s === 100 ? 'ok' : 'bad');
+      b.textContent = s === 100 ? 'розподілено рівно 100%' : `сума ${s}% — має бути 100%`;
+    };
+  });
+}
+
+
+// Перемикач сезонів і кнопка «новий сезон» живуть поза viewBuilder,
+// тож довішуються після кожного перемальовування.
+const _origViewBuilder = viewBuilder;
+viewBuilder = async function(){
+  await _origViewBuilder();
+  $('view').insertAdjacentHTML('afterbegin', seasonSwitcher());
+  $('view').insertAdjacentHTML('beforeend', newSeasonCard(''));
+  bindNewSeason();
+  document.querySelectorAll('[data-season]').forEach(b => b.onclick = async () => {
+    S.season = S.seasons.find(s => s.id === b.dataset.season);
+    await loadStages(); await viewBuilder();
+  });
+};
+
+sb.auth.onAuthStateChange((_e, s) => { if (s) boot(); });
+boot();
+</script>
+</body>
+</html>
