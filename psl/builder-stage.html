@@ -626,7 +626,13 @@ function builderStageCard(st, B, fc){
             ${fld('Дивізіон Б', selF(p + '_pb' + i, cur.stage_b,
                 [['','—']].concat(ligas.map(s => [s.id, s.title]))))}
             ${fld('місце', numF(p + '_mb' + i, cur.place_b, 1, 30))}
-            ${fld('Ігор', selF(p + '_pg' + i, cur.legs, [[1,'одна'],[2,'дві']]))}
+            ${fld('Формат', selF(p + '_pf' + i,
+                cur.pair_mode === 'wins' ? 'w' + (cur.target_wins || 2)
+                                         : 'a' + (cur.legs || 1),
+                [['a1','одна гра (золотий матч)'],
+                 ['a2','дві гри за сумою'],
+                 ['w2','BO3 — до 2 перемог'],
+                 ['w3','BO5 — до 3 перемог']]))}
           </div>`;
         }).join('')}`;
     }
@@ -643,6 +649,12 @@ function builderStageCard(st, B, fc){
       ${st.format === 'swiss' ? fld('Проходить при N перемогах', numF(p + '_swt', c.swiss_win_target, 1, 10)) : ''}
       ${st.format === 'swiss' ? fld('Вилітає при M поразках', numF(p + '_slo', c.swiss_loss_out, 1, 10)) : ''}
       ${st.format === 'swiss' ? fld('або рівно турів', numF(p + '_swr', c.swiss_rounds, 1, 15)) : ''}
+      ${st.format === 'swiss' ? fld('Формат пари', selF(p + '_pm', c.pair_mode || 'replay',
+          [['replay','одна гра, нічия → перегравання'],
+           ['wins','до N перемог (BO3, BO5)'],
+           ['aggregate','N ігор за сумою голів']])) : ''}
+      ${st.format === 'swiss' ? fld('N — перемог або ігор',
+          numF(p + '_pn', c.pair_mode === 'aggregate' ? c.pair_games : c.series_to_wins, 2, 5)) : ''}
       ${fld('Підіймається місць', numF(p + '_pro', c.promote_slots, 0, 20))}
       ${fld('Вилітає місць', numF(p + '_rel', c.relegate_slots, 0, 20))}
       ${fld('Перехідні матчі, місць', numF(p + '_pof', c.playoff_slots, 0, 20))}
@@ -654,7 +666,13 @@ function builderStageCard(st, B, fc){
         selF(p + '_tb' + i, cur && cur.criterion, [['','—']].concat(TIEBREAKS)));
     }).join('')}</div>
     <p class="dim" style="font-size:13px;margin:8px 0 0">Очки завжди перший критерій,
-    ім'я — останній. Тут лише те, що між ними.</p>`;
+    ім'я — останній. Тут лише те, що між ними.${st.format === 'swiss'
+      ? ' Бухгольц — це сума очок усіх твоїх суперників: перемоги над сильними важать більше.'
+      : ''}</p>
+    ${st.format === 'swiss' ? `<p class="dim" style="font-size:13px;margin:8px 0 0">
+      Формат пари: «до N перемог» — нічия нікому нічого не дає, серія триває
+      (BO3 при N = 2). «N ігор за сумою» — рівна сума додає ще одну гру.
+      Поле N для режиму «одна гра» не використовується.</p>` : ''}`;
 
   } else if (st.kind === 'cup') {
     const c = B.cup[st.id] || {};
@@ -1114,10 +1132,18 @@ function bindBuilder(B){
       for (let i = 0; i < 3; i++) {
         const sa = v(p + '_pa' + i), sbb = v(p + '_pb' + i);
         if (!sa || !sbb) continue;
+        // Один селект кодує і режим, і число: a1/a2 — ігор за сумою,
+        // w2/w3 — до скількох перемог. Так у формі одне поле замість
+        // трьох, а в базі лягають рівно ті колонки, які його читають.
+        const f = v(p + '_pf' + i) || 'a1';
+        const mode = f[0] === 'w' ? 'wins' : 'aggregate';
+        const nn = Number(f.slice(1)) || 1;
         rows.push({ stage_id: id, sort_order: rows.length + 1,
           stage_a: sa, place_a: Number(v(p + '_ma' + i) || 1),
           stage_b: sbb, place_b: Number(v(p + '_mb' + i) || 1),
-          legs: Number(v(p + '_pg' + i) || 1) });
+          pair_mode: mode,
+          legs: mode === 'aggregate' ? nn : 1,
+          target_wins: mode === 'wins' ? nn : 2 });
       }
       if (rows.length) {
         const e2 = (await sb.from('psl_playoff_pair').insert(rows)).error;
@@ -1137,6 +1163,15 @@ function bindBuilder(B){
       if ($(p + '_swt'))    upd.swiss_win_target = nOrNull(v(p + '_swt'));
       if ($(p + '_slo'))    upd.swiss_loss_out   = nOrNull(v(p + '_slo'));
       if ($(p + '_swr'))    upd.swiss_rounds     = nOrNull(v(p + '_swr'));
+      // Формат пари: одне число N означає різне залежно від режиму —
+      // перемоги для BO, кількість ігор для суми. Пишемо лише в те поле,
+      // яке цей режим справді читає, щоб друге не розійшлось мовчки.
+      if ($(p + '_pm')) {
+        upd.pair_mode = v(p + '_pm');
+        const n = Number(v(p + '_pn') || 2);
+        if (upd.pair_mode === 'aggregate') upd.pair_games     = n;
+        if (upd.pair_mode === 'wins')      upd.series_to_wins = n;
+      }
       const e2 = (await sb.from('psl_league_config').update(upd).eq('stage_id', id)).error;
       if (e2) return msg(box, e2.message);
 
