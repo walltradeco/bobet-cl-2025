@@ -3260,10 +3260,20 @@ function buildLeaderboardBoards(rows, nCols, headerRowIdx, nameCols){
       const delta = toNum(rows[di][deltaCol]);   // null для архіву — там немає зміни місця
       entries.push({ name, pts, delta });
     }
-    // Учасники, які цей турнір не грають, стоять у таблиці з 0. Ховаємо їх, але
-    // лише коли турнір уже стартував (є хоч кілька ненульових результатів).
+    // ⚠️ ФІЛЬТР 0-ОЧОК — ТІЛЬКИ ДЛЯ АРХІВУ (правка 15.08.2026).
+    // В архівних турнірах CSV-таблиця містить колонки людей, які того
+    // турніру НЕ грали, з нулями по всіх рядках — їх треба сховати.
+    // Евристика: «якщо 3+ людини набрали очки, решту з 0 вважаємо
+    // неучасниками». На ЖИВОМУ сезоні це помилка: `buildLeaderboardRows`
+    // повертає рівно учасників турніру, тож неучасників тут не буває —
+    // а гравець, який просто набрав 0 цього вікенда (Антон після 1-го
+    // вікенда), помилково зникав із заліку. Богдан побачив 15.08 на
+    // релізі. На живому (Supabase) показуємо ВСІХ; архів — як було.
+    const isLive = typeof activeTournament !== 'undefined'
+                && activeTournament && activeTournament.source === 'supabase';
     const scored = entries.filter(e => e.pts > 0);
-    const shown = scored.length >= 3 ? scored : entries;
+    const shown = isLive ? entries
+                : (scored.length >= 3 ? scored : entries);
     if(shown.length) boards.push({ title, entries: shown });
   }
   return boards;
