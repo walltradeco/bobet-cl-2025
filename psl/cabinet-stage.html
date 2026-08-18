@@ -520,33 +520,76 @@ async function viewMy(){
 
 function stageTag(m){ return `<span class="tag">${esc(m.stage_title)}</span>`; }
 
-// Два матчі з одним суперником — в одному блоці, зі спільною шапкою.
-// ⚠️ Ключ групи — суперник ПЛЮС етап: у кубку може випасти той самий
-// суперник, і без етапу кубковий матч приклеївся б до лігових.
-// ⚠️ Етап беремо через `stage_kind`, а НЕ `stage_id` — вьюха
-// `psl_my_matches` (244) віддає лише kind і title, id там немає. З
-// `stage_id` ключ був би `undefined` в усіх рядків, тобто етап у
-// групуванні не брав би участі взагалі — мовчки, бо на самій лізі
-// різниці не видно.
-// Порядок усередині групи фіксований (match_id), інакше «1-й/2-й» на
-// перемальовуванні могли б помінятись місцями.
+// Ігри однієї пари — в одному блоці, зі спільною шапкою й рахунком серії.
+//
+// ⚠️ КЛЮЧ ГРУПИ — `tie_id`, і це ЄДИНИЙ правильний ключ. Раніше тут
+// стояло `stage_kind|opponent_name` з поясненням «вьюха віддає лише kind
+// і title, id там немає» — це **застаріло**: файл 252 (14.08) додав у
+// `psl_my_matches` і `tie_id`, і `game_no`. Імʼя суперника ключем бути не
+// може взагалі: у сезоні з двома колами й кубком одна людина трапляється
+// в кількох РІЗНИХ протистояннях, і вони склеїлись би в одну картку.
+//
+// Порядок усередині групи — за `game_no`, а не за `match_id`: у BO3 гри
+// дописуються по черзі, і саме номер гри визначає, що за чим.
 function groupByOpponent(list){
   const groups = new Map();
   list.forEach(m => {
-    const key = `${m.stage_kind || ''}|${m.opponent_name}`;
+    const key = m.tie_id || `${m.stage_kind || ''}|${m.opponent_name}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(m);
   });
   return [...groups.values()].map(ms => {
-    ms.sort((x, y) => String(x.match_id).localeCompare(String(y.match_id)));
+    ms.sort((x, y) => (x.game_no || 0) - (y.game_no || 0)
+                   || String(x.match_id).localeCompare(String(y.match_id)));
     const head = ms[0];
     const many = ms.length > 1;
     return `<div class="pair">
       <div class="pair-head">проти <b>${esc(head.opponent_name)}</b> ${stageTag(head)}
-        ${many ? `<span class="tag">${ms.length} матчі</span>` : ''}</div>
-      ${ms.map((m, i) => rowTodo(m, many ? i + 1 : 0)).join('')}
+        ${many ? `<span class="tag">${ms.length} матчі</span>` : ''}
+        ${seriesTag(head)}</div>
+      ${seriesNote(head)}
+      ${ms.map((m, i) => rowTodo(m, many ? (m.game_no || i + 1) : 0)).join('')}
     </div>`;
   }).join('');
+}
+
+// Рахунок серії й правило, за яким вона закриється.
+//
+// ⚠️ Числа беруться з бази (`psl_my_matches`, 276), а не рахуються тут.
+// Рахувати в JS означало б продублювати правило «лише підтверджені
+// ігри» — і воно розійшлося б із `_psl_tie_resolve` на першій же зміні.
+function seriesTag(m){
+  if (!m.tie_id || m.decide_by === 'single') return '';
+  if (!m.games_done) return '';
+  const s = (m.decide_by === 'wins')
+    ? `${m.my_wins}:${m.opp_wins} у серії`
+    : `${m.my_goals}:${m.opp_goals} за сумою`;
+  return `<span class="tag">${s}</span>`;
+}
+
+const BREAK_TEXT = {
+  draw:      'при рівності буде нічия',
+  goal_diff: 'при рівності вирішить різниця голів',
+  seed:      'при рівності пройде вищий за посівом',
+  manual:    'при рівності вирішує адмін',
+};
+
+function seriesNote(m){
+  if (!m.tie_id || m.decide_by === 'single') return '';
+  let rule;
+  if (m.decide_by === 'wins' && m.target_wins > 1)
+    rule = `до ${m.target_wins} перемог`;
+  else if (m.decide_by === 'wins')
+    rule = 'одна гра, нічия → перегравання';
+  else if (m.decide_by === 'points')
+    rule = `${m.planned_games} гри, переможець за очками`;
+  else
+    rule = `${m.planned_games} гри, переможець за сумою голів`;
+
+  const cap = m.max_games ? `, максимум ${m.max_games}` : '';
+  const brk = m.max_games && BREAK_TEXT[m.tie_break]
+    ? ` — ${BREAK_TEXT[m.tie_break]}` : '';
+  return `<p class="dim" style="font-size:13px;margin:0 0 8px">${rule}${cap}${brk}.</p>`;
 }
 
 function rowTodo(m, leg){
@@ -748,7 +791,39 @@ async function viewTable(){
       </div>`;
   }).join('');
 
+  // ⚠️ Наскрізний підсумок сезону (278). Показується, ЛИШЕ коли адмін
+  // задав ранги дивізіонів — інакше вьюха порожня, і зайвий заголовок
+  // «Підсумок сезону» без рядків читався б як поломка.
+  const { data: season } = await sb.from('psl_season_table')
+    .select('*').eq('season_id', S.season.id).order('season_place');
+
+  let final = '';
+  if (season && season.length) {
+    const rows = season.map(r => {
+      const mine = S.me && r.player_id === S.me.player_id;
+      return `<tr class="${mine ? 'me' : ''}">
+        <td class="num">${r.season_place}</td>
+        <td>${esc(r.display_name)}</td>
+        <td class="dim">${esc(r.stage_title)}</td>
+        <td class="num">${r.stage_place}</td>
+        <td class="num"><b>${r.points}</b></td>
+      </tr>`;
+    }).join('');
+    final = `<div class="card">
+      <h2>Підсумок сезону</h2>
+      <p class="dim" style="font-size:14px;margin:0 0 10px">Наскрізне місце:
+        дивізіони йдуть один за одним, тож перший у другому дивізіоні стоїть
+        одразу після останнього з першого.</p>
+      <div class="tbl-scroll"><table class="psl-standings">
+        <thead><tr><th class="num">#</th><th>Гравець</th><th>Дивізіон</th>
+          <th class="num">місце</th><th class="num">Очки</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+  }
+
   $('view').innerHTML = (blocks || '<div class="card dim">Таблиці ще немає</div>') +
+    final +
     `<p class="dim" style="font-size:14px">У таблицю йдуть лише підтверджені матчі.</p>`;
 }
 
@@ -977,11 +1052,13 @@ async function viewAdmin(){
       <div id="ad-msg"></div>
     </div>
     <div class="card">
-      <h2>Згенерувати коло</h2>
+      <h2>Побудувати розклад</h2>
       <p class="dim" style="font-size:14px">
-        Кожен з кожним двічі. Безпечно тиснути кілька разів: дописуються
-        лише пари, яких ще немає — тож нових учасників можна додавати й
-        потім.</p>
+        Кожен етап будується своїм генератором: коло, наступний тур
+        швейцарки, сітка кубка. Безпечно тиснути кілька разів — дописується
+        лише те, чого ще немає. Етапи, до яких ще зарано (порожній склад
+        дивізіону, недограна таблиця для посіву), пропускаються з
+        поясненням, а не будуються навмання.</p>
       <button class="primary" id="ad-gen">Побудувати розклад</button>
       <div id="ad-gen-msg"></div>
     </div>`;
@@ -998,11 +1075,23 @@ async function viewAdmin(){
     await renderAdminRoster();
   };
 
+  // ⚠️ Було `psl_generate_league`, і воно було ЗЛАМАНЕ для Season 4: та
+  // функція йде по ВСІХ етапах kind='liga' і кличе для кожного генератор
+  // кола. У Season 4 таких етапів три — швейцарка й два дивізіони, — тож
+  // кнопка падала на швейцарці. І це був щасливий випадок: стояла б вона
+  // не першою, генератор устиг би зробити дивізіони на 12 осіб замість 6,
+  // бо порожній склад означає «усі учасники сезону».
+  // `psl_build_season` (271) обирає генератор за форматом кожного етапу й
+  // повертає рядок звіту на кожен — включно з причиною пропуску.
   $('ad-gen').onclick = async () => {
-    const { data, error } = await sb.rpc('psl_generate_league', { p_season: S.season.id });
+    const { data, error } = await sb.rpc('psl_build_season', { p_season: S.season.id });
     if (error) { console.error(error); return msg($('ad-gen-msg'), error.message); }
-    msg($('ad-gen-msg'), data === 0 ? 'Нових пар немає — розклад уже повний'
-                                    : `Додано матчів: ${data}`, 'ok');
+    const rows = data || [];
+    if (!rows.length) return msg($('ad-gen-msg'), 'Етапів у сезоні ще немає');
+    $('ad-gen-msg').innerHTML = '<div class="msg ok">'
+      + rows.map(r => (r['зроблено'] ? '✅ ' : '⏭ ')
+          + esc(r['етап']) + ' — ' + esc(r['результат'])).join('<br>')
+      + '</div>';
     await renderAdminRoster();
   };
 

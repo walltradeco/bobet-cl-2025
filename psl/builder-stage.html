@@ -500,6 +500,62 @@ const SLOT_SOURCES = [
   ['cup_runner_up','фіналіст кубка'], ['cup_third','третє місце кубка'],
 ];
 
+// Формат протистояння — три осі з 272, згорнуті у ДВА поля.
+// ⚠️ Один селект кодує і режим, і число (той самий прийом, що вже стоїть
+// у перехідних парах): у формі одне поле замість трьох, а в базу лягають
+// рівно ті колонки, які цей режим читає.
+const PAIR_FORMATS = [
+  ['s1','одна гра, нічия — законний результат'],
+  ['r1','одна гра, нічия → перегравання'],
+  ['a2','дві гри, переможець за сумою голів'],
+  ['a3','три гри, за сумою голів'],
+  ['w2','BO3 — до 2 перемог'],
+  ['w3','BO5 — до 3 перемог'],
+  ['p2','дві гри, більше очок серії'],
+  ['p3','три гри, більше очок серії'],
+];
+// ⚠️ «Грати далі» — це відсутність стелі. Будь-яке інше значення
+// автоматично ставить стелю на природну довжину формату, бо база не
+// приймає стелю без правила розвʼязки (і навпаки — правило без стелі
+// ніколи не спрацювало б).
+const PAIR_BREAKS = [
+  ['extend','грати далі, доки не розійдуться'],
+  ['goal_diff','різниця голів у серії'],
+  ['seed','вище посів / місце в таблиці'],
+  ['draw','нічия — законний результат'],
+  ['manual','вирішує адмін'],
+];
+
+function pairCode(mode, n){
+  if (mode === 'single') return 's1';
+  if (mode === 'replay' || !mode) return 'r1';
+  const k = mode === 'wins' ? 'w' : (mode === 'points' ? 'p' : 'a');
+  return k + (Number(n) || 2);
+}
+function pairParse(code){
+  const k = (code || 'r1')[0], n = Number((code || 'r1').slice(1)) || 1;
+  if (k === 's') return { mode: 'single',    n: 1 };
+  if (k === 'r') return { mode: 'replay',    n: 1 };
+  if (k === 'w') return { mode: 'wins',      n };
+  if (k === 'p') return { mode: 'points',    n };
+  return             { mode: 'aggregate', n };
+}
+// Стеля рахується з формату, а не питається окремо: BO3 — це рівно три
+// гри, «дві гри за сумою» — рівно дві. Питати число, яке однозначно
+// випливає з вибору, означало б дати можливість помилитись.
+function pairCap(code, brk){
+  if (!brk || brk === 'extend') return null;
+  const { mode, n } = pairParse(code);
+  if (mode === 'single' || mode === 'replay') return null;
+  return mode === 'wins' ? (2 * n - 1) : n;
+}
+// Рядок «Формат пари + При рівності» — однаковий у лізі, швейцарці,
+// кубку й Суперкубку, щоб те саме питання не виглядало щоразу інакше.
+function pairFields(idBase, code, brk, formats){
+  return fld('Формат пари', selF(idBase + '_pf', code, formats || PAIR_FORMATS))
+       + fld('При рівності', selF(idBase + '_pb', brk || 'extend', PAIR_BREAKS));
+}
+
 const esc2 = (v) => (v === null || v === undefined) ? '' : esc(String(v));
 const fld  = (label, inner) => `<div class="fld"><label>${label}</label>${inner}</div>`;
 const numF = (id, val, min, max, step) =>
@@ -527,12 +583,16 @@ async function viewBuilder(){
     sb.from('psl_stage_players').select('*'),
   ]);
 
+  // Правила пари на рівнях сітки (275). Окремий запит, бо таблиця нова.
+  const rules = await sb.from('psl_pair_rule').select('*');
+
   const B = {
     league: idx(lc.data, 'stage_id'), cup: idx(cc.data, 'stage_id'),
     tb: group(tb.data, 'stage_id'),   slots: group(slots.data, 'stage_id'),
     pairs: group(pairs.data, 'stage_id'), goals: group(goals.data, 'stage_id'),
     prize: pc.data || null, rows: prow.data || [], log: log.data || [],
     players: players.data || [], sp: group(sp.data, 'stage_id'),
+    rules: group(rules.data, 'stage_id'),
   };
   S.builder = B;
 
@@ -591,6 +651,8 @@ function builderSeasonCard(){
     <div class="row-acts">
       ${draft ? `<button class="primary" id="b-publish">Опублікувати сезон</button>` : ''}
       <button class="ghost" id="b-clone">Створити новий як цей</button>
+      <button class="ghost" id="b-tpl-save">Зберегти як шаблон</button>
+      <button class="ghost" id="b-tpl-new">Створити з шаблону</button>
       ${draft ? '' : `<button class="ghost" id="b-finish">Завершити сезон</button>`}
     </div>
     <div id="b-season-msg"></div>
@@ -643,21 +705,28 @@ function builderStageCard(st, B, fc){
       ${fld('Очки за перемогу', selF(p + '_pw', c.points_win, [[3,'3'],[2,'2']]))}
       ${fld('За нічию', selF(p + '_pd', c.points_draw, [[1,'1'],[0,'0']]))}
       ${st.format === 'round_robin' ? fld('Кіл', selF(p + '_rounds', c.rounds, [[1,'одне'],[2,'два']])) : ''}
-      ${st.format === 'series' ? fld('Серія до перемог', numF(p + '_stw', c.series_to_wins, 2, 5)) : ''}
       ${st.format === 'series' ? fld('Очки рахувати', selF(p + '_ssc', c.series_scoring,
           [['series','за серію'],['match','за кожен матч']])) : ''}
       ${st.format === 'swiss' ? fld('Проходить при N перемогах', numF(p + '_swt', c.swiss_win_target, 1, 10)) : ''}
       ${st.format === 'swiss' ? fld('Вилітає при M поразках', numF(p + '_slo', c.swiss_loss_out, 1, 10)) : ''}
       ${st.format === 'swiss' ? fld('або рівно турів', numF(p + '_swr', c.swiss_rounds, 1, 15)) : ''}
-      ${st.format === 'swiss' ? fld('Формат пари', selF(p + '_pm', c.pair_mode || 'replay',
-          [['replay','одна гра, нічия → перегравання'],
-           ['wins','до N перемог (BO3, BO5)'],
-           ['aggregate','N ігор за сумою голів']])) : ''}
-      ${st.format === 'swiss' ? fld('N — перемог або ігор',
-          numF(p + '_pn', c.pair_mode === 'aggregate' ? c.pair_games : c.series_to_wins, 2, 5)) : ''}
+      ${/* ⚠️ Формат пари тепер у ВСІХ лігових форматів, не лише у
+            швейцарки: до 273 psl_generate_stage це поле не читав, тож
+            «ліга, де пара грає дві гри за сумою» задати було нічим. */''}
+      ${pairFields(p, pairCode(c.pair_mode,
+          (c.pair_mode === 'aggregate' || c.pair_mode === 'points')
+            ? c.pair_games : c.series_to_wins),
+        c.tie_break)}
       ${fld('Підіймається місць', numF(p + '_pro', c.promote_slots, 0, 20))}
       ${fld('Вилітає місць', numF(p + '_rel', c.relegate_slots, 0, 20))}
       ${fld('Перехідні матчі, місць', numF(p + '_pof', c.playoff_slots, 0, 20))}
+      ${/* ⚠️ Ранг у підсумковій таблиці сезону (278). Без нього
+            наскрізного місця не існує: переможець Дивізіону Б лишається
+            «1-м місцем», хоч у сезоні він перший ПІСЛЯ всього
+            Дивізіону А. Задається явно, бо порядок показу (sort_order)
+            рангом бути не може — золотий матч стоїть після дивізіонів. */''}
+      ${fld('Місце в підсумку сезону', selF(p + '_tier', st.final_tier,
+          [['','не входить'],[1,'1-й дивізіон'],[2,'2-й'],[3,'3-й'],[4,'4-й']]))}
     </div>
     <div class="sect-title" style="margin:16px 0 8px">Порядок при рівних очках</div>
     <div class="fields">${[0,1,2].map(i => {
@@ -669,28 +738,52 @@ function builderStageCard(st, B, fc){
     ім'я — останній. Тут лише те, що між ними.${st.format === 'swiss'
       ? ' Бухгольц — це сума очок усіх твоїх суперників: перемоги над сильними важать більше.'
       : ''}</p>
-    ${st.format === 'swiss' ? `<p class="dim" style="font-size:13px;margin:8px 0 0">
-      Формат пари: «до N перемог» — нічия нікому нічого не дає, серія триває
-      (BO3 при N = 2). «N ігор за сумою» — рівна сума додає ще одну гру.
-      Поле N для режиму «одна гра» не використовується.</p>` : ''}`;
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Формат пари:
+      «до N перемог» — нічия нікому нічого не дає, серія триває.
+      «за сумою голів» — рахується сума за всі ігри пари.
+      «більше очок серії» — кожна гра дає очки етапу (${c.points_win ?? 3}/${
+      c.points_draw ?? 1}/0), тобто нічия теж рахується.
+      «При рівності» = «грати далі» означає, що стелі немає; будь-яке інше
+      значення обмежує пару природною довжиною формату.</p>`;
 
   } else if (st.kind === 'cup') {
-    const c = B.cup[st.id] || {};
+    const c  = B.cup[st.id] || {};
+    const rl = {}; (B.rules[st.id] || []).forEach(r => rl[r.level] = r);
+    // ⚠️ Рівнів у сітці різна кількість залежно від формату, і саме через
+    // це до 275 усе було зашито: фінал, матч за 3-тє й гранд-фінал грались
+    // рівно в одну гру, а BO3 у кубку був неможливий у принципі.
+    const lvls = st.format === 'double_elim'
+      ? [['early','Сітка віннерів', c.legs_early],
+         ['loser','Сітка лузерів',  c.legs_early_l],
+         ['final','Фінал віннерів', 1],
+         ['grand','Гранд-фінал',    1]]
+      : [['early','Ранні раунди', c.legs_early],
+         ['final','Фінал',        1]]
+        .concat(c.third_place === false ? [] : [['third','Матч за 3-тє', 1]]);
+
     body = `<div class="fields">
       ${fld('Учасників у сітці', numF(p + '_ent', c.entrants_count, 2, 64)
         + `<p class="dim" style="font-size:12px;margin:4px 0 0">порожньо — усі з ліги</p>`)}
       ${fld('Посів', selF(p + '_seed', c.seeding, [['league','за місцем у лізі'],['random','жереб']]))}
-      ${fld('Ігор у парі', selF(p + '_legs', c.legs_early, [[1,'одна'],[2,'дві']]))}
-      ${st.format === 'double_elim'
-        ? fld('Ігор у сітці лузерів', selF(p + '_legsl', c.legs_early_l, [[1,'одна'],[2,'дві']])) : ''}
       ${st.format === 'single_elim' ? fld('Матч за 3-тє місце', chkF(p + '_third', c.third_place)) : ''}
       ${st.format === 'double_elim' ? fld('Половина стартує в лузерах', chkF(p + '_split', c.split_start)) : ''}
     </div>
-    <p class="dim" style="font-size:13px;margin:8px 0 0">Фінал і матч за 3-тє —
-    завжди одна гра. Пара з двох ігор вирішується сумою; рівна сума додає ще одну.</p>`;
+    <div class="sect-title" style="margin:16px 0 8px">Формат пари на кожному рівні</div>
+    ${lvls.map(([lv, ttl, fallback]) => `<div class="fields" style="margin-bottom:8px">
+      ${fld('Рівень', `<div class="dim" style="font-size:14px;padding-top:9px">${ttl}</div>`)}
+      ${pairFields(p + '_L' + lv,
+          rl[lv] ? pairCode(rl[lv].mode, rl[lv].n)
+                 : (Number(fallback) >= 2 ? 'a' + Number(fallback) : 'r1'),
+          rl[lv] ? rl[lv].tie_break : 'extend')}
+    </div>`).join('')}
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Кожен рівень
+      налаштовується окремо: можна ранні раунди в одну гру, а фінал по BO5.
+      «Одна гра, нічия → перегравання» — це поведінка за замовчуванням, яка
+      діяла раніше всюди.</p>`;
 
   } else if (st.kind === 'supercup') {
     const list = B.slots[st.id] || [];
+    const rl = {}; (B.rules[st.id] || []).forEach(r => rl[r.level] = r);
     body = `<p class="dim" style="font-size:14px;margin:0 0 10px">Хто грає: два або
       чотири учасники. Якщо ті самі люди збіглись у двох ролях — добираються
       наступні за місцями в лізі. Пари в півфіналах жеребкуються.</p>
@@ -701,7 +794,15 @@ function builderStageCard(st, B, fc){
               [['','—']].concat(SLOT_SOURCES)))}
           ${fld('Місце (для ліги)', numF(p + '_pl' + i, cur.place, 1, 20))}
         </div>`;
-      }).join('')}`;
+      }).join('')}
+      <div class="sect-title" style="margin:16px 0 8px">Формат пари</div>
+      ${[['final','Матч Суперкубка'], ['early','Півфінали (коли учасників 4)']]
+        .map(([lv, ttl]) => `<div class="fields" style="margin-bottom:8px">
+          ${fld('Рівень', `<div class="dim" style="font-size:14px;padding-top:9px">${ttl}</div>`)}
+          ${pairFields(p + '_L' + lv,
+              rl[lv] ? pairCode(rl[lv].mode, rl[lv].n) : 'r1',
+              rl[lv] ? rl[lv].tie_break : 'extend')}
+        </div>`).join('')}`;
 
   }
 
@@ -712,7 +813,27 @@ function builderStageCard(st, B, fc){
   // («непарне число»). Плюс дивізіони без явного складу неможливі в
   // принципі — обидві ліги брали б усіх.
   const inStage = new Set((B.sp[st.id] || []).map(x => x.player_id));
-  const roster  = st.kind === 'supercup' ? '' : `
+  // ⚠️ Правило «склад із таблиці попереднього етапу» (270) — це КНОПКА
+  // «підставити», а не постійне правило: пряма вимога Богдана «я завжди
+  // мав можливість і самому додавати/редагувати». Після натискання склад
+  // правиться галочками, як і раніше.
+  const others = S.stages.filter(s => s.id !== st.id && s.kind !== 'supercup');
+  const fromRoster = (st.kind === 'supercup' || !others.length) ? '' : `
+    <div class="sect-title" style="margin:16px 0 8px">Узяти склад із таблиці іншого етапу</div>
+    <div class="fields">
+      ${fld('З етапу', selF(p + '_rfs', st.roster_from_stage,
+          [['','—']].concat(others.map(s => [s.id, s.title]))))}
+      ${fld('з місця', numF(p + '_rfp', st.roster_from_place, 1, 64))}
+      ${fld('по місце', numF(p + '_rtp', st.roster_to_place, 1, 64))}
+      ${fld('&nbsp;', `<button class="ghost" data-fillroster="${st.id}">Підставити склад</button>`)}
+    </div>
+    <p class="dim" style="font-size:13px;margin:8px 0 0">Наприклад «місця 1-6
+      Швейцарки» → Дивізіон А. Джерело має бути догране, інакше «топ-6» це
+      топ-6 на середині дистанції. Заповнення ЗАМІНЮЄ склад цілком, порядок
+      місць стає посівом. Правило зберігається — щоб було видно, звідки склад,
+      і щоб перезаповнити після перерахунку.</p>`;
+
+  const roster  = st.kind === 'supercup' ? '' : fromRoster + `
     <div class="sect-title" style="margin:16px 0 8px">Хто грає (${inStage.size} з ${B.players.length})</div>
     <div class="fields">${B.players.map(pl => `
       <label style="display:flex;gap:8px;align-items:center;font-size:15px">
@@ -759,6 +880,40 @@ function builderStageCard(st, B, fc){
         stop.push('не задано, коли швейцарська закінчується: або «N перемог / M поразок», або число турів');
       if (c.swiss_win_target && c.swiss_win_target > Math.ceil(Math.log2(n || 2)) + 2)
         note.push(`${c.swiss_win_target} перемог на ${n} учасниках — турів буде багато`);
+
+      // Формат пари: скільки це ігор насправді
+      const pm = c.pair_mode || 'replay';
+      const rr = Number(c.swiss_rounds) || 0;
+      const ties = rr ? rr * Math.floor(n / 2) : 0;
+      if (pm === 'wins' && ties)
+        note.push(`до ${c.series_to_wins || 2} перемог у парі: приблизно `
+                + `${Math.round(ties * 2.4)} ігор за ${rr} тур(и). Нічия нікому нічого `
+                + 'не дає — серія просто триває');
+      if (pm === 'aggregate' && ties)
+        note.push(`${c.pair_games || 2} гри в парі за сумою: ${ties * (c.pair_games || 2)} `
+                + 'ігор, і рівна сума додає ще одну');
+      if (pm === 'replay' && ties)
+        note.push(`одна гра в парі: близько ${ties} ігор, плюс перегравання нічиїх`);
+      if (pm === 'points' && ties)
+        note.push(`${c.pair_games || 2} гри в парі на очки: ${ties * (c.pair_games || 2)} `
+                + `ігор. Нічия дає по ${c.points_draw ?? 1} очку, тобто рахується`);
+      if (pm === 'single')
+        note.push('«одна гра, нічия — результат» у швейцарці: нічия не дає ні перемоги, '
+                + 'ні поразки, тож умова «до N перемог / M поразок» може не закритись. '
+                + 'Надійніше задати рівну кількість турів');
+
+      // ⚠️ Виміряно симуляцією 15.08 (bobet/scratchpad/swiss_split_sim.sql):
+      // при парних турах середня група «половина на половину» забирає
+      // майже весь склад, і межа поділу падає всередину неї.
+      if (rr && rr % 2 === 0)
+        note.push(`${rr} тур(и) — парне число. Якщо швейцарка має поділити склад `
+                + 'навпіл, це майже ніколи не спрацює: половина людей опиниться в '
+                + 'одній групі з однаковим рекордом, і межу різатиме тайбрейк. '
+                + 'Непарна кількість турів ділить чистіше');
+      if (rr && rr <= 3 && (B.tb[st.id] || []).some(x => x.criterion === 'buchholz'))
+        note.push(`на ${rr} турах «сила суперників» майже не розводить — у кожного `
+                + 'лише стільки ж суперників, і суми виходять однакові. Цей критерій '
+                + 'працює від 7 турів');
     }
     if (st.format === 'round_robin' && Number(c.rounds) === 2 && n >= 10)
       note.push(`два кола на ${n} осіб — це ${n * (n - 1)} матчів, по ${(n - 1) * 2} на людину`);
@@ -767,6 +922,24 @@ function builderStageCard(st, B, fc){
               + `${n * (n - 1) / 2 * (c.series_to_wins || 2)} ігор, точне число залежить від результатів`);
     if (ligas.length < 2 && (Number(c.promote_slots) > 0 || Number(c.relegate_slots) > 0))
       note.push('підйом і виліт мають сенс, коли дивізіонів два — зараз він один');
+
+    // ⚠️ Найдорожча помилка дивізіонів: порожній склад означає «усі
+    // учасники сезону», тож натиснута зарано кнопка зробить дивізіон
+    // на весь ростер замість половини. Мовчки й правдоподібно.
+    if (ligas.length > 1 && st.format === 'round_robin'
+        && !(B.sp[st.id] || []).length)
+      stop.push(`склад не задано, а дивізіонів ${ligas.length} — цей етап візьме `
+              + `ВСІХ ${n} учасників сезону замість своєї половини. `
+              + 'Постав галочки «хто грає» нижче, перш ніж будувати розклад');
+    // ⚠️ Наскрізного місця в сезоні не існує, поки не задано ранги.
+    // Один ліговий етап підставляється сам; двом і більше — треба явно,
+    // інакше «Підсумок сезону» просто порожній, і це виглядає як баг.
+    if (st.kind === 'liga' && ligas.length > 1 && !st.final_tier
+        && !ligas.some(s => s.final_tier))
+      note.push('жодному ліговому етапу не задано «Місце в підсумку сезону» — '
+              + 'наскрізної таблиці не буде. Постав 1 вищому дивізіону, 2 наступному '
+              + '(швейцарці й кубку лишай «не входить»)');
+
     const tbs = (B.tb[st.id] || []).map(x => x.criterion);
     if (tbs.includes('buchholz') && st.format !== 'swiss')
       note.push('«сила суперників» — критерій швейцарської; у круговій усі грають з усіма, тож він нічого не розводить');
@@ -787,8 +960,26 @@ function builderStageCard(st, B, fc){
       if (size > ent)
         note.push(`сітка на ${size}, учасників ${ent} — ${size - ent} найкращих пропустять перший раунд`);
     }
-    if (Number(c.legs_early) === 2)
-      note.push('дві гри в парі: матчів удвічі більше, а при рівній сумі додається третя');
+    // Формат пари на рівнях (275): скільки це ігор і де пастка
+    const rl = {}; (B.rules[st.id] || []).forEach(r => rl[r.level] = r);
+    const pairs1 = Math.max(1, Math.floor(ent / 2));
+    if (rl.early && rl.early.mode === 'wins')
+      note.push(`ранні раунди по BO${2 * rl.early.n - 1}: приблизно `
+              + `${Math.round(pairs1 * (2 * rl.early.n - 1) * 0.8)} ігор лише в 1-му раунді`);
+    if (rl.early && rl.early.mode === 'aggregate' && rl.early.n >= 2)
+      note.push(`${rl.early.n} гри в парі за сумою: матчів у ${rl.early.n} рази більше`
+              + (rl.early.tie_break === 'extend' ? ', а при рівній сумі додається ще одна' : ''));
+    if (rl.early && rl.early.mode === 'points')
+      note.push('«більше очок серії» в кубку: очок етапу тут немає, тож рахується 3/1/0');
+    if (rl.final && rl.final.mode === 'points')
+      note.push('фінал «за очками серії» рахується 3/1/0 — у кубку очок етапу немає');
+    ['early','final','third','loser','grand'].forEach(lv => {
+      const r = rl[lv];
+      if (r && r.mode === 'aggregate' && r.tie_break === 'goal_diff')
+        note.push(`на рівні «${lv}» тайбрейк «різниця голів» нічого не вирішить — `
+                + 'у режимі «за сумою» це та сама цифра, що вже порівняли. '
+                + 'Обери «вище посів», «нічия» або «вирішує адмін»');
+    });
   }
 
   if (st.kind === 'supercup') {
@@ -1060,6 +1251,47 @@ function bindBuilder(B){
       + '». Структура перенесена, склад і матчі — ні.', 'ok');
   });
 
+  // ---- Шаблони -------------------------------------------------
+  // Шаблон і клон роблять те саме — переносять структуру без складу й
+  // матчів. Різниця лише в тому, що шаблон живе окремим статусом і не
+  // потрапляє в списки сезонів (267).
+  on('b-tpl-save', async () => {
+    const title = prompt('Назва шаблона:', S.season.title + ' — формат');
+    if (!title) return;
+    const { error } = await sb.rpc('psl_save_as_template', {
+      p_from: S.season.id, p_title: title });
+    if (error) return msg($('b-season-msg'), error.message);
+    msg($('b-season-msg'), 'Шаблон «' + title + '» збережено. Тепер із нього '
+      + 'можна створювати сезони кнопкою «Створити з шаблону».', 'ok');
+  });
+
+  on('b-tpl-new', async () => {
+    const { data: tpls, error: te } = await sb.from('psl_templates')
+      .select('*').order('created_at', { ascending: false });
+    if (te) return msg($('b-season-msg'), te.message);
+    if (!tpls || !tpls.length)
+      return msg($('b-season-msg'), 'Шаблонів ще немає. Збери формат у будь-якому '
+        + 'сезоні й натисни «Зберегти як шаблон».');
+
+    const list = tpls.map((t, i) => (i + 1) + '. ' + t.title
+      + (t.summary ? '  —  ' + t.summary : '')).join('\n');
+    const pick = prompt('Який шаблон узяти?\n\n' + list + '\n\nНомер:', '1');
+    if (!pick) return;
+    const t = tpls[Number(pick) - 1];
+    if (!t) return msg($('b-season-msg'), 'Такого номера в списку немає');
+
+    const num = prompt('Номер нового сезону:', String(Number(S.season.number || 0) + 1));
+    if (!num) return;
+    const title = prompt('Назва нового сезону:', 'Season ' + num);
+    if (!title) return;
+
+    const { error } = await sb.rpc('psl_create_from_template', {
+      p_template: t.id, p_number: Number(num), p_title: title });
+    if (error) return msg($('b-season-msg'), error.message);
+    msg($('b-season-msg'), 'Створено чернетку «' + title + '» за шаблоном «'
+      + t.title + '». Лишилось додати склад.', 'ok');
+  });
+
   on('rs-add', async () => {
     const name = (v('rs-name') || '').trim();
     if (!name) return msg($('rs-msg'), 'Вкажи ім\'я');
@@ -1107,9 +1339,38 @@ function bindBuilder(B){
     const p  = 's_' + id.slice(0, 8);
     const box = $(p + '_msg');
 
-    let e1 = (await sb.from('psl_stages').update({
-      title: v(p + '_title'), format: v(p + '_fmt') }).eq('id', id)).error;
+    const stUpd = { title: v(p + '_title'), format: v(p + '_fmt') };
+    // Правило «склад із таблиці етапу X» (270). ⚠️ Три поля або всі три,
+    // або жодного — це `check` у базі (psl_roster_range_ck).
+    if ($(p + '_rfs')) {
+      const src = v(p + '_rfs');
+      stUpd.roster_from_stage = src || null;
+      stUpd.roster_from_place = src ? Number(v(p + '_rfp') || 1) : null;
+      stUpd.roster_to_place   = src ? Number(v(p + '_rtp') || 1) : null;
+    }
+    if ($(p + '_tier')) stUpd.final_tier = nOrNull(v(p + '_tier'));
+    let e1 = (await sb.from('psl_stages').update(stUpd).eq('id', id)).error;
     if (e1) return msg(box, e1.message);
+
+    // ---- Формат пари на рівнях сітки (275) ------------------------
+    // ⚠️ Переписуємо цілком: рівнів різна кількість залежно від формату,
+    // і часткове оновлення лишило б правило від попереднього формату.
+    if (st.kind === 'cup' || st.kind === 'supercup') {
+      const lvlRows = [];
+      ['early','final','third','loser','grand'].forEach(lv => {
+        const sel = $(p + '_L' + lv + '_pf');
+        if (!sel) return;
+        const { mode, n } = pairParse(sel.value);
+        const brk = v(p + '_L' + lv + '_pb') || 'extend';
+        lvlRows.push({ stage_id: id, level: lv, mode, n,
+                       max_games: pairCap(sel.value, brk), tie_break: brk });
+      });
+      await sb.from('psl_pair_rule').delete().eq('stage_id', id);
+      if (lvlRows.length) {
+        const eL = (await sb.from('psl_pair_rule').insert(lvlRows)).error;
+        if (eL) return msg(box, eL.message);
+      }
+    }
 
     // Склад етапу: переписуємо цілком за галочками.
     // ⚠️ Якщо відмічені ВСІ — лишаємо таблицю порожньою, тобто «весь
@@ -1158,7 +1419,6 @@ function bindBuilder(B){
         playoff_slots: Number(v(p + '_pof') || 0),
       };
       if ($(p + '_rounds')) upd.rounds = Number(v(p + '_rounds'));
-      if ($(p + '_stw'))    upd.series_to_wins = Number(v(p + '_stw'));
       if ($(p + '_ssc'))    upd.series_scoring = v(p + '_ssc');
       if ($(p + '_swt'))    upd.swiss_win_target = nOrNull(v(p + '_swt'));
       if ($(p + '_slo'))    upd.swiss_loss_out   = nOrNull(v(p + '_slo'));
@@ -1166,11 +1426,15 @@ function bindBuilder(B){
       // Формат пари: одне число N означає різне залежно від режиму —
       // перемоги для BO, кількість ігор для суми. Пишемо лише в те поле,
       // яке цей режим справді читає, щоб друге не розійшлось мовчки.
-      if ($(p + '_pm')) {
-        upd.pair_mode = v(p + '_pm');
-        const n = Number(v(p + '_pn') || 2);
-        if (upd.pair_mode === 'aggregate') upd.pair_games     = n;
-        if (upd.pair_mode === 'wins')      upd.series_to_wins = n;
+      if ($(p + '_pf')) {
+        const code = v(p + '_pf');
+        const { mode, n } = pairParse(code);
+        const brk = v(p + '_pb') || 'extend';
+        upd.pair_mode = mode;
+        upd.tie_break = brk;
+        upd.max_games = pairCap(code, brk);
+        if (mode === 'aggregate' || mode === 'points') upd.pair_games     = n;
+        if (mode === 'wins')                           upd.series_to_wins = n;
       }
       const e2 = (await sb.from('psl_league_config').update(upd).eq('stage_id', id)).error;
       if (e2) return msg(box, e2.message);
@@ -1188,11 +1452,13 @@ function bindBuilder(B){
       }
 
     } else if (st.kind === 'cup') {
+      // ⚠️ `legs_early` більше не редагується у формі — його замінило
+      // правило рівня `early` (psl_pair_rule). Колонка лишається як
+      // fallback для кубків без правил і як те, що пише 264.
       const upd = {
         entrants_count: nOrNull(v(p + '_ent')),
-        seeding: v(p + '_seed'), legs_early: Number(v(p + '_legs')),
+        seeding: v(p + '_seed'),
       };
-      if ($(p + '_legsl')) upd.legs_early_l = Number(v(p + '_legsl'));
       if ($(p + '_third')) upd.third_place  = chk(p + '_third');
       if ($(p + '_split')) upd.split_start  = chk(p + '_split');
       const e2 = (await sb.from('psl_cup_config').update(upd).eq('stage_id', id)).error;
@@ -1220,21 +1486,38 @@ function bindBuilder(B){
     await reload();
   });
 
+  // ⚠️ Мапа «формат → генератор» БІЛЬШЕ НЕ ЖИВЕ ТУТ. До 271 вона стояла
+  // власним `if` у цьому файлі, а кабінет кликав psl_generate_league —
+  // тобто копій було дві, і розійшлись би вони мовчки: неправильний
+  // генератор не падає, він будує не те. Тепер обидва фронти йдуть у
+  // psl_build_stage, який і обирає генератор, і пояснює відмову.
   document.querySelectorAll('[data-build]').forEach(btn => btn.onclick = async () => {
     const id  = btn.dataset.build;
-    const st  = S.stages.find(s => s.id === id);
     const box = $('s_' + id.slice(0, 8) + '_msg');
-    const rpc =
-      st.kind === 'supercup' ? 'psl_build_supercup' :
-      st.kind === 'playoff'  ? 'psl_build_playoff'  :
-      st.format === 'double_elim' ? 'psl_build_double_elim' :
-      st.kind === 'cup'      ? 'psl_build_cup'      :
-      st.format === 'swiss'  ? 'psl_swiss_next_round' : 'psl_generate_stage';
-    const { data, error } = await sb.rpc(rpc, { p_stage: id });
+    const { data, error } = await sb.rpc('psl_build_stage', { p_stage: id });
     if (error) return msg(box, error.message);
-    msg(box, st.format === 'swiss'
-      ? 'Тур згенеровано: пар ' + (data ?? 0)
-      : 'Готово, створено ' + (data ?? 0) + ' матч(ів)/пар', 'ok');
+    msg(box, data, String(data).startsWith('пропущено') ? 'err' : 'ok');
+    await reload();
+  });
+
+  document.querySelectorAll('[data-fillroster]').forEach(btn => btn.onclick = async () => {
+    const id  = btn.dataset.fillroster;
+    const p   = 's_' + id.slice(0, 8);
+    const box = $(p + '_msg');
+    // Правило спершу зберігається, бо функція читає його з етапу
+    const src = v(p + '_rfs');
+    if (!src) return msg(box, 'Спершу обери етап-джерело й діапазон місць');
+    const e0 = (await sb.from('psl_stages').update({
+      roster_from_stage: src,
+      roster_from_place: Number(v(p + '_rfp') || 1),
+      roster_to_place:   Number(v(p + '_rtp') || 1),
+    }).eq('id', id)).error;
+    if (e0) return msg(box, e0.message);
+
+    const { data, error } = await sb.rpc('psl_fill_roster_from_stage', { p_stage: id });
+    if (error) return msg(box, error.message);
+    msg(box, 'Склад підставлено: ' + (data ?? 0) + ' учасник(ів). '
+           + 'Перевір галочками й тисни «Зберегти».', 'ok');
     await reload();
   });
 
