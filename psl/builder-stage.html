@@ -585,6 +585,8 @@ async function viewBuilder(){
 
   // Правила пари на рівнях сітки (275). Окремий запит, бо таблиця нова.
   const rules = await sb.from('psl_pair_rule').select('*');
+  // Слоти посіву кубка (324) — «кілька джерел». Окремий запит, таблиця нова.
+  const cupslots = await sb.from('psl_cup_slot').select('*').order('sort_order');
 
   const B = {
     league: idx(lc.data, 'stage_id'), cup: idx(cc.data, 'stage_id'),
@@ -593,6 +595,7 @@ async function viewBuilder(){
     prize: pc.data || null, rows: prow.data || [], log: log.data || [],
     players: players.data || [], sp: group(sp.data, 'stage_id'),
     rules: group(rules.data, 'stage_id'),
+    cupslots: group(cupslots.data, 'stage_id'),
   };
   S.builder = B;
 
@@ -779,7 +782,32 @@ function builderStageCard(st, B, fc){
     <p class="dim" style="font-size:13px;margin:8px 0 0">Кожен рівень
       налаштовується окремо: можна ранні раунди в одну гру, а фінал по BO5.
       «Одна гра, нічия → перегравання» — це поведінка за замовчуванням, яка
-      діяла раніше всюди.</p>`;
+      діяла раніше всюди.</p>
+    <div class="sect-title" style="margin:18px 0 8px">Посів зі слотів (кілька джерел)</div>
+    <p class="dim" style="font-size:13px;margin:0 0 8px">Замість однієї
+      ліги-джерела збери сітку з КІЛЬКОХ етапів — топ-N з кожного, «групи →
+      плей-оф». Заповни потрібні слоти й натисни «Підставити склад зі слотів».
+      ⚠️ Тоді прибери «Етап-джерело» вище — інакше слоти проігноруються.
+      Джерела мусять бути дограні.</p>
+    ${(() => {
+      const cs = B.cupslots[st.id] || [];
+      const cnt = Math.min(Math.max(Number(c.entrants_count) || 0, cs.length), 32);
+      if (!cnt) return `<p class="dim" style="font-size:13px">Спершу вкажи
+        «Учасників у сітці» — стільки зʼявиться слотів.</p>`;
+      const srcStages = S.stages.filter(s => s.id !== st.id);
+      let h = '';
+      for (let i = 0; i < cnt; i++) {
+        const cur = cs[i] || {};
+        h += `<div class="fields" style="margin-bottom:6px">
+          ${fld('Слот ' + (i + 1) + ' — етап', selF(p + '_cslst' + i, cur.from_stage || '',
+              [['', '—']].concat(srcStages.map(s => [s.id, s.title]))))}
+          ${fld('Що беремо', selF(p + '_cskind' + i, cur.source_kind || 'league_place', SLOT_SOURCES))}
+          ${fld('Місце (для ліги)', numF(p + '_csplc' + i, cur.place, 1, 32))}
+        </div>`;
+      }
+      return h;
+    })()}
+    <button class="ghost" data-fillcupslots="${st.id}" style="margin-top:6px">Підставити склад зі слотів</button>`;
 
   } else if (st.kind === 'supercup') {
     const list = B.slots[st.id] || [];
@@ -1464,6 +1492,22 @@ function bindBuilder(B){
       const e2 = (await sb.from('psl_cup_config').update(upd).eq('stage_id', id)).error;
       if (e2) return msg(box, e2.message);
 
+      // Слоти посіву (324) — «кілька джерел». Порожні (без етапу) пропускаємо;
+      // цикл до 32 бо неіснуючі поля дають null → skip.
+      await sb.from('psl_cup_slot').delete().eq('stage_id', id);
+      const cslots = [];
+      for (let i = 0; i < 32; i++) {
+        const fs = v(p + '_cslst' + i);
+        if (!fs) continue;
+        const kind = v(p + '_cskind' + i) || 'league_place';
+        cslots.push({ stage_id: id, sort_order: cslots.length + 1, source_kind: kind,
+          from_stage: fs, place: kind === 'league_place' ? nOrNull(v(p + '_csplc' + i)) : null });
+      }
+      if (cslots.length) {
+        const e3 = (await sb.from('psl_cup_slot').insert(cslots)).error;
+        if (e3) return msg(box, e3.message);
+      }
+
     } else if (st.kind === 'supercup') {
       await sb.from('psl_supercup_slot').delete().eq('stage_id', id);
       const rows = [];
@@ -1517,6 +1561,30 @@ function bindBuilder(B){
     const { data, error } = await sb.rpc('psl_fill_roster_from_stage', { p_stage: id });
     if (error) return msg(box, error.message);
     msg(box, 'Склад підставлено: ' + (data ?? 0) + ' учасник(ів). '
+           + 'Перевір галочками й тисни «Зберегти».', 'ok');
+    await reload();
+  });
+
+  document.querySelectorAll('[data-fillcupslots]').forEach(btn => btn.onclick = async () => {
+    const id  = btn.dataset.fillcupslots;
+    const p   = 's_' + id.slice(0, 8);
+    const box = $(p + '_msg');
+    // Слоти читаються з БАЗИ, тож спершу зберігаємо форму (як fillroster).
+    await sb.from('psl_cup_slot').delete().eq('stage_id', id);
+    const cslots = [];
+    for (let i = 0; i < 32; i++) {
+      const fs = v(p + '_cslst' + i);
+      if (!fs) continue;
+      const kind = v(p + '_cskind' + i) || 'league_place';
+      cslots.push({ stage_id: id, sort_order: cslots.length + 1, source_kind: kind,
+        from_stage: fs, place: kind === 'league_place' ? nOrNull(v(p + '_csplc' + i)) : null });
+    }
+    if (!cslots.length) return msg(box, 'Заповни хоча б один слот');
+    const eIns = (await sb.from('psl_cup_slot').insert(cslots)).error;
+    if (eIns) return msg(box, eIns.message);
+    const { data, error } = await sb.rpc('psl_fill_cup_from_slots', { p_stage: id });
+    if (error) return msg(box, error.message);
+    msg(box, 'Склад підставлено зі слотів: ' + (data ?? 0) + ' учасник(ів). '
            + 'Перевір галочками й тисни «Зберегти».', 'ok');
     await reload();
   });
