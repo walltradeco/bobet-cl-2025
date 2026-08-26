@@ -3173,13 +3173,21 @@ async function viewBoard(){
         money(prizeById[r.participant_id])}</td>` : ''}
     </tr>`).join('')}</tbody></table></div>
     ${season ? `
-    <p class="dim" style="margin:12px 0 0;font-size:13px">
+    <p class="dim" style="margin:12px 0 0;font-size:13px;max-width:none">
       Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
       <b style="color:var(--text)">Bonus</b> — це власні бонусні питання General,
       ті, що на сайті у вкладці <b style="color:var(--text)">General · Bonus</b>.
       Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
     </p>
-    <p class="dim" style="margin:8px 0 0;font-size:13px">
+    <p class="dim" style="margin:8px 0 0;font-size:13px;max-width:none">
+      <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. У наскрізному
+      заліку <b style="color:var(--text)">Разом</b> тайбрейків немає: однакове число
+      очок означає <b>спільне місце</b>, і точні рахунки на нього не впливають — двоє
+      з однаковим числом ділять місце й гроші порівну. Точні рахунки вирішують лише при
+      визначенні <b style="color:var(--gold)">MVP</b> і <b style="color:var(--text)">⚔️ Rivals</b>
+      кожного вікенда, не тут.
+    </p>
+    <p class="dim" style="margin:8px 0 0;font-size:13px;max-width:none">
       Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці <b style="color:var(--text)">Leaderboard &amp; Prize</b> кожного етапу.
       <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
     </p>` : `
@@ -3205,7 +3213,7 @@ async function viewBoard(){
 
 // =====================================================================
 //  MVP & RIVALS — дві окремі season-номінації призового фонду
-//  (найбільше Weekend MVP 5%, ⚔️ найбільше перемог Rivals 5% — Rules,
+//  (найбільше MVP 5%, ⚔️ найбільше перемог Rivals 5% — Rules,
 //  нова модель від 12.08.2026; було 7% і 6%).
 //  Раніше лише текст у призовій таблиці, тепер рахує сама season_prize_board
 //  (файл 181) — той самий person_key, що в season_leaderboard, тож людина
@@ -3257,8 +3265,13 @@ async function viewMvpRivals(){
     <div class="card" style="margin-bottom:14px">
       <h2>MVP & Rivals — за весь турнір</h2>
       <p class="dim">Дві окремі номінації призового фонду (Rules): найбільше нагород
-      Weekend MVP і найбільше перемог у дуелях Rivals за August + September + October
+      MVP і найбільше перемог у дуелях Rivals за August + September + October
       разом. Рахується само, оновлюється щовікенда.</p>
+      <p class="dim">Тут <b>лише 1 призове місце</b> — 2-го і 3-го немає. Тайбрейків
+      (точні рахунки) теж немає: у кого найбільше нагород MVP чи перемог Rivals за
+      весь турнір — той перший, і медаль беруть усі, хто ділить найкраще число.
+      Однакова кількість → місце й гроші діляться порівну. Точні рахунки — це
+      тайбрейк лише при визначенні MVP і Rivals <b>кожного вікенда</b>, не тут.</p>
     </div>
     ${board('<span style="color:var(--gold);font-weight:700;letter-spacing:0.03em">MVP</span> — найбільше нагород', 'mvp_count', 'mvp_rank', 'mvp_delta')}
     ${board('⚔️ Rivals — найбільше перемог', 'rival_wins', 'rival_rank', 'rival_delta')}
