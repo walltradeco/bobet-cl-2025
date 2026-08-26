@@ -3222,10 +3222,12 @@ function renderLeaderboard(data){
       {
         title: 'MVP — найбільше нагород за турнір',
         titleHtml: '<span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір',
+        goldOnly: true,
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: r.mvp_delta ?? null }))
       },
       {
         title: '⚔️ Rivals — найбільше перемог за турнір',
+        goldOnly: true,
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: r.rival_delta ?? null }))
       }
     ];
@@ -3311,12 +3313,18 @@ function renderBoards(finalBoards){
       <div class="board-head">${b.titleHtml || escapeHtml(b.title)}</div>
       ${sorted.map((e, idx) => {
         const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
-        const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
+        // goldOnly (MVP/Rivals номінації, рішення Богдана 25.08): медаль і
+        // підсвітка ЛИШЕ 1-му місцю (усім, хто ділить найкраще число);
+        // решта — просто номер, без срібла/бронзи. Дельти лишаються.
+        const goldOnly = b.goldOnly;
+        const placeCls = place === 0 ? 'p1'
+          : goldOnly ? ''
+          : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
         // podium places show ONLY a medal (shared across ties); others show the numeric place.
         // General — залік за весь турнір, не етап — тому перше місце отримує ще й
         // 🏆 поруч із 🥇, щоб на око відрізнялось від будь-якого етапного 🥇.
         const isGeneral = /general/i.test(b.title);
-        const rankInner = place < 3
+        const rankInner = (goldOnly ? place === 0 : place < 3)
           ? `<span class="crown">${MEDALS[place]}${place === 0 && isGeneral ? '🏆' : ''}</span>`
           : escapeHtml(labels[idx]);
         return `
@@ -5136,7 +5144,7 @@ if(EMBED_BOARD){
 }
 setInterval(() => {
   if (!document.getElementById('cabinet-overlay').classList.contains('open')) refreshAll();
-}, 60000);
+}, 300000);
 </script>
 </body>
 </html>

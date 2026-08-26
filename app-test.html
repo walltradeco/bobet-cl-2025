@@ -124,6 +124,11 @@
     padding:10px 12px;margin-bottom:12px;}
   .gw-group h3{font-family:'Montserrat',sans-serif;font-size:15px;margin:18px 0 8px;
     color:var(--gold);}
+  .gw-group h3.gw-head{cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;}
+  .gw-group h3.gw-head:hover{opacity:.85;}
+  .gw-caret{display:inline-block;width:.9em;text-align:center;color:var(--text-dim);
+    font-size:.8em;transition:none;}
+  .gw-group.collapsed .gw-body{display:none;}
 
   /* Стрічка Q&A — картки замість голих рядків з бордюром: питання
      репортера як бейдж-«мітка спікера», відповідь друга під тонкою
@@ -1546,12 +1551,29 @@ function renderRivalBox(deadlinePassed, open){
     const rowsHtml = S.rivalPairs
       .slice()
       .sort((a,b) => esc(a.chooser_name).localeCompare(esc(b.chooser_name)))
-      .map(r => `
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
-          <div><b>${esc(r.chooser_name)}</b> <span class="dim">${rivalDecidingTotals[r.chooser_name] ?? 0}</span>
-            <span class="dim">проти</span> ${esc(r.rival_name)} <span class="dim">${rivalDecidingTotals[r.rival_name] ?? 0}</span></div>
-          <div>${rivalStatusMark(r.status, r.points)}</div>
-        </div>`).join('');
+      .map(r => {
+        // Історія вибору (rival_board.first_rival_name, файл 351). ПІДТВЕРДЖЕНИЙ
+        // суперник = на момент підтвердження прогнозів. Показуємо ЗАВЖДИ
+        // (рішення Богдана 25.08): змінив стратегічно → «спочатку X, змінив
+        // на Y»; не змінив → «обрав X одразу, без змін». Порожній first (стара
+        // пара до журналу) — рядок не показуємо.
+        const first = r.first_rival_name;
+        const changed = first && first !== r.rival_name;
+        const histLine = changed
+          ? `<div class="dim" style="font-size:12px;margin-top:3px">↪ спочатку обрав <b>${esc(first)}</b>, змінив на <b>${esc(r.rival_name)}</b></div>`
+          : (first
+              ? `<div class="dim" style="font-size:12px;margin-top:3px">↪ обрав <b>${esc(first)}</b> одразу, без змін</div>`
+              : '');
+        return `
+        <div style="padding:6px 0;border-top:1px solid var(--line)">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div><b>${esc(r.chooser_name)}</b> <span class="dim">${rivalDecidingTotals[r.chooser_name] ?? 0}</span>
+              <span class="dim">проти</span> ${esc(r.rival_name)} <span class="dim">${rivalDecidingTotals[r.rival_name] ?? 0}</span></div>
+            <div>${rivalStatusMark(r.status, r.points)}</div>
+          </div>
+          ${histLine}
+        </div>`;
+      }).join('');
     const rivalRankingHtml = [...allNames]
       .sort((a, b) => rivalDecidingTotals[b] - rivalDecidingTotals[a])
       .map(name => `
@@ -2509,6 +2531,127 @@ async function viewBoosts(){
 // =====================================================================
 //  ДРАФТ БУСТІВ (U-8a)
 // =====================================================================
+// =====================================================================
+//  CLUB LEGEND 🏅 — блок у вкладці Boosts (2 слоти клуб+роль на етап)
+//
+//  Показується ЛИШЕ коли етап має пул (club_legend_pool) — так само, як
+//  Manager Style з'являється лише при manager_style_config. Поки Фаза 3
+//  не засіяла пул, legendData().roles порожній → блок не малюється.
+//  Стеля 10 балів/етап рахується в базі (335, агрегація); тут лише показ.
+// =====================================================================
+async function loadLegendData(){
+  const { data: pool } = await sb.from('club_legend_pool')
+    .select('role_code').eq('tournament_id', TOURNAMENT_ID);
+  if (!pool || !pool.length) return { roles: [], clubs: [], choices: [], progress: [] };
+  const codes = pool.map(p => p.role_code);
+  const [rRes, cRes, chRes, pRes] = await Promise.all([
+    sb.from('club_legend_roles').select('*').order('sort_order'),
+    sb.from('legend_clubs').select('team_id,team_name,short_name')
+      .eq('tournament_id', TOURNAMENT_ID),
+    sb.from('club_legend_choices').select('team_id,role_code')
+      .eq('tournament_id', TOURNAMENT_ID).eq('participant_id', S.me.participant_id),
+    sb.from('legend_progress').select('*')
+      .eq('tournament_id', TOURNAMENT_ID).eq('participant_id', S.me.participant_id),
+  ]);
+  return {
+    roles: (rRes.data || []).filter(r => codes.includes(r.code)),
+    clubs: (cRes.data || []).slice().sort((a, b) => esc(a.team_name).localeCompare(esc(b.team_name))),
+    choices: chRes.data || [],
+    progress: pRes.data || [],
+  };
+}
+
+// Валідно = 2 повні слоти (клуб+роль) без повного дубля. Legend вимкнено
+// (нема ролей) → true, щоб не блокувати підтвердження на етапах без Legend.
+function legendValid(L, state){
+  if (!L || !L.roles.length) return true;
+  if (!state || state.length < 2) return false;
+  for (const s of state) if (!s || !s.team || !s.role) return false;
+  if (state[0].team === state[1].team && state[0].role === state[1].role) return false;
+  return true;
+}
+
+function legendBoxHtml(L, locked, state){
+  if (!L || !L.roles.length) return '';   // Legend не ввімкнено на етапі
+  const clubName = id => {
+    const c = L.clubs.find(x => x.team_id === id);
+    return c ? c.team_name : '—';
+  };
+  const cap = 10;
+  const got = (L.progress || []).reduce((a, p) => a + (p.points || 0), 0);
+  const capped = Math.min(got, cap);
+
+  let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+      <div><b style="color:var(--text);font-size:14px">🏅 Club Legend · 2 слоти на етап</b></div>
+      ${got > 0 ? `<div class="mono" title="нараховано за етап зі стелі"
+        style="font-size:14px;font-weight:700;color:var(--green)">${capped}/${cap}</div>` : ''}
+    </div>
+    <div class="dim" style="margin:6px 0 8px;font-size:13px">
+      Обери <b>2 пасивки</b> на весь етап — кожна це <b>клуб + роль</b>. Бали йдуть
+      у залік (впливають на місця й гроші), поза Rivals/MVP. Максимум ${cap} балів
+      Legend за етап. Незмінне до кінця етапу, як бусти.
+    </div>`;
+
+  if (locked) {
+    // Read-only: обрані слоти з прогресом (клуб · роль · нараховано).
+    const rows = (L.progress || []).map(p => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-top:1px solid var(--line)">
+        <div>${p.role_icon || '🏅'} <b>${esc(clubName(p.team_id))}</b>
+          <span class="dim">·</span> ${esc(p.role_title || '')}
+          <span class="dim" style="font-size:13px"> · ${p.club_matches_played}/${p.club_matches_total} матчів</span></div>
+        <div class="s" style="color:${p.points > 0 ? 'var(--green)' : 'var(--text-dim)'}">
+          ${p.points > 0 ? '+' + p.points : 'очікує'}</div>
+      </div>`).join('');
+    inner += rows || '<div class="dim">Legend-слоти не обрано.</div>';
+  } else {
+    // Вибір: 2 слоти, кожен = селект клубу + чіпи ролей.
+    for (let i = 0; i < 2; i++){
+      const sel = state[i] || {};
+      const chips = L.roles.map(r => `<button data-lrole="${i}" data-code="${esc(r.code)}"
+        class="${sel.role === r.code ? 'on' : ''}" title="${esc(r.description)}">
+        ${r.icon || '🏅'} ${esc(r.title)}</button>`).join('');
+      inner += `<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
+        <div class="dim" style="font-size:13px;margin-bottom:4px">Слот ${i + 1}</div>
+        <select data-lteam="${i}" style="width:100%;max-width:280px;padding:7px 9px;
+          border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:14px">
+          <option value="">— обери клуб —</option>
+          ${L.clubs.map(c => `<option value="${c.team_id}" ${sel.team === c.team_id ? 'selected' : ''}>${esc(c.team_name)}</option>`).join('')}
+        </select>
+        <div class="yn yn-wrap" style="margin-top:6px">${chips}</div>
+      </div>`;
+    }
+    inner += `<div id="legend-msg" class="dim" style="margin-top:8px;font-size:13px">${
+      legendValid(L, state)
+        ? 'Обрано 2 слоти ✓'
+        : 'Обов\'язково 2 слоти (клуб + роль). Однаковий клуб можна двічі, але не з тією самою роллю.'
+    }</div>`;
+  }
+
+  // Розбір механіки — як у бустів і стилю (examples з club_legend_roles).
+  inner += `<details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
+    L.roles.map(r => (r.icon || '🏅') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>`;
+
+  return `<div class="card tight" style="margin-top:14px">${inner}</div>`;
+}
+
+// Навісити обробники Legend-блоку. onChange викликається після кожної
+// зміни (оновлює state і перемальовує калькулятор, щоб кнопка перерахувалась).
+function wireLegend(root, state, onChange){
+  root.querySelectorAll('[data-lteam]').forEach(s => s.onchange = () => {
+    const i = +s.dataset.lteam;
+    state[i] = state[i] || {};
+    state[i].team = s.value || null;
+    onChange();
+  });
+  root.querySelectorAll('[data-lrole]').forEach(b => b.onclick = () => {
+    const i = +b.dataset.lrole;
+    state[i] = state[i] || {};
+    state[i].role = state[i].role === b.dataset.code ? null : b.dataset.code;
+    onChange();
+  });
+}
+
+
 async function viewDraft(){
   const { data: t } = await sb.from('tournaments').select('*').eq('id', TOURNAMENT_ID).single();
   const { data: stock } = await sb.from('my_boost_stock').select('*')
@@ -2522,6 +2665,12 @@ async function viewDraft(){
     .eq('participant_id', S.me.participant_id)
     .maybeSingle();
   const lockedAt = ds && ds.confirmed_at ? ds.confirmed_at : null;
+
+  // Club Legend (порожньо, якщо етап без пулу — блок тоді не малюється).
+  // legendState — поточний вибір 2 слотів, prefill із моїх choices.
+  const L = await loadLegendData();
+  const legendState = [{}, {}];
+  (L.choices || []).forEach((c, i) => { if (i < 2) legendState[i] = { team: c.team_id, role: c.role_code }; });
 
   const closed = new Date(t.draft_deadline) <= new Date() || !!lockedAt;
   const cur = {};
@@ -2557,7 +2706,8 @@ async function viewDraft(){
         · витрачено <b class="mono">${ds.total_spent}</b> з <b class="mono">${budget}</b> рексів.
         Змінити вже не можна — якщо це помилка, потрібен адмін.</div>
         <div class="dim" style="margin:14px 0 10px">Що саме куплено і як воно рахується:</div>
-        ${activeBoosts().map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}`;
+        ${activeBoosts().map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}
+        ${legendBoxHtml(L, true)}`;
       return;
     }
 
@@ -2582,8 +2732,10 @@ async function viewDraft(){
               <span class="n">${state[b.code] || 0}</span>
               <button data-p="${b.code}" ${closed ? 'disabled' : ''}>+</button>
             </div>`)).join('')}
-      ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${closed || left < 0 || sp === 0 ? 'disabled' : ''}>
-        ${left < 0 ? 'Перевитрата' : 'Підтвердити Boosts'}</button>`}
+      ${closed ? '' : legendBoxHtml(L, false, legendState)}
+      ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${
+        closed || left < 0 || !legendValid(L, legendState) || (sp === 0 && !L.roles.length) ? 'disabled' : ''}>
+        ${left < 0 ? 'Перевитрата' : !legendValid(L, legendState) ? 'Обери 2 слоти Legend' : 'Підтвердити Boosts'}</button>`}
       <p class="dim" style="text-align:center;margin-top:10px">
         ${lockedAt
           ? 'Розфіксувати Boosts може лише адмін.'
@@ -2596,22 +2748,37 @@ async function viewDraft(){
       state[b.dataset.m] = Math.max(0, (state[b.dataset.m] || 0) - 1); draw();
     });
 
+    // Legend: селект клубу + чіпи ролей → оновити legendState й перемалювати
+    // (щоб кнопка перерахувала legendValid). draw зберігає legendState (замикання).
+    wireLegend($('view'), legendState, draw);
+
     const db = $('btn-draft');
     if (db) db.onclick = () => {
       const items = Object.entries(state).filter(([, q]) => q > 0);
+      // Legend-рядки в модалці підтвердження (лише коли етап має Legend)
+      const legendOn = !!(L && L.roles.length);
+      const clubName = id => { const c = L.clubs.find(x => x.team_id === id); return c ? c.team_name : '—'; };
+      const roleTitle = code => { const r = L.roles.find(x => x.code === code); return r ? (r.icon || '🏅') + ' ' + r.title : code; };
+      const legendBody = legendOn
+        ? `<div class="rev-line" style="border:none;margin-top:12px"><span><b>🏅 Club Legend</b></span></div>`
+          + legendState.map(s => `<div class="rev-line"><span>${esc(clubName(s.team))}</span>
+             <span class="s">${esc(roleTitle(s.role))}</span></div>`).join('')
+        : '';
       const body = items.map(([c, q]) =>
         `<div class="rev-line"><span>${esc(typeOf(c).title)} × ${q}</span>
          <span class="s">${priceOf(c) * q}р</span></div>`).join('') +
         `<div class="rev-line" style="border:none;margin-top:8px">
-          <span><b>Разом</b></span><span class="s">${spent()} з ${budget}</span></div>`;
+          <span><b>Разом</b></span><span class="s">${spent()} з ${budget}</span></div>` +
+        legendBody;
 
       showModal('Підтвердити Boosts', body + `
         <p class="dim" style="margin-top:12px;color:var(--red)">
-          Це остаточно. Після підтвердження змінити Boosts
+          Це остаточно. Після підтвердження змінити Boosts${legendOn ? ' і Legend' : ''}
           не можна — тільки через адміна.</p>`, async () => {
         const { error } = await sb.rpc('submit_draft', {
           p_tournament: TOURNAMENT_ID,
-          p_items: items.map(([code, qty]) => ({ code, qty }))
+          p_items: items.map(([code, qty]) => ({ code, qty })),
+          ...(legendOn ? { p_legend: legendState.map(s => ({ team: s.team, role: s.role })) } : {})
         });
         if (error) throw new Error(error.message);
 
@@ -2878,6 +3045,12 @@ async function viewBoard(){
   const th = (t) => `<th style="text-align:right">${t}</th>`;
   const td = (v, c) => `<td class="n" style="text-align:right${c ? ';color:' + c : ''}">${v}</td>`;
 
+  // 🏅 Club Legend — колонка з'являється, ЛИШЕ коли механіка реально дала
+  // бали (хтось має legend_points > 0). Поки Legend не ввімкнено на етапі
+  // (пул порожній → усюди 0), колонки немає — щоб порожній стовпець не
+  // плутав учасників. Коли Фаза 3 засіє пул і піде перший вікенд —
+  // колонка з'явиться сама. У General legend уже входить у колонки етапів.
+  const hasLegend = !season && data.some(r => (r.legend_points ?? 0) > 0);
   const head = season
     ? th('Точних') + stageCols.map(s => th(esc(s.title))).join('') + th('Bonus')
     // ⚠️ MVP — це СЛОВО «MVP» золотим, а не 🏆. Рівно як бейджі на
@@ -2887,7 +3060,8 @@ async function viewBoard(){
     // підписати колонку MVP, у тій самій таблиці зʼявиться два різні
     // сенси одного значка.
     : th('Точних') + th('Матчі') + th('Бонуси') + th('⚔️')
-      + th('<span style="color:var(--gold)">MVP</span>') + th('👔');
+      + th('<span style="color:var(--gold)">MVP</span>') + th('👔')
+      + (hasLegend ? th('🏅') : '');
 
   // ⚠️ Колонка ₴ — ТІЛЬКИ на вкладці етапу, і стоїть після «Разом»:
   // гроші є наслідком очок, а не ще однією їх складовою.
@@ -2910,7 +3084,8 @@ async function viewBoard(){
       + `<td class="n dim" style="text-align:right">${r.bonus_points ?? 0}</td>`
       + td(r.rival_points ?? 0, 'var(--teal)')
       + td(r.mvp_points ?? 0, 'var(--teal)')
-      + td(r.style_points ?? 0, 'var(--teal)');
+      + td(r.style_points ?? 0, 'var(--teal)')
+      + (hasLegend ? td(r.legend_points ?? 0, 'var(--teal)') : '');
 
   // ОКРЕМА ТАБЛИЦЯ ГРОШЕЙ під заліком — тільки в General.
   //
@@ -3050,7 +3225,10 @@ async function viewMvpRivals(){
     (deltaRows || []).forEach(d => { deltaByPerson[d.person_key] = d; });
   } catch(e) {}
 
-  const medal = (rank) => rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : String(rank);
+  // Тільки золото за 1-ше місце (рішення Богдана 25.08): усі з найкращим
+  // числом ділять місце 1 і беруть 🥇 (в'юха ранжує за rank() без exact-
+  // тайбрейку); решта — просто номер місця, без срібла/бронзи.
+  const medal = (rank) => rank === 1 ? '🥇' : String(rank);
 
   const board = (titleHtml, key, rankKey, deltaKey) => {
     const sorted = [...rows].sort((a, b) => (b[key] ?? 0) - (a[key] ?? 0));
@@ -3520,7 +3698,10 @@ async function viewPress(){
           : '';
         return `<div class="feed-item press${statusClass}">${line1}${line2}</div>`;
       }).join('');
-      return `<div class="gw-group"><h3>${esc(gwTitle(gid))}</h3>${rows}</div>`;
+      const collapsed = (S.pressCollapsed || {})[gid];
+      return `<div class="gw-group${collapsed ? ' collapsed' : ''}">`
+        + `<h3 class="gw-head" data-gwtoggle="${gid}"><span class="gw-caret">${collapsed ? '▸' : '▾'}</span><span>${esc(gwTitle(gid))}</span></h3>`
+        + `<div class="gw-body">${rows}</div></div>`;
     }).join('') + `</div>`;
   }
 
@@ -3573,6 +3754,21 @@ async function viewPress(){
     const n = $('view').querySelector(`[data-saved="${id}"]`);
     if (n){ n.textContent = txt; n.style.color = color; }
   };
+
+  // Згорнути/розгорнути стрічку одного вікенда. Стан живе в S.pressCollapsed
+  // (переживає ререндер viewPress), тому toggle робимо на місці — без
+  // повного перемальовування, щоб не гасити прокрутку й набране.
+  $('view').querySelectorAll('[data-gwtoggle]').forEach(h => {
+    h.onclick = () => {
+      const gid = h.dataset.gwtoggle;
+      S.pressCollapsed = S.pressCollapsed || {};
+      S.pressCollapsed[gid] = !S.pressCollapsed[gid];
+      const grp = h.closest('.gw-group');
+      if (grp) grp.classList.toggle('collapsed', S.pressCollapsed[gid]);
+      const caret = h.querySelector('.gw-caret');
+      if (caret) caret.textContent = S.pressCollapsed[gid] ? '▸' : '▾';
+    };
+  });
 
   // Підтвердити: зберегти відповідь → вона летить у стрічку, список
   // перемальовується (питання зникає, підтягується наступне).
