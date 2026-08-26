@@ -2467,7 +2467,7 @@ function renderEuroRulesExtras(){
            (mvpBadge) і в призовій таблиці. Тому заголовок без емодзі,
            золотим — рішення Богдана 11.08.2026. ⚔️ і 👔 у сусідніх
            блоках лишаються: вони збігаються зі своїми бейджами. -->
-      <div class="rules-mech-head"><h3 style="color:var(--gold)">Weekend MVP</h3></div>
+      <div class="rules-mech-head"><h3 style="color:var(--gold)">MVP</h3></div>
       <p class="rules-mech-p">
         Одна нагорода за вікенд — тому, хто набрав найбільше очок за цей вікенд
         РАЗОМ: прогнози, бусти, Rivals і Manager Style. Рівність очок вирішують
@@ -2602,9 +2602,14 @@ function renderEuroRulesExtras(){
         призового фонду одразу.<br><br>
         <b>Однакові очки — місця діляться, і гроші за них теж.</b> Якщо двоє
         поділили перше місце, вони ділять навпіл суму призів за 1 і 2 місце,
-        а наступний отримує приз за 3 місце. Так само в MVP і Rivals: двоє з
-        однаковою кількістю беруть по половині. Точні рахунки на поділ місця
-        не впливають — вони тайбрейк лише в MVP і Rivals вище.<br><br>
+        а наступний отримує приз за 3 місце. Точні рахунки на поділ місця
+        не впливають — тайбрейків тут немає.<br><br>
+        <b>MVP і Rivals — лише 1 призове місце.</b> На відміну від «Місць»
+        (1-2-3), у цих двох номінаціях 2-го і 3-го немає: усю частку бере той,
+        у кого найбільше нагород MVP чи перемог Rivals за весь турнір; якщо
+        однакова кількість — діляться порівну. Точні рахунки тут теж не тайбрейк —
+        вони вирішують лише при визначенні MVP і Rivals кожного вікенда (секції
+        вище).<br><br>
         <b>Ціну очка наперед знати неможливо.</b> Сума за очки фіксована, а
         ділиться вона на всі очки, які набере ліга: наберемо більше — очко
         коштуватиме менше. Тому важлива не кількість очок сама по собі, а
@@ -3221,10 +3226,12 @@ function renderLeaderboard(data){
       {
         title: 'MVP — найбільше нагород за турнір',
         titleHtml: '<span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір',
+        goldOnly: true,
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: r.mvp_delta ?? null }))
       },
       {
         title: '⚔️ Rivals — найбільше перемог за турнір',
+        goldOnly: true,
         entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: r.rival_delta ?? null }))
       }
     ];
@@ -3310,12 +3317,18 @@ function renderBoards(finalBoards){
       <div class="board-head">${b.titleHtml || escapeHtml(b.title)}</div>
       ${sorted.map((e, idx) => {
         const place = places[idx]; // 0=first, 1=second, 2=third (shared across ties)
-        const placeCls = place === 0 ? 'p1' : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
+        // goldOnly (MVP/Rivals номінації, рішення Богдана 25.08): медаль і
+        // підсвітка ЛИШЕ 1-му місцю (усім, хто ділить найкраще число);
+        // решта — просто номер, без срібла/бронзи. Дельти лишаються.
+        const goldOnly = b.goldOnly;
+        const placeCls = place === 0 ? 'p1'
+          : goldOnly ? ''
+          : place === 1 ? 'p2' : place === 2 ? 'p3' : '';
         // podium places show ONLY a medal (shared across ties); others show the numeric place.
         // General — залік за весь турнір, не етап — тому перше місце отримує ще й
         // 🏆 поруч із 🥇, щоб на око відрізнялось від будь-якого етапного 🥇.
         const isGeneral = /general/i.test(b.title);
-        const rankInner = place < 3
+        const rankInner = (goldOnly ? place === 0 : place < 3)
           ? `<span class="crown">${MEDALS[place]}${place === 0 && isGeneral ? '🏆' : ''}</span>`
           : escapeHtml(labels[idx]);
         return `
@@ -5135,7 +5148,7 @@ if(EMBED_BOARD){
 }
 setInterval(() => {
   if (!document.getElementById('cabinet-overlay').classList.contains('open')) refreshAll();
-}, 60000);
+}, 300000);
 </script>
 </body>
 </html>
