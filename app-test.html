@@ -803,6 +803,13 @@ function priceOf(code){
   const p = S.prices.find(x => x.boost_code === code);
   return p ? p.price : 0;
 }
+// Ліміт одиниць буста на етап (boost_prices.max_units, файл 148).
+// null = без обмеження. Серверний бар'єр — у submit_draft; це UX-дублікат,
+// щоб «+» упирався й показував стелю, а не давав перевитрату аж на підтвердженні.
+function maxUnitsOf(code){
+  const p = S.prices.find(x => x.boost_code === code);
+  return p && p.max_units != null ? p.max_units : null;
+}
 function typeOf(code){
   return S.boostTypes.find(x => x.code === code) || { title: code, description: '' };
 }
@@ -2726,12 +2733,20 @@ async function viewDraft(){
         <div class="dim" style="margin-top:6px">Залишок: <b class="mono">${left}</b> рексів</div>
       </div>
       ${closed ? '<div class="msg err">Драфт закрито — Boosts більше не змінити</div>' : ''}
-      ${activeBoosts().map(b => boostCard(b, null, `
-            <div class="qty">
-              <button data-m="${b.code}" ${closed ? 'disabled' : ''}>−</button>
-              <span class="n">${state[b.code] || 0}</span>
-              <button data-p="${b.code}" ${closed ? 'disabled' : ''}>+</button>
-            </div>`)).join('')}
+      ${activeBoosts().map(b => {
+        const mx = maxUnitsOf(b.code);
+        const q  = state[b.code] || 0;
+        const atMax = mx != null && q >= mx;
+        return boostCard(b, null, `
+            <div style="text-align:right">
+              <div class="qty">
+                <button data-m="${b.code}" ${closed ? 'disabled' : ''}>−</button>
+                <span class="n">${q}</span>
+                <button data-p="${b.code}" ${closed || atMax ? 'disabled' : ''}>+</button>
+              </div>
+              ${mx != null ? `<div class="dim" style="font-size:12px;margin-top:4px">макс ${mx}</div>` : ''}
+            </div>`);
+      }).join('')}
       ${closed ? '' : legendBoxHtml(L, false, legendState)}
       ${lockedAt ? '' : `<button class="primary" id="btn-draft" ${
         closed || left < 0 || !legendValid(L, legendState) || (sp === 0 && !L.roles.length) ? 'disabled' : ''}>
@@ -2742,7 +2757,9 @@ async function viewDraft(){
           : 'Підтвердити можна один раз. Після цього Boosts не змінюються.'}</p>`;
 
     $('view').querySelectorAll('[data-p]').forEach(b => b.onclick = () => {
-      state[b.dataset.p] = (state[b.dataset.p] || 0) + 1; draw();
+      const code = b.dataset.p, mx = maxUnitsOf(code), q = state[code] || 0;
+      if (mx != null && q >= mx) return;   // стеля max_units (файл 148)
+      state[code] = q + 1; draw();
     });
     $('view').querySelectorAll('[data-m]').forEach(b => b.onclick = () => {
       state[b.dataset.m] = Math.max(0, (state[b.dataset.m] || 0) - 1); draw();
@@ -3643,7 +3660,7 @@ async function viewPress(){
 
   // ---------- 1. Стрічка (завжди згори) ----------
   const rolloutNote = rolloutActive
-    ? `<p class="press-note">🟢 новини цього вікенда ще виходять — заходь протягом години</p>`
+    ? `<p class="press-note">🟢 результати вікенда внесені — новини й питання пресконференції зʼявляться протягом години</p>`
     : '';
   if (!feed.length && !statements.length){
     html += `<div class="card"><h2>Стрічка</h2>${rolloutNote}
