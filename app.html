@@ -1372,7 +1372,10 @@ async function viewMatches(){
 
   // Кнопка вмикається в ту саму мить, коли заповнено останнє поле.
   if (!locked) {
-    $('view').querySelectorAll('.sc-h, .sc-a').forEach(i => {
+    // ⚠️ .sc-h2/.sc-a2 (другий рахунок Double Predict) ТЕЖ слухаємо —
+    // інакше кнопка «Підтвердити» не реагувала на введення другого
+    // рахунку, і гейт DP (todo) не гаснув при заповненні полів.
+    $('view').querySelectorAll('.sc-h, .sc-a, .sc-h2, .sc-a2').forEach(i => {
       i.addEventListener('input', refreshConfirmState);
     });
   }
@@ -2176,6 +2179,11 @@ function renderBoostPickers(){
         const i = S.ap.picks.indexOf(id);
         if (i >= 0) { S.ap.picks.splice(i, 1); renderAutopilotBar(); }
       }
+
+      // Вибір/зняття буста може змінити готовність вікенда (Double
+      // Predict без другого рахунку — це прогалина), тож одразу
+      // переоцінюємо кнопку «Підтвердити», а не чекаємо на введення цифр.
+      refreshConfirmState();
     };
   });
 }
@@ -2208,6 +2216,18 @@ function todo(){
   if (noScore) {
     gaps.push(`${noScore} ${noScore === 1 ? 'матч' :
       (noScore < 5 ? 'матчі' : 'матчів')} без прогнозу`);
+  }
+  // Double Predict без другого рахунку. Раніше цього гейта не було:
+  // кнопка лишалась зеленою, а сервер (save_prediction) відхиляв уже
+  // ПІД ЧАС збереження — «Double Predict потребує другого рахунку»,
+  // без вказівки матчу. Учасник читав це як глюк і прибирав DP, бусти
+  // йшли невикористані. Тепер ясний гейт до підтвердження.
+  const dpGap = S.matches.filter(m => {
+    const p = S.myPred[m.match_id];
+    return p && p.boost === 'double_predict' && (p.home2 == null || p.away2 == null);
+  }).length;
+  if (dpGap) {
+    gaps.push(`другий рахунок для Double Predict${dpGap > 1 ? ` ×${dpGap}` : ''}`);
   }
   if (!S.rivalPairs.some(r => r.chooser_id === S.me.participant_id)) {
     gaps.push('суперник у Rivals');
@@ -3161,6 +3181,21 @@ async function viewBoard(){
     </div>`;
   };
 
+  // ⚠️ МІСЦЕ Й МЕДАЛЬ — competition rank (rank() з розривами: двоє на
+  // золоті → наступний одразу 3-й: 1,1,3,3,5,6), а НЕ r.place з в'юхи
+  // (dense_rank: …→2-й: 1,1,2,2,3,4). Та сама шкала, що на публічному
+  // борді (test.html renderBoards) і що дельта (файл 364). Раніше кабінет
+  // брав r.place (dense) → та сама людина була «2-е/срібло» тут і
+  // «3-є/бронза» на сайті, а стрілки розходились із номером місця.
+  // `data` уже впорядкована за place (= total_points desc), тож ранг
+  // рахуємо простим проходом по спаданню очок.
+  const crank = [];
+  { let pos = 1;
+    for (let i = 0; i < data.length; i++) {
+      if (i > 0 && data[i].total_points !== data[i - 1].total_points) pos = i + 1;
+      crank[i] = pos;
+    } }
+
   $('view').innerHTML = `
     <div class="card">
     <h2>${esc(boardName)}${season ? '' : ' 2026'}</h2>
@@ -3176,8 +3211,8 @@ async function viewBoard(){
          з «Missing } in template expression» і кабінет не відкривається
          взагалі. Спіймано рівно на цьому 14.08.2026. -->
     <table class="lb-table" style="min-width:520px"><thead><tr><th>№</th><th></th><th>Учасник</th>${head}${th('Разом')}${headMoney}</tr></thead>
-    <tbody>${data.map(r => `<tr>
-      <td class="n">${r.place} <span class="medal">${medal(r.place)}</span></td>
+    <tbody>${data.map((r, ri) => `<tr>
+      <td class="n">${crank[ri]} <span class="medal">${medal(crank[ri])}</span></td>
       <td class="n" style="font-size:13px">${lbDeltaHtml(deltaByKey[season ? r.person_key : r.participant_id])}</td>
       <td style="color:var(--purple);font-weight:600">${esc(r.display_name)}</td>
       ${cells(r)}
