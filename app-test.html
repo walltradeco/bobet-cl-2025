@@ -771,17 +771,22 @@ function defaultTab(){
 }
 
 async function loadRefs(){
-  const [gw, bt, bp, gwd, sd, bq] = await Promise.all([
+  const [gw, bt, bp, gwd, sd, bq, pay] = await Promise.all([
     sb.from('gameweek_status').select('*').eq('tournament_id', TOURNAMENT_ID).order('number'),
     sb.from('boost_types').select('*').order('sort_order'),
     sb.from('boost_prices').select('*').eq('tournament_id', TOURNAMENT_ID),
     sb.from('gameweek_dots').select('*').eq('tournament_id', TOURNAMENT_ID),
     sb.from('stage_dots').select('*').eq('tournament_id', TOURNAMENT_ID).maybeSingle(),
     sb.from('my_bonus_questions').select('*'),
+    // Виплати буста на цьому етапі + дефолт (boost_payouts, файл 231):
+    // потрібні, щоб опис Under 2.5 показував РЕАЛЬНУ виплату етапу
+    // (серпень +2, вересень +3) — таблиця boost_types глобальна.
+    sb.from('boost_payouts').select('*').or(`tournament_id.eq.${TOURNAMENT_ID},tournament_id.is.null`),
   ]);
   S.gameweeks  = gw.data || [];
   S.boostTypes = bt.data || [];
   S.prices     = bp.data || [];
+  S.payouts    = pay.data || [];
 
   // Крапки «є оновлення» (файл 147). gwDots — по вікенду (ключ —
   // gameweek_id), stageDots — один рядок на етап (може бути відсутній,
@@ -802,6 +807,17 @@ async function loadRefs(){
 function priceOf(code){
   const p = S.prices.find(x => x.boost_code === code);
   return p ? p.price : 0;
+}
+// Виплата буста на ЦЬОМУ етапі (boost_payouts, файл 231): рядок етапу
+// (tournament_id = поточний) перекриває дефолтний (tournament_id null).
+// Потрібна, щоб опис Under 2.5 показував реальну виплату етапу, а не
+// зашите число (серпень +2, вересень +3). null = виплата не задана.
+function payoutOf(code){
+  const rows   = S.payouts ? S.payouts.filter(x => x.boost_code === code) : [];
+  const staged = rows.find(x => x.tournament_id === TOURNAMENT_ID);
+  const def    = rows.find(x => x.tournament_id == null);
+  const r = staged || def;
+  return r ? r.payout : null;
 }
 // Ліміт одиниць буста на етап (boost_prices.max_units, файл 148).
 // null = без обмеження. Серверний бар'єр — у submit_draft; це UX-дублікат,
@@ -2454,6 +2470,30 @@ function reviewAndSave(){
 // ---------------------------------------------------------------------
 function boostCard(b, owned, controlHtml){
   const c = boostColor(b.code);
+  // Under 2.5: виплата per-етап (серпень +2, вересень +3), а опис у
+  // boost_types ГЛОБАЛЬНИЙ — тому текст будуємо тут із реальної виплати
+  // етапу, інакше картка брехала б на одному з етапів (29.08.2026).
+  // Решта бустів беруть опис/приклади з БД як є. Якщо виплата не
+  // завантажилась (P == null) — теж fallback на текст із БД.
+  let desc = b.description, examples = b.examples;
+  if (b.code === 'under25'){
+    const P = payoutOf('under25');
+    if (P != null){
+      const t = 3 + P;   // очки на точному рахунку: базові 3 + виплата
+      desc = `Ставка «в матчі буде 2 голи або менше». +${ptsWord(P)} зверху, незалежно від основного прогнозу. Не зайшло — 0, мінусів немає.`;
+      examples = `Окрема ставка на кількість голів, дзеркало Total 3.5+ — лише навпаки: ставка на те, що голів буде МАЛО. З твоїм прогнозом на рахунок ніяк не пов'язана: +${P} йдуть ЗВЕРХУ до того, що прогноз заробив сам.
+
+Поставив 1:0:
+• факт 1:0 — ${ptsWord(t)}: точний рахунок (3) плюс тотал ≤2 (${P})
+• факт 0:0 — ${ptsWord(P)}: рахунок мимо, але в матчі менше трьох голів
+• факт 2:1 — 1 очко: перемогу господаря вгадано, але три голи — тотал мимо
+• факт 0:3 — 0: і результат мимо, і голів забагато
+
+⚠️ Рахуються голи ОБОХ команд разом, і треба рівно два або менше. Три голи — вже мимо.
+
+Найкорисніший на в'язких низових матчах, де чекаєш 0:0, 1:0 чи 1:1: очки можна взяти навіть коли точний рахунок не вгадав.`;
+    }
+  }
   const right = controlHtml != null
     ? controlHtml
     : `<div class="mono" style="font-size:16px;font-weight:700;white-space:nowrap;
@@ -2464,14 +2504,14 @@ function boostCard(b, owned, controlHtml){
         <div style="flex:1">
           <div style="font-weight:700;font-size:16px;color:${c}">${esc(b.title)}
             <span class="mono" style="color:var(--gold);font-size:14px">${priceOf(b.code)}р</span></div>
-          <div class="dim" style="margin-top:4px">${esc(b.description)}</div>
+          <div class="dim" style="margin-top:4px">${esc(desc)}</div>
         </div>
         ${right}
       </div>
-      ${b.examples ? `
+      ${examples ? `
         <details class="bex">
           <summary>Як це рахується — приклади</summary>
-          <div>${esc(b.examples)}</div>
+          <div>${esc(examples)}</div>
         </details>` : ''}
     </div>`;
 }
