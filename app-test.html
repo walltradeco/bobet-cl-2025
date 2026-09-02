@@ -2952,12 +2952,18 @@ async function viewStock(){
   // рядок видно завжди, чужий — щойно відкрився перший вікенд етапу
   // (той самий принцип, що в Manager Style). Блок не малюється, якщо в
   // етапу немає Legend-пулу.
-  const [poolRes, clubsRes, choicesRes, namesRes, rolesRes] = await Promise.all([
+  const [poolRes, clubsRes, choicesRes, namesRes, rolesRes, logRes] = await Promise.all([
     sb.from('club_legend_pool').select('role_code').eq('tournament_id', TOURNAMENT_ID),
     sb.from('legend_clubs').select('team_id,team_name').eq('tournament_id', TOURNAMENT_ID),
-    sb.from('club_legend_choices').select('participant_id,team_id,role_code').eq('tournament_id', TOURNAMENT_ID),
+    sb.from('club_legend_choices').select('participant_id,team_id,role_code,points').eq('tournament_id', TOURNAMENT_ID),
     sb.from('club_legend_names').select('team_id,role_code,name'),
     sb.from('club_legend_roles').select('code,icon,title'),
+    // Журнал по матчах (386) — розбивка "Вікенд N: +X" під кожним
+    // піком, той самий рівень деталізації, що в Rivals/Manager Style.
+    // Вікенд, у якому клуб не грав, просто відсутній тут (рішення
+    // Богдана 28.09.2026) — не показуємо «—».
+    sb.from('legend_match_board').select('participant_id,team_id,role_code,gameweek_number,points')
+      .eq('tournament_id', TOURNAMENT_ID),
   ]);
   if (poolRes.data && poolRes.data.length) {
     const clubsMap = {}; (clubsRes.data || []).forEach(c => { clubsMap[c.team_id] = c.team_name; });
@@ -2965,6 +2971,11 @@ async function viewStock(){
     const rolesMap = {}; (rolesRes.data || []).forEach(r => { rolesMap[r.code] = r; });
     const byPL = {};
     for (const c of (choicesRes.data || [])) (byPL[c.participant_id] ||= []).push(c);
+    const logMap = {};
+    for (const l of (logRes.data || [])) {
+      const k = l.participant_id + '|' + l.team_id + '|' + l.role_code;
+      (logMap[k] ||= []).push(l);
+    }
 
     html += `<div class="dim" style="margin:14px 0 6px">🐐 Club Legend — хто що обрав:</div>`;
     for (const p of (parts.data || []).sort((a, b) =>
@@ -2976,15 +2987,30 @@ async function viewStock(){
           <span class="dim"> — 🐐 Legend ще закриті</span></div>`;
         continue;
       }
-      const chips = picks.map(c => {
+      const pickBlocks = picks.map(c => {
         const r = rolesMap[c.role_code] || {};
         const nm = namesMap[c.team_id + '|' + c.role_code];
         const label = (clubsMap[c.team_id] || '—') + ' — ' + (r.icon || '🐐') + ' ' + (nm || r.title || c.role_code);
-        return `<span class="boost-chip" style="border-color:#6FAFAF;color:#6FAFAF;background:#6FAFAF1a">${esc(label)}</span>`;
+        const gwRows = (logMap[p.id + '|' + c.team_id + '|' + c.role_code] || [])
+          .sort((a, b) => a.gameweek_number - b.gameweek_number);
+        const breakdown = gwRows
+          .map(g => `Вікенд ${g.gameweek_number}: ${g.points > 0 ? '+' + g.points : '0'}`)
+          .join(' · ');
+        return `<div style="margin-top:6px">
+          <span class="boost-chip" style="border-color:#6FAFAF;color:#6FAFAF;background:#6FAFAF1a">${esc(label)}</span>
+          ${breakdown ? `<div class="dim" style="font-size:13px;margin-top:2px">${esc(breakdown)}</div>` : ''}
+        </div>`;
       }).join('');
+      // Сума обох слотів зі стелею 10 (335: агрегація least(sum,10)) —
+      // той самий "X/Y" мono-стиль, що в заголовках Rivals/Manager Style.
+      const gotLegend = Math.min(10, picks.reduce((s, c) => s + (c.points || 0), 0));
       html += `<div class="card tight">
-        <b style="color:${isMe ? 'var(--gold)' : 'var(--purple)'}">${esc(p.display_name)}</b>
-        <div class="boost-row" style="margin-top:8px">${chips}</div></div>`;
+        <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
+          <b style="color:${isMe ? 'var(--gold)' : 'var(--purple)'}">${esc(p.display_name)}</b>
+          <div class="mono" title="нараховано за етап зі стелі"
+            style="font-size:14px;font-weight:700;color:${gotLegend ? 'var(--green)' : 'var(--text-dim)'}">${gotLegend}/10</div>
+        </div>
+        ${pickBlocks}</div>`;
     }
   }
 
