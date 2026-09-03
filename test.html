@@ -2233,6 +2233,12 @@ async function buildMonthRows(tournamentKey){
   const legendMatchRows = legendRows.length ? await sbGet(
     'legend_match_board?select=display_name,team_id,role_code,gameweek_number,points' +
     '&tournament_id=eq.' + tid) : [];
+  // Стеля Legend/етап із конфігу (club_legend_config, 389) — для «X/cap»,
+  // як LIVE_STYLE_CAP вище. Читає anon (RLS дозволяє), fallback 12.
+  if (legendRows.length) {
+    const legendCfg = await sbGet('club_legend_config?select=cap');
+    LIVE_LEGEND_CAP = legendCfg[0] ? legendCfg[0].cap : 12;
+  }
   const legendByName = {};
   legendRows.forEach(r => {
     const matches = legendMatchRows
@@ -3702,7 +3708,7 @@ let LIVE_LEGEND = null;
 
 /* Стеля балів Legend за етап — та сама, що в кабінеті (335: агрегація
    least(sum,10)). Фіксована константа проєкту, не таблиця конфігу. */
-const LIVE_LEGEND_CAP = 10;
+let LIVE_LEGEND_CAP = 12;   // дефолт; фактичну стелю етапу тягнемо з club_legend_config (389)
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву

@@ -301,6 +301,7 @@
   .match.ap-blocked{opacity:0.4;cursor:not-allowed;border-style:solid;}
   .boost-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
   .boost-chip{
+    display:inline-block;vertical-align:middle;                 /* без цього <span>-чіпи (Legend «хто що обрав») налазять: inline не тримає вертикальний padding */
     background:var(--panel-3);border:1px solid var(--line);color:var(--text-dim);
     font-family:'IBM Plex Mono',monospace;font-size:13px;padding:6px 10px;
     border-radius:7px;cursor:pointer;
@@ -772,7 +773,7 @@ function defaultTab(){
 }
 
 async function loadRefs(){
-  const [gw, bt, bp, gwd, sd, bq, pay] = await Promise.all([
+  const [gw, bt, bp, gwd, sd, bq, pay, pool, cfg] = await Promise.all([
     sb.from('gameweek_status').select('*').eq('tournament_id', TOURNAMENT_ID).order('number'),
     sb.from('boost_types').select('*').order('sort_order'),
     sb.from('boost_prices').select('*').eq('tournament_id', TOURNAMENT_ID),
@@ -783,11 +784,17 @@ async function loadRefs(){
     // потрібні, щоб опис Under 2.5 показував РЕАЛЬНУ виплату етапу
     // (серпень +2, вересень +3) — таблиця boost_types глобальна.
     sb.from('boost_payouts').select('*').or(`tournament_id.eq.${TOURNAMENT_ID},tournament_id.is.null`),
+    // Club Legend: чи активний на етапі (є пул) — для назви вкладки «Boosts &
+    // Club Legend»; і стеля Legend/етап із конфігу (club_legend_config, 389).
+    sb.from('club_legend_pool').select('role_code').eq('tournament_id', TOURNAMENT_ID).limit(1),
+    sb.from('club_legend_config').select('cap').limit(1).maybeSingle(),
   ]);
   S.gameweeks  = gw.data || [];
   S.boostTypes = bt.data || [];
   S.prices     = bp.data || [];
   S.payouts    = pay.data || [];
+  S.hasLegend  = !!(pool.data && pool.data.length);    // етап має Legend-пул → вкладка «Boosts & Club Legend»
+  S.legendCap  = (cfg.data && cfg.data.cap) || 12;     // стеля Legend/етап (config 389, fallback 12)
 
   // Крапки «є оновлення» (файл 147). gwDots — по вікенду (ключ —
   // gameweek_id), stageDots — один рядок на етап (може бути відсутній,
@@ -952,7 +959,7 @@ function renderTabs(){
     ? [['bonus', 'Bonus'], ['board', 'Leaderboard & Prize'], ['mvprivals', 'MVP & Rivals']]  // News & Press у General немає — там нема вікендів/преси
     : [
         ['bonus',   'Bonus'],
-        ['boosts',  'Boosts'],
+        ['boosts',  S.hasLegend ? 'Boosts & Club Legend' : 'Boosts'],
         ['matches', 'Predictions & Results'],
         ['games',   'All Games'],
         ['press',   'News & Press'],
@@ -2668,7 +2675,7 @@ function legendBoxHtml(L, locked, state){
     return `<div class="card tight" style="margin-top:14px">${inner}</div>`;
   }
 
-  const cap = 10;
+  const cap = S.legendCap || 12;   // стеля Legend/етап (config 389)
   const got = (L.progress || []).reduce((a, p) => a + (p.points || 0), 0);
   const capped = Math.min(got, cap);
 
@@ -3003,12 +3010,13 @@ async function viewStock(){
       }).join('');
       // Сума обох слотів зі стелею 10 (335: агрегація least(sum,10)) —
       // той самий "X/Y" мono-стиль, що в заголовках Rivals/Manager Style.
-      const gotLegend = Math.min(10, picks.reduce((s, c) => s + (c.points || 0), 0));
+      const legendCap = S.legendCap || 12;   // стеля Legend/етап (config 389)
+      const gotLegend = Math.min(legendCap, picks.reduce((s, c) => s + (c.points || 0), 0));
       html += `<div class="card tight">
         <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
           <b style="color:${isMe ? 'var(--gold)' : 'var(--purple)'}">${esc(p.display_name)}</b>
           <div class="mono" title="нараховано за етап зі стелі"
-            style="font-size:14px;font-weight:700;color:${gotLegend ? 'var(--green)' : 'var(--text-dim)'}">${gotLegend}/10</div>
+            style="font-size:14px;font-weight:700;color:${gotLegend ? 'var(--green)' : 'var(--text-dim)'}">${gotLegend}/${legendCap}</div>
         </div>
         ${pickBlocks}</div>`;
     }
