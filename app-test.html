@@ -842,7 +842,12 @@ function typeOf(code){
 // priceOf повертає 0 за відсутності ціни. Адмінка (виставлення цін) далі
 // бере повний S.boostTypes — там навпаки потрібні всі.
 function activeBoosts(){
-  return S.boostTypes.filter(b => S.prices.some(p => p.boost_code === b.code));
+  // Порядок карток — від найдешевшого до найдорожчого (Богдан 04.09.2026).
+  const priceOf = c => { const p = S.prices.find(x => x.boost_code === c); return p ? p.price : 1e9; };
+  return S.boostTypes
+    .filter(b => S.prices.some(p => p.boost_code === b.code))
+    .slice()
+    .sort((a, b) => priceOf(a.code) - priceOf(b.code));
 }
 
 // ---------------------------------------------------------------------
@@ -1790,33 +1795,39 @@ function renderStyleBox(locked, open){
   const mine = (S.styleRows || []).find(r => r.participant_id === S.me.participant_id);
   const cur  = opts.find(o => o.is_current);
   const cap  = S.styleCap;
+  // «Без стелі» = weekend_cap знято (жовтень: 999; колонка NOT NULL>0, тож
+  // велике число = без ліміту). Поріг 99 відрізняє реальну стелю від «знятої».
+  const noCap = !(cap && cap < 99);
   const left = opts.filter(o => o.used_gameweek == null && !o.is_current).length;
 
   // Взято за етап зі стелі × кількість вікендів — той самий лічильник,
   // що в Rivals: одразу видно, скільки механіка ще може принести.
-  const styleMax = cap ? cap * S.gameweeks.length : 0;
+  // Без стелі стелевого максимуму немає → показуємо лише набране (styleMax 0).
+  const styleMax = noCap ? 0 : cap * S.gameweeks.length;
   const styleGot = (S.myStylesStage || [])
     .reduce((acc, r) => acc + (r.points || 0), 0);
 
   // Той самий розклад по вікендах, що в Rivals — видно, звідки набралась
-  // сума, а не тільки що вона є (Богдан 28.07.2026).
+  // сума, а не тільки що вона є (Богдан 28.07.2026). Без стелі — без «/N».
   const styleBreakdown = (S.myStylesStage || [])
     .slice().sort((a, b) => a.gameweek_number - b.gameweek_number)
     .map(r => `Вікенд ${r.gameweek_number}: ${
-      r.scored ? '+' + r.points + (cap ? '/' + cap : '') : 'очікує'}`)
+      r.scored ? '+' + r.points + (noCap ? '' : '/' + cap) : 'очікує'}`)
     .join(' · ');
 
   let inner = `<div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px">
       <div><b style="color:var(--text);font-size:14px">👔 Manager Style · один стиль на вікенд</b></div>
       ${styleMax ? `<div class="mono" title="взято за етап із можливих"
         style="font-size:14px;font-weight:700;color:${styleGot ? 'var(--green)' : 'var(--text-dim)'}">
-        ${styleGot}/${styleMax}</div>` : ''}
+        ${styleGot}/${styleMax}</div>`
+      : (noCap && styleGot ? `<div class="mono" title="взято за етап (без стелі)"
+        style="font-size:14px;font-weight:700;color:var(--green)">${styleGot}</div>` : '')}
     </div>
     ${styleBreakdown ? `<div class="dim" style="font-size:13px;margin-top:2px">${styleBreakdown}</div>` : ''}
     <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Очки за стиль нараховуються за <b>фінальними рахунками матчів</b> вікенда —
       твої прогнози тут не враховуються взагалі${
-        cap ? `, максимум ${ptsWord(cap)} за вікенд` : ''}.
+        noCap ? ', <b>без стелі</b> — скільки набереш, стільки й буде' : `, максимум ${ptsWord(cap)} за вікенд`}.
       Той самий стиль двічі за етап узяти не можна.
     </div>`;
 
@@ -1872,15 +1883,23 @@ function renderStyleBox(locked, open){
 
 Найпростіше запам'ятати так: поставив 3:0, матч закінчився 0:3 — за прогноз нуль, а стиль Flick усе одно дасть очко, бо хтось забив три.
 
-За етап стилі дають щонайбільше ${styleMax} очок — по ${cap} за кожен із ${S.gameweeks.length} вікендів.
+${noCap
+  ? `Стилі рахуються за кожен із ${S.gameweeks.length} вікендів БЕЗ СТЕЛІ — скільки набереш за вікенд, стільки й іде в залік.`
+  : `За етап стилі дають щонайбільше ${styleMax} очок — по ${cap} за кожен із ${S.gameweeks.length} вікендів.
 
-⚠️ Стеля ${cap} діє на вікенд: якщо умова спрацювала більше разів, зайве зрізається. У сумі за вікенд це видно рядком «(стеля N, сирих M)».
+⚠️ Стеля ${cap} діє на вікенд: якщо умова спрацювала більше разів, зайве зрізається. У сумі за вікенд це видно рядком «(стеля N, сирих M)».`}
 
 ⚠️ Один стиль на вікенд, і той самий стиль двічі за етап узяти не можна — витрачені лишаються в списку сірими, з номером вікенда, де пішли.
 
 ⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
-      + (opts.length ? '\n\n— — —\n\n' + opts.map(o =>
-          (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
+      + (opts.length ? '\n\n— — —\n\n' + opts.map(o => {
+          // Приклади стилів — з БД (manager_styles.examples), глобальні. Коли
+          // стелі немає (October), прибираємо приписки про зрізання стелею —
+          // напр. «(стеля вікенда може зрізати)» — бо нічого не зрізається.
+          let ex = o.examples || o.description || '';
+          if (noCap) ex = ex.replace(/\s*\([^)]*(?:стел|зріз)[^)]*\)/gi, '');
+          return (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(ex);
+        }).join('\n\n') : '')}</div>
     </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
@@ -2687,8 +2706,10 @@ function legendBoxHtml(L, locked, state){
     <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Обери <b>2 пасивки</b> на весь етап — кожна це <b>клуб + роль</b>. Бали йдуть
       у загальний залік (впливають на місця й гроші), але <b>НЕ рахуються
-      для Rivals і MVP тижня</b> — це окрема, суто етапна механіка. Максимум
-      ${cap} балів Legend за етап. Незмінне до кінця етапу, як бусти.
+      для Rivals і MVP тижня</b> — це окрема, суто етапна механіка. Стеля —
+      <b>${cap} балів Legend за етап</b> (сума обох слотів): 8 клубів грають по
+      4 матчі (макс 8 за роль × 2 слоти = ${cap}), лише Мілан і Ювентус — по 5.
+      Незмінне до кінця етапу, як бусти.
     </div>`;
 
   // Вибір: 2 слоти, кожен = селект клубу + чіпи ролей. Щойно клуб обрано,
@@ -2797,8 +2818,9 @@ async function viewDraft(){
         · витрачено <b class="mono">${ds.total_spent}</b> з <b class="mono">${budget}</b> рексів.
         Змінити вже не можна — якщо це помилка, потрібен адмін.</div>
         <div class="dim" style="margin:14px 0 10px">Що саме куплено і як воно рахується:</div>
-        ${activeBoosts().map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}
-        ${legendBoxHtml(L, true)}`;
+        ${activeBoosts().map(b => boostCard(b, mineByCode[b.code] || 0)).join('')}`;
+      // Опис ролей Legend переїхав у viewStock (04.09.2026) — під список
+      // «хто що обрав», щоб знизу лишались тільки описи бустів.
       return;
     }
 
@@ -2964,7 +2986,7 @@ async function viewStock(){
     sb.from('legend_clubs').select('team_id,team_name').eq('tournament_id', TOURNAMENT_ID),
     sb.from('club_legend_choices').select('participant_id,team_id,role_code,points').eq('tournament_id', TOURNAMENT_ID),
     sb.from('club_legend_names').select('team_id,role_code,name'),
-    sb.from('club_legend_roles').select('code,icon,title'),
+    sb.from('club_legend_roles').select('code,icon,title,examples,description').order('sort_order'),
     // Журнал по матчах (386) — розбивка "Вікенд N: +X" під кожним
     // піком, той самий рівень деталізації, що в Rivals/Manager Style.
     // Вікенд, у якому клуб не грав, просто відсутній тут (рішення
@@ -2985,6 +3007,19 @@ async function viewStock(){
     }
 
     html += `<div class="dim" style="margin:14px 0 6px">🐐 Club Legend — хто що обрав:</div>`;
+
+    // Довідник ролей + стеля — ОДРАЗУ під заголовком секції (Богдан 04.09.2026:
+    // опис має бути тут, а не в самому низу після описів бустів). Приклади —
+    // з club_legend_roles.examples; стеля — з конфігу (S.legendCap = 16).
+    const legendCapV = S.legendCap || 16;
+    const poolCodes  = poolRes.data.map(p => p.role_code);
+    const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
+    html += `<div class="card tight" style="margin-bottom:10px">
+      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
+      <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
+        roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
+    </div>`;
+
     for (const p of (parts.data || []).sort((a, b) =>
           a.display_name.localeCompare(b.display_name, 'uk'))) {
       const picks = byPL[p.id] || [];
@@ -3020,6 +3055,8 @@ async function viewStock(){
         </div>
         ${pickBlocks}</div>`;
     }
+    // (Довідник ролей Legend + стеля переїхав ВГОРУ — одразу під заголовком
+    //  «Club Legend — хто що обрав:», див. вище. Тут дубля більше немає.)
   }
 
   $('view').innerHTML = html;

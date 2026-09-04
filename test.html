@@ -2555,7 +2555,8 @@ function renderEuroRulesExtras(){
         незалежно від того, за які клуби вболіваєш і що прогнозував. Нарахування
         дивиться на фінальний рахунок матчів, а не на твій прогноз.
         Кожен стиль можна взяти лише один раз за етап. Стеля очок за стиль на
-        вікенд у August — 3.
+        вікенд: серпень — 3, вересень — 4, <b>жовтень — без стелі</b> (скільки
+        набереш за вікенд, стільки й іде в залік).
       </p>
       ${miniRulesTable('Condition', 'Points', styleRows)}
       <details class="rules-details">
@@ -3432,13 +3433,15 @@ function styleBadge(name){
   if(!LIVE_STYLES) return '';
   const picks = LIVE_STYLES[name];
   if(!picks || !picks.length) return '';
+  // «Без стелі» (жовтень: weekend_cap 999) → не показуємо «/N» і «(зі M, стеля)».
+  const noCap = !(LIVE_STYLE_CAP && LIVE_STYLE_CAP < 99);
   const rows = picks
     .slice()
     .sort((a, b) => a.gw - b.gw)
     .map(s => {
-      const capTxt = LIVE_STYLE_CAP ? '/' + LIVE_STYLE_CAP : '';
+      const capTxt = noCap ? '' : '/' + LIVE_STYLE_CAP;
       const pts = s.scored
-        ? `<span class="win">+${s.points}${capTxt}</span>${s.capped ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
+        ? `<span class="win">+${s.points}${capTxt}</span>${(!noCap && s.capped) ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
         : '<span class="pending">очікує</span>';
       return `<div class="rv-tip-row">Вікенд ${s.gw}: ${escapeHtml(s.title)} · ${pts}</div>`;
     })
