@@ -842,12 +842,7 @@ function typeOf(code){
 // priceOf повертає 0 за відсутності ціни. Адмінка (виставлення цін) далі
 // бере повний S.boostTypes — там навпаки потрібні всі.
 function activeBoosts(){
-  // Порядок карток — від найдешевшого до найдорожчого (Богдан 04.09.2026).
-  const priceOf = c => { const p = S.prices.find(x => x.boost_code === c); return p ? p.price : 1e9; };
-  return S.boostTypes
-    .filter(b => S.prices.some(p => p.boost_code === b.code))
-    .slice()
-    .sort((a, b) => priceOf(a.code) - priceOf(b.code));
+  return S.boostTypes.filter(b => S.prices.some(p => p.boost_code === b.code));
 }
 
 // ---------------------------------------------------------------------
@@ -1892,14 +1887,8 @@ ${noCap
 ⚠️ Один стиль на вікенд, і той самий стиль двічі за етап узяти не можна — витрачені лишаються в списку сірими, з номером вікенда, де пішли.
 
 ⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
-      + (opts.length ? '\n\n— — —\n\n' + opts.map(o => {
-          // Приклади стилів — з БД (manager_styles.examples), глобальні. Коли
-          // стелі немає (October), прибираємо приписки про зрізання стелею —
-          // напр. «(стеля вікенда може зрізати)» — бо нічого не зрізається.
-          let ex = o.examples || o.description || '';
-          if (noCap) ex = ex.replace(/\s*\([^)]*(?:стел|зріз)[^)]*\)/gi, '');
-          return (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(ex);
-        }).join('\n\n') : '')}</div>
+      + (opts.length ? '\n\n— — —\n\n' + opts.map(o =>
+          (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
     </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
@@ -3007,19 +2996,6 @@ async function viewStock(){
     }
 
     html += `<div class="dim" style="margin:14px 0 6px">🐐 Club Legend — хто що обрав:</div>`;
-
-    // Довідник ролей + стеля — ОДРАЗУ під заголовком секції (Богдан 04.09.2026:
-    // опис має бути тут, а не в самому низу після описів бустів). Приклади —
-    // з club_legend_roles.examples; стеля — з конфігу (S.legendCap = 16).
-    const legendCapV = S.legendCap || 16;
-    const poolCodes  = poolRes.data.map(p => p.role_code);
-    const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
-    html += `<div class="card tight" style="margin-bottom:10px">
-      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
-      <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
-        roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
-    </div>`;
-
     for (const p of (parts.data || []).sort((a, b) =>
           a.display_name.localeCompare(b.display_name, 'uk'))) {
       const picks = byPL[p.id] || [];
@@ -3055,8 +3031,19 @@ async function viewStock(){
         </div>
         ${pickBlocks}</div>`;
     }
-    // (Довідник ролей Legend + стеля переїхав ВГОРУ — одразу під заголовком
-    //  «Club Legend — хто що обрав:», див. вище. Тут дубля більше немає.)
+
+    // Довідник ролей Legend — одразу під списком «хто що обрав» (Богдан
+    // 04.09.2026: опис Legend разом із Legend-секцією; знизу в pane-draft
+    // лишаються самі описи бустів). Приклади — з club_legend_roles.examples.
+    const legendCapV = S.legendCap || 16;
+    const poolCodes  = poolRes.data.map(p => p.role_code);
+    const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
+    html += `<div class="card tight" style="margin-top:12px">
+      <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">🐐 Club Legend — ролі</div>
+      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
+      <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
+        roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
+    </div>`;
   }
 
   $('view').innerHTML = html;
