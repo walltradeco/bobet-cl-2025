@@ -65,6 +65,7 @@ button:disabled{opacity:.5;cursor:default}
 .pcard .rt{color:var(--gold);font-weight:700}
 .pcard .act{margin-top:9px;display:flex;gap:6px}
 .pcard .act button{padding:5px 10px;font-size:12px;flex:1}
+.pcard .auc{margin-top:8px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--line);padding-top:7px}
 
 /* таблиці */
 table.t{width:100%;border-collapse:collapse}
@@ -194,11 +195,46 @@ async function boot(){
 async function loadRefs(){
   const cs = await sbSel('market_clubs?select=id,name,league');
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
+  S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at&order=number.asc`);
   S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating&order=market_value_current.desc`);
-  // свій Bank (RLS: лише свій)
+  // активні аукціони (публічні)
+  S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
+  // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
+  const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name`);
+  S.names = {}; lb.forEach(p=>S.names[p.participant_id]=p.display_name);
+  // свій Bank / доступне / заморожене (RLS + RPC: лише свій)
   const b = await sbSel(`market_budget?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=bank_eur`);
   S.bank = b.length? b[0].bank_eur : null;
+  S.spendable = (await sb.rpc('market_spendable', { p_participant:S.me.id })).data;
+  S.frozen    = (await sb.rpc('market_frozen',    { p_participant:S.me.id })).data;
+}
+
+// виклик дії ринку: RPC → показати результат → перезавантажити
+async function act(fn, args, okMsg){
+  const { data, error } = await sb.rpc(fn, args);
+  if(error){ alert('⛔ ' + (error.message||'').replace(/^.*?(Squad: )/, '$1')); return; }
+  if(okMsg) alert('✅ ' + okMsg);
+  await loadRefs(); go(S.tab);
+}
+// EUR ↔ млн у діалогах (зручніше вводити млн)
+function askM(label, minEur){
+  const v = prompt(label + ' (у €млн, мін ' + (minEur/1e6).toFixed(1) + ')', (minEur/1e6).toFixed(1));
+  if(v==null) return null;
+  const eurv = Math.round(parseFloat(v.replace(',','.')) * 1e6);
+  if(!eurv || eurv < minEur){ alert('Замало — мінімум ' + eur(minEur)); return null; }
+  return eurv;
+}
+// прив'язати кнопки дій після рендеру сітки карток
+function bindActions(){
+  document.querySelectorAll('[data-auc]').forEach(b=>b.onclick=()=>{
+    const amt=askM('Стартова ставка', +b.dataset.min); if(amt) act('market_start_auction',{p_player:b.dataset.auc,p_amount:amt},'Аукціон почато'); });
+  document.querySelectorAll('[data-bid]').forEach(b=>b.onclick=()=>{
+    const amt=askM('Перебити', +b.dataset.min); if(amt) act('market_place_bid',{p_auction:b.dataset.bid,p_amount:amt},'Ставку зроблено'); });
+  document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
+    if(confirm('Викупити за '+b.dataset.price+'?')) act('market_buynow',{p_player:b.dataset.buy},'Гравець твій'); });
+  document.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{
+    if(confirm('Продати за '+b.dataset.price+' (−5%)?')) act('market_sell',{p_player:b.dataset.sell},'Продано'); });
 }
 // прямий REST (для market_* — простіше за .from ланцюги)
 async function sbSel(path){
@@ -232,6 +268,8 @@ function statbar(){
   const dl = S.rounds.find(r=>new Date(r.deadline_at)>new Date());
   return `<div class="statbar">
     <div class="stat"><b>Bank (лише твій)</b><span class="bank">${eur(S.bank)}</span></div>
+    <div class="stat"><b>Доступно</b><span class="bank">${eur(S.spendable)}</span></div>
+    <div class="stat"><b>Заморожено</b><span>${eur(S.frozen)}</span></div>
     <div class="stat"><b>Squad Price</b><span class="price">${eur(price)}</span></div>
     <div class="stat"><b>Склад</b><span>${mine.length}/${S.cfg?S.cfg.squad_max:8}</span></div>
     <div class="stat"><b>Найближчий дедлайн</b><span>${dl?new Date(dl.deadline_at).toLocaleDateString('uk'):'—'}</span></div>
@@ -242,21 +280,37 @@ function statbar(){
 function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
   const cards = mine.length? `<div class="pgrid">${mine.map(pcard).join('')}</div>`
-    : `<div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).<br><span class="pill">дії ринку — наступний крок</span></div>`;
+    : `<div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>`;
   $('view').innerHTML = statbar() + `<h2>Мій склад</h2>
-    <p class="dim">Сітка карток (не поле). Виставлення стартової 5 / капітан / лавка — крок лайнапу. Продаж −5% — з картки (наступний крок).</p>` + cards;
+    <p class="dim">Сітка карток (не поле). Продаж −5% — кнопкою на картці. Виставлення стартової 5 / капітан / лавка — крок лайнапу.</p>` + cards;
+  bindActions();
 }
 function pcard(p){
   const cl=(S.clubs[p.club_id]||{}).name||'';
   const owned = p.owner_participant_id===S.me.id;
   const free = !p.owner_participant_id;
+  const mv = p.market_value_current;
+  const au = free ? S.auctions.find(a=>a.player_id===p.id) : null;
+  let action='';
+  if(owned){
+    const proceeds = Math.round(mv*(1-(S.cfg?.sell_pct??0.05)));
+    action = `<div class="act"><button class="ghost" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>`;
+  } else if(free && au){
+    const iLead = au.leader_participant_id===S.me.id;
+    const minBid = Math.ceil(au.current_bid*(1+(S.cfg?.bid_step_pct??0.05)));
+    action = `<div class="auc">🔨 ${eur(au.current_bid)} · ${iLead?'<b style="color:var(--gold)">ти лідер</b>':esc(S.names[au.leader_participant_id]||'—')} · до ${new Date(au.ends_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}</div>
+      ${iLead?'':`<div class="act"><button data-bid="${au.id}" data-min="${minBid}">Перебити (від ${eur(minBid)})</button></div>`}`;
+  } else if(free){
+    const ceil = Math.round(mv*(1+(S.cfg?.buynow_pct??0.15)));
+    action = `<div class="act"><button data-auc="${p.id}" data-min="${mv}">Аукціон</button><button class="ghost" data-buy="${p.id}" data-price="${eur(ceil)}">Викуп ${eur(ceil)}</button></div>`;
+  } else {
+    action = `<div class="row"><span class="pill">куплений</span></div>`;
+  }
   return `<div class="pcard">
     <span class="pos ${p.position}">${p.position}</span>
     <div class="nm">${esc(p.name)}</div><div class="club">${esc(cl)}</div>
-    <div class="row"><span class="mv">${eur(p.market_value_current)}</span><span class="rt">★${p.season_avg_rating??'—'}</span></div>
-    ${owned?`<div class="act"><button class="ghost" disabled>Продати −5% (скоро)</button></div>`
-      :free?`<div class="act"><button disabled>Ставка (скоро)</button><button class="ghost" disabled>Викуп (скоро)</button></div>`
-      :`<div class="row"><span class="pill">куплений</span></div>`}
+    <div class="row"><span class="mv">${eur(mv)}</span><span class="rt">★${p.season_avg_rating??'—'}</span></div>
+    ${action}
   </div>`;
 }
 
@@ -272,12 +326,22 @@ function viewMarket(){
     body = `<div class="filterbar"><input id="pq" placeholder="пошук по імені (англ.)" value="${esc(S.pQuery)}" style="max-width:260px"> <span class="pill">${shown.length} гравців</span></div>
       <div class="pgrid">${shown.slice(0,60).map(pcard).join('')}</div>
       ${shown.length>60?`<p class="dim" style="margin-top:10px">показано 60 з ${shown.length} — звузь пошуком</p>`:''}`;
+  } else if(S.mktSub==='bids'){
+    const mine = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
+    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші заморожено до закриття). Перебити чужий лот — у «Вільні».</p>
+      <table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">До</th></tr></thead><tbody>${
+      mine.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
+        return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+          <td class="n">${eur(a.current_bid)}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+      }).join('')}</tbody></table>`
+      : `<div class="soon">Немає активних ставок, де ти лідируєш. Почни аукціон або перебий лот у «Вільні».</div>`;
   } else {
-    body = `<div class="soon">${S.mktSub==='bids'?'Активні аукціони, таймери, заморожене':'Вхідні/вихідні пропозиції трансферів (так/ні/контр)'} — <b>наступний крок</b> (RPC аукціонів/трансферів 403-405).</div>`;
+    body = `<div class="soon">Прямі трансфери (пропозиція покупця ≥75% · так/ні/контр) — <b>наступний крок</b> (RPC 405).</div>`;
   }
   $('view').innerHTML = statbar()+`<h2>Ринок</h2>`+bar+body;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{S.mktSub=b.dataset.s; viewMarket();});
   const pq=$('pq'); if(pq) pq.oninput=()=>{ S.pQuery=pq.value; const c=pq.selectionStart; viewMarket(); const n=$('pq'); if(n){n.focus(); n.setSelectionRange(c,c);} };
+  bindActions();
 }
 
 // ── 🏆 ТАБЛИЦЯ (market_leaderboard; повна F1 — на публічній борді) ──
