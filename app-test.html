@@ -471,7 +471,12 @@ const STAGES = [
   { key: 'aug2026',    id: '11111111-1111-1111-1111-111111111111', title: 'August',    bonusOnly: false },
   { key: 'sep2026',    id: '22222222-2222-2222-2222-222222222222', title: 'September', bonusOnly: false },
   { key: 'oct2026',    id: '33333333-3333-3333-3333-333333333333', title: 'October',   bonusOnly: false },
-  { key: 'legend_test', id: 'c59f3a80-5f70-4d09-9b9f-10dcfdefeacf', title: '🐐 Legend Test', bonusOnly: false }, // ТИМЧАСОВО — прибрати після тесту Club Legend (файл 345)
+  // ⚠️ legend_test (тестовий турнір 345) ПРИБРАНО 04.09.2026 — Club Legend
+  // тепер активний на реальному oct2026 (файл 344), пісочниця не потрібна.
+  // Прод-бік чистить файл 396 (видаляє турнір із бази). Тримати обидва
+  // синхронно: поки 396 не залито, legend_test лишається в prod-базі
+  // (status=active, 0 балів), тож season_leaderboard його ще агрегує — але
+  // з нулем, тож Разом не зсувається; після 396 і база, і фронт чисті.
 ];
 
 // Кабінет відкривається на поточному місяці. До 1 серпня — на серпні,
@@ -842,7 +847,12 @@ function typeOf(code){
 // priceOf повертає 0 за відсутності ціни. Адмінка (виставлення цін) далі
 // бере повний S.boostTypes — там навпаки потрібні всі.
 function activeBoosts(){
-  return S.boostTypes.filter(b => S.prices.some(p => p.boost_code === b.code));
+  // Порядок карток — від найдешевшого до найдорожчого (Богдан 04.09.2026).
+  const priceOf = c => { const p = S.prices.find(x => x.boost_code === c); return p ? p.price : 1e9; };
+  return S.boostTypes
+    .filter(b => S.prices.some(p => p.boost_code === b.code))
+    .slice()
+    .sort((a, b) => priceOf(a.code) - priceOf(b.code));
 }
 
 // ---------------------------------------------------------------------
@@ -1887,8 +1897,14 @@ ${noCap
 ⚠️ Один стиль на вікенд, і той самий стиль двічі за етап узяти не можна — витрачені лишаються в списку сірими, з номером вікенда, де пішли.
 
 ⚠️ Не обрав до дедлайну — система кине випадковий із вільних.`)
-      + (opts.length ? '\n\n— — —\n\n' + opts.map(o =>
-          (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(o.examples || o.description)).join('\n\n') : '')}</div>
+      + (opts.length ? '\n\n— — —\n\n' + opts.map(o => {
+          // Приклади стилів — з БД (manager_styles.examples), глобальні. Коли
+          // стелі немає (October), прибираємо приписки про зрізання стелею —
+          // напр. «(стеля вікенда може зрізати)» — бо нічого не зрізається.
+          let ex = o.examples || o.description || '';
+          if (noCap) ex = ex.replace(/\s*\([^)]*(?:стел|зріз)[^)]*\)/gi, '');
+          return (o.icon || '👔') + ' ' + esc(o.title) + '\n' + esc(ex);
+        }).join('\n\n') : '')}</div>
     </details>`;
 
   // Чужі стилі — рівно після відкриття вікенда, як і прогнози
@@ -2996,6 +3012,19 @@ async function viewStock(){
     }
 
     html += `<div class="dim" style="margin:14px 0 6px">🐐 Club Legend — хто що обрав:</div>`;
+
+    // Довідник ролей + стеля — ОДРАЗУ під заголовком секції (Богдан 04.09.2026:
+    // опис має бути тут, а не в самому низу після описів бустів). Приклади —
+    // з club_legend_roles.examples; стеля — з конфігу (S.legendCap = 16).
+    const legendCapV = S.legendCap || 16;
+    const poolCodes  = poolRes.data.map(p => p.role_code);
+    const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
+    html += `<div class="card tight" style="margin-bottom:10px">
+      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
+      <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
+        roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
+    </div>`;
+
     for (const p of (parts.data || []).sort((a, b) =>
           a.display_name.localeCompare(b.display_name, 'uk'))) {
       const picks = byPL[p.id] || [];
@@ -3031,19 +3060,8 @@ async function viewStock(){
         </div>
         ${pickBlocks}</div>`;
     }
-
-    // Довідник ролей Legend — одразу під списком «хто що обрав» (Богдан
-    // 04.09.2026: опис Legend разом із Legend-секцією; знизу в pane-draft
-    // лишаються самі описи бустів). Приклади — з club_legend_roles.examples.
-    const legendCapV = S.legendCap || 16;
-    const poolCodes  = poolRes.data.map(p => p.role_code);
-    const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
-    html += `<div class="card tight" style="margin-top:12px">
-      <div style="font-weight:700;color:var(--text);font-size:14px;margin-bottom:6px">🐐 Club Legend — ролі</div>
-      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
-      <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
-        roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
-    </div>`;
+    // (Довідник ролей Legend + стеля переїхав ВГОРУ — одразу під заголовком
+    //  «Club Legend — хто що обрав:», див. вище. Тут дубля більше немає.)
   }
 
   $('view').innerHTML = html;
@@ -3245,12 +3263,15 @@ async function viewBoard(){
   const th = (t) => `<th style="text-align:right">${t}</th>`;
   const td = (v, c) => `<td class="n" style="text-align:right${c ? ';color:' + c : ''}">${v}</td>`;
 
-  // 🐐 Club Legend — колонка з'являється, ЛИШЕ коли механіка реально дала
-  // бали (хтось має legend_points > 0). Поки Legend не ввімкнено на етапі
-  // (пул порожній → усюди 0), колонки немає — щоб порожній стовпець не
-  // плутав учасників. Коли Фаза 3 засіє пул і піде перший вікенд —
-  // колонка з'явиться сама. У General legend уже входить у колонки етапів.
-  const hasLegend = !season && data.some(r => (r.legend_points ?? 0) > 0);
+  // 🐐 Club Legend — колонка показується, коли етап РЕАЛЬНО має Legend
+  // (пул засіяно: S.hasLegend), навіть якщо балів ще 0 — рівно як ⚔️/MVP/
+  // 👔, які теж стоять із нуля до першого вікенда. Так учасник одразу
+  // бачить, що Legend — складова Разом, ще до старту етапу (Богдан
+  // 04.09.2026). Додатково лишаємо показ, якщо в даних уже є legend_points
+  // > 0 (страховка на минулі етапи). Етап без Legend-пулу (August/
+  // September) колонки не має. У General legend уже входить у колонки
+  // етапів — окремої колонки там не треба (рішення Богдана 04.09.2026).
+  const hasLegend = !season && (S.hasLegend || data.some(r => (r.legend_points ?? 0) > 0));
   const head = season
     ? th('Точних') + stageCols.map(s => th(esc(s.title))).join('') + th('Bonus')
     // ⚠️ MVP — це СЛОВО «MVP» золотим, а не 🏆. Рівно як бейджі на
@@ -3334,7 +3355,7 @@ async function viewBoard(){
         за етапи не платяться взагалі — вони наскрізні й рахуються один раз, по всьому турніру.
         «Очки» тут — це <b style="color:var(--text)">Разом</b> із заліку
         <b style="color:var(--text)">General</b> вище: матчі з бустами, бонусні питання, ⚔️,
-        <b style="color:var(--gold)">MVP</b> і 👔 Manager Style. Остання колонка тут —
+        <b style="color:var(--gold)">MVP</b>, 👔 Manager Style і <b style="color:var(--text)">🐐 Club Legend</b>. Остання колонка тут —
         <b style="color:var(--text)">Разом ₴</b>, тобто гроші, а не очки.
       </p>
       <p class="dim" style="margin:8px 0 0;font-size:13px">
@@ -3392,7 +3413,10 @@ async function viewBoard(){
       Разом = ${stageCols.map(s => esc(s.title)).join(' + ')} +
       <b style="color:var(--text)">Bonus</b> — це власні бонусні питання General,
       ті, що на сайті у вкладці <b style="color:var(--text)">General · Bonus</b>.
-      Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа.
+      Бонуси етапів сюди не додаються окремо: вони вже всередині кожного етапного числа —
+      як і ⚔️ Rivals, <b style="color:var(--gold)">MVP</b>, 👔 Manager Style та
+      <b style="color:var(--text)">🐐 Club Legend</b>. Тому окремих колонок цих механік у General немає:
+      кожна вже порахована всередині August / September / October.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:13px;max-width:none">
       <b style="color:var(--text)">Точних</b> — вгадані точні рахунки. У наскрізному
@@ -3403,7 +3427,7 @@ async function viewBoard(){
       кожного вікенда, не тут.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:13px;max-width:none">
-      Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔) — на вкладці <b style="color:var(--text)">Leaderboard &amp; Prize</b> кожного етапу.
+      Розклад по механіках (⚔️ · <b style="color:var(--gold)">MVP</b> · 👔 · 🐐) — на вкладці <b style="color:var(--text)">Leaderboard &amp; Prize</b> кожного етапу.
       <b style="color:var(--text)">🥇🏆</b> — перше місце за весь сезон, а не за етап.
     </p>` : `
     <p class="dim" style="margin:12px 0 0;font-size:13px">
@@ -3414,8 +3438,10 @@ async function viewBoard(){
       спільне місце, і точні рахунки на нього не впливають.
     </p>
     <p class="dim" style="margin:8px 0 0;font-size:13px">
-      Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔. Це те саме число, що
-      <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.
+      Разом = Матчі + Бонуси + ⚔️ + <b style="color:var(--gold)">MVP</b> + 👔${hasLegend ? ' + 🐐' : ''}. Це те саме число, що
+      <b style="color:var(--text)">${esc(boardName)}</b> у Leaderboards на сайті.${hasLegend ? `
+      <b style="color:var(--text)">🐐 Club Legend</b> теж дає очки в залік — обидва слоти (клуб + роль), зі стелею
+      <b style="color:var(--text)">${S.legendCap || 16} балів за етап</b>, — і вони вже всередині Разом.` : ''}
     </p>
     ${prizeOk ? `<p class="dim" style="margin:8px 0 0;font-size:13px">
       <b style="color:var(--text)">₴</b> на етапі — це <b style="color:var(--text)">тільки гроші за

@@ -183,13 +183,20 @@ async function boot(){
     return msg($('login-msg'),'Тебе немає серед учасників цього турніру');
   }
   S.me = me[0];
+  S.me.id = S.me.participant_id;   // ⚠️ me() віддає колонку participant_id; увесь код кабінету чекає .id
 
   $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
   $('my-name').textContent = S.me.display_name;
   $('my-season').textContent = S.tour.title;
-  await loadRefs();
-  renderTabs();
-  go(S.tab);
+  // страховка: помилка завантаження показується, а не зависає «завантаження…»
+  try {
+    await loadRefs();
+    renderTabs();
+    go(S.tab);
+  } catch(e){
+    $('view').innerHTML = '<div class="soon">Не вдалось завантажити дані: '
+      + esc(e && e.message ? e.message : e) + '</div>';
+  }
 }
 
 async function loadRefs(){
