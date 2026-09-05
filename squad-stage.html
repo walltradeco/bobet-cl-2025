@@ -21,6 +21,9 @@ a{color:inherit}
 .stage-badge{position:fixed;top:0;left:0;right:0;z-index:50;
   background:var(--red);color:#fff;text-align:center;font-size:12px;
   font-weight:700;letter-spacing:.05em;padding:4px}
+/* вбудований у BoBet (iframe ?embed): шапку/бейдж дає оболонка BoBet */
+body.embed .stage-badge, body.embed header{display:none}
+body.embed .wrap{padding-top:10px}
 header{margin:40px 0 8px}
 h1{font-size:26px;margin:0 0 2px;letter-spacing:-.01em}
 .sub{color:var(--text-dim);font-size:13px}
@@ -131,6 +134,9 @@ async function sbGet(path){
   if(!res.ok) throw new Error('база ' + res.status);
   return res.json();
 }
+
+// вбудований у BoBet? (iframe ?embed) — ховаємо власну шапку/бейдж
+if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
 
 // ── стан ──
 const S = { tour:null, rounds:[], lb:[], scores:[], players:[], clubs:{}, tournament:null };

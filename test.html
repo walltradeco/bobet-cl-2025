@@ -1963,6 +1963,18 @@ const TOURNAMENTS = [
       { sheet:'Rules',             kind:'rules',   source:'rules' },
     ]
   },
+  // SQUAD MODE — наступний ТУРНІР BoBet (mode='squad'), не окрема ліга.
+  // Кнопка тут, у ряду турнірів; клік показує власний Squad-фронт
+  // (F1-борда) вбудованим у оболонку BoBet — файл squad-stage.html.
+  // Кабінет — та сама кнопка «Мій кабінет», але src=squad-cabinet-stage.html
+  // (див. гілку в модалці кабінету). Окремі файли — щоб не вплітати Squad
+  // у 5+тис. рядків цього фронту й app; тут лише навігація на них.
+  {
+    key:'squad',
+    title:'Squad Mode',
+    source:'squad',
+    tabs:[],
+  },
   // HONORS — наскрізна вітрина по ВСІХ турнірах ліги, а не ще один
   // турнір. Стоїть праворуч останньою: турніри йдуть хронологічно,
   // і це підсумок усієї історії.
@@ -4978,6 +4990,19 @@ function syncStickyOffset(){
 async function loadActiveTab(){
   const content = document.getElementById('content');
 
+  // SQUAD MODE — власний фронт (F1-борда), вбудований iframe-ом у оболонку
+  // BoBet. Свій файл (squad-stage.html), а не вплетений сюди: механіка
+  // market_* не має спільного з прогнозами/бустами. embed=1 ховає власний
+  // бейдж і заголовок борди (контекст уже дає шапка BoBet). Кабінет —
+  // та сама кнопка, src перемикається в модалці кабінету.
+  if(activeTournament.source === 'squad'){
+    document.getElementById('tabs').innerHTML = '';
+    content.innerHTML =
+      '<iframe src="squad-stage.html?embed=1" title="Squad Mode — борда" ' +
+      'style="width:100%;border:0;min-height:82vh;display:block"></iframe>';
+    return;
+  }
+
   // HONORS живе за іншими правилами: не таблиця, а власна сторінка,
   // зібрана з чотирьох в'юх бази. Тому виходимо з загального шляху
   // до того, як він полізе по activeTournament.tabs.
@@ -5155,22 +5180,35 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   }
   labelBtn();
 
+  // Який кабінет вантажити: Squad-турнір → власний Squad-кабінет (той
+  // самий, що робили для Squad), решта — BoBet-кабінет. Та сама кнопка.
+  async function desiredCabinetSrc(){
+    const stage = /(^|\/)test\.html$/.test(location.pathname);
+    if (typeof activeTournament !== 'undefined' && activeTournament
+        && activeTournament.source === 'squad'){
+      return stage ? 'squad-cabinet-stage.html' : 'squad-cabinet.html';
+    }
+    let appSrc = 'app.html';
+    // На test.html пробуємо тестовий кабінет; якщо його не залито —
+    // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
+    if (stage){
+      try {
+        const r = await fetch('app-test.html', { method: 'HEAD' });
+        if (r.ok) appSrc = 'app-test.html';
+      } catch(e) {}
+    }
+    return appSrc;
+  }
+
   async function open(){
     // Модалку показуємо одразу
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
-    // iframe вантажиться лише при першому відкритті
-    if (!frame.getAttribute('src')){
-      let appSrc = 'app.html';
-      // На test.html пробуємо тестовий кабінет; якщо його не залито —
-      // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
-      if (/(^|\/)test\.html$/.test(location.pathname)){
-        try {
-          const r = await fetch('app-test.html', { method: 'HEAD' });
-          if (r.ok) appSrc = 'app-test.html';
-        } catch(e) {}
-      }
-      frame.setAttribute('src', appSrc);
+    // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
+    // щоразу, бо між відкриттями турнір міг змінитись.
+    const want = await desiredCabinetSrc();
+    if (frame.getAttribute('src') !== want){
+      frame.setAttribute('src', want);
     }
   }
   function close(){
