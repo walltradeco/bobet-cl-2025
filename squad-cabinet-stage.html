@@ -78,6 +78,8 @@ button:disabled{opacity:.5;cursor:default}
 .lrow .lmv{color:var(--teal);width:64px;text-align:right;font-variant-numeric:tabular-nums}
 .lrow .lctrl{display:flex;gap:4px}
 .lrow .capb{color:var(--gold)} .lrow .viceb{color:var(--teal)}
+.benchord{flex:none;width:22px;height:22px;border-radius:50%;background:var(--panel2);border:1px solid var(--line);
+  color:var(--text-dim);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center}
 button.mini{padding:4px 9px;font-size:12px;font-weight:700;border-radius:6px}
 button.mini.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
 button.mini.on{background:var(--gold);color:#1B1B1B}
@@ -361,9 +363,13 @@ function bindActions(){
   document.querySelectorAll('[data-bid]').forEach(b=>b.onclick=()=>{
     const amt=askM('Перебити', +b.dataset.min); if(amt) act('market_place_bid',{p_auction:b.dataset.bid,p_amount:amt},'Ставку зроблено'); });
   document.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{
-    if(confirm('Викупити за '+b.dataset.price+'?')) act('market_buynow',{p_player:b.dataset.buy},'Гравець твій'); });
+    const p=S.players.find(x=>x.id===b.dataset.buy)||{name:'гравця'};
+    confirmModal(`Викупити <b>${esc(p.name)}</b> за <b>${b.dataset.price}</b>?`, 'Викупити · '+b.dataset.price,
+      ()=>act('market_buynow',{p_player:b.dataset.buy},'Гравець твій')); });
   document.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{
-    if(confirm('Продати за '+b.dataset.price+' (−5%)?')) act('market_sell',{p_player:b.dataset.sell},'Продано'); });
+    const p=S.players.find(x=>x.id===b.dataset.sell)||{name:'гравця'};
+    confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${b.dataset.price}</b> (−5%)?`, 'Продати · '+b.dataset.price,
+      ()=>act('market_sell',{p_player:b.dataset.sell},'Продано')); });
 }
 // прямий REST (для market_* — простіше за .from ланцюги)
 async function sbSel(path){
@@ -453,7 +459,17 @@ function lnState(mine){
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK у старті`);
   if(!cap) errs.push('обери капітана');
+  if(st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
   return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, ok: errs.length===0, errs };
+}
+
+// перемістити лавкового вгору/вниз (порядок = пріоритет автозаміни)
+function moveBench(mine, pid, dir){
+  const bn = mine.filter(p=>S.lineup[p.id].role==='bench').sort((a,b)=>S.lineup[a.id].ord-S.lineup[b.id].ord);
+  bn.forEach((p,i)=>S.lineup[p.id].ord=i+1);          // нормалізувати 1..n
+  const i = bn.findIndex(p=>p.id===pid), j = i+dir;
+  if(i<0 || j<0 || j>=bn.length) return;
+  const a=bn[i].id, b=bn[j].id, t=S.lineup[a].ord; S.lineup[a].ord=S.lineup[b].ord; S.lineup[b].ord=t;
 }
 
 function renderLineup(mine, round){
@@ -463,13 +479,13 @@ function renderLineup(mine, round){
     ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `DEF/GK у старті ${s.defgk}/${s.dgMin}`)}
     ${chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
+    ${chip(!!s.vice || s.st.length<2, s.vice?`Віце: ${lastName(s.vice.name)}`:'Віце не обраний')}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
-    ${s.vice?`<span class="vchip ok">✓ Віце: ${lastName(s.vice.name)}</span>`:''}
   </div>`;
   const lockNote = round? `<span class="pill">Тур ${round.number} · дедлайн ${new Date(round.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>`
                         : `<span class="pill">Турів попереду немає — виставлення закрито</span>`;
 
-  const row = (p, zone) => {
+  const row = (p, zone, idx) => {
     const L=S.lineup[p.id], cl=(S.clubs[p.club_id]||{}).name||'';
     let ctrl='';
     if(!round){ ctrl=''; }
@@ -479,15 +495,18 @@ function renderLineup(mine, round){
         <button class="mini ghost" data-role="${p.id}:bench">на лаву</button>
         <button class="mini ghost" data-role="${p.id}:out">−</button>`;
     } else if(zone==='bench'){
-      ctrl = `<button class="mini" data-role="${p.id}:start">у старт</button>
+      ctrl = `<button class="mini ghost" data-benchup="${p.id}" title="вище — раніше на заміну">↑</button>
+        <button class="mini ghost" data-benchdown="${p.id}" title="нижче — пізніше на заміну">↓</button>
+        <button class="mini" data-role="${p.id}:start">у старт</button>
         <button class="mini ghost" data-role="${p.id}:out">−</button>`;
     } else {
       ctrl = `<button class="mini" data-role="${p.id}:start">у старт</button>
         <button class="mini ghost" data-role="${p.id}:bench">на лаву</button>`;
     }
     const proceeds = Math.round(p.market_value_current*(1-(S.cfg?.sell_pct??0.05)));
+    const ordBadge = (zone==='bench') ? `<span class="benchord" title="${idx+1}-й на заміну">${idx+1}</span>` : '';
     return `<div class="lrow">
-      <span class="pos ${p.position}">${p.position}</span>
+      ${ordBadge}<span class="pos ${p.position}">${p.position}</span>
       <span class="lnm">${esc(p.name)}${L.cap?' <b class="capb">©</b>':''}${L.vice?' <b class="viceb">V</b>':''}<span class="lclub">${esc(cl)}</span></span>
       <span class="lrt">★${p.season_avg_rating??'—'}</span>
       <span class="lmv">${eur(p.market_value_current)}</span>
@@ -497,7 +516,7 @@ function renderLineup(mine, round){
   };
 
   const zone=(title,arr,z,note)=>`<div class="lzone"><div class="lzt">${title} <span class="dim">${note||''}</span></div>${
-    arr.length?arr.map(p=>row(p,z)).join(''):'<div class="dim" style="padding:8px 4px">—</div>'}</div>`;
+    arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:8px 4px">—</div>'}</div>`;
 
   $('view').innerHTML = premarketBanner(mine) + statbar() + `<h2>Мій склад <span style="font-size:13px;font-weight:400">${lockNote}</span></h2>` + val +
     zone('Стартова 5', s.st, 'start') +
@@ -507,7 +526,8 @@ function renderLineup(mine, round){
       <button id="ln-save" ${(!round||!s.ok)?'disabled':''}>Підтвердити склад на тур ${round?round.number:''}</button>
       ${!s.ok&&round?`<span class="dim" style="margin-left:10px">потрібно: ${s.errs.join(' · ')}</span>`:''}
     </div>
-    <p class="dim" style="margin-top:8px">Капітан — очки ×2 (не зіграв → віце). Незіграний стартовий → перший із лавки за порядком. Bench-очки самі не рахуються.</p>`;
+    <p class="dim" style="margin-top:8px">Капітан і Віце — обидва обов'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).
+    ⚠️ <b>Порядок лавки = пріоритет заміни</b>: незіграний стартовий заміщується ПЕРШИМ зіграним з лавки за порядком (стрілки ↑/↓), <b>без звірки позиції</b>. Bench-очки самі не рахуються.</p>`;
 
   document.querySelectorAll('[data-role]').forEach(b=>b.onclick=()=>{
     const [pid,role]=b.dataset.role.split(':');
@@ -532,15 +552,35 @@ function renderLineup(mine, round){
     const pid=b.dataset.vice; mine.forEach(p=>S.lineup[p.id].vice=false);
     if(!S.lineup[pid].cap) S.lineup[pid].vice=true; renderLineup(mine, round);
   });
+  document.querySelectorAll('[data-benchup]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchup,-1); renderLineup(mine,round); });
+  document.querySelectorAll('[data-benchdown]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchdown,1); renderLineup(mine,round); });
   bindActions();  // кнопки «продати»
   const save=$('ln-save');
-  if(save) save.onclick=async()=>{
-    const s2=lnState(mine); if(!s2.ok) return;
-    await act('market_set_lineup', {
-      p_round:round.id, p_participant:S.me.id, p_starters:s2.st.map(p=>p.id),
-      p_bench:s2.bn.map(p=>p.id), p_captain:s2.cap.id, p_vice:s2.vice?s2.vice.id:null
-    }, 'Склад підтверджено');
-  };
+  if(save) save.onclick=()=>{ const s2=lnState(mine); if(s2.ok) openLineupReview(mine, round); };
+}
+
+// модалка-огляд складу перед підтвердженням (капітан/віце + порядок лавки)
+function openLineupReview(mine, round){
+  const s=lnState(mine);
+  const line=(p,extra)=>`<div class="lrow" style="cursor:default">
+    <span class="pos ${p.position}">${p.position}</span>
+    <span class="lnm">${esc(p.name)}${extra||''}<span class="lclub">${esc((S.clubs[p.club_id]||{}).name||'')}</span></span>
+    <span class="lrt">★${p.season_avg_rating??'—'}</span></div>`;
+  const starters=s.st.map(p=>line(p,
+    (s.cap&&s.cap.id===p.id)?' <b class="capb">© капітан</b>':(s.vice&&s.vice.id===p.id)?' <b class="viceb">V віце</b>':'')).join('');
+  const bench=s.bn.length? s.bn.map((p,i)=>line(p,` <span class="dim">${i+1}-й на заміну</span>`)).join('')
+                         : '<div class="dim" style="padding:6px 2px">— лавка порожня</div>';
+  modalOpen(`<h3>Підтвердити склад · тур ${round.number}</h3>
+    <div class="msec" style="margin-top:12px">Стартова (${s.st.length})</div>${starters}
+    <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
+    <p class="mnote">Незіграний стартовий → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
+    ${bench}
+    <div class="macts" style="margin-top:16px"><button data-do="lnyes">Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
+  $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
+    p_round:round.id, p_participant:S.me.id, p_starters:s.st.map(p=>p.id),
+    p_bench:s.bn.map(p=>p.id), p_captain:s.cap.id, p_vice:s.vice?s.vice.id:null
+  }, 'Склад підтверджено'); };
+  $('mhost').querySelector('[data-do="lnno"]').onclick=()=>modalClose();
 }
 // ── дрібні хелпери плитки/картки ──
 const POS = { G:'GK', D:'DEF', M:'MID', F:'FWD' };
@@ -707,7 +747,7 @@ function viewMarket(){
       const inv=S.transfers.filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id);
       const incoming=inv.filter(t=>t.awaiting_participant===S.me.id);
       const waiting =inv.filter(t=>t.awaiting_participant!==S.me.id);
-      body = `<p class="dim">Купити чужого гравця: у <b>Ринок</b> тисни на гравця у складі суперника → «Запропонувати трансфер» (≥${Math.round((S.cfg?.transfer_min_pct??0.75)*100)}% вартості). Угода публічна.</p>
+      body = `<p class="dim">Купити чужого гравця: у <b>Ринок</b> тисни на гравця у складі суперника → «Запропонувати трансфер» (≥${Math.round((S.cfg?.transfer_min_pct??0.75)*100)}% вартості). Угода публічна; сума морозиться на час пропозиції.</p>
         <div class="msec">Твоя черга${incoming.length?` · <b style="color:var(--gold)">${incoming.length}</b>`:''}</div>
         ${incoming.length?incoming.map(transferRow).join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}
         <div class="msec" style="margin-top:16px">Чекають відповіді іншого боку</div>
@@ -802,7 +842,8 @@ function actionsHTML(p,ctx){
     const blockT=acquireBlock(p);
     if(blockT) return `<p class="mnote">Власник: <b>${ownerNm}</b>.</p><p class="mnote warn">⛔ ${blockT} — спершу звільни місце</p>`;
     const minT=Math.ceil(mv*(cfg.transfer_min_pct??0.75));
-    return `<p class="mnote">Власник: <b>${ownerNm}</b>. Угода <b>публічна</b> — інші теж можуть запропонувати цьому власнику; він обере.</p>
+    return `<p class="mnote">Власник: <b>${ownerNm}</b>. Угода <b>публічна</b> — інші теж можуть запропонувати цьому власнику; він обере.
+      ⚠️ Сума <b>заморозиться</b> на час пропозиції (доступно ${eur(S.spendable)}); спишеться при прийнятті.</p>
       ${amountUI('Запропонувати трансфер (≥'+Math.round((cfg.transfer_min_pct??0.75)*100)+'%)',minT,'propose',p.id)}`;
   }
   const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
