@@ -740,8 +740,10 @@ function transferRow(t){
   return `<div class="trow"><span class="tinfo">${info}</span>${ctrl}</div>`;
 }
 function bindTransfers(){
-  document.querySelectorAll('[data-tr-acc]').forEach(b=>b.onclick=()=>{ if(confirm('Прийняти трансфер? Гравець і гроші переходять одразу.')) act('market_respond_transfer',{p_transfer:b.dataset.trAcc,p_action:'accept'},'Трансфер завершено'); });
-  document.querySelectorAll('[data-tr-rej]').forEach(b=>b.onclick=()=>{ if(confirm('Відхилити пропозицію?')) act('market_respond_transfer',{p_transfer:b.dataset.trRej,p_action:'reject'},'Відхилено'); });
+  document.querySelectorAll('[data-tr-acc]').forEach(b=>b.onclick=()=>confirmModal('Прийняти трансфер? Гравець і гроші переходять одразу.', 'Прийняти',
+    ()=>act('market_respond_transfer',{p_transfer:b.dataset.trAcc,p_action:'accept'},'Трансфер завершено')));
+  document.querySelectorAll('[data-tr-rej]').forEach(b=>b.onclick=()=>confirmModal('Відхилити пропозицію?', 'Відхилити',
+    ()=>act('market_respond_transfer',{p_transfer:b.dataset.trRej,p_action:'reject'},'Відхилено')));
   document.querySelectorAll('[data-tr-cnt]').forEach(b=>b.onclick=()=>openCounterModal(b.dataset.trCnt,+b.dataset.min));
 }
 function openCounterModal(tid,min){
@@ -769,6 +771,14 @@ function modalOpen(html){
   h.querySelector('.mx').onclick=modalClose;
 }
 function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
+// стилізоване підтвердження (замість системного confirm())
+function confirmModal(msg, okLabel, onOk, onCancel){
+  modalOpen(`<h3>Підтвердження</h3>
+    <p style="font-size:15px;margin:10px 0 4px">${msg}</p>
+    <div class="macts"><button data-do="cyes">${okLabel}</button><button class="ghost" data-do="cno">Скасувати</button></div>`);
+  $('mhost').querySelector('[data-do="cyes"]').onclick=async()=>{ modalClose(); await onOk(); };
+  $('mhost').querySelector('[data-do="cno"]').onclick=()=>{ if(onCancel) onCancel(); else modalClose(); };
+}
 
 function amountUI(label,minEur,kind,ref){
   return `<div class="mamt" data-kind="${kind}" data-ref="${ref}" data-min="${minEur}">
@@ -833,8 +843,10 @@ function bindModalActions(p){
   const h=$('mhost');
   h.querySelectorAll('[data-do]').forEach(b=>b.onclick=async()=>{
     const kind=b.dataset.do;
-    if(kind==='sell'){ if(confirm('Продати за '+eur(+b.dataset.amt)+'?')){ modalClose(); await act('market_sell',{p_player:p.id},'Продано'); } return; }
-    if(kind==='buy'){  if(confirm('Викупити за '+eur(+b.dataset.amt)+'?')){ modalClose(); await act('market_buynow',{p_player:p.id},'Гравець твій'); } return; }
+    if(kind==='sell'){ const amt=+b.dataset.amt; confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> (−5%)?`, 'Продати · '+eur(amt),
+      ()=>act('market_sell',{p_player:p.id},'Продано'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='buy'){ const amt=+b.dataset.amt; confirmModal(`Викупити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b>?`, 'Викупити · '+eur(amt),
+      ()=>act('market_buynow',{p_player:p.id},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='amt'){
       const box=b.closest('.mamt'), min=+box.dataset.min;
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
