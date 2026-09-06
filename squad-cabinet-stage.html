@@ -51,21 +51,17 @@ button:disabled{opacity:.5;cursor:default}
 .stat span{font-size:19px;font-weight:800}
 .stat .bank{color:var(--gold)} .stat .price{color:var(--teal)}
 
-/* сітка карток складу/ринку */
-.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
-.pcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px;position:relative}
-.pcard .pos{position:absolute;top:10px;right:10px;font-size:10px;font-weight:800;
-  padding:1px 6px;border-radius:5px;background:var(--panel2);color:var(--text-dim)}
-.pcard .pos.G{color:var(--gold)} .pcard .pos.D{color:var(--teal)}
-.pcard .pos.M{color:var(--green)} .pcard .pos.F{color:var(--red)}
-.pcard .nm{font-weight:700;font-size:14px;padding-right:34px}
-.pcard .club{font-size:12px;color:var(--text-dim);margin-top:1px}
-.pcard .row{display:flex;justify-content:space-between;margin-top:8px;font-size:13px}
-.pcard .mv{color:var(--teal);font-weight:700}
-.pcard .rt{color:var(--gold);font-weight:700}
-.pcard .act{margin-top:9px;display:flex;gap:6px}
-.pcard .act button{padding:5px 10px;font-size:12px;flex:1}
-.pcard .auc{margin-top:8px;font-size:11px;color:var(--text-dim);border-top:1px solid var(--line);padding-top:7px}
+/* пре-маркет банер (§L) */
+.premkt{background:linear-gradient(90deg,rgba(244,196,48,.12),rgba(244,196,48,.03));
+  border:1px solid rgba(244,196,48,.35);border-radius:12px;padding:12px 16px;margin-bottom:12px;
+  display:flex;gap:14px;flex-wrap:wrap;align-items:center;font-size:14px}
+.premkt b{color:var(--gold)}
+.premkt .pm-prog{color:var(--text-dim)} .premkt .pm-prog b{color:var(--text)}
+.premkt .pm-bank{margin-left:auto;color:var(--text-dim)}
+
+/* бейдж позиції у лайнапі («Мій склад») */
+.pos{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--panel2);color:var(--text-dim);flex:none}
+.pos.G{color:var(--gold)} .pos.D{color:var(--blue)} .pos.M{color:var(--up)} .pos.F{color:#E8927F}
 
 /* лайнап */
 .vbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
@@ -100,6 +96,89 @@ table.t{width:100%;border-collapse:collapse}
 .soon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--text-dim)}
 .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--panel2);
   border:1px solid var(--line);color:var(--text-dim)}
+
+/* ── РИНОК за макетом (фільтри-ряд + сітка плиток + модалка) ── */
+.mfilters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:2px 0 16px}
+.mf{display:flex;align-items:center;gap:8px;background:var(--panel2);border:1px solid var(--line);
+  border-radius:10px;padding:6px 11px;font-size:13px}
+.mf label{color:var(--text-dim);text-transform:uppercase;font-size:10px;letter-spacing:.05em;font-weight:700}
+.mf select,.mf input{background:transparent;border:0;color:var(--text);font-size:13px;font-weight:600;
+  padding:0;width:auto;max-width:none;-webkit-appearance:none}
+.mf select{cursor:pointer}
+.mf.search input{min-width:150px}
+.mf.range .rng{display:flex;flex-direction:column;gap:1px}
+.mf input[type=range]{width:90px;accent-color:var(--gold);cursor:pointer;height:14px}
+.mf .rv{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.msort{margin-left:auto;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);
+  display:flex;align-items:center;gap:7px;font-weight:700}
+.msort select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;
+  padding:6px 9px;font-weight:700;font-size:13px;text-transform:none;letter-spacing:0}
+.msec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700;
+  border-bottom:1px solid var(--line);padding-bottom:8px;margin:6px 0 14px;display:flex;justify-content:space-between}
+
+.mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+.mtile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;
+  cursor:pointer;transition:border-color .12s,transform .12s;text-align:center}
+.mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
+.mtile.mine{border-color:rgba(244,196,48,.45)}
+.mtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.pbadge{font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:6px}
+.pbadge.G{background:rgba(244,196,48,.16);color:var(--gold)}
+.pbadge.D{background:rgba(94,151,208,.16);color:var(--blue)}
+.pbadge.M{background:rgba(46,139,87,.22);color:var(--up)}
+.pbadge.F{background:rgba(199,92,74,.20);color:#E8927F}
+.vdelta{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
+.vdelta.up{color:var(--up)} .vdelta.down{color:var(--down)} .vdelta.flat{color:var(--text-dim)}
+.mav{width:76px;height:76px;border-radius:50%;margin:0 auto 8px;background:var(--panel2);
+  border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:800;color:var(--text-dim);overflow:hidden;flex:none}
+.mav img{width:100%;height:100%;object-fit:cover}
+.mtile .mnm{font-weight:700;font-size:14px;line-height:1.2}
+.mtile .mclub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.mrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}
+.rpill{background:var(--panel2);border-radius:7px;padding:2px 9px;font-weight:800;color:var(--up);font-size:14px}
+.mprice{color:var(--text);font-weight:700;font-size:14px}
+.spark{display:flex;gap:3px;justify-content:center;align-items:flex-end;height:22px;margin-top:10px}
+.spark i{width:6px;background:var(--up);border-radius:2px;opacity:.85}
+.spark.empty{color:var(--text-dim);font-size:10px;height:22px;align-items:center}
+.mstatus{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;
+  color:var(--text-dim);display:flex;align-items:center;justify-content:center;gap:5px}
+.mstatus.free{color:var(--up)} .mstatus.mine{color:var(--gold);font-weight:700}
+.dot{width:6px;height:6px;border-radius:50%;display:inline-block}
+.dot.g{background:var(--up)} .dot.o{background:var(--text-dim)}
+
+/* модалка гравця / дій */
+.modal-host{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:22px}
+.modal .mx{position:absolute;top:12px;right:14px;color:var(--text-dim);background:none;border:0;
+  font-size:20px;cursor:pointer;padding:2px 6px;font-weight:400}
+.modal h3{margin:0;font-size:22px}
+.mhead{display:flex;gap:14px;align-items:center}
+.mmeta{font-size:13px;color:var(--text-dim);margin-top:4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.mbig{margin-left:auto;text-align:right}
+.mbig .n{font-size:30px;font-weight:800;color:var(--up);line-height:1}
+.mbig .l{font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em}
+.mstats{display:flex;gap:24px;flex-wrap:wrap;margin:18px 0 4px}
+.mstats div b{display:block;font-size:20px;font-weight:800}
+.mstats div span{font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.04em}
+.mchart{margin:14px 0 4px}
+.macts{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.macts button{flex:1;min-width:130px;padding:11px 14px}
+.mamt{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:12px;background:var(--panel2);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.mamt input{max-width:110px}
+.mamt .dim{flex:1;min-width:150px}
+.mnote{font-size:12px;color:var(--text-dim);margin-top:9px}
+.mnote.warn{color:var(--down);font-weight:600}
+
+/* рядки трансферів */
+.trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.trow .tinfo{flex:1;min-width:230px;font-size:14px}
+.trow .tctrl{display:flex;gap:6px}
+.trow .tctrl button{padding:6px 12px;font-size:13px}
 </style>
 </head>
 <body>
@@ -138,6 +217,8 @@ table.t{width:100%;border-collapse:collapse}
 
 </div>
 
+<div id="mhost" class="modal-host hide"></div>
+
 <script type="module">
 // anon-ключ публічний — захист у RLS. service_role сюди НЕ КЛАСТИ.
 const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
@@ -145,7 +226,9 @@ const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
-const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null, mktSub:'free', pQuery:'' };
+const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
+  mktSub:'market', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
+  f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
@@ -224,7 +307,7 @@ async function loadRefs(){
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at&order=number.asc`);
-  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating&order=market_value_current.desc`);
+  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes&order=market_value_current.desc`);
   // активні аукціони (публічні)
   S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
@@ -235,6 +318,25 @@ async function loadRefs(){
   S.bank = b.length? b[0].bank_eur : null;
   S.spendable = (await sb.rpc('market_spendable', { p_participant:S.me.id })).data;
   S.frozen    = (await sb.rpc('market_frozen',    { p_participant:S.me.id })).data;
+  // форма гравця (рейтинги по турах) — для спарклайну плитки й графіка в модалці
+  S.form = {};
+  try{
+    const fr = await sbSel(`market_player_round_points?tournament_id=eq.${S.tour.id}&select=player_id,round_id,avg_rating&order=round_id.asc`);
+    fr.forEach(r=>{ (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating); });
+  }catch(e){ S.form={}; }
+  // прямі трансфери (405; таблиця публічна). Поки 405 не залито — таблиці немає → degrade
+  S.transfers=[]; S.transfersReady=false;
+  try{
+    S.transfers = await sbSel(`market_transfers?tournament_id=eq.${S.tour.id}&status=eq.pending&select=id,player_id,to_participant,from_participant,amount,awaiting_participant,status,created_at&order=created_at.desc`);
+    S.transfersReady=true;
+  }catch(e){ S.transfers=[]; S.transfersReady=false; }
+  // межі слайдерів (рейтинг/ціна) з реального пулу; значення фільтра ставимо лише раз
+  const rs = S.players.map(p=>p.season_avg_rating).filter(v=>v!=null);
+  S.rBounds = rs.length ? [Math.floor(Math.min(...rs)*10)/10, Math.ceil(Math.max(...rs)*10)/10] : [6,10];
+  const ps = S.players.map(p=>p.market_value_current||0);
+  S.pBounds = [0, Math.max(1e6, Math.ceil(Math.max(0,...ps)/1e6)*1e6)];
+  if(S.f.rMin==null){ S.f.rMin=S.rBounds[0]; S.f.rMax=S.rBounds[1]; }
+  if(S.f.pMin==null){ S.f.pMin=S.pBounds[0]; S.f.pMax=S.pBounds[1]; }
 }
 
 // виклик дії ринку: RPC → показати результат → перезавантажити
@@ -303,11 +405,25 @@ function statbar(){
   </div>`;
 }
 
+// банер пре-маркету (§L): «вікно відкрито до [дедлайн], набери склад мін/макс»
+function premarketBanner(mine){
+  const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8;
+  const firstFut=S.rounds.find(r=>new Date(r.deadline_at)>new Date());
+  if(!firstFut) return '';                       // усі тури почались — пре-маркету немає
+  const need=Math.max(0,min-mine.length);
+  const dl=new Date(firstFut.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  return `<div class="premkt">
+    <span><b>Трансферне вікно відкрито</b> до ${dl} · набери склад (мін ${min}, макс ${max}).</span>
+    <span class="pm-prog">Зараз <b>${mine.length}/${max}</b>${need?` · ще мін <b>${need}</b> до старту`:` · мінімум зібрано ✓`}</span>
+    <span class="pm-bank">Доступно ${eur(S.spendable)}</span>
+  </div>`;
+}
+
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
   if(!mine.length){
-    $('view').innerHTML = statbar() +
+    $('view').innerHTML = premarketBanner(mine) + statbar() +
       '<h2>Мій склад</h2><div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>';
     return;
   }
@@ -383,7 +499,7 @@ function renderLineup(mine, round){
   const zone=(title,arr,z,note)=>`<div class="lzone"><div class="lzt">${title} <span class="dim">${note||''}</span></div>${
     arr.length?arr.map(p=>row(p,z)).join(''):'<div class="dim" style="padding:8px 4px">—</div>'}</div>`;
 
-  $('view').innerHTML = statbar() + `<h2>Мій склад <span style="font-size:13px;font-weight:400">${lockNote}</span></h2>` + val +
+  $('view').innerHTML = premarketBanner(mine) + statbar() + `<h2>Мій склад <span style="font-size:13px;font-weight:400">${lockNote}</span></h2>` + val +
     zone('Стартова 5', s.st, 'start') +
     zone('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'') +
     zone('Поза складом', s.out, 'out') +
@@ -426,63 +542,309 @@ function renderLineup(mine, round){
     }, 'Склад підтверджено');
   };
 }
-function pcard(p){
-  const cl=(S.clubs[p.club_id]||{}).name||'';
-  const owned = p.owner_participant_id===S.me.id;
-  const free = !p.owner_participant_id;
-  const mv = p.market_value_current;
-  const au = free ? S.auctions.find(a=>a.player_id===p.id) : null;
-  let action='';
-  if(owned){
-    const proceeds = Math.round(mv*(1-(S.cfg?.sell_pct??0.05)));
-    action = `<div class="act"><button class="ghost" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>`;
-  } else if(free && au){
-    const iLead = au.leader_participant_id===S.me.id;
-    const minBid = Math.ceil(au.current_bid*(1+(S.cfg?.bid_step_pct??0.05)));
-    action = `<div class="auc">🔨 ${eur(au.current_bid)} · ${iLead?'<b style="color:var(--gold)">ти лідер</b>':esc(S.names[au.leader_participant_id]||'—')} · до ${new Date(au.ends_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}</div>
-      ${iLead?'':`<div class="act"><button data-bid="${au.id}" data-min="${minBid}">Перебити (від ${eur(minBid)})</button></div>`}`;
-  } else if(free){
-    const ceil = Math.round(mv*(1+(S.cfg?.buynow_pct??0.15)));
-    action = `<div class="act"><button data-auc="${p.id}" data-min="${mv}">Аукціон</button><button class="ghost" data-buy="${p.id}" data-price="${eur(ceil)}">Викуп ${eur(ceil)}</button></div>`;
-  } else {
-    action = `<div class="row"><span class="pill">куплений</span></div>`;
+// ── дрібні хелпери плитки/картки ──
+const POS = { G:'GK', D:'DEF', M:'MID', F:'FWD' };
+function posCat(p){ return POS[p]||p; }
+function vDelta(p){
+  const s=p.market_value_start||0, c=p.market_value_current||0;
+  if(!s) return { pct:0, dir:'flat' };
+  const d=(c-s)/s;
+  return { pct:d, dir: d>0.0005?'up':(d<-0.0005?'down':'flat') };
+}
+function fmtDelta(d){ return (d.dir==='up'?'▲ ':d.dir==='down'?'▼ ':'– ')+Math.abs(d.pct*100).toFixed(0)+'%'; }
+function avatar(p,size){
+  const s=size||76;
+  const init=(p.name||'?').split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase();
+  const inner = p.photo_url ? `<img src="${esc(p.photo_url)}" alt="">` : esc(init);
+  return `<div class="mav" style="width:${s}px;height:${s}px;font-size:${Math.round(s/3)}px">${inner}</div>`;
+}
+function ownerInfo(p){
+  if(p.owner_participant_id===S.me.id) return { cls:'mine', txt:'★ У твоєму складі', dot:'' };
+  if(p.owner_participant_id) return { cls:'', txt:'у складі · '+esc(S.names[p.owner_participant_id]||'—'), dot:'<span class="dot o"></span>' };
+  const au=S.auctions.find(a=>a.player_id===p.id);
+  if(au) return { cls:'free', txt:'🔨 аукціон · '+eur(au.current_bid), dot:'<span class="dot g"></span>' };
+  return { cls:'free', txt:'🔒 Вільний', dot:'<span class="dot g"></span>' };
+}
+function sparkTile(p){
+  const arr=(S.form[p.id]||[]).filter(v=>v!=null).slice(-6);
+  if(!arr.length) return `<div class="spark empty">форма —</div>`;
+  return `<div class="spark">${arr.map(v=>{
+    const h=Math.max(3,Math.round((Math.min(10,Math.max(5,v))-5)/5*22));
+    return `<i style="height:${h}px"></i>`;
+  }).join('')}</div>`;
+}
+function formChart(p){
+  const last=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
+  if(!last.length) return `<p class="mnote">Форма зʼявиться після зіграних турів.</p>`;
+  const W=320,H=64,pad=8, mn=Math.min(...last,6), mx=Math.max(...last,9);
+  const pts=last.map((v,i)=>{
+    const x=pad+i*(W-2*pad)/Math.max(1,last.length-1);
+    const y=H-pad-((v-mn)/Math.max(0.1,mx-mn))*(H-2*pad);
+    return x.toFixed(0)+','+y.toFixed(0);
+  }).join(' ');
+  return `<div class="mchart"><div class="msec" style="border:0;margin:0 0 4px">Форма · рейтинги за останні тури</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+      <polyline fill="none" stroke="var(--gold)" stroke-width="2" points="${pts}"/></svg></div>`;
+}
+// пре-чек лімітів складу при набутті (дублює тригер 398 — тут для UX, блокуємо заздалегідь §K)
+function acquireBlock(p){
+  const cfg=S.cfg||{}, mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
+  if(mine.length >= (cfg.squad_max||8)) return `Склад повний (${cfg.squad_max||8}) — спершу звільни місце`;
+  if(mine.filter(x=>x.club_id===p.club_id).length >= (cfg.max_per_club||3)) return `Уже ${cfg.max_per_club||3} з цього клубу`;
+  if(p.position==='G' && mine.some(x=>x.position==='G'&&x.club_id===p.club_id)) return 'Уже є воротар з цього клубу';
+  const dgFull=cfg.defgk_full_min||2;
+  if(mine.length === (cfg.squad_max||8)-1){
+    const dg=mine.filter(x=>x.position==='D'||x.position==='G').length + ((p.position==='D'||p.position==='G')?1:0);
+    if(dg<dgFull) return `На повному складі потрібно ≥${dgFull} DEF/GK`;
   }
-  return `<div class="pcard">
-    <span class="pos ${p.position}">${p.position}</span>
-    <div class="nm">${esc(p.name)}</div><div class="club">${esc(cl)}</div>
-    <div class="row"><span class="mv">${eur(mv)}</span><span class="rt">★${p.season_avg_rating??'—'}</span></div>
-    ${action}
+  return null;
+}
+
+// ── плитка гравця (сітка ринку, за макетом) ──
+function mtile(p){
+  const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
+  return `<div class="mtile ${o.cls==='mine'?'mine':''}" data-p="${p.id}">
+    <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>
+      <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
+    ${avatar(p,76)}
+    <div class="mnm">${esc(p.name)}</div>
+    <div class="mclub">${esc(cl.name||'')}</div>
+    <div class="mrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span></div>
+    ${sparkTile(p)}
+    <div class="mstatus ${o.cls}">${o.dot}${o.txt}</div>
   </div>`;
 }
 
-// ── 💱 РИНОК (4 підвкладки; поки Вільні/Усі — списком, дії скоро) ──
+// ── фільтрація + сортування ──
+function marketList(){
+  const f=S.f; let list=S.players.slice();
+  if(f.status==='free')  list=list.filter(p=>!p.owner_participant_id);
+  else if(f.status==='owned') list=list.filter(p=>p.owner_participant_id);
+  else if(f.status==='mine')  list=list.filter(p=>p.owner_participant_id===S.me.id);
+  if(f.league) list=list.filter(p=>(S.clubs[p.club_id]||{}).league===f.league);
+  if(f.club)   list=list.filter(p=>p.club_id===f.club);
+  if(f.pos)    list=list.filter(p=>p.position===f.pos);
+  if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
+  if(f.rMin!=null) list=list.filter(p=>(p.season_avg_rating??0) >= f.rMin);
+  if(f.rMax!=null) list=list.filter(p=>(p.season_avg_rating??99) <= f.rMax);
+  if(f.pMin!=null) list=list.filter(p=>(p.market_value_current||0) >= f.pMin);
+  if(f.pMax!=null) list=list.filter(p=>(p.market_value_current||0) <= f.pMax);
+  const s=f.sort;
+  list.sort((a,b)=>{
+    if(s==='price') return (b.market_value_current||0)-(a.market_value_current||0);
+    if(s==='val')   return vDelta(b).pct - vDelta(a).pct;
+    if(s==='name')  return (a.name||'').localeCompare(b.name||'');
+    return (b.season_avg_rating||0)-(a.season_avg_rating||0);
+  });
+  return list;
+}
+function filterBar(){
+  const f=S.f;
+  const leagues=[...new Set(Object.values(S.clubs).map(c=>c.league))].sort();
+  const clubs=Object.values(S.clubs).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
+  const rB=S.rBounds, pB=S.pBounds;
+  return `<div class="mfilters">
+    <div class="mf search"><label>Пошук</label><input id="f-q" placeholder="ім'я (англ.)" value="${esc(f.q)}"></div>
+    <div class="mf"><label>Ліга</label><select id="f-league"><option value="">Усі ${leagues.length}</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
+    <div class="mf"><label>Клуб</label><select id="f-club"><option value="">Усі ${clubs.length}</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
+    <div class="mf"><label>Позиція</label><select id="f-pos"><option value="">Усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
+    <div class="mf range"><label>Рейтинг</label><div class="rng">
+      <input type="range" id="f-rmin" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMin}">
+      <input type="range" id="f-rmax" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMax}"></div>
+      <span class="rv" id="rv-r">${(+f.rMin).toFixed(1)}–${(+f.rMax).toFixed(1)}</span></div>
+    <div class="mf range"><label>Ціна</label><div class="rng">
+      <input type="range" id="f-pmin" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMin}">
+      <input type="range" id="f-pmax" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMax}"></div>
+      <span class="rv" id="rv-p">${eur(f.pMin)}–${eur(f.pMax)}</span></div>
+    <div class="mf"><label>Статус</label><select id="f-status">${[['all','Усі'],['free','Вільні'],['owned','Куплені'],['mine','Мої']].map(([v,t])=>opt(v,t,f.status)).join('')}</select></div>
+    <div class="msort"><span>Сортування</span><select id="f-sort">${[['rating','за рейтингом'],['price','за ціною'],['val','за Val Δ'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
+  </div>`;
+}
+function renderGrid(){
+  const grid=$('mgrid'); if(!grid) return;
+  const list=marketList(), cap=80;
+  const cnt=$('mcount'); if(cnt) cnt.textContent=list.length+' гравців';
+  grid.innerHTML = list.length
+    ? list.slice(0,cap).map(mtile).join('') + (list.length>cap?`<p class="dim" style="grid-column:1/-1;margin:6px 0 0">показано ${cap} з ${list.length} — звузь фільтром</p>`:'')
+    : '<div class="soon" style="grid-column:1/-1">Немає гравців під фільтри</div>';
+  grid.querySelectorAll('.mtile').forEach(t=>t.onclick=()=>openPlayerModal(t.dataset.p));
+}
+function bindFilters(){
+  const q=$('f-q'); if(q) q.oninput=()=>{ S.f.q=q.value; renderGrid(); };
+  const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
+  bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
+  bind('f-pos',v=>S.f.pos=v); bind('f-status',v=>S.f.status=v); bind('f-sort',v=>S.f.sort=v);
+  const rmin=$('f-rmin'), rmax=$('f-rmax');
+  const syncR=()=>{ let a=+rmin.value,b=+rmax.value; if(a>b){[a,b]=[b,a];} S.f.rMin=a;S.f.rMax=b; $('rv-r').textContent=a.toFixed(1)+'–'+b.toFixed(1); renderGrid(); };
+  if(rmin) rmin.oninput=syncR; if(rmax) rmax.oninput=syncR;
+  const pmin=$('f-pmin'), pmax=$('f-pmax');
+  const syncP=()=>{ let a=+pmin.value,b=+pmax.value; if(a>b){[a,b]=[b,a];} S.f.pMin=a;S.f.pMax=b; $('rv-p').textContent=eur(a)+'–'+eur(b); renderGrid(); };
+  if(pmin) pmin.oninput=syncP; if(pmax) pmax.oninput=syncP;
+}
+
+// ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
 function viewMarket(){
-  const subs=[['free','Вільні'],['all','Усі гравці'],['bids','Мої ставки'],['transfers','Трансфери']];
+  const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length;
+  const subs=[['market','Ринок'],['bids','Мої ставки'],['transfers','Трансфери'+(inCount?` (${inCount})`:'')]];
   const bar=`<div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>`;
   let body='';
-  if(S.mktSub==='free' || S.mktSub==='all'){
-    const list = S.mktSub==='free' ? S.players.filter(p=>!p.owner_participant_id) : S.players;
-    const q=S.pQuery.toLowerCase();
-    const shown = q? list.filter(p=>p.name.toLowerCase().includes(q)) : list;
-    body = `<div class="filterbar"><input id="pq" placeholder="пошук по імені (англ.)" value="${esc(S.pQuery)}" style="max-width:260px"> <span class="pill">${shown.length} гравців</span></div>
-      <div class="pgrid">${shown.slice(0,60).map(pcard).join('')}</div>
-      ${shown.length>60?`<p class="dim" style="margin-top:10px">показано 60 з ${shown.length} — звузь пошуком</p>`:''}`;
+  if(S.mktSub==='market'){
+    body = filterBar()+`<div class="msec">Ринок · сітка плиток <span id="mcount"></span></div><div class="mgrid" id="mgrid"></div>`;
   } else if(S.mktSub==='bids'){
     const mine = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
-    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші заморожено до закриття). Перебити чужий лот — у «Вільні».</p>
+    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші заморожено до закриття). Перебити чужий лот — у «Ринок».</p>
       <table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">До</th></tr></thead><tbody>${
       mine.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
         return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
           <td class="n">${eur(a.current_bid)}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
       }).join('')}</tbody></table>`
-      : `<div class="soon">Немає активних ставок, де ти лідируєш. Почни аукціон або перебий лот у «Вільні».</div>`;
+      : `<div class="soon">Немає активних ставок, де ти лідируєш. Почни аукціон або перебий лот у «Ринок».</div>`;
   } else {
-    body = `<div class="soon">Прямі трансфери (пропозиція покупця ≥75% · так/ні/контр) — <b>наступний крок</b> (RPC 405).</div>`;
+    if(!S.transfersReady){
+      body = `<div class="soon">Прямі трансфери (пропозиція покупця ≥75% · так/ні/контр) зʼявляться після заливки <b>405</b> (таблиця market_transfers + RPC).</div>`;
+    } else {
+      const inv=S.transfers.filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id);
+      const incoming=inv.filter(t=>t.awaiting_participant===S.me.id);
+      const waiting =inv.filter(t=>t.awaiting_participant!==S.me.id);
+      body = `<p class="dim">Купити чужого гравця: у <b>Ринок</b> тисни на гравця у складі суперника → «Запропонувати трансфер» (≥${Math.round((S.cfg?.transfer_min_pct??0.75)*100)}% вартості). Угода публічна.</p>
+        <div class="msec">Твоя черга${incoming.length?` · <b style="color:var(--gold)">${incoming.length}</b>`:''}</div>
+        ${incoming.length?incoming.map(transferRow).join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}
+        <div class="msec" style="margin-top:16px">Чекають відповіді іншого боку</div>
+        ${waiting.length?waiting.map(transferRow).join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}`;
+    }
   }
   $('view').innerHTML = statbar()+`<h2>Ринок</h2>`+bar+body;
-  [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{S.mktSub=b.dataset.s; viewMarket();});
-  const pq=$('pq'); if(pq) pq.oninput=()=>{ S.pQuery=pq.value; const c=pq.selectionStart; viewMarket(); const n=$('pq'); if(n){n.focus(); n.setSelectionRange(c,c);} };
-  bindActions();
+  [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
+  if(S.mktSub==='market'){ bindFilters(); renderGrid(); }
+  if(S.mktSub==='transfers') bindTransfers();
+}
+
+// ── рядок трансферу + дії (Так/Ні/Контр) ──
+function transferRow(t){
+  const p=S.players.find(x=>x.id===t.player_id)||{};
+  const cl=(S.clubs[p.club_id]||{}).name||'';
+  const iAmSeller=t.from_participant===S.me.id;
+  const other=iAmSeller?t.to_participant:t.from_participant;
+  const otherName=esc(S.names[other]||'—');
+  const mine=t.awaiting_participant===S.me.id;
+  const info = iAmSeller
+    ? `<b>${otherName}</b> хоче купити твого <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> за <b class="mprice">${eur(t.amount)}</b>`
+    : `Твоя пропозиція на <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> → <b>${otherName}</b> · <b class="mprice">${eur(t.amount)}</b>`;
+  const minC=Math.ceil((p.market_value_current||0)*(S.cfg?.transfer_min_pct??0.75));
+  const ctrl = mine
+    ? `<div class="tctrl"><button data-tr-acc="${t.id}">Прийняти</button>
+        <button class="ghost" data-tr-cnt="${t.id}" data-min="${minC}">Контр</button>
+        <button class="ghost" data-tr-rej="${t.id}">Відхилити</button></div>`
+    : `<span class="pill">чекає ${otherName}</span>`;
+  return `<div class="trow"><span class="tinfo">${info}</span>${ctrl}</div>`;
+}
+function bindTransfers(){
+  document.querySelectorAll('[data-tr-acc]').forEach(b=>b.onclick=()=>{ if(confirm('Прийняти трансфер? Гравець і гроші переходять одразу.')) act('market_respond_transfer',{p_transfer:b.dataset.trAcc,p_action:'accept'},'Трансфер завершено'); });
+  document.querySelectorAll('[data-tr-rej]').forEach(b=>b.onclick=()=>{ if(confirm('Відхилити пропозицію?')) act('market_respond_transfer',{p_transfer:b.dataset.trRej,p_action:'reject'},'Відхилено'); });
+  document.querySelectorAll('[data-tr-cnt]').forEach(b=>b.onclick=()=>openCounterModal(b.dataset.trCnt,+b.dataset.min));
+}
+function openCounterModal(tid,min){
+  modalOpen(`<h3>Контрпропозиція</h3>
+    <p class="mnote">Своя сума (обмін 1↔1 — фаза 2; тут лише гроші). Мінімум ${eur(min)}.</p>
+    <div class="mamt" data-ref="${tid}" data-min="${min}">
+      <span class="dim">Контрсума · €млн (мін ${(min/1e6).toFixed(1)})</span>
+      <input id="amtInp" inputmode="decimal" value="${(min/1e6).toFixed(1)}">
+      <button data-do="counter">Надіслати</button></div>`);
+  const box=$('mhost').querySelector('.mamt');
+  $('mhost').querySelector('[data-do="counter"]').onclick=async()=>{
+    const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
+    if(!eurv||eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
+    modalClose();
+    await act('market_respond_transfer',{p_transfer:tid,p_action:'counter',p_amount:eurv},'Контрпропозицію надіслано');
+  };
+}
+
+// ── МОДАЛКА гравця: деталь + дії (купити/ставка/продати/трансфер) ──
+function modalOpen(html){
+  const h=$('mhost');
+  h.innerHTML = `<div class="modal"><button class="mx" aria-label="закрити">✕</button>${html}</div>`;
+  h.classList.remove('hide');
+  h.onclick=(e)=>{ if(e.target===h) modalClose(); };
+  h.querySelector('.mx').onclick=modalClose;
+}
+function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
+
+function amountUI(label,minEur,kind,ref){
+  return `<div class="mamt" data-kind="${kind}" data-ref="${ref}" data-min="${minEur}">
+    <span class="dim">${label} · €млн (мін ${(minEur/1e6).toFixed(1)})</span>
+    <input id="amtInp" inputmode="decimal" value="${(minEur/1e6).toFixed(1)}">
+    <button data-do="amt">OK</button></div>`;
+}
+function actionsHTML(p,ctx){
+  const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
+  if(owned){
+    const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
+    return `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати · ${eur(proceeds)} (−5%)</button></div>
+      <p class="mnote">Заморозка блокує продаж під час туру; гравця в лайнапі незіграного туру продати не можна.</p>`;
+  }
+  if(!free){
+    const ownerNm=esc(S.names[p.owner_participant_id]||'—');
+    if(!S.transfersReady){
+      return `<div class="macts"><button class="ghost" disabled>Запропонувати трансфер</button></div>
+        <p class="mnote">Прямі трансфери зʼявляться після заливки <b>405</b>.</p>`;
+    }
+    const blockT=acquireBlock(p);
+    if(blockT) return `<p class="mnote">Власник: <b>${ownerNm}</b>.</p><p class="mnote warn">⛔ ${blockT} — спершу звільни місце</p>`;
+    const minT=Math.ceil(mv*(cfg.transfer_min_pct??0.75));
+    return `<p class="mnote">Власник: <b>${ownerNm}</b>. Угода <b>публічна</b> — інші теж можуть запропонувати цьому власнику; він обере.</p>
+      ${amountUI('Запропонувати трансфер (≥'+Math.round((cfg.transfer_min_pct??0.75)*100)+'%)',minT,'propose',p.id)}`;
+  }
+  const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
+  if(au){
+    const iLead=au.leader_participant_id===S.me.id;
+    const minBid=Math.ceil(au.current_bid*(1+(cfg.bid_step_pct??0.05)));
+    const canBuy=au.current_bid < ceil;
+    let h=`<p class="mnote">🔨 Аукціон: поточна ${eur(au.current_bid)} · ${iLead?'<b style="color:var(--gold)">ти лідер</b>':esc(S.names[au.leader_participant_id]||'—')} · до ${new Date(au.ends_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}</p>`;
+    if(block) return h+`<p class="mnote warn">⛔ ${block}</p>`;
+    if(!iLead) h+=amountUI('Перебити',minBid,'bid',au.id);
+    if(canBuy) h+=`<div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп · ${eur(ceil)}</button></div>`;
+    return h;
+  }
+  if(block) return `<p class="mnote warn">⛔ ${block}</p>`;
+  return `<div class="macts"><button data-do="buy" data-amt="${ceil}">Купити зараз · ${eur(ceil)}</button></div>
+    ${amountUI('Зробити ставку (аукціон)',mv,'auc',p.id)}`;
+}
+function openPlayerModal(pid){
+  const p=S.players.find(x=>x.id===pid); if(!p) return;
+  const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
+  const ctx={ owned:p.owner_participant_id===S.me.id, free:!p.owner_participant_id,
+              au:(!p.owner_participant_id)?S.auctions.find(a=>a.player_id===p.id):null, mv:p.market_value_current };
+  const head=`<div class="mhead">${avatar(p,64)}
+      <div><h3>${esc(p.name)}</h3>
+        <div class="mmeta"><span class="pbadge ${p.position}">${posCat(p.position)}</span> ${esc(cl.name||'')}${cl.league?' · '+esc(cl.league):''}</div>
+        <div class="mmeta ${o.cls}">${o.dot}${o.txt}</div></div>
+      <div class="mbig"><div class="n">${p.season_avg_rating??'—'}</div><div class="l">сер. рейтинг</div></div></div>`;
+  const stats=`<div class="mstats">
+      <div><b class="mprice">${eur(p.market_value_current)}</b><span>вартість</span></div>
+      <div><b class="vdelta ${d.dir}">${fmtDelta(d)}</b><span>Val Δ</span></div>
+      ${p.appearances!=null?`<div><b>${p.appearances}</b><span>матчі</span></div>`:''}
+      ${p.minutes!=null?`<div><b>${p.minutes}</b><span>хвилини</span></div>`:''}
+    </div>`;
+  modalOpen(head+stats+formChart(p)+actionsHTML(p,ctx));
+  bindModalActions(p);
+}
+function bindModalActions(p){
+  const h=$('mhost');
+  h.querySelectorAll('[data-do]').forEach(b=>b.onclick=async()=>{
+    const kind=b.dataset.do;
+    if(kind==='sell'){ if(confirm('Продати за '+eur(+b.dataset.amt)+'?')){ modalClose(); await act('market_sell',{p_player:p.id},'Продано'); } return; }
+    if(kind==='buy'){  if(confirm('Викупити за '+eur(+b.dataset.amt)+'?')){ modalClose(); await act('market_buynow',{p_player:p.id},'Гравець твій'); } return; }
+    if(kind==='amt'){
+      const box=b.closest('.mamt'), min=+box.dataset.min;
+      const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
+      if(!eurv || eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
+      modalClose();
+      if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv},'Аукціон почато');
+      else if(box.dataset.kind==='bid') await act('market_place_bid',{p_auction:box.dataset.ref,p_amount:eurv},'Ставку зроблено');
+      else if(box.dataset.kind==='propose') await act('market_propose_transfer',{p_player:box.dataset.ref,p_amount:eurv},'Пропозицію надіслано');
+    }
+  });
 }
 
 // ── 🏆 ТАБЛИЦЯ (market_leaderboard; повна F1 — на публічній борді) ──

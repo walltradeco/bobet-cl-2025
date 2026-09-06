@@ -166,7 +166,7 @@ async function boot(){
     S.lb = await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
     S.scores = await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
     // володіння публічне (дизайн H): гравці з власником → SQUAD-плитки
-    S.players = await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_current,season_avg_rating`);
+    S.players = await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating`);
     S.tour = S.rounds[0].number;
 
     document.getElementById('sub').textContent =
@@ -206,10 +206,21 @@ function roundPts(pid){
   const row = S.scores.find(s=>s.participant_id===pid && s.round_id===rid);
   return row? row.points : 0;
 }
+// Val Δ складу учасника: сума вартостей start→current (рух ціни за правилами)
+function squadValDelta(pid){
+  const mine=S.players.filter(p=>p.owner_participant_id===pid);
+  const s=mine.reduce((a,p)=>a+(p.market_value_start||0),0);
+  const c=mine.reduce((a,p)=>a+(p.market_value_current||0),0);
+  if(!s) return { pct:0, dir:'' };
+  const d=(c-s)/s; return { pct:d, dir: d>0.0005?'up':(d<-0.0005?'down':'') };
+}
+function fmtVd(v){ return (v.dir==='up'?'▲ ':v.dir==='down'?'▼ ':'– ')+Math.abs(v.pct*100).toFixed(0)+'%'; }
 
 function renderStandings(){
   if(!S.lb.length){ document.getElementById('pane-standings').innerHTML='<div class="empty-note">Ще немає учасників.</div>'; return; }
-  const rows = S.lb.map(p=>`
+  const rows = S.lb.map(p=>{
+    const v=squadValDelta(p.participant_id);
+    return `
     <tr>
       <td class="place">${p.place}<span class="delta eq">=</span></td>
       <td><span class="pname" data-pid="${p.participant_id}">${p.display_name}</span></td>
@@ -217,8 +228,8 @@ function renderStandings(){
       <td class="n total">${p.total_points||0}</td>
       <td>${squadTiles(p.participant_id)}</td>
       <td class="n price">${eur(p.squad_price)}</td>
-      <td class="n vald">—</td>
-    </tr>`).join('');
+      <td class="n vald ${v.dir}">${fmtVd(v)}</td>
+    </tr>`;}).join('');
   document.getElementById('pane-standings').innerHTML = `
     <table class="board">
       <thead><tr>
@@ -228,7 +239,7 @@ function renderStandings(){
       <tbody>${rows}</tbody>
     </table>
     <div class="empty-note" style="text-align:left;padding:14px 4px">
-      ⚠️ Скелет: рух рангу ▲▼ і Val Δ — заглушки (наповняться після 1-го зіграного туру та рейтингів).
+      ⚠️ Скелет: рух рангу ▲▼ — заглушка (наповниться з 2-го туру). Squad Price і Val Δ — реальні (сума складу start→current).
       Стартова 5 з капітаном ✕2 — після кроку лайнапу; поки показано володіння.
     </div>`;
   document.querySelectorAll('.pname').forEach(el=>el.onclick=()=>openSquad(el.dataset.pid));
