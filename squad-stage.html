@@ -5,284 +5,370 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Squad Mode · борда (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
 <style>
 :root{
-  --bg:#1B1B1B; --panel:#151D17; --panel2:#182019; --line:#2A362B;
-  --text:#EDEFE8; --text-dim:#8B9A8C;
-  --gold:#F4C430; --teal:#6FAFAF; --blue:#5E97D0; --purple:#A98FDB;
-  --green:#2E8B57; --green-soft:rgba(46,139,87,0.14); --red:#C75C4A;
-  --up:#4ADE80; --down:#F87171;
+  --bg:#0a0f0d; --bg2:#0e1712; --panel:#111b16; --panel2:#16241d;
+  --line:#22362c; --ink:#e9f1ec; --muted:#8ba297; --dim:#5f7469;
+  --accent:#18b47a; --accent-d:#0e6f4c; --gold:#e6c14b;
+  --up:#26c281; --down:#e2585f; --frost:#7fbcff;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);
-  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
-a{color:inherit}
-.wrap{max-width:1440px;margin:0 auto;padding:20px 16px 80px}
-.stage-badge{position:fixed;top:0;left:0;right:0;z-index:50;
-  background:var(--red);color:#fff;text-align:center;font-size:12px;
-  font-weight:700;letter-spacing:.05em;padding:4px}
-/* вбудований у BoBet (iframe ?embed): шапку/бейдж дає оболонка BoBet */
+body{margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background:
+   radial-gradient(1000px 460px at 15% -10%, #13291d 0%, transparent 55%),
+   radial-gradient(900px 400px at 100% 0%, #1a2417 0%, transparent 50%),
+   var(--bg)}
+h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em}
+.tnum{font-variant-numeric:tabular-nums}
+.wrap{max-width:1180px;margin:0 auto;padding:0 16px 60px}
+
+/* STAGE-бейдж (у embed ховається — оболонку дає BoBet) */
+.stage-badge{background:#C75C4A;color:#fff;text-align:center;font-size:12px;
+  font-weight:700;letter-spacing:.05em;padding:4px;font-family:var(--mono)}
 body.embed .stage-badge, body.embed header{display:none}
-body.embed .wrap{padding-top:10px}
-header{margin:40px 0 8px}
-h1{font-size:26px;margin:0 0 2px;letter-spacing:-.01em}
-.sub{color:var(--text-dim);font-size:13px}
+body.embed .wrap{padding-top:6px}
+
+.mock{background:linear-gradient(90deg,#16281e,#111b16);border:1px dashed var(--accent-d);
+  color:var(--muted);font-size:12px;padding:7px 14px;border-radius:8px;margin:14px 0 4px;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.mock b{color:var(--accent);font-family:var(--mono)}
+
+/* публічна шапка */
+header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(18,32,24,.6),transparent)}
+.hbar{max-width:1180px;margin:0 auto;padding:20px 16px 16px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+.logo{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-family:var(--mono);
+  font-weight:700;font-size:16px;color:#06120c;background:conic-gradient(from 210deg,var(--accent),var(--gold),var(--accent))}
+.htxt h1{font-size:25px;font-weight:700;letter-spacing:.02em}
+.htxt .sub{font-family:var(--mono);text-transform:uppercase;letter-spacing:.16em;font-size:11px;color:var(--dim);margin-top:1px}
+.pubtag{margin-left:auto;font-family:var(--mono);font-size:11px;color:var(--muted);border:1px solid var(--line);
+  border-radius:20px;padding:5px 12px;letter-spacing:.05em}
+.pubtag b{color:var(--accent)}
+
+.head2{display:flex;align-items:baseline;gap:10px;margin:18px 2px 12px;flex-wrap:wrap}
+.head2 h2{font-size:20px;font-weight:700}
+.head2 .sub{color:var(--dim);font-size:12.5px}
 
 /* перемикач турів */
-.tourbar{display:flex;gap:6px;flex-wrap:wrap;margin:18px 0 6px}
-.chip{border:1px solid var(--line);background:var(--panel);color:var(--text-dim);
-  border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600;cursor:pointer;
-  user-select:none}
-.chip.on{background:var(--gold);color:#1B1B1B;border-color:var(--gold)}
-.chip.future{opacity:.4;cursor:default}
+.turnrow{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
+.turnc{font-family:var(--mono);font-weight:600;font-size:14px;min-width:40px;height:40px;padding:0 8px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.turnc[aria-selected=true]{background:var(--accent);color:#06120c;border-color:var(--accent);box-shadow:0 4px 14px rgba(24,180,122,.3)}
+.turnc.future{opacity:.4;cursor:default}
 
-/* підвкладки */
-.tabs{display:flex;gap:4px;margin:16px 0 12px;border-bottom:1px solid var(--line)}
-.tab{padding:9px 16px;font-size:14px;font-weight:600;color:var(--text-dim);
-  cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px}
-.tab.on{color:var(--text);border-bottom-color:var(--gold)}
+.subtabs{display:flex;gap:5px;margin:2px 0 14px}
+.subtab{font-family:var(--mono);font-weight:600;font-size:14px;padding:8px 16px;border-radius:9px;
+  border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
+.subtab[aria-selected=true]{background:var(--accent-d);color:#dff5ea;border-color:var(--accent-d)}
+[data-view]{display:none}[data-view].on{display:block;animation:fade .18s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 
-/* таблиця */
-.board{width:100%;border-collapse:separate;border-spacing:0 6px}
-.board th{font-size:11px;text-transform:uppercase;letter-spacing:.04em;
-  color:var(--text-dim);font-weight:600;text-align:left;padding:0 10px 4px}
-.board td{background:var(--panel);padding:10px;vertical-align:middle;
-  border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.board td:first-child{border-left:1px solid var(--line);border-radius:10px 0 0 10px}
-.board td:last-child{border-right:1px solid var(--line);border-radius:0 10px 10px 0}
-.board td.n{white-space:nowrap;text-align:right}
-.place{font-weight:800;font-size:17px;width:1%}
-.delta{font-size:12px;margin-left:5px}
-.delta.up{color:var(--up)} .delta.down{color:var(--down)} .delta.eq{color:var(--text-dim)}
-.pname{font-weight:700;cursor:pointer;width:100%}
-.pname:hover{color:var(--gold)}
-.pts-round{font-weight:700;color:var(--gold)}
-.total{font-weight:800}
-.price{color:var(--teal);font-variant-numeric:tabular-nums}
-.vald.up{color:var(--up)} .vald.down{color:var(--down)} .vald{color:var(--text-dim)}
+/* F1 таблиця */
+.board{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;overflow:hidden}
+.f1-scroll{overflow-x:auto}
+table.f1{width:100%;border-collapse:collapse;min-width:860px}
+table.f1 th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--dim);text-align:left;padding:12px 12px;border-bottom:1px solid var(--line);font-weight:600}
+table.f1 td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
+table.f1 tbody tr{cursor:pointer;transition:background .12s}
+table.f1 tbody tr:hover td{background:var(--panel2)}
+table.f1 tbody tr:last-child td{border-bottom:none}
+.rk{font-family:var(--mono);font-weight:700;font-size:20px;width:1%;white-space:nowrap}
+.rk .medal{margin-right:2px}
+.delta{font-size:11px;font-family:var(--mono);margin-left:6px}
+.up{color:var(--up)}.down{color:var(--down)}.eq{color:var(--dim)}
+.name-c{font-weight:600;font-size:16px;white-space:nowrap}
+.rndpts{font-family:var(--mono);font-weight:700;font-size:17px}
+.total{font-family:var(--mono);font-weight:700;font-size:18px;color:var(--gold)}
+.squad-tiles{display:flex;gap:5px}
+.stile{width:62px;height:50px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2px;padding:0 3px;background:var(--club,#233);color:#fff;border:1px solid rgba(255,255,255,.16);position:relative}
+.stile .ab{font-family:var(--mono);font-weight:700;font-size:10.5px;line-height:1.05;text-align:center;max-width:100%;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 2px rgba(0,0,0,.55)}
+.stile .pt{font-family:var(--mono);font-weight:700;font-size:13px;line-height:1;background:rgba(0,0,0,.4);border-radius:4px;padding:1px 5px}
+.stile .cc{position:absolute;top:-7px;right:-5px;font-size:9px;background:var(--gold);color:#241c00;
+  font-family:var(--mono);font-weight:700;border-radius:4px;padding:0 3px;border:1px solid #8a6f16}
+.stile.empty{background:var(--panel2);border:1px dashed var(--line);color:var(--dim)}
+.sp{font-family:var(--mono);font-weight:600;font-size:14px}
+.hint{color:var(--dim);font-size:11.5px;font-family:var(--mono);letter-spacing:.03em;margin:14px 2px 0}
 
-/* SQUAD-плитки */
-.squad{display:flex;gap:4px}
-.tile{width:42px;height:44px;border-radius:6px;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;font-size:10px;font-weight:700;
-  color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.5);position:relative;overflow:hidden}
-.tile .nm{max-width:40px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding:0 2px}
-.tile .tp{font-size:11px;font-weight:800}
-.tile .cap{position:absolute;top:1px;right:2px;font-size:8px;background:var(--gold);
-  color:#1B1B1B;border-radius:3px;padding:0 2px;font-weight:800}
-.tile.empty{background:var(--panel2);border:1px dashed var(--line);color:var(--text-dim);
-  text-shadow:none}
-
-/* сітка «по турах» */
-.grid{width:100%;border-collapse:collapse}
-.grid th,.grid td{border:1px solid var(--line);padding:8px 10px;text-align:center;
-  font-variant-numeric:tabular-nums}
-.grid th{font-size:12px;color:var(--text-dim);font-weight:600}
-.grid td.name{text-align:left;font-weight:700}
-
-.empty-note{color:var(--text-dim);font-size:14px;padding:30px 4px;text-align:center}
-
-/* модалка складу */
-.mask{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;z-index:60;
-  align-items:flex-start;justify-content:center;padding:60px 16px;overflow:auto}
-.mask.on{display:flex}
-.modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;
-  max-width:640px;width:100%;padding:20px}
-.modal h3{margin:0 0 4px;font-size:19px}
-.modal .close{float:right;cursor:pointer;color:var(--text-dim);font-size:22px;line-height:1}
-.roster{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:14px}
-.rcard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
-.rcard .rn{font-weight:700;font-size:13px}
-.rcard .rmeta{color:var(--text-dim);font-size:11px;margin-top:2px}
-.hidden-note{color:var(--text-dim);font-size:13px;margin-top:12px;font-style:italic}
+/* модалка */
+.ovl{position:fixed;inset:0;background:rgba(4,9,6,.76);backdrop-filter:blur(5px);z-index:60;display:none;
+  align-items:flex-start;justify-content:center;padding:6vh 16px 40px;overflow:auto}
+.ovl.on{display:flex}
+.ovl-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;max-width:520px;width:100%;
+  padding:17px 18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:pop .16s ease}
+@keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1}}
+.ovl-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.ovl-head h3{font-size:18px}.ovl-head .s{font-size:11.5px;color:var(--dim)}
+.xbtn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:15px}
+.ovl-meta{display:flex;gap:16px;flex-wrap:wrap;margin:2px 0 12px}
+.ovl-meta .m span{display:block;font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;font-family:var(--mono)}
+.ovl-meta .m b{font-size:17px;font-weight:700;font-family:var(--mono)}
+.plist{display:grid;gap:8px}
+.pcard{display:grid;grid-template-columns:1fr auto;gap:10px;align-items:center;background:var(--panel2);
+  border:1px solid var(--line);border-radius:10px;padding:9px 12px;border-left:3px solid var(--club,var(--line))}
+.pcard .nm{font-weight:600;font-size:14.5px}
+.pcard .meta{font-size:11.5px;color:var(--muted)}
+.pcard .rt .big{font-family:var(--mono);font-weight:700;font-size:19px;text-align:right}
+.pcard .rt .pr{font-size:11px;color:var(--muted);text-align:right}
+.capB{font-family:var(--mono);font-weight:700;font-size:10px;background:var(--gold);color:#241c00;border-radius:4px;padding:0 4px;margin-left:4px}
+.slot-h{font-family:var(--mono);font-weight:700;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
+  color:var(--dim);margin:12px 2px 8px;display:flex;justify-content:space-between}
+table.grid td.pn{font-family:var(--mono);font-weight:700}
+.foot{color:var(--dim);font-size:11.5px;text-align:center;margin-top:30px;font-family:var(--mono);letter-spacing:.04em}
+.empty-note{color:var(--dim);font-size:14px;padding:30px 4px;text-align:center}
 </style>
 </head>
 <body>
 <div class="stage-badge">STAGE · squad_test · дані тестові</div>
+
+<header>
+  <div class="hbar">
+    <div class="logo">SQ</div>
+    <div class="htxt"><h1>Squad Mode</h1><div class="sub">Race Recap · Публічна борда</div></div>
+    <div class="pubtag">🌐 без логіну · <b>Bank ніде</b></div>
+  </div>
+</header>
+
 <div class="wrap">
-  <header>
-    <h1>💱 Squad Mode</h1>
-    <div class="sub" id="sub">завантаження…</div>
-  </header>
+  <div class="mock">🏁 <b>ПУБЛІЧНА БОРДА</b> — володіння видно завжди · склад на тур — після дедлайну · <b>Bank</b> — ніде й нікому.</div>
 
-  <div class="tourbar" id="tourbar"></div>
+  <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без Bank) · рух рангу ▲▼= як BoBet</span></div>
+  <div class="turnrow" id="turnRow"></div>
 
-  <div class="tabs">
-    <div class="tab on" data-tab="standings">🏆 Таблиця</div>
-    <div class="tab" data-tab="byround">📊 Очки по турах</div>
+  <div class="subtabs">
+    <button class="subtab" aria-selected="true" onclick="sub('tbl',this)">Таблиця</button>
+    <button class="subtab" aria-selected="false" onclick="sub('grid',this)">Очки по турах</button>
   </div>
 
-  <div id="pane-standings"></div>
-  <div id="pane-byround" hidden></div>
+  <section data-view="tbl" class="on">
+    <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
+    <div class="hint" id="tblHint">SQUAD — стартова 5 (клік → повний склад) · капітан ×2 · Squad Price = сума поточних вартостей складу</div>
+  </section>
+  <section data-view="grid">
+    <div class="board"><div class="f1-scroll"><table class="f1 grid" id="gridT"></table></div></div>
+    <div class="hint">Наскрізний залік = сума очок за всі тури · рівні очки → ділять місце</div>
+  </section>
+
+  <div class="foot" id="foot">SQUAD MODE · публічна борда</div>
 </div>
 
-<div class="mask" id="mask"><div class="modal">
-  <span class="close" id="mclose">×</span>
-  <h3 id="mtitle">Склад</h3>
-  <div class="sub" id="msub"></div>
-  <div class="roster" id="mroster"></div>
-  <div class="hidden-note" id="mnote"></div>
-</div></div>
+<div class="ovl" id="ovl" onclick="if(event.target===this)closeM()">
+  <div class="ovl-card"><div class="ovl-head"><div><h3 id="ovlT"></h3><div class="s" id="ovlS"></div></div>
+    <button class="xbtn" onclick="closeM()">✕</button></div><div id="ovlB"></div></div>
+</div>
 
 <script>
-const SB_URL = 'https://wsdamzcezumjmgxmvakw.supabase.co';
-const SB_KEY = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+const SB_URL='https://wsdamzcezumjmgxmvakw.supabase.co';
+const SB_KEY='sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
 async function sbGet(path){
-  const res = await fetch(SB_URL + '/rest/v1/' + path, {
-    headers:{ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
-  });
-  if(!res.ok) throw new Error('база ' + res.status);
+  const res=await fetch(SB_URL+'/rest/v1/'+path,{headers:{apikey:SB_KEY,Authorization:'Bearer '+SB_KEY}});
+  if(!res.ok) throw new Error('база '+res.status);
   return res.json();
 }
-
-// вбудований у BoBet? (iframe ?embed) — ховаємо власну шапку/бейдж
 if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
 
-// ── стан ──
-const S = { tour:null, rounds:[], lb:[], scores:[], players:[], clubs:{}, tournament:null };
+// колір клубу за реальною назвою (market_clubs); невідомий → нейтральний
+const CLUB={
+ 'Arsenal':'#ef0107','Atletico':'#cb3524','Barcelona':'#a50044','Bayern':'#dc052d',
+ 'Chelsea':'#034694','Dortmund':'#b8a300','Dynamo Kyiv':'#0d47a1','Inter':'#0068a8',
+ 'Juventus':'#4a4a4a','Leverkusen':'#e32219','Liverpool':'#c8102e','Man City':'#6cabdd',
+ 'Man Utd':'#da291c','Milan':'#fb090b','Napoli':'#12a0d7','PSG':'#1b3b6f',
+ 'Real Madrid':'#3f6fbf','Roma':'#8e1f2f','Shakhtar':'#f37021'};
+const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
+const medal=['🥇','🥈','🥉'];
 
-// колір клубу — детермінований із назви (скелет; бойовий пул дасть логотипи)
-function clubColor(name){
-  let h=0; for(const c of (name||'')) h=(h*31+c.charCodeAt(0))>>>0;
-  return `hsl(${h%360} 45% 32%)`;
-}
-function eur(v){ // EUR цілі → «€NNM»
-  if(v==null) return '—';
-  return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M';
-}
-function lastName(full){
-  const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full;
-}
+const S={tour:null,rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null};
 
-// ── завантаження ──
+function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
+function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
+function clubName(cid){ return (S.clubs[cid]||{}).name||''; }
+function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
+
 async function boot(){
   try{
-    // тур/турнір із market_rounds (публічна); стейдж = один squad-турнір
-    S.rounds = await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,week_start,week_end&order=number.asc');
-    if(!S.rounds.length){ document.getElementById('sub').textContent='турнір ще не заведено'; return; }
-    S.tournament = S.rounds[0].tournament_id;
-    const cs = await sbGet('market_clubs?select=id,name,league');
-    cs.forEach(c=>S.clubs[c.id]=c);
-    S.lb = await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
-    S.scores = await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
-    // володіння публічне (дизайн H): гравці з власником → SQUAD-плитки
-    S.players = await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating`);
-    S.tour = S.rounds[0].number;
+    S.rounds=await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,week_start,week_end&order=number.asc');
+    if(!S.rounds.length){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
+    S.tournament=S.rounds[0].tournament_id;
+    const rids=S.rounds.map(r=>r.id);
 
-    document.getElementById('sub').textContent =
-      `${S.lb.length} учасників · пул тестовий · Bank прихований (дизайн H)`;
+    (await sbGet('market_clubs?select=id,name,league')).forEach(c=>S.clubs[c.id]=c);
+    S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
+    S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
+    S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating`);
+    S.players.forEach(p=>S.pById[p.id]=p);
+    // лайнап (RLS: чужий видно після дедлайну) + очки гравця за тур
+    S.lineup=await sbGet(`market_lineup?round_id=in.(${rids.join(',')})&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice`);
+    (await sbGet(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points`))
+      .forEach(r=>S.ppr[r.player_id+'|'+r.round_id]=r.points);
+
+    // поточний тур = останній зіграний, інакше перший
+    const played=S.scores.map(s=>s.round_number);
+    S.tour = played.length? Math.max(...played) : S.rounds[0].number;
+
     renderTours(); renderStandings(); renderByRound();
   }catch(e){
-    document.getElementById('sub').textContent = 'помилка: ' + e.message;
+    document.getElementById('h2tour').textContent='помилка: '+e.message;
   }
 }
 
-function renderTours(){
-  const now = Date.now();
-  document.getElementById('tourbar').innerHTML = S.rounds.map(r=>{
-    const future = new Date(r.deadline_at).getTime() > now && r.number!==S.tour;
-    const cls = 'chip'+(r.number===S.tour?' on':'')+(future?' future':'');
-    return `<div class="${cls}" data-tour="${r.number}">Тур ${r.number}</div>`;
-  }).join('');
-  document.querySelectorAll('.chip').forEach(ch=>ch.onclick=()=>{
-    S.tour = +ch.dataset.tour; renderTours(); renderStandings();
-  });
+// кумулятивний total і competition-rank станом ПІСЛЯ туру t
+function rankAt(t){
+  const cum={}; S.lb.forEach(p=>cum[p.participant_id]=0);
+  S.scores.forEach(s=>{ if(s.round_number<=t && cum[s.participant_id]!=null) cum[s.participant_id]+=s.points||0; });
+  const arr=S.lb.map(p=>({pid:p.participant_id,v:cum[p.participant_id]||0})).sort((a,b)=>b.v-a.v);
+  const rank={}; arr.forEach((x,i)=>{ rank[x.pid]=(i>0 && arr[i-1].v===x.v)? rank[arr[i-1].pid] : i+1; });
+  return {rank,cum,order:arr.map(x=>x.pid)};
 }
-
-function squadTiles(pid){
-  // склад учасника (володіння); ⚠️ лайнап/стартова-5/капітан — після дедлайну (крок лайнапу)
-  const mine = S.players.filter(p=>p.owner_participant_id===pid);
-  if(!mine.length) return '<span style="color:var(--text-dim);font-size:12px">склад ще не зібрано</span>';
-  const tiles = mine.slice(0,5).map(p=>{
-    const col = clubColor((S.clubs[p.club_id]||{}).name);
-    return `<div class="tile" style="background:${col}"><span class="nm">${lastName(p.name)}</span><span class="tp">${p.season_avg_rating??'—'}</span></div>`;
-  });
-  while(tiles.length<5) tiles.push('<div class="tile empty">—</div>');
-  return `<div class="squad">${tiles.join('')}</div>`;
+function deltaMark(pid){
+  const idx=S.rounds.findIndex(r=>r.number===S.tour);
+  if(idx<=0) return {t:'=',c:'eq'};                         // 1-й тур — руху нема (як BoBet 200)
+  const cur=rankAt(S.tour).rank[pid], prev=rankAt(S.rounds[idx-1].number).rank[pid];
+  const d=prev-cur;
+  return d>0? {t:'▲'+d,c:'up'} : d<0? {t:'▼'+(-d),c:'down'} : {t:'=',c:'eq'};
 }
-
 function roundPts(pid){
-  const rid = (S.rounds.find(r=>r.number===S.tour)||{}).id;
-  const row = S.scores.find(s=>s.participant_id===pid && s.round_id===rid);
-  return row? row.points : 0;
+  const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
+  const row=S.scores.find(s=>s.participant_id===pid && s.round_id===rid);
+  return row? row.points||0 : 0;
 }
-// Val Δ складу учасника: сума вартостей start→current (рух ціни за правилами)
 function squadValDelta(pid){
   const mine=S.players.filter(p=>p.owner_participant_id===pid);
   const s=mine.reduce((a,p)=>a+(p.market_value_start||0),0);
   const c=mine.reduce((a,p)=>a+(p.market_value_current||0),0);
-  if(!s) return { pct:0, dir:'' };
-  const d=(c-s)/s; return { pct:d, dir: d>0.0005?'up':(d<-0.0005?'down':'') };
+  if(!s) return {pct:0,dir:''};
+  const d=(c-s)/s; return {pct:d*100,dir:d>0.0005?'up':(d<-0.0005?'down':'')};
 }
-function fmtVd(v){ return (v.dir==='up'?'▲ ':v.dir==='down'?'▼ ':'– ')+Math.abs(v.pct*100).toFixed(0)+'%'; }
+
+// стартова 5 обраного туру (лайнап) або володіння (fallback до дедлайну)
+function startFive(pid){
+  const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
+  const line=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid && l.role==='start');
+  if(line.length){
+    return line.map(l=>{
+      const pl=S.pById[l.player_id]||{};
+      const base=S.ppr[l.player_id+'|'+rid];
+      return {name:pl.name,cid:pl.club_id,cap:l.is_captain,
+              pts: base!=null? (l.is_captain?base*2:base) : null};
+    });
+  }
+  return S.players.filter(p=>p.owner_participant_id===pid).slice(0,5)
+    .map(p=>({name:p.name,cid:p.club_id,cap:false,pts:null,rating:p.season_avg_rating}));
+}
+function tiles(pid){
+  const list=startFive(pid).slice(0,5);
+  const cells=list.map(x=>{
+    const num = x.pts!=null? x.pts : (x.rating!=null? x.rating : '·');
+    return `<div class="stile" style="--club:${clubCol(x.cid)}" title="${x.name||''}">
+      <span class="ab">${lastName(x.name)}</span><span class="pt">${num}</span>
+      ${x.cap?'<span class="cc">×2</span>':''}</div>`;
+  });
+  while(cells.length<5) cells.push('<div class="stile empty"><span class="ab">—</span></div>');
+  return `<div class="squad-tiles">${cells.join('')}</div>`;
+}
+
+function renderTours(){
+  const now=Date.now();
+  document.getElementById('h2tour').textContent='🏁 Тур '+S.tour;
+  document.getElementById('turnRow').innerHTML=S.rounds.map(r=>{
+    const future=new Date(r.deadline_at).getTime()>now && r.number!==S.tour;
+    return `<div class="turnc ${future?'future':''}" aria-selected="${r.number===S.tour}" data-tour="${r.number}">${r.number}</div>`;
+  }).join('');
+  document.querySelectorAll('.turnc').forEach(ch=>ch.onclick=()=>{
+    S.tour=+ch.dataset.tour; renderTours(); renderStandings();
+  });
+}
 
 function renderStandings(){
-  if(!S.lb.length){ document.getElementById('pane-standings').innerHTML='<div class="empty-note">Ще немає учасників.</div>'; return; }
-  const rows = S.lb.map(p=>{
-    const v=squadValDelta(p.participant_id);
-    return `
-    <tr>
-      <td class="place">${p.place}<span class="delta eq">=</span></td>
-      <td><span class="pname" data-pid="${p.participant_id}">${p.display_name}</span></td>
-      <td class="n pts-round">${roundPts(p.participant_id)}</td>
-      <td class="n total">${p.total_points||0}</td>
-      <td>${squadTiles(p.participant_id)}</td>
-      <td class="n price">${eur(p.squad_price)}</td>
-      <td class="n vald ${v.dir}">${fmtVd(v)}</td>
-    </tr>`;}).join('');
-  document.getElementById('pane-standings').innerHTML = `
-    <table class="board">
-      <thead><tr>
-        <th>#</th><th>Учасник</th><th>Тур ${S.tour}</th><th>Total</th>
-        <th>Склад (стартова 5)</th><th>Squad Price</th><th>Val Δ</th>
-      </tr></thead>
-      <tbody>${rows}</tbody>
-    </table>
-    <div class="empty-note" style="text-align:left;padding:14px 4px">
-      ⚠️ Скелет: рух рангу ▲▼ — заглушка (наповниться з 2-го туру). Squad Price і Val Δ — реальні (сума складу start→current).
-      Стартова 5 з капітаном ✕2 — після кроку лайнапу; поки показано володіння.
-    </div>`;
-  document.querySelectorAll('.pname').forEach(el=>el.onclick=()=>openSquad(el.dataset.pid));
+  const t=document.getElementById('f1');
+  if(!S.lb.length){ t.innerHTML=''; document.getElementById('tblHint').textContent='Ще немає учасників.'; return; }
+  const rk=rankAt(S.tour);
+  const order=[...S.lb].sort((a,b)=>(rk.cum[b.participant_id]||0)-(rk.cum[a.participant_id]||0));
+  const body=order.map(p=>{
+    const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid), vd=squadValDelta(pid);
+    return `<tr onclick="openSquad('${pid}')">
+      <td class="rk">${place<=3?`<span class="medal">${medal[place-1]}</span>`:place}<span class="delta ${dm.c}">${dm.t}</span></td>
+      <td class="name-c">${p.display_name}</td>
+      <td class="rndpts tnum">${roundPts(pid)}</td>
+      <td class="total tnum">${rk.cum[pid]||0}</td>
+      <td>${tiles(pid)}</td>
+      <td class="sp tnum">${eur(p.squad_price)}</td>
+      <td class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</td>
+    </tr>`;
+  }).join('');
+  t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th><th>Тур ${S.tour}</th><th>Total</th>
+    <th>Squad (стартова 5)</th><th>Price</th><th>Val Δ</th></tr></thead><tbody>${body}</tbody>`;
 }
 
 function renderByRound(){
-  const nums = S.rounds.map(r=>r.number);
-  const head = `<tr><th class="name">Учасник</th>${nums.map(n=>`<th>Т${n}</th>`).join('')}<th>Total</th></tr>`;
-  const body = S.lb.map(p=>{
-    const cells = S.rounds.map(r=>{
-      const row = S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
-      return `<td>${row? row.points : '·'}</td>`;
+  const g=document.getElementById('gridT');
+  if(!S.lb.length){ g.innerHTML=''; return; }
+  const head=`<thead><tr><th>Учасник</th>${S.rounds.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th>Total</th></tr></thead>`;
+  const body=S.lb.map(p=>{
+    const cells=S.rounds.map(r=>{
+      const row=S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
+      return `<td class="pn tnum">${row? row.points : '·'}</td>`;
     }).join('');
-    return `<tr><td class="name">${p.display_name}</td>${cells}<td><b>${p.total_points||0}</b></td></tr>`;
+    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${p.display_name}</td>${cells}<td class="total tnum">${p.total_points||0}</td></tr>`;
   }).join('');
-  document.getElementById('pane-byround').innerHTML =
-    S.lb.length? `<table class="grid"><thead>${head}</thead><tbody>${body}</tbody></table>`
-               : '<div class="empty-note">Ще немає учасників.</div>';
+  g.innerHTML=head+'<tbody>'+body+'</tbody>';
 }
 
 function openSquad(pid){
-  const p = S.lb.find(x=>x.participant_id===pid); if(!p) return;
-  const mine = S.players.filter(x=>x.owner_participant_id===pid);
-  document.getElementById('mtitle').textContent = p.display_name;
-  document.getElementById('msub').textContent = `Squad Price ${eur(p.squad_price)} · ${mine.length} гравців`;
-  document.getElementById('mroster').innerHTML = mine.length? mine.map(x=>{
-    const cl=(S.clubs[x.club_id]||{}).name||'';
-    return `<div class="rcard"><div class="rn">${x.name}</div>
-      <div class="rmeta">${x.position} · ${cl} · ${eur(x.market_value_current)} · ★${x.season_avg_rating??'—'}</div></div>`;
-  }).join('') : '<div class="empty-note">Склад ще не зібрано.</div>';
-  document.getElementById('mnote').textContent =
-    'Виставлена стартова 5 / капітан / лавка — видно після дедлайну туру (крок лайнапу). Bank не показується нікому (дизайн H).';
-  document.getElementById('mask').classList.add('on');
+  const p=S.lb.find(x=>x.participant_id===pid); if(!p) return;
+  const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
+  const place=rankAt(S.tour).rank[pid], vd=squadValDelta(pid);
+  const line=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid);
+  let bodyHtml;
+  if(line.length){
+    const start=line.filter(l=>l.role==='start').map(l=>pcard(l.player_id,rid,l.is_captain,l.is_vice,null));
+    const bench=line.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0))
+                    .map(l=>pcard(l.player_id,rid,false,false,l.bench_order));
+    bodyHtml=`<div class="slot-h"><span>Стартова 5</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
+      + (bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:'');
+  }else{
+    const own=S.players.filter(x=>x.owner_participant_id===pid);
+    bodyHtml=`<div class="slot-h"><span>Володіння (${own.length})</span><span>стартова 5 — після дедлайну</span></div>`
+      +`<div class="plist">${own.length? own.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div>`;
+  }
+  document.getElementById('ovlT').textContent='Склад · '+p.display_name;
+  document.getElementById('ovlS').textContent='Тур '+S.tour+' · без Bank';
+  document.getElementById('ovlB').innerHTML=
+    `<div class="ovl-meta">
+      <div class="m"><span>Місце</span><b>${place<=3?medal[place-1]:'#'+place}</b></div>
+      <div class="m"><span>Squad Price</span><b class="tnum">${eur(p.squad_price)}</b></div>
+      <div class="m"><span>Val Δ</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</b></div>
+      <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
+    </div>`+bodyHtml;
+  document.getElementById('ovl').classList.add('on');
 }
-document.getElementById('mclose').onclick=()=>document.getElementById('mask').classList.remove('on');
-document.getElementById('mask').onclick=(e)=>{ if(e.target.id==='mask') e.currentTarget.classList.remove('on'); };
-
-document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{
-  document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x===t));
-  document.getElementById('pane-standings').hidden = t.dataset.tab!=='standings';
-  document.getElementById('pane-byround').hidden = t.dataset.tab!=='byround';
-});
-
+function pcard(playerId,rid,cap,vice,benchOrder){
+  const pl=S.pById[playerId]||{}; const base=S.ppr[playerId+'|'+rid];
+  const val=benchOrder!=null? '—' : (base!=null? (cap?base*2:base) : '—');
+  const tag=cap?'<span class="capB">К ×2</span>':(vice?'<span class="capB">В</span>':'');
+  return `<div class="pcard" style="--club:${clubCol(pl.club_id)}${benchOrder!=null?';opacity:.6':''}">
+    <div><div class="nm">${lastName(pl.name)} ${tag}</div>
+    <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${benchOrder!=null?' · лавка '+benchOrder:''}</div></div>
+    <div class="rt"><div class="big tnum"${benchOrder!=null?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${benchOrder!=null?'':'оч. туру'}</div></div></div>`;
+}
+function ownCard(x){
+  return `<div class="pcard" style="--club:${clubCol(x.club_id)}">
+    <div><div class="nm">${lastName(x.name)}</div>
+    <div class="meta">${posShort[x.position]||x.position||''} · ${clubName(x.club_id)}</div></div>
+    <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div><div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;
+}
+function closeM(){ document.getElementById('ovl').classList.remove('on'); }
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeM(); });
+function sub(v,btn){
+  document.querySelectorAll('[data-view]').forEach(s=>s.classList.toggle('on',s.dataset.view===v));
+  btn.parentElement.querySelectorAll('.subtab').forEach(t=>t.setAttribute('aria-selected','false'));
+  btn.setAttribute('aria-selected','true');
+}
 boot();
 </script>
 </body>

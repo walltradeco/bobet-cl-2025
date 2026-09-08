@@ -5,17 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>Squad Mode · кабінет (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
 <style>
 :root{
-  --bg:#1B1B1B; --panel:#151D17; --panel2:#182019; --line:#2A362B;
-  --text:#EDEFE8; --text-dim:#8B9A8C;
-  --gold:#F4C430; --teal:#6FAFAF; --blue:#5E97D0; --purple:#A98FDB;
-  --green:#2E8B57; --green-soft:rgba(46,139,87,0.14); --red:#C75C4A;
-  --up:#4ADE80; --down:#F87171;
+  --bg:#0c1310; --panel:#132019; --panel2:#18271f; --line:#243a30;
+  --text:#e9f1ec; --text-dim:#8ba297;
+  --gold:#e6c14b; --teal:#6fb0c9; --blue:#7fbcff; --purple:#a98fdb;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); --red:#e2585f;
+  --up:#26c281; --down:#e2585f;
+  --accent:#18b47a; --accent-d:#0e6f4c; --dim:#5f7469;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);
-  font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
+    radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
+    var(--bg)}
+h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
+.tnum,table.t td.n,.stat span,.lrt,.lmv,.mprice,.rpill,.mbig .n,.mstats div b{font-variant-numeric:tabular-nums}
 .stage-badge{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--red);
   color:#fff;text-align:center;font-size:12px;font-weight:700;letter-spacing:.05em;padding:4px}
 .wrap{max-width:1440px;margin:0 auto;padding:34px 16px 80px}
@@ -29,10 +40,10 @@ h2{font-size:19px;margin:0 0 10px}
 .msg.ok{background:var(--green);color:#fff}
 input{background:var(--panel2);border:1px solid var(--line);color:var(--text);
   border-radius:8px;padding:9px 11px;font-size:15px;width:100%;max-width:320px}
-button{background:var(--gold);color:#1B1B1B;border:0;border-radius:8px;padding:9px 16px;
-  font-size:14px;font-weight:700;cursor:pointer}
-button.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line)}
-button:disabled{opacity:.5;cursor:default}
+button{background:var(--accent);color:#06120c;border:1px solid var(--accent-d);border-radius:9px;padding:10px 17px;
+  font-family:var(--mono);font-size:14.5px;font-weight:700;letter-spacing:.03em;cursor:pointer}
+button.ghost{background:none;color:var(--text);border:1px solid var(--line)}
+button:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);opacity:1;cursor:not-allowed}
 
 /* шапка застосунку */
 .appbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;
@@ -40,15 +51,17 @@ button:disabled{opacity:.5;cursor:default}
 .appbar .who{font-size:13px;color:var(--text-dim)}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;margin:14px 0 16px;border-bottom:1px solid var(--line)}
 .tabs button{background:none;color:var(--text-dim);border:0;border-bottom:2px solid transparent;
-  border-radius:0;padding:9px 14px;font-weight:600;margin-bottom:-1px}
-.tabs button.on{color:var(--text);border-bottom-color:var(--gold)}
+  border-radius:0;padding:12px 15px 10px;font-family:var(--mono);font-weight:600;font-size:14.5px;
+  letter-spacing:.02em;margin-bottom:-1px}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
 .spin{color:var(--text-dim);padding:30px 4px}
 
 /* статус-панель (Bank / Squad Price / дедлайн) */
 .statbar{display:flex;gap:20px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
   border-radius:12px;padding:14px 18px;margin-bottom:14px}
-.stat b{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-dim);font-weight:600}
-.stat span{font-size:19px;font-weight:800}
+.stat b{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--dim);
+  font-family:var(--mono);font-weight:600}
+.stat span{font-family:var(--mono);font-size:19px;font-weight:700}
 .stat .bank{color:var(--gold)} .stat .price{color:var(--teal)}
 
 /* пре-маркет банер (§L) */
@@ -60,8 +73,10 @@ button:disabled{opacity:.5;cursor:default}
 .premkt .pm-bank{margin-left:auto;color:var(--text-dim)}
 
 /* бейдж позиції у лайнапі («Мій склад») */
-.pos{font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;background:var(--panel2);color:var(--text-dim);flex:none}
-.pos.G{color:var(--gold)} .pos.D{color:var(--blue)} .pos.M{color:var(--up)} .pos.F{color:#E8927F}
+.pos{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:1px 6px;border-radius:4px;
+  border:1px solid var(--line);background:none;color:var(--text-dim);flex:none}
+.pos.G{color:#f0c14b;border-color:#5a4a1c} .pos.D{color:#7fbcff;border-color:#274a63}
+.pos.M{color:#8be3b0;border-color:#255a3e} .pos.F{color:#ff9d7a;border-color:#5e3423}
 
 /* лайнап */
 .vbar{display:flex;gap:8px;flex-wrap:wrap;margin:6px 0 14px}
@@ -91,10 +106,10 @@ table.t{width:100%;border-collapse:collapse}
 .t th{font-size:11px;text-transform:uppercase;color:var(--text-dim);font-weight:600;letter-spacing:.03em}
 .t td.n{text-align:right;white-space:nowrap}
 .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
-.subtabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
-.subtabs button{background:var(--panel2);color:var(--text-dim);border:1px solid var(--line);
-  border-radius:999px;padding:5px 13px;font-size:13px;font-weight:600}
-.subtabs button.on{background:var(--gold);color:#1B1B1B;border-color:var(--gold)}
+.subtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
+.subtabs button{background:var(--panel);color:var(--text-dim);border:1px solid var(--line);
+  border-radius:9px;padding:7px 14px;font-family:var(--mono);font-size:13.5px;font-weight:600}
+.subtabs button.on{background:var(--accent-d);color:#dff5ea;border-color:var(--accent-d)}
 .soon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--text-dim)}
 .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--panel2);
   border:1px solid var(--line);color:var(--text-dim)}
@@ -124,11 +139,11 @@ table.t{width:100%;border-collapse:collapse}
 .mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
 .mtile.mine{border-color:rgba(244,196,48,.45)}
 .mtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
-.pbadge{font-size:10px;font-weight:800;letter-spacing:.03em;padding:2px 8px;border-radius:6px}
-.pbadge.G{background:rgba(244,196,48,.16);color:var(--gold)}
-.pbadge.D{background:rgba(94,151,208,.16);color:var(--blue)}
-.pbadge.M{background:rgba(46,139,87,.22);color:var(--up)}
-.pbadge.F{background:rgba(199,92,74,.20);color:#E8927F}
+.pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
+.pbadge.G{background:rgba(240,193,75,.14);color:#f0c14b;border-color:#5a4a1c}
+.pbadge.D{background:rgba(127,188,255,.12);color:#7fbcff;border-color:#274a63}
+.pbadge.M{background:rgba(24,180,122,.16);color:#8be3b0;border-color:#255a3e}
+.pbadge.F{background:rgba(255,157,122,.14);color:#ff9d7a;border-color:#5e3423}
 .vdelta{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 .vdelta.up{color:var(--up)} .vdelta.down{color:var(--down)} .vdelta.flat{color:var(--text-dim)}
 .mav{width:76px;height:76px;border-radius:50%;margin:0 auto 8px;background:var(--panel2);
