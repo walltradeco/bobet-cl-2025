@@ -285,6 +285,31 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .btn.ghost{background:none;color:var(--text);border-color:var(--line)}
 .btn.sm{padding:6px 12px;font-size:12.5px}
 .up{color:var(--up)}.down{color:var(--down)}
+/* матчі */
+.mrow{display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;padding:9px 12px;
+  border-bottom:1px solid var(--line);cursor:pointer}
+.mrow:last-child{border-bottom:0}
+.mrow:hover{background:var(--panel2)}
+.mrow .t{display:flex;align-items:center;gap:8px;min-width:0}
+.mrow .t span:not(.crest){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mrow .t.away{justify-content:flex-end}
+.crest{width:20px;height:20px;border-radius:5px;background:var(--club,#233);border:1px solid rgba(255,255,255,.14);flex:none}
+.score{font-family:var(--mono);font-weight:700;font-size:16px;background:var(--panel);border:1px solid var(--line);
+  border-radius:7px;padding:3px 11px;min-width:64px;text-align:center;flex:none}
+.score.sched{color:var(--text-dim);font-size:12px;font-weight:500}
+/* news */
+.feed{display:grid;gap:2px}
+.fitem{display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;padding:10px 4px;border-bottom:1px solid var(--line)}
+.fico{width:28px;height:28px;border-radius:7px;display:grid;place-items:center;font-size:14px;background:var(--panel2);border:1px solid var(--line)}
+.fitem .body{color:var(--text-dim);font-size:13.5px}.fitem .body b{color:var(--text)}
+.fitem .ts{font-size:11px;color:var(--dim);font-family:var(--mono);white-space:nowrap}
+/* адмінка */
+.adm-grid{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:680px){.adm-grid{grid-template-columns:1fr 1fr}}
+.acard{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+.acard h3{font-size:14.5px;margin:0 0 4px}
+.acard p{color:var(--text-dim);font-size:12.5px;margin:0}
+.acard .lk{color:var(--dim);font-size:12px;font-family:var(--mono);font-weight:600;margin-top:8px;display:inline-block}
 </style>
 </head>
 <body>
@@ -426,7 +451,7 @@ async function loadRefs(){
   const cs = await sbSel('market_clubs?select=id,name,league');
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
-  S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at&order=number.asc`);
+  S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
   S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes&order=market_value_current.desc`);
   // активні аукціони (публічні)
   S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
@@ -896,7 +921,7 @@ function viewMarket(){
         ${waiting.length?waiting.map(transferRow).join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}`;
     }
   }
-  $('view').innerHTML = statbar()+`<h2>Ринок</h2>`+bar+body;
+  $('view').innerHTML = statbar()+`<div class="head2"><h2>Ринок</h2></div>`+bar+body;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   if(S.mktSub==='market'){ bindFilters(); renderGrid(); }
   if(S.mktSub==='transfers') bindTransfers();
@@ -1042,39 +1067,79 @@ function bindModalActions(p){
   });
 }
 
-// ── 🏆 ТАБЛИЦЯ (market_leaderboard; повна F1 — на публічній борді) ──
-async function viewTable(){
-  const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
-  const rows = lb.map(p=>`<tr><td>${p.place}</td><td><b>${esc(p.display_name)}</b></td>
-    <td class="n">${p.total_points||0}</td><td class="n">${eur(p.squad_price)}</td></tr>`).join('');
-  $('view').innerHTML = `<h2>Таблиця</h2>
-    <p class="dim">Повна борда F1 (склади, очки по турах, рух рангу) — <a href="squad-stage.html" style="color:var(--teal)">публічна сторінка</a>.</p>
-    <table class="t"><thead><tr><th>#</th><th>Учасник</th><th class="n">Очки</th><th class="n">Squad Price</th></tr></thead>
-    <tbody>${rows||'<tr><td colspan="4" class="dim">ще порожньо</td></tr>'}</tbody></table>`;
+// ── 🏆 ТАБЛИЦЯ = вбудована публічна борда (?embed ховає її шапку/бейдж).
+// НЕ дублюємо ~200 рядків логіки борди (пастка board.js) — 1:1, завжди в синхроні.
+function viewTable(){
+  $('view').innerHTML = `<div class="head2"><h2>Таблиця</h2><span class="sub">повна F1-борда — склади-плитки, очки по турах, рух рангу ▲▼ · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
+    <iframe id="boardFrame" src="squad-stage.html?embed" title="Squad борда" scrolling="no"
+      style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:880px;display:block"></iframe>`;
+  const fr=$('boardFrame');
+  const fit=()=>{ try{ const b=fr.contentDocument&&fr.contentDocument.body; const h=b?b.scrollHeight:0;
+    if(h>200) fr.style.height=(h+28)+'px'; }catch(e){/* крос-походження (file://) → лишається запасна висота */} };
+  fr.addEventListener('load',()=>{ fit(); setTimeout(fit,400);
+    try{ new ResizeObserver(fit).observe(fr.contentDocument.body); }catch(e){} });
+  window.addEventListener('resize', fit, {passive:true});
 }
 
-// ── ⚽ МАТЧІ (фікстури 19 клубів по турах) ──
+// ── ⚽ МАТЧІ (фікстури 19 клубів; селектор турів + заморозка + клік на матч) ──
 async function viewMatches(){
+  if(!S.rounds.length){ $('view').innerHTML=`<div class="head2"><h2>Матчі</h2></div><div class="soon">Турів ще немає.</div>`; return; }
   const fx = await sbSel(`market_fixtures?tournament_id=eq.${S.tour.id}&select=round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score`);
-  let html=`<h2>Матчі</h2>`;
-  for(const r of S.rounds){
-    const rf = fx.filter(f=>f.round_id===r.id);
-    if(!rf.length) continue;
-    html += `<div class="card"><h2 style="font-size:16px">Тур ${r.number} · дедлайн ${new Date(r.deadline_at).toLocaleDateString('uk')}</h2>
-      <table class="t"><tbody>${rf.map(f=>{
-        const h=(S.clubs[f.home_club_id]||{}).name||'?', a=(S.clubs[f.away_club_id]||{}).name||'?';
-        const sc=(f.home_score!=null)?`${f.home_score}:${f.away_score}`:'—';
-        return `<tr><td style="text-align:right;width:40%">${esc(h)}</td><td class="n" style="text-align:center;width:60px">${sc}</td><td style="width:40%">${esc(a)}</td></tr>`;
-      }).join('')}</tbody></table></div>`;
-  }
-  $('view').innerHTML = html;
+  if(S.matchRound==null){ const up=S.rounds.find(r=>new Date(r.deadline_at)>new Date()); S.matchRound=(up||S.rounds[S.rounds.length-1]).id; }
+  const round=S.rounds.find(r=>r.id===S.matchRound)||S.rounds[0];
+  const frozen = new Date(round.deadline_at)<=new Date() && !round.results_entered_at;
+  const sel=`<div class="subtabs">${S.rounds.map(r=>`<button data-mr="${r.id}" class="${r.id===round.id?'on':''}">Тур ${r.number}</button>`).join('')}</div>`;
+  const freeze = frozen? `<div class="rndbar" style="border-color:#244;background:#0e1a22">
+      <span class="pill" style="background:#0e1a22;border:1px solid #244;color:var(--blue)">❄ Заморозка</span>
+      <span class="txt">Тур ${round.number} у грі — ринок зачинено до внесення всіх результатів.</span></div>` : '';
+  const rf=fx.filter(f=>f.round_id===round.id);
+  const rows = rf.length ? rf.map(f=>{
+    const sched=f.home_score==null;
+    const sc=sched? new Date(f.kickoff_at).toLocaleString('uk',{weekday:'short',hour:'2-digit',minute:'2-digit'}) : `${f.home_score}:${f.away_score}`;
+    return `<div class="mrow" data-fx="${f.home_club_id}|${f.away_club_id}">
+      <div class="t"><span class="crest" style="--club:${clubCol(f.home_club_id)}"></span><span>${esc(clubName(f.home_club_id))}</span></div>
+      <div class="score ${sched?'sched':''}">${sc}</div>
+      <div class="t away"><span>${esc(clubName(f.away_club_id))}</span><span class="crest" style="--club:${clubCol(f.away_club_id)}"></span></div>
+    </div>`;
+  }).join('') : '<div class="dim" style="padding:12px 4px">Фікстур на цей тур ще немає.</div>';
+  $('view').innerHTML = `<div class="head2"><h2>Матчі · Тур ${round.number}</h2><span class="sub">розклад/результати 19 клубів · клік на матч → рейтинги гравців пулу</span></div>
+    ${sel}${freeze}<div class="panel" style="padding:4px 10px">${rows}</div>`;
+  [...document.querySelectorAll('[data-mr]')].forEach(b=>b.onclick=()=>{ S.matchRound=b.dataset.mr; viewMatches(); });
+  [...document.querySelectorAll('[data-fx]')].forEach(el=>el.onclick=()=>openMatchModal(round, el.dataset.fx));
+}
+async function openMatchModal(round, fx){
+  const [hc,ac]=fx.split('|');
+  const pool=S.players.filter(p=>p.club_id===hc||p.club_id===ac);
+  let prp={};
+  try{ (await sbSel(`market_player_round_points?tournament_id=eq.${S.tour.id}&round_id=eq.${round.id}&select=player_id,avg_rating,points`)).forEach(r=>prp[r.player_id]=r); }catch(e){}
+  const played=pool.filter(p=>prp[p.id]);
+  const body = played.length
+    ? `<div class="plist" style="margin-top:4px">${played.map(p=>{const r=prp[p.id];return `<div class="pcard" style="--club:${clubCol(p.club_id)}">
+        <div><div class="nm">${esc(p.name)}</div><div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(clubName(p.club_id))}</span></div></div>
+        <div class="rt"><div class="big tnum">${r.points??'—'}</div><div class="pr tnum">рейтинг ${r.avg_rating??'—'} → ${r.points??0} оч.</div></div></div>`;}).join('')}</div>`
+    : `<p class="mnote">Матч ще не зіграний або рейтинги ще не внесені — зʼявляться після результатів туру. Показуємо лише гравців пулу (решта складів не відкриваємо).</p>`;
+  modalOpen(`<h3>${esc(clubName(hc))} — ${esc(clubName(ac))}</h3><p class="mnote">Тур ${round.number} · рейтинги гравців пулу за тур</p>${body}`);
 }
 
+// ── 📰 NEWS & PRESS (подієвий авто-лог ринку — наступний крок) ──
 function viewNews(){
-  $('view').innerHTML = `<h2>News & Press</h2><div class="soon">Авто-лог ринку («X купив Y за Z», «аукціон стартував/закрився», «угода X↔W») — <b>наступний крок</b> (таблиця подій, без AI, як домовлено).</div>`;
+  $('view').innerHTML = `<div class="head2"><h2>News &amp; Press</h2><span class="sub">авто-лог ринку (купив / аукціон / перебив / продав / трансфер / відхилено) · без AI</span></div>
+    <div class="subtabs"><button class="on">Усі</button><button>Мої</button><button>По гравцю…</button></div>
+    <div class="panel"><div class="soon">Подієвий лог ринку — <b>наступний крок</b>: окрема таблиця подій <code>market_news</code> (НЕ BoBet-конвеєр) + email-тригери. Фільтри «мої / всі / по гравцю». Суми угод публічні; <b>Bank ніде</b>.</div></div>`;
 }
+// ── ⚙ АДМІНКА (патерн BoBet/PSL; дії — наступний крок) ──
 function viewAdmin(){
-  $('view').innerHTML = `<h2>Адмінка</h2><div class="soon">Пул · тури · результати+рейтинги · склад учасників · фонд — <b>наступний крок</b>.<br>Пул зараз: <b>${S.players.length}</b> гравців · турів: <b>${S.rounds.length}</b>.</div>`;
+  const cards=[
+    ['🎛 Пул гравців','Гравці, стартові вартості, додати/прибрати з пулу (~270–300, 10–15/клуб).'],
+    ['🗓 Тури','Створити / дедлайн / відкрити / закрити. Тур = календарний тиждень (пн–нд).'],
+    ['📊 Рейтинги за тур','Напівавто через staging (збирач SofaScore → підтвердження) або вручну.'],
+    ['👥 Учасники + пошти','Додати/редагувати учасників, запрошення (allowed_emails).'],
+    ['🚪 Пре-маркет','Відкрити вікно (4 дні до 1-го дедлайну), рівний бюджет усім.'],
+    ['⚖ Розв\'язати спірне','Аукціон / трансфер вручну, коригування пулу, фонд.'],
+  ];
+  $('view').innerHTML = `<div class="head2"><h2>Адмінка</h2><span class="sub">патерн BoBet/PSL · заморозка авто (дедлайн → усі результати)</span></div>
+    <div class="adm-grid">${cards.map(([h,p])=>`<div class="acard"><h3>${h}</h3><p>${p}</p><span class="lk">готуємо →</span></div>`).join('')}</div>
+    <p class="dim" style="margin-top:12px">Пул зараз: <b>${S.players.length}</b> гравців · турів: <b>${S.rounds.length}</b>. Дії адмінки — наступний крок.</p>`;
 }
 
 sb.auth.onAuthStateChange((_e, session)=>{ if(session) boot(); });
