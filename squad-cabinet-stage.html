@@ -361,7 +361,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
-  mktSub:'market', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
+  mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
   f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -852,10 +852,10 @@ function filterBar(){
   const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
   const rB=S.rBounds, pB=S.pBounds;
   return `<div class="mfilters">
-    <div class="mf search"><label>Пошук</label><input id="f-q" placeholder="ім'я (англ.)" value="${esc(f.q)}"></div>
-    <div class="mf"><label>Ліга</label><select id="f-league"><option value="">Усі ${leagues.length}</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
-    <div class="mf"><label>Клуб</label><select id="f-club"><option value="">Усі ${clubs.length}</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
-    <div class="mf"><label>Позиція</label><select id="f-pos"><option value="">Усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
+    <div class="mf search"><input id="f-q" placeholder="Пошук по імені (англ.)" value="${esc(f.q)}"></div>
+    <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
+    <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
+    <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
       <input type="range" id="f-rmin" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMin}">
       <input type="range" id="f-rmax" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMax}"></div>
@@ -864,8 +864,7 @@ function filterBar(){
       <input type="range" id="f-pmin" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMin}">
       <input type="range" id="f-pmax" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMax}"></div>
       <span class="rv" id="rv-p">${eur(f.pMin)}–${eur(f.pMax)}</span></div>
-    <div class="mf"><label>Статус</label><select id="f-status">${[['all','Усі'],['free','Вільні'],['owned','Куплені'],['mine','Мої']].map(([v,t])=>opt(v,t,f.status)).join('')}</select></div>
-    <div class="msort"><span>Сортування</span><select id="f-sort">${[['rating','за рейтингом'],['price','за ціною'],['val','за Val Δ'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
+    <div class="msort"><span>Сортувати</span><select id="f-sort">${[['rating','за рейтингом'],['price','за ціною'],['val','за Val Δ'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
   </div>`;
 }
 function renderGrid(){
@@ -881,7 +880,7 @@ function bindFilters(){
   const q=$('f-q'); if(q) q.oninput=()=>{ S.f.q=q.value; renderGrid(); };
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
-  bind('f-pos',v=>S.f.pos=v); bind('f-status',v=>S.f.status=v); bind('f-sort',v=>S.f.sort=v);
+  bind('f-pos',v=>S.f.pos=v); bind('f-sort',v=>S.f.sort=v);
   const rmin=$('f-rmin'), rmax=$('f-rmax');
   const syncR=()=>{ let a=+rmin.value,b=+rmax.value; if(a>b){[a,b]=[b,a];} S.f.rMin=a;S.f.rMax=b; $('rv-r').textContent=a.toFixed(1)+'–'+b.toFixed(1); renderGrid(); };
   if(rmin) rmin.oninput=syncR; if(rmax) rmax.oninput=syncR;
@@ -893,11 +892,13 @@ function bindFilters(){
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
 function viewMarket(){
   const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length;
-  const subs=[['market','Ринок'],['bids','Мої ставки'],['transfers','Трансфери'+(inCount?` (${inCount})`:'')]];
+  const subs=[['free','Вільні'],['all','Усі гравці'],['bids','Мої ставки'],['transfers','Трансфери'+(inCount?` (${inCount})`:'')]];
   const bar=`<div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>`;
   let body='';
-  if(S.mktSub==='market'){
-    body = filterBar()+`<div class="msec">Ринок · сітка плиток <span id="mcount"></span></div><div class="mgrid" id="mgrid"></div>`;
+  if(S.mktSub==='free'||S.mktSub==='all'){
+    S.f.status = (S.mktSub==='free')?'free':'all';
+    const t=(S.mktSub==='free')?['Вільні гравці','купити зараз (+15%) або поставити (аукціон 12 год, крок +5%)']:['Усі гравці','весь пул + власник · натисни на гравця для дій'];
+    body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${t[0]}</h2><span class="sub">${t[1]} · <span id="mcount"></span></span></div><div class="mgrid" id="mgrid"></div>`;
   } else if(S.mktSub==='bids'){
     const mine = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
     body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші заморожено до закриття). Перебити чужий лот — у «Ринок».</p>
@@ -921,9 +922,9 @@ function viewMarket(){
         ${waiting.length?waiting.map(transferRow).join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}`;
     }
   }
-  $('view').innerHTML = statbar()+`<div class="head2"><h2>Ринок</h2></div>`+bar+body;
+  $('view').innerHTML = statbar()+bar+body;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
-  if(S.mktSub==='market'){ bindFilters(); renderGrid(); }
+  if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
   if(S.mktSub==='transfers') bindTransfers();
 }
 
