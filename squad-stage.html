@@ -192,7 +192,7 @@ function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
 
 async function boot(){
   try{
-    S.rounds=await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,week_start,week_end&order=number.asc');
+    S.rounds=await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,results_entered_at,week_start,week_end&order=number.asc');
     if(!S.rounds.length){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
     S.tournament=S.rounds[0].tournament_id;
     const rids=S.rounds.map(r=>r.id);
@@ -207,8 +207,10 @@ async function boot(){
     (await sbGet(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points`))
       .forEach(r=>S.ppr[r.player_id+'|'+r.round_id]=r.points);
 
-    // поточний тур = останній зіграний, інакше перший
-    const played=S.scores.map(s=>s.round_number);
+    // поточний тур = останній ЗІГРАНИЙ (results_entered_at), інакше перший
+    // (market_round_scores — view з рядком на КОЖЕН тур навіть при 0 очок,
+    //  тож «зіграний» визначаємо по results_entered_at, не по наявності scores)
+    const played=S.rounds.filter(r=>r.results_entered_at).map(r=>r.number);
     S.tour = played.length? Math.max(...played) : S.rounds[0].number;
 
     renderTours(); renderStandings(); renderByRound();
