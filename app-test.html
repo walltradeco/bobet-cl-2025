@@ -877,6 +877,37 @@ function boostColor(code){
   return BOOST_COLORS[code] || 'var(--purple)';
 }
 
+// Club Legend: колір бренду + емблема кожного з 10 наших клубів — щоб
+// обраний Legend читався з першого погляду (Богдан 10.09.2026). Ключ —
+// точна назва з legend_clubs (team_name). `id` — той самий api-football
+// team-id, що малює емблему на публічному борді (CLUB_ID у test.html,
+// аудит 27.07); емблему беремо з того ж CDN, що вже вантажить сайт.
+// Кольори — темні клуби (Ювентус чорний) підняті, щоб видно на --bg.
+const LEGEND_CLUB = {
+  'Барселона':          { id: 529, color: '#C7204B' },
+  'Реал Мадрид':        { id: 541, color: '#F0C239' },
+  'Баварія':            { id: 157, color: '#DC052D' },
+  'Динамо Київ':        { id: 572, color: '#2E8BD8' },
+  'Шахтар':             { id: 550, color: '#F68B1F' },
+  'Манчестер Юнайтед':  { id: 33,  color: '#E63946' },
+  'Арсенал':            { id: 42,  color: '#EF3340' },
+  'Челсі':              { id: 49,  color: '#3E7BD0' },
+  'Мілан':              { id: 489, color: '#FB4A4C' },
+  'Ювентус':            { id: 496, color: '#C9CCD1' },
+};
+// Бейдж клубу: { color, img }. Невідомий клуб → нейтральний бірюзовий,
+// як було до дизайну (жоден рядок не лишиться без чіпа).
+function legendClubBadge(name){
+  const c = LEGEND_CLUB[name];
+  if (!c) return { color: '#6FAFAF', img: '' };
+  return {
+    color: c.color,
+    img: c.id
+      ? `<img src="https://media.api-sports.io/football/teams/${c.id}.png" alt="" width="16" height="16" loading="lazy" style="vertical-align:-3px;margin-right:5px;border-radius:3px">`
+      : '',
+  };
+}
+
 // Пофарбувати картку матчу під буст, який на ній стоїть.
 //
 // ⚠️ Це виправлення бага, а не оформлення. Було так: перший рендер
@@ -2023,6 +2054,9 @@ function renderAutopilotBar(){
           <b style="color:var(--gold)">Автопілот</b>
           <div class="dim" style="margin-top:3px">
             Обери два матчі — система сама подвоїть той, де вийде більше очок.</div>
+          ${S.stock.filter(u => u.boost_code === 'autopilot').length > 1
+            ? `<div class="dim" style="margin-top:3px;color:var(--gold)">На вікенд працює лише <b>один</b> Автопілот — у тебе куплено ${S.stock.filter(u => u.boost_code === 'autopilot').length}, решту постав на інші вікенди.</div>`
+            : ''}
         </div>
         <div class="mono" style="font-size:20px;font-weight:700;color:var(--gold)">${n}/2</div>
       </div>
@@ -2291,6 +2325,19 @@ function todo(){
   }
   if ((S.styleOptions || []).length && !S.styleOptions.some(o => o.is_current)) {
     gaps.push('тренерський стиль');
+  }
+  // ОСТАННІЙ вікенд етапу: усі куплені бусти мають бути використані —
+  // інакше драфт закривається з невитраченими юнітами (кейс Максима,
+  // серпень). На попередніх вікендах бусти можна свідомо приберегти;
+  // на останньому лишати нема куди. Автопілот теж юніт: куплений, але
+  // без 2 кандидатів → status='in_stock' → теж рахується невикористаним
+  // (set_autopilot ставить 'assigned', щойно обрано кандидатів).
+  const lastNum = S.gameweeks.reduce((mx, g) => Math.max(mx, g.number), 0);
+  if (S.gw && lastNum > 0 && S.gw.number === lastNum) {
+    const unused = (S.stock || []).filter(u => u.status === 'in_stock').length;
+    if (unused) {
+      gaps.push(`використати всі бусти (${unused} у запасі)`);
+    }
   }
   return gaps;
 }
@@ -2733,6 +2780,10 @@ function legendBoxHtml(L, locked, state){
         class="${sel.role === r.code ? 'on' : ''}" title="${esc(r.title)}: ${esc(r.description)}">
         ${r.icon || '🐐'} ${esc(nm || r.title)}</button>`;
     }).join('');
+    // Коли клуб уже обрано — під селектом бейдж кольору бренду з емблемою,
+    // щоб вибір читався одразу, ще до фіксації (Богдан 10.09.2026).
+    const selName  = sel.team ? ((L.clubs.find(c => c.team_id === sel.team) || {}).team_name || null) : null;
+    const selBadge = selName ? legendClubBadge(selName) : null;
     inner += `<div style="border-top:1px solid var(--line);padding-top:8px;margin-top:8px">
       <div class="dim" style="font-size:13px;margin-bottom:4px">Слот ${i + 1}</div>
       <select data-lteam="${i}" style="width:100%;max-width:280px;padding:7px 9px;
@@ -2740,6 +2791,7 @@ function legendBoxHtml(L, locked, state){
         <option value="">— обери клуб —</option>
         ${L.clubs.map(c => `<option value="${c.team_id}" ${sel.team === c.team_id ? 'selected' : ''}>${esc(c.team_name)}</option>`).join('')}
       </select>
+      ${selBadge ? `<div style="margin-top:6px"><span class="boost-chip" style="border-color:${selBadge.color};color:${selBadge.color};background:${selBadge.color}1a">${selBadge.img}${esc(selName)}</span></div>` : ''}
       <div class="yn yn-wrap" style="margin-top:6px">${chips}</div>
     </div>`;
   }
@@ -3042,14 +3094,16 @@ async function viewStock(){
       const pickBlocks = picks.map(c => {
         const r = rolesMap[c.role_code] || {};
         const nm = namesMap[c.team_id + '|' + c.role_code];
-        const label = (clubsMap[c.team_id] || '—') + ' — ' + (r.icon || '🐐') + ' ' + (nm || r.title || c.role_code);
+        const clubName = clubsMap[c.team_id] || '—';
+        const badge = legendClubBadge(clubName);   // колір бренду + емблема клубу
+        const roleLabel = (r.icon || '🐐') + ' ' + (nm || r.title || c.role_code);
         const gwRows = (logMap[p.id + '|' + c.team_id + '|' + c.role_code] || [])
           .sort((a, b) => a.gameweek_number - b.gameweek_number);
         const breakdown = gwRows
           .map(g => `Вікенд ${g.gameweek_number}: ${g.points > 0 ? '+' + g.points : '0'}`)
           .join(' · ');
         return `<div style="margin-top:6px">
-          <span class="boost-chip" style="border-color:#6FAFAF;color:#6FAFAF;background:#6FAFAF1a">${esc(label)}</span>
+          <span class="boost-chip" style="border-color:${badge.color};color:${badge.color};background:${badge.color}1a">${badge.img}${esc(clubName)} — ${esc(roleLabel)}</span>
           ${breakdown ? `<div class="dim" style="font-size:13px;margin-top:2px">${esc(breakdown)}</div>` : ''}
         </div>`;
       }).join('');
