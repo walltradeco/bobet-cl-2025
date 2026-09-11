@@ -1962,18 +1962,6 @@ const TOURNAMENTS = [
       { sheet:'Rules',             kind:'rules',   source:'rules' },
     ]
   },
-  // SQUAD MODE — наступний ТУРНІР BoBet (mode='squad'), не окрема ліга.
-  // Кнопка тут, у ряду турнірів; клік показує власний Squad-фронт
-  // (F1-борда) вбудованим у оболонку BoBet — файл squad-stage.html.
-  // Кабінет — та сама кнопка «Мій кабінет», але src=squad-cabinet-stage.html
-  // (див. гілку в модалці кабінету). Окремі файли — щоб не вплітати Squad
-  // у 5+тис. рядків цього фронту й app; тут лише навігація на них.
-  {
-    key:'squad',
-    title:'Squad Mode',
-    source:'squad',
-    tabs:[],
-  },
   // HONORS — наскрізна вітрина по ВСІХ турнірах ліги, а не ще один
   // турнір. Стоїть праворуч останньою: турніри йдуть хронологічно,
   // і це підсумок усієї історії.
@@ -2230,40 +2218,6 @@ async function buildMonthRows(tournamentKey){
     'manager_style_config?select=weekend_cap&tournament_id=eq.' + tid);
   LIVE_STYLE_CAP = capRows[0] ? capRows[0].weekend_cap : null;
 
-  // Club Legend (334/385) — для бейджа 🐐 біля імені. legend_board уже
-  // фільтрує через RLS (свій вибір видно завжди, чужий — після відкриття
-  // першого вікенда етапу), тож тут просто беремо все, що повернулось.
-  // Порожньо — і в етапу без Legend-пулу (нема учасників взагалі), і в
-  // того, хто ще не обрав слоти.
-  const legendRows = await sbGet(
-    'legend_board?select=display_name,team_id,team_name,role_code,role_icon,role_title,points,' +
-    'club_matches_played,club_matches_total&tournament_id=eq.' + tid);
-  // Журнал по матчах (386) — для розбивки "Вікенд N: +X" у підказці.
-  // Один рядок на матч; вікенди, де клуб НЕ грав, просто відсутні в
-  // журналі (рішення Богдана 28.09.2026 — пропускати, а не «—»).
-  const legendMatchRows = legendRows.length ? await sbGet(
-    'legend_match_board?select=display_name,team_id,role_code,gameweek_number,points' +
-    '&tournament_id=eq.' + tid) : [];
-  // Стеля Legend/етап із конфігу (club_legend_config, 389) — для «X/cap»,
-  // як LIVE_STYLE_CAP вище. Читає anon (RLS дозволяє), fallback 12.
-  if (legendRows.length) {
-    const legendCfg = await sbGet('club_legend_config?select=cap');
-    LIVE_LEGEND_CAP = legendCfg[0] ? legendCfg[0].cap : 12;
-  }
-  const legendByName = {};
-  legendRows.forEach(r => {
-    const matches = legendMatchRows
-      .filter(m => m.display_name === r.display_name && m.team_id === r.team_id && m.role_code === r.role_code)
-      .sort((a, b) => a.gameweek_number - b.gameweek_number)
-      .map(m => ({ gw: m.gameweek_number, points: m.points }));
-    (legendByName[r.display_name] = legendByName[r.display_name] || []).push({
-      club: r.team_name, icon: r.role_icon, title: r.role_title,
-      points: r.points, played: r.club_matches_played, total: r.club_matches_total,
-      matches
-    });
-  });
-  LIVE_LEGEND = legendRows.length ? legendByName : null;
-
   const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
   // Матчі — відкрита інформація: показуємо розклад завжди. Прогнози
@@ -2443,7 +2397,6 @@ async function fetchSupabaseTab(tab){
   LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
   LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   LIVE_STYLE_CAP = null;
-  LIVE_LEGEND = null;             // бейдж 🐐 лише в місячній таблиці
   if(tab.source === 'leaderboard'){
     const prizeBoard = await sbGet('season_prize_board?select=person_key,display_name,mvp_count,rival_wins');
     // Зміна рангу для MVP/Rivals season-бордів (файл 184) — той самий
@@ -2566,8 +2519,7 @@ function renderEuroRulesExtras(){
         незалежно від того, за які клуби вболіваєш і що прогнозував. Нарахування
         дивиться на фінальний рахунок матчів, а не на твій прогноз.
         Кожен стиль можна взяти лише один раз за етап. Стеля очок за стиль на
-        вікенд: серпень — 3, вересень — 4, <b>жовтень — без стелі</b> (скільки
-        набереш за вікенд, стільки й іде в залік).
+        вікенд у August — 3.
       </p>
       ${miniRulesTable('Condition', 'Points', styleRows)}
       <details class="rules-details">
@@ -3092,7 +3044,6 @@ async function fetchSheet(sheetId, sheetName, gid){
   LIVE_MVP = null;                 // в архіві MVP немає
   LIVE_STYLES = null;              // в архіві стилів немає
   LIVE_STYLE_CAP = null;
-  LIVE_LEGEND = null;              // в архіві Club Legend немає
   // заморожений архів: віддаємо вшиті дані, мережа не потрібна
   if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
     const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
@@ -3407,7 +3358,7 @@ function renderPointsSummary(players, totals){
         const v = val(p, i);
         return `
         <div class="gp-summary-cell">
-          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}${legendBadge(p.name)}</span>
+          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}</span>
           <span class="gp-summary-name">${escapeHtml(canonPerson(p.name))}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
@@ -3444,15 +3395,13 @@ function styleBadge(name){
   if(!LIVE_STYLES) return '';
   const picks = LIVE_STYLES[name];
   if(!picks || !picks.length) return '';
-  // «Без стелі» (жовтень: weekend_cap 999) → не показуємо «/N» і «(зі M, стеля)».
-  const noCap = !(LIVE_STYLE_CAP && LIVE_STYLE_CAP < 99);
   const rows = picks
     .slice()
     .sort((a, b) => a.gw - b.gw)
     .map(s => {
-      const capTxt = noCap ? '' : '/' + LIVE_STYLE_CAP;
+      const capTxt = LIVE_STYLE_CAP ? '/' + LIVE_STYLE_CAP : '';
       const pts = s.scored
-        ? `<span class="win">+${s.points}${capTxt}</span>${(!noCap && s.capped) ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
+        ? `<span class="win">+${s.points}${capTxt}</span>${s.capped ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
         : '<span class="pending">очікує</span>';
       return `<div class="rv-tip-row">Вікенд ${s.gw}: ${escapeHtml(s.title)} · ${pts}</div>`;
     })
@@ -3475,36 +3424,6 @@ function mvpBadge(name){
     .join('');
   const count = wins.length > 1 ? `<span class="rv-count">${wins.length}</span>` : '';
   return `<span class="rv-badge" style="color:var(--gold);font-weight:700;font-size:11px;letter-spacing:0.03em">MVP${count}<span class="rv-tip">${rows}</span></span>`;
-}
-
-/* Бейдж 🐐 з Club Legend (334/385) поруч із ⚔️/👔/MVP. Показуємо лише
-   в місячній таблиці (LIVE_LEGEND != null) і лише коли етап реально має
-   Legend-пул (людина без вибору просто не потрапляє в мапу — пусто).
-   Число — сума балів обох слотів зі стелею LIVE_LEGEND_CAP (стеля лише
-   НА СУМУ ЕТАПУ — за вікенд стелі немає, файл 386, рішення Богдана
-   28.09.2026). У підказці — по рядку на кожен обраний слот, а під ним
-   розбивка по вікендах (386: legend_match_board), як у Rivals/Style.
-   Вікенд, у якому клуб не грав, просто відсутній у розбивці. */
-function legendBadge(name){
-  if(!LIVE_LEGEND) return '';
-  const picks = LIVE_LEGEND[name];
-  if(!picks || !picks.length) return '';
-  const total = Math.min(LIVE_LEGEND_CAP, picks.reduce((s, p) => s + (p.points || 0), 0));
-  const rows = picks
-    .map(p => {
-      const label = p.title || p.role;
-      const pts = p.played > 0
-        ? `<span class="win">+${p.points || 0}</span>`
-        : '<span class="pending">очікує</span>';
-      const breakdown = (p.matches || [])
-        .map(m => `Вікенд ${m.gw}: ${m.points > 0 ? '+' + m.points : '0'}`)
-        .join(' · ');
-      return `<div class="rv-tip-row">${escapeHtml(p.club)} — ${escapeHtml(label)}
-        · ${p.played}/${p.total} матчів · ${pts}</div>`
-        + (breakdown ? `<div class="rv-tip-row" style="opacity:0.75">${breakdown}</div>` : '');
-    })
-    .join('');
-  return `<span class="rv-badge">🐐 ${total}/${LIVE_LEGEND_CAP}<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
@@ -3712,17 +3631,6 @@ let LIVE_STYLES = null;
 /* Стеля Manager Style за вікенд (3 у серпні, 4 далі) — тільки для
    тексту підказки бейджа 👔, «+1/3» замість голого «+1». */
 let LIVE_STYLE_CAP = null;
-
-/* Club Legend (334/385) для бейджа 🐐 біля імені — агрегат, як у
-   кабінеті (без матч-за-матчем журналу, рішення Богдана 28.09.2026).
-   Формат: { 'Ім'я': [{club, icon, title, points, played, total}, ...
-   до 2 слотів], ... }. null — бейдж не показуємо (архів, інші вкладки,
-   або етап без Legend-пулу взагалі). */
-let LIVE_LEGEND = null;
-
-/* Стеля балів Legend за етап — та сама, що в кабінеті (335: агрегація
-   least(sum,10)). Фіксована константа проєкту, не таблиця конфігу. */
-let LIVE_LEGEND_CAP = 12;   // дефолт; фактичну стелю етапу тягнемо з club_legend_config (389)
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву
@@ -4989,19 +4897,6 @@ function syncStickyOffset(){
 async function loadActiveTab(){
   const content = document.getElementById('content');
 
-  // SQUAD MODE — власний фронт (F1-борда), вбудований iframe-ом у оболонку
-  // BoBet. Свій файл (squad-stage.html), а не вплетений сюди: механіка
-  // market_* не має спільного з прогнозами/бустами. embed=1 ховає власний
-  // бейдж і заголовок борди (контекст уже дає шапка BoBet). Кабінет —
-  // та сама кнопка, src перемикається в модалці кабінету.
-  if(activeTournament.source === 'squad'){
-    document.getElementById('tabs').innerHTML = '';
-    content.innerHTML =
-      '<iframe src="squad-stage.html?embed=1" title="Squad Mode — борда" ' +
-      'style="width:100%;border:0;min-height:82vh;display:block"></iframe>';
-    return;
-  }
-
   // HONORS живе за іншими правилами: не таблиця, а власна сторінка,
   // зібрана з чотирьох в'юх бази. Тому виходимо з загального шляху
   // до того, як він полізе по activeTournament.tabs.
@@ -5179,35 +5074,22 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   }
   labelBtn();
 
-  // Який кабінет вантажити: Squad-турнір → власний Squad-кабінет (той
-  // самий, що робили для Squad), решта — BoBet-кабінет. Та сама кнопка.
-  async function desiredCabinetSrc(){
-    const stage = /(^|\/)test\.html$/.test(location.pathname);
-    if (typeof activeTournament !== 'undefined' && activeTournament
-        && activeTournament.source === 'squad'){
-      return stage ? 'squad-cabinet-stage.html' : 'squad-cabinet.html';
-    }
-    let appSrc = 'app.html';
-    // На test.html пробуємо тестовий кабінет; якщо його не залито —
-    // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
-    if (stage){
-      try {
-        const r = await fetch('app-test.html', { method: 'HEAD' });
-        if (r.ok) appSrc = 'app-test.html';
-      } catch(e) {}
-    }
-    return appSrc;
-  }
-
   async function open(){
     // Модалку показуємо одразу
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
-    // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
-    // щоразу, бо між відкриттями турнір міг змінитись.
-    const want = await desiredCabinetSrc();
-    if (frame.getAttribute('src') !== want){
-      frame.setAttribute('src', want);
+    // iframe вантажиться лише при першому відкритті
+    if (!frame.getAttribute('src')){
+      let appSrc = 'app.html';
+      // На test.html пробуємо тестовий кабінет; якщо його не залито —
+      // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
+      if (/(^|\/)test\.html$/.test(location.pathname)){
+        try {
+          const r = await fetch('app-test.html', { method: 'HEAD' });
+          if (r.ok) appSrc = 'app-test.html';
+        } catch(e) {}
+      }
+      frame.setAttribute('src', appSrc);
     }
   }
   function close(){
