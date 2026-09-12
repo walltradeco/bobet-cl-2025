@@ -1306,7 +1306,7 @@ function squadCardHTML(p, tier, card){
   const g=card.goals??'—', a=card.assists??'—', m=p.appearances??'—';
   const dl=cardDelta(p,card);
   return `<div class="sqcard" data-tier="${tier}">
-    <img class="sq-frame" src="assets/squad/frames/${tier}.webp" alt="">
+    <img class="sq-frame" src="frames/${tier}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
     <div class="sq-ov sq-pos">${posCat(p.position)}</div>
