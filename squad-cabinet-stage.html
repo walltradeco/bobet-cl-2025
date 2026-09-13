@@ -247,6 +247,13 @@ table.t{width:100%;border-collapse:collapse}
 .colc-own{margin-top:6px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
   color:var(--text-dim);border:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .colc-own.mine{background:var(--green-soft);color:var(--up);border-color:var(--accent-d)}
+/* 📰 News-стрічка */
+.nrow{display:flex;gap:10px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:8px}
+.nrow .nico{font-size:15px;flex:none;width:20px;text-align:center}
+.nrow .ntxt{flex:1;font-size:13.5px;line-height:1.35}
+.nrow .ntime{flex:none;font-size:11px;color:var(--text-dim);font-family:var(--mono);white-space:nowrap}
+.news-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
+.news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
 .mnote.warn{color:var(--down);font-weight:600}
 
 /* рядки трансферів */
@@ -1225,32 +1232,52 @@ function exchangeRow(x){
   return `<div class="trow"><span class="tinfo">${info}</span>${ctrl}</div>`;
 }
 function bindExchanges(){
-  document.querySelectorAll('[data-xc-acc]').forEach(b=>b.onclick=()=>confirmModal('Прийняти обмін? Гравці й доплата переходять одразу.', 'Прийняти',
-    ()=>act('market_respond_exchange',{p_exchange:b.dataset.xcAcc,p_action:'accept'},'Обмін завершено')));
+  document.querySelectorAll('[data-xc-acc]').forEach(b=>b.onclick=()=>openExchangeAcceptModal(b.dataset.xcAcc));
   document.querySelectorAll('[data-xc-rej]').forEach(b=>b.onclick=()=>confirmModal('Відхилити обмін?', 'Відхилити',
     ()=>act('market_respond_exchange',{p_exchange:b.dataset.xcRej,p_action:'reject'},'Відхилено')));
   document.querySelectorAll('[data-xc-cnt]').forEach(b=>b.onclick=()=>openExchangeCounterModal(b.dataset.xcCnt, b.dataset.xcFrom==='1'));
   document.querySelectorAll('[data-xc-cancel]').forEach(b=>b.onclick=()=>confirmModal('Відкликати свій обмін? Заморожена доплата звільниться.', 'Відкликати',
     ()=>act('market_cancel_exchange',{p_exchange:b.dataset.xcCancel},'Обмін відкликано')));
 }
-// контр обміну — лише доплата (гравці ті самі); напрямок → знак cash_delta у БД (>0 from, <0 to)
+// прийняти обмін — обрати контракт для гравця, якого ОТРИМУЄШ (offered якщо ти to / wanted якщо from)
+function openExchangeAcceptModal(xid){
+  const x=(S.exchanges||[]).find(e=>e.id===xid);
+  if(!x){ return act('market_respond_exchange',{p_exchange:xid,p_action:'accept'},'Обмін завершено'); }
+  const recvId = (x.to_participant===S.me.id) ? x.offered_player : x.wanted_player;
+  const recv = S.players.find(pl=>pl.id===recvId)||{};
+  modalOpen(`<h3>Прийняти обмін</h3>
+    <p class="mnote">Гравці й доплата переходять одразу. Обери контракт для <b>${esc(recv.name||'гравця')}</b> (ти його отримаєш).</p>
+    ${contractPicker(recv.market_value_current||0, 0)}
+    <div class="macts"><button data-do="xacc-go">Прийняти</button><button class="ghost" data-do="xacc-no">Скасувати</button></div>`);
+  const h=$('mhost'); wireClen(h);
+  h.querySelector('[data-do="xacc-no"]').onclick=modalClose;
+  h.querySelector('[data-do="xacc-go"]').onclick=async()=>{ const len=selectedLen(); modalClose();
+    await act('market_respond_exchange',{p_exchange:xid,p_action:'accept',p_length:len},'Обмін завершено'); };
+}
+// контр обміну — доплата + контракт для гравця, якого ОТРИМАЄШ; напрямок → знак cash_delta (>0 from, <0 to)
 function openExchangeCounterModal(xid, iAmFrom){
   const pct=Math.round((S.cfg?.transfer_min_pct??0.75)*100);
-  modalOpen(`<h3>Контрпропозиція — доплата</h3>
-    <p class="mnote">Гравці лишаються ті самі, ти міняєш лише доплату. Обмін мусить лишатись чесним (кожен віддає ≥${pct}% отриманого).</p>
+  const x=(S.exchanges||[]).find(e=>e.id===xid)||{};
+  const recvId = iAmFrom ? x.wanted_player : x.offered_player;
+  const recv = S.players.find(pl=>pl.id===recvId)||{};
+  modalOpen(`<h3>Контрпропозиція</h3>
+    <p class="mnote">Гравці ті самі, ти міняєш доплату й контракт для <b>${esc(recv.name||'гравця')}</b> (ти його отримаєш). Обмін мусить лишатись чесним (кожен віддає ≥${pct}% отриманого).</p>
     <div class="mamt" data-ref="${xid}">
       <span class="dim">Напрямок доплати</span>
       <select id="xcDir" style="width:100%;padding:8px;border-radius:8px;background:var(--panel-2,#122);color:inherit;border:1px solid var(--line,#333);margin:4px 0 8px">
         <option value="pay">Я доплачую</option><option value="ask">Я прошу доплату</option></select>
       <span class="dim">Сума · €млн (0 = без доплати)</span>
-      <input id="amtInp" inputmode="decimal" value="0">
-      <button data-do="xcounter">Надіслати</button></div>`);
-  $('mhost').querySelector('[data-do="xcounter"]').onclick=async()=>{
-    const iPay=$('mhost').querySelector('#xcDir').value==='pay';
-    const raw=Math.round((parseFloat(($('mhost').querySelector('#amtInp').value||'0').replace(',','.'))||0)*1e6);
+      <input id="amtInp" inputmode="decimal" value="0"></div>
+    ${contractPicker(recv.market_value_current||0, 0)}
+    <div class="macts"><button data-do="xcounter">Надіслати</button></div>`);
+  const h=$('mhost'); wireClen(h);
+  h.querySelector('[data-do="xcounter"]').onclick=async()=>{
+    const iPay=h.querySelector('#xcDir').value==='pay';
+    const raw=Math.round((parseFloat((h.querySelector('#amtInp').value||'0').replace(',','.'))||0)*1e6);
     const cash=(iPay?1:-1)*(iAmFrom?1:-1)*Math.abs(raw);   // >0 from доплачує, <0 to доплачує
+    const len=selectedLen();
     modalClose();
-    await act('market_respond_exchange',{p_exchange:xid,p_action:'counter',p_cash_delta:cash},'Контрпропозицію надіслано');
+    await act('market_respond_exchange',{p_exchange:xid,p_action:'counter',p_cash_delta:cash,p_length:len},'Контрпропозицію надіслано');
   };
 }
 
@@ -1306,6 +1333,8 @@ function exchangeUI(p){
         <select id="xDir" style="${sel}"><option value="none">Без доплати</option><option value="pay">Я доплачую</option><option value="ask">Я прошу</option></select></div>
       <input id="xAmt" inputmode="decimal" value="0" placeholder="€млн" style="${sel};width:96px;flex:none" disabled>
     </div>
+    <label class="dim" style="display:block;margin-top:8px">Контракт для <b>${esc(p.name)}</b> (ти його отримаєш)</label>
+    ${contractPicker(p.market_value_current, 0)}
     <div id="xStatus" class="mnote" style="margin-top:8px"></div>
     <div class="macts"><button data-do="xpropose" id="xBtn">Запропонувати обмін</button></div>
   </div>`;
@@ -1344,18 +1373,29 @@ function contractPicker(mv,freeAdd){
   return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="${freeAdd||0}">
     <div class="clab">Контракт (турів) — довше = дорожча зарплата, резерв утримується наперед</div>
     <div class="clen-row">${chips.join('')}</div>
-    <div class="clen-info" id="clenInfo"></div></div>`;
+    <div class="clen-info"></div></div>`;
 }
+// довжина з ПЕРШОГО пікера модалки (buy/buylist/transfer) або з конкретного контейнера (обмін)
 function selectedLen(){ const el=$('mhost').querySelector('.clen'); return el?(+el.dataset.len||1):1; }
-function updClen(){
-  const el=$('mhost').querySelector('.clen'); if(!el) return;
+function selectedLenIn(box){ const el=box&&box.querySelector('.clen'); return el?(+el.dataset.len||1):1; }
+function updClen(el){
+  el = el || $('mhost').querySelector('.clen'); if(!el) return;
   const mv=+el.dataset.mv||0, len=+el.dataset.len||1, w=wageFor(mv,len), res=w*len;
   // при перепідписі старий резерв цього ж гравця вивільняється → додаємо назад (data-freeadd)
   const wf=(S.wageFree!=null)?(S.wageFree+(+el.dataset.freeadd||0)):null;
-  const info=el.querySelector('#clenInfo'); let bad=false;
+  const info=el.querySelector('.clen-info'); let bad=false;
   let txt=`${len} тур · ${eur(w)}/тур · резерв <b>${eur(res)}</b>`;
   if(wf!=null){ bad=res>wf; txt+=` · зарплатний вільно ${eur(wf)}${bad?' — не вистачає':''}`; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
+}
+// прив'язати чіпи ВСІХ пікерів у контейнері (модалка може мати кілька — напр. обмін)
+function wireClen(host){
+  host = host || $('mhost');
+  host.querySelectorAll('.clen-chip').forEach(ch=>ch.onclick=()=>{
+    const box=ch.closest('.clen'); box.querySelectorAll('.clen-chip').forEach(x=>x.classList.remove('on'));
+    ch.classList.add('on'); box.dataset.len=ch.dataset.l; updClen(box);
+  });
+  host.querySelectorAll('.clen').forEach(el=>updClen(el));
 }
 // контракт owned-гравця: скільки турів лишилось, зарплата/тур, «добігає» (≤1)
 function contractInfo(p){ const rl=p.contract_rounds_left; return { rl, wage:p.wage_per_round, low:(rl!=null&&rl<=1) }; }
@@ -1586,9 +1626,9 @@ function bindModalActions(p){
       ()=>act('market_buy_listing',{p_player:p.id,p_length:len},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='xpropose'){
       const box=h.querySelector('.xbox'); if(!box||box.dataset.off==null){ alert('Обери гравця й перевір умови'); return; }
-      const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0;
-      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))}?`, 'Запропонувати',
-        ()=>act('market_propose_exchange',{p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash},'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
+      const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0, len=selectedLenIn(box);
+      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} тур</b>?`, 'Запропонувати',
+        ()=>act('market_propose_exchange',{p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len},'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='amt'){
       const box=b.closest('.mamt'), min=+box.dataset.min;
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
@@ -1600,12 +1640,7 @@ function bindModalActions(p){
       else if(box.dataset.kind==='list') await act('market_list_player',{p_player:box.dataset.ref,p_ask:eurv},'Виставлено за '+eur(eurv));
     }
   });
-  // пікер довжини контракту (Ф2): вибір чіпа → оновити резерв/зарплату
-  h.querySelectorAll('.clen-chip').forEach(ch=>ch.onclick=()=>{
-    const box=ch.closest('.clen'); box.querySelectorAll('.clen-chip').forEach(x=>x.classList.remove('on'));
-    ch.classList.add('on'); box.dataset.len=ch.dataset.l; updClen();
-  });
-  if(h.querySelector('.clen')) updClen();
+  wireClen(h);   // пікери довжини контракту (Ф2) — усі в модалці
   // наживо-валідація обміну (75% обом · ліміти обом · бюджет)
   if(h.querySelector('.xbox')){
     ['xOff','xDir','xAmt'].forEach(id=>{ const el=h.querySelector('#'+id); if(el){ el.onchange=xRefresh; el.oninput=xRefresh; } });
@@ -1718,10 +1753,57 @@ async function openMatchModal(round, fx){
 }
 
 // ── 📰 NEWS & PRESS (подієвий авто-лог ринку — наступний крок) ──
-function viewNews(){
-  $('view').innerHTML = `<div class="head2"><h2>News &amp; Press</h2><span class="sub">авто-лог ринку (купив / аукціон / перебив / продав / трансфер / відхилено) · без AI</span></div>
-    <div class="subtabs"><button class="on">Усі</button><button>Мої</button><button>По гравцю…</button></div>
-    <div class="panel"><div class="soon">Подієвий лог ринку — <b>наступний крок</b>: окрема таблиця подій <code>market_news</code> (НЕ BoBet-конвеєр) + email-тригери. Фільтри «мої / всі / по гравцю». Суми угод публічні; <b>Bank ніде</b>.</div></div>`;
+// ── 📰 NEWS — подієвий лог ринку (market_news, 425); email — потім ──
+function newsLine(n){
+  const who=id=>esc(S.names[id]||'—');
+  const pl =id=>{ const p=S.players.find(x=>x.id===id); return '<b>'+esc(p?p.name:'гравець')+'</b>'; };
+  const m=n.meta||{}, amt=(m.amount!=null)?eur(m.amount):'';
+  const t=new Date(n.created_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  let ico='•', txt='';
+  switch(n.kind){
+    case 'buynow':            ico='💰'; txt=`<b>${who(n.actor_participant)}</b> купив ${pl(n.player_id)} · ${amt}`; break;
+    case 'sold':              ico='💸'; txt=`<b>${who(n.actor_participant)}</b> продав ${pl(n.player_id)} у ринок · ${amt}`; break;
+    case 'autosold':          ico='⏳'; txt=`${pl(n.player_id)}: контракт вичерпано → автопродаж (<b>${who(n.actor_participant)}</b>) · ${amt}`; break;
+    case 'auction_start':     ico='🔨'; txt=`<b>${who(n.actor_participant)}</b> виставив ${pl(n.player_id)} на аукціон · старт ${amt}`; break;
+    case 'auction_won':       ico='🏆'; txt=`<b>${who(n.actor_participant)}</b> виграв аукціон на ${pl(n.player_id)} · ${amt}`; break;
+    case 'bid':               ico='⬆️'; txt=`<b>${who(n.actor_participant)}</b> перебив ставку на ${pl(n.player_id)} · ${amt}`; break;
+    case 'listed':            ico='🏷'; txt=`<b>${who(n.actor_participant)}</b> виставив ${pl(n.player_id)} на вітрину за ${amt}`; break;
+    case 'listing_sold':      ico='🏷'; txt=`<b>${who(n.actor_participant)}</b> викупив ${pl(n.player_id)} з вітрини (у <b>${who(n.subject_participant)}</b>) · ${amt}`; break;
+    case 'transfer_done':     ico='↔️'; txt=`<b>${who(n.actor_participant)}</b> купив ${pl(n.player_id)} у <b>${who(n.subject_participant)}</b> (трансфер) · ${amt}`; break;
+    case 'transfer_rejected': ico='✖️'; txt=`<b>${who(n.subject_participant)}</b> відхилив пропозицію <b>${who(n.actor_participant)}</b> на ${pl(n.player_id)} · ${amt}`; break;
+    case 'exchange_done':     ico='🔄'; txt=`Обмін: <b>${who(n.actor_participant)}</b> ↔ <b>${who(n.subject_participant)}</b> — ${pl(n.player_id)} ↔ ${pl(m.wanted_player)}${m.cash_delta?` · доплата ${eur(Math.abs(m.cash_delta))}`:''}`; break;
+    default:                  txt=esc(n.kind);
+  }
+  return `<div class="nrow"><span class="nico">${ico}</span><span class="ntxt">${txt}</span><span class="ntime">${t}</span></div>`;
+}
+async function viewNews(){
+  let rows=null;
+  try{ rows = await sbSel(`market_news?tournament_id=eq.${S.tour.id}&order=created_at.desc&limit=200&select=id,kind,actor_participant,subject_participant,player_id,meta,created_at`); }
+  catch(e){ rows=null; }   // 425 ще не залито → degrade
+  S.news=rows; renderNews();
+}
+function renderNews(){
+  const rows=S.news;
+  if(rows===null){
+    $('view').innerHTML=`<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; <b>Bank ніде</b>. Email — окремо.</div>`;
+    return;
+  }
+  const f=S.newsF||(S.newsF={sub:'all',player:''});
+  // гравці, що згадані у стрічці (для фільтра «по гравцю»)
+  const ids=new Set(); rows.forEach(n=>{ if(n.player_id) ids.add(n.player_id); if(n.meta&&n.meta.wanted_player) ids.add(n.meta.wanted_player); });
+  const plOpts=[...ids].map(id=>{ const p=S.players.find(x=>x.id===id); return p?[id,p.name]:null; }).filter(Boolean).sort((a,b)=>a[1].localeCompare(b[1]));
+  let list=rows.slice();
+  if(f.sub==='mine') list=list.filter(n=>n.actor_participant===S.me.id||n.subject_participant===S.me.id);
+  if(f.player) list=list.filter(n=>n.player_id===f.player||(n.meta&&n.meta.wanted_player===f.player));
+  $('view').innerHTML=`
+    <div class="head2"><h2>News</h2><span class="sub">подієвий лог ринку · ${rows.length} подій · суми угод публічні, Bank ніде · показано ${list.length}</span></div>
+    <div class="news-filters">
+      <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
+      <select id="newsPl"><option value="">Гравець: усі</option>${plOpts.map(([id,nm])=>`<option value="${id}"${f.player===id?' selected':''}>${esc(nm)}</option>`).join('')}</select>
+    </div>
+    <div class="news-feed">${list.length?list.map(newsLine).join(''):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
+  $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
+  const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
 }
 // ── ⚙ АДМІНКА (патерн BoBet/PSL; дії — наступний крок) ──
 function viewAdmin(){
