@@ -122,6 +122,53 @@ table.f1 tbody tr:last-child td{border-bottom:none}
 table.grid td.pn{font-family:var(--mono);font-weight:700}
 .foot{color:var(--dim);font-size:11.5px;text-align:center;margin-top:30px;font-family:var(--mono);letter-spacing:.04em}
 .empty-note{color:var(--dim);font-size:14px;padding:30px 4px;text-align:center}
+/* ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ── */
+.ovl .pcard{cursor:pointer;transition:border-color .12s,transform .12s}
+.ovl .pcard:hover{border-color:var(--gold);transform:translateY(-1px)}
+.sqwrap{position:relative;width:212px;height:318px}
+.sqwrap .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(.70667)}
+.sqcard{position:relative;width:300px;aspect-ratio:1024/1536;
+  --acc:#63f2ad;--nm:#fff;--posbd:#3ddd8b;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
+.sqcard[data-tier=steel]{--acc:#dfe6ee;--posbd:#c9d3db}
+.sqcard[data-tier=gold]{--acc:#f4d270;--posbd:#e6c25f}
+.sq-frame{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
+.sq-photo{position:absolute;left:13%;top:4%;width:74%;z-index:2}
+.sq-photo img{width:100%;display:block;
+  -webkit-mask-image:linear-gradient(to bottom,#000 52%,rgba(0,0,0,.55) 72%,transparent 100%);
+          mask-image:linear-gradient(to bottom,#000 52%,rgba(0,0,0,.55) 72%,transparent 100%)}
+.sq-mono{position:absolute;left:0;right:0;top:14%;z-index:2;text-align:center;
+  font-family:var(--mono);font-weight:800;font-size:74px;color:rgba(255,255,255,.16);letter-spacing:.02em}
+.sq-scrim{position:absolute;inset:0;z-index:3;pointer-events:none;
+  background:linear-gradient(to bottom,transparent 40%,rgba(5,8,7,.5) 55%,rgba(5,8,7,.86) 72%,rgba(5,8,7,.94) 100%)}
+.sq-ov{position:absolute;z-index:4}
+.sq-rating{left:10%;top:6.5%;font-family:var(--mono);font-weight:700;line-height:.78;text-shadow:0 2px 12px rgba(0,0,0,.95)}
+.sq-rating .n{display:block;color:var(--acc);font-size:35px}
+.sq-rating .l{letter-spacing:.16em;color:#dbe3ea;font-weight:600;font-size:9px;margin-top:3px}
+.sq-pos{right:10%;top:7%;font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:12px;color:#eef3f6;
+  border:1.5px solid var(--posbd);border-radius:7px;padding:2px 9px;background:rgba(10,16,20,.32)}
+.sq-ids{left:10%;top:28%;display:flex;flex-direction:column;gap:8px}
+.sq-ids .fl{font-size:20px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
+.sq-ids .cr{width:27px;height:27px;border-radius:6px;border:1px solid rgba(255,255,255,.16)}
+.sq-info{left:10%;right:10%;top:48%;z-index:4}
+.sq-name{font-family:var(--mono);font-weight:700;line-height:.9;color:var(--nm);text-shadow:0 2px 13px rgba(0,0,0,.95);font-size:27px}
+.sq-club{color:#d5dee6;text-shadow:0 1px 8px rgba(0,0,0,.9);font-size:13px;margin-top:6px;font-weight:600}
+.sq-dv{height:1px;background:color-mix(in srgb,var(--acc) 26%,transparent);margin:10px 0}
+.sq-price{display:flex;align-items:baseline;gap:12px}
+.sq-price .v{font-family:var(--mono);font-weight:700;color:var(--acc);text-shadow:0 2px 10px rgba(0,0,0,.95);font-size:22px}
+.sq-price .d{font-family:var(--mono);font-weight:600;color:var(--up);font-size:12px}
+.sq-price .d.down{color:var(--down)}.sq-price .d.flat{color:var(--dim)}
+.sq-plb{letter-spacing:.16em;text-transform:uppercase;color:#9fb0bd;font-size:8px;margin-top:3px;font-weight:600}
+.sq-stats{display:flex;margin-top:10px}
+.sq-stats>div{flex:1;text-align:center;position:relative}
+.sq-stats>div+div::before{content:"";position:absolute;left:0;top:2px;bottom:2px;width:1px;background:color-mix(in srgb,var(--acc) 30%,transparent)}
+.sq-stats .v{font-family:var(--mono);font-weight:700;font-size:18px;text-shadow:0 1px 7px rgba(0,0,0,.95)}
+.sq-stats .l{letter-spacing:.1em;text-transform:uppercase;color:#9fb0bd;font-size:7px;margin-top:1px}
+.sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center}
+.sqfull .sqbox{position:relative;width:340px;height:510px}
+.sqfull .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(1.1333)}
+.sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
+  border-radius:50%;background:#111b16;color:var(--ink);font-size:20px;cursor:pointer;z-index:2}
 </style>
 </head>
 <body>
@@ -189,6 +236,60 @@ function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0
 function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
 function clubName(cid){ return (S.clubs[cid]||{}).name||''; }
 function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
+// ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ──
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
+function monogram(n){ return (n||'?').split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase(); }
+function posCat(p){ return posShort[p]||p; }
+const FLAG={ESP:'🇪🇸',ENG:'🏴',GER:'🇩🇪',DEU:'🇩🇪',ITA:'🇮🇹',FRA:'🇫🇷',UKR:'🇺🇦',POR:'🇵🇹',NED:'🇳🇱',NLD:'🇳🇱',
+  BRA:'🇧🇷',ARG:'🇦🇷',BEL:'🇧🇪',CRO:'🇭🇷',URU:'🇺🇾',NOR:'🇳🇴',POL:'🇵🇱',SEN:'🇸🇳',MAR:'🇲🇦',EGY:'🇪🇬'};
+function flagEmoji(c){ if(!c) return ''; const u=String(c).toUpperCase();
+  if(FLAG[u]) return FLAG[u];
+  if(u.length===2) return u.replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt(0)));
+  return ''; }
+function vDelta(p){ const s=p.market_value_start||0,c=p.market_value_current||0;
+  if(!s) return {pct:0,dir:'flat'}; const d=(c-s)/s;
+  return {pct:d,dir:d>0.0005?'up':(d<-0.0005?'down':'flat')}; }
+function deltaPct(n){ return (n>0?'▲ +':n<0?'▼ ':'– ')+Math.abs(n).toFixed(0)+'%'; }
+function cardDelta(p,card){
+  const n=(card&&card.val_delta_tour_pct!=null)?card.val_delta_tour_pct:vDelta(p).pct*100;
+  return { txt:deltaPct(n), dir:n>0.05?'up':n<-0.05?'down':'flat' }; }
+function cardTier(p,card){ return (card&&card.tier)||p.tier||'emerald'; }  // тіри — крок «rare/steel/gold»
+function squadCardHTML(p, tier, card){
+  card=card||{}; const cl=(S.clubs[p.club_id]||{});
+  const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(p.photo_url)}" alt=""></div>`
+    : `<div class="sq-mono">${esc(monogram(p.name))}</div>`;
+  const g=card.goals??'—', a=card.assists??'—', m=p.appearances??'—';
+  const dl=cardDelta(p,card);
+  return `<div class="sqcard" data-tier="${tier}">
+    <img class="sq-frame" src="frames/${tier}.webp" alt="">
+    ${photo}<div class="sq-scrim"></div>
+    <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
+    <div class="sq-ov sq-pos">${posCat(p.position)}</div>
+    <div class="sq-ov sq-ids">${card.country?`<span class="fl">${flagEmoji(card.country)}</span>`:''}<span class="cr" style="background:${clubCol(p.club_id)}"></span></div>
+    <div class="sq-ov sq-info">
+      <div class="sq-name">${firstName(p.name)?esc(firstName(p.name))+'<br>':''}${esc(lastName(p.name))}</div>
+      <div class="sq-club">${esc(cl.name||'')}</div>
+      <div class="sq-dv"></div>
+      <div class="sq-price"><span class="v">${eur(p.market_value_current)}</span><span class="d ${dl.dir}">${dl.txt}</span></div>
+      <div class="sq-plb">Ціна</div><div class="sq-dv"></div>
+      <div class="sq-stats"><div><div class="v">${g}</div><div class="l">Голи</div></div>
+        <div><div class="v">${a}</div><div class="l">Асисти</div></div>
+        <div><div class="v">${m}</div><div class="l">Матчі</div></div></div>
+    </div></div>`;
+}
+function showFullCard(p, tier, card){
+  const el=document.createElement('div'); el.className='sqfull';
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button><div class="sqbox">${squadCardHTML(p,tier,card)}</div>`;
+  el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
+  document.body.appendChild(el);
+}
+async function openBoardCard(pid){
+  const p=S.pById[pid]; if(!p) return;
+  let card={};
+  try{ card=(await sbGet(`market_player_card?id=eq.${pid}&select=*`))[0]||{}; }catch(e){ card={}; }
+  showFullCard(p, cardTier(p,card), card);
+}
 
 async function boot(){
   try{
@@ -200,7 +301,7 @@ async function boot(){
     (await sbGet('market_clubs?select=id,name,league')).forEach(c=>S.clubs[c.id]=c);
     S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
     S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
-    S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating`);
+    S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances`);
     S.players.forEach(p=>S.pById[p.id]=p);
     // лайнап (RLS: чужий видно після дедлайну) + очки гравця за тур
     S.lineup=await sbGet(`market_lineup?round_id=in.(${rids.join(',')})&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice`);
@@ -347,19 +448,20 @@ function openSquad(pid){
       <div class="m"><span>Val Δ</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</b></div>
       <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
     </div>`+bodyHtml;
+  document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
   document.getElementById('ovl').classList.add('on');
 }
 function pcard(playerId,rid,cap,vice,benchOrder){
   const pl=S.pById[playerId]||{}; const base=S.ppr[playerId+'|'+rid];
   const val=benchOrder!=null? '—' : (base!=null? (cap?base*2:base) : '—');
   const tag=cap?'<span class="capB">К ×2</span>':(vice?'<span class="capB">В</span>':'');
-  return `<div class="pcard" style="--club:${clubCol(pl.club_id)}${benchOrder!=null?';opacity:.6':''}">
+  return `<div class="pcard" data-p="${playerId}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${benchOrder!=null?';opacity:.6':''}">
     <div><div class="nm">${lastName(pl.name)} ${tag}</div>
     <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${benchOrder!=null?' · лавка '+benchOrder:''}</div></div>
     <div class="rt"><div class="big tnum"${benchOrder!=null?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${benchOrder!=null?'':'оч. туру'}</div></div></div>`;
 }
 function ownCard(x){
-  return `<div class="pcard" style="--club:${clubCol(x.club_id)}">
+  return `<div class="pcard" data-p="${x.id}" title="Картка гравця" style="--club:${clubCol(x.club_id)}">
     <div><div class="nm">${lastName(x.name)}</div>
     <div class="meta">${posShort[x.position]||x.position||''} · ${clubName(x.club_id)}</div></div>
     <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div><div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;

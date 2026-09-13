@@ -273,6 +273,9 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pcard .rt .big{font-family:var(--mono);font-weight:700;font-size:19px}
 .pcard .rt .pr{font-size:11px;color:var(--text-dim);white-space:nowrap}
 .pcard .lctrl{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px}
+.pcard .ptap{cursor:pointer;border-radius:6px;margin:-2px -4px;padding:2px 4px;transition:color .12s}
+.pcard .ptap:hover .nm,.pcard .rt.tap:hover .big{color:var(--gold)}
+.pcard .rt.tap{cursor:pointer}
 .capB{font-family:var(--mono);font-weight:700;font-size:10px;background:var(--gold);color:#241c00;border-radius:4px;padding:0 5px}
 .viceB{font-family:var(--mono);font-weight:700;font-size:10px;background:#2a3f33;color:#bfe8d1;border-radius:4px;padding:0 5px}
 .valid{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
@@ -464,6 +467,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
+  listings:{}, listingsReady:false,
   f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -583,6 +587,13 @@ async function loadRefs(){
     S.exchanges = await sbSel(`market_exchanges?tournament_id=eq.${S.tour.id}&status=eq.pending&select=id,from_participant,to_participant,offered_player,wanted_player,cash_delta,awaiting_participant,status,created_at&order=created_at.desc`);
     S.exchangesReady=true;
   }catch(e){ S.exchanges=[]; S.exchangesReady=false; }
+  // вітрина ask (421; market_listings публічна). Поки 421 не залито → таблиці немає → degrade
+  S.listings={}; S.listingsReady=false;
+  try{
+    const ls = await sbSel(`market_listings?tournament_id=eq.${S.tour.id}&status=eq.active&select=player_id,seller_participant,ask_price`);
+    ls.forEach(l=>S.listings[l.player_id]=l);
+    S.listingsReady=true;
+  }catch(e){ S.listings={}; S.listingsReady=false; }
   // межі слайдерів (рейтинг/ціна) з реального пулу; значення фільтра ставимо лише раз
   const rs = S.players.map(p=>p.season_avg_rating).filter(v=>v!=null);
   S.rBounds = rs.length ? [Math.floor(Math.min(...rs)*10)/10, Math.ceil(Math.max(...rs)*10)/10] : [6,10];
@@ -769,11 +780,13 @@ function renderLineup(mine, round){
     const ordBadge = (zone==='bench') ? `<span class="benchord" title="${idx+1}-й на заміну">${idx+1}</span>` : '';
     return `<div class="pcard" style="--club:${col}">
       <div>
-        <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
-        <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span></div>
+        <div class="ptap" data-p="${p.id}" title="Детальна картка гравця">
+          <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
+          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span></div>
+        </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
-      <div class="rt"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div></div>
+      <div class="rt tap" data-p="${p.id}" title="Детальна картка гравця"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div></div>
     </div>`;
   };
 
@@ -829,6 +842,7 @@ function renderLineup(mine, round){
   });
   document.querySelectorAll('[data-benchup]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchup,-1); renderLineup(mine,round); });
   document.querySelectorAll('[data-benchdown]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchdown,1); renderLineup(mine,round); });
+  $('view').querySelectorAll('.pcard [data-p]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button')) return; openPlayerModal(el.dataset.p); });
   bindActions();  // кнопки «продати»
   const save=$('ln-save');
   if(save) save.onclick=()=>{ const s2=lnState(mine); if(s2.ok) openLineupReview(mine, round); };
@@ -1225,12 +1239,32 @@ function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
-    return `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати · ${eur(proceeds)} (−5%)</button></div>
+    let h=`<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
       <p class="mnote">Заморозка блокує продаж під час туру; гравця в лайнапі незіграного туру продати не можна.</p>`;
+    // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
+    if(S.listingsReady){
+      const lst=S.listings[p.id];
+      if(lst){
+        h+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
+          <div class="macts"><button class="ghost" data-do="unlist">Зняти з продажу</button></div>`;
+      } else {
+        const minAsk=Math.ceil(mv*(cfg.transfer_min_pct??0.75));
+        h+=`<p class="mnote">Вітрина: вистав свого за фіксованою ціною (≥${Math.round((cfg.transfer_min_pct??0.75)*100)}% вартості) — інший викупить миттєво, отримаєш суму повністю (0% комісії).</p>
+          ${amountUI('Виставити за ask',minAsk,'list',p.id)}`;
+      }
+    }
+    return h;
   }
   if(!free){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
     let h=`<p class="mnote">Власник: <b>${ownerNm}</b>. Угоди <b>публічні</b> — інші теж можуть запропонувати; він обере.</p>`;
+    // ВІТРИНА ask (421): власник виставив за фіксованою ціною → миттєвий викуп
+    if(S.listingsReady && S.listings[p.id]){
+      const lst=S.listings[p.id], blockL=acquireBlock(p);
+      h+=`<p class="mnote">🏷 <b>${ownerNm}</b> виставив на вітрину за <b>${eur(lst.ask_price)}</b> — миттєвий викуп (0% комісії).</p>`;
+      h+= blockL ? `<p class="mnote warn">Викуп ⛔ ${blockL}</p>`
+                 : `<div class="macts"><button data-do="buylist" data-amt="${lst.ask_price}">Викупити за ask · ${eur(lst.ask_price)}</button></div>`;
+    }
     // ТРАНСФЕР (гроші за гравця)
     if(S.transfersReady){
       const blockT=acquireBlock(p);
@@ -1408,6 +1442,10 @@ function bindModalActions(p){
       ()=>act('market_sell',{p_player:p.id},'Продано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buy'){ const amt=+b.dataset.amt; confirmModal(`Викупити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b>?`, 'Викупити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
+      ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='buylist'){ const amt=+b.dataset.amt; confirmModal(`Викупити <b>${esc(p.name)}</b> з вітрини за <b>${eur(amt)}</b> (миттєво, 0% комісії)?`, 'Викупити · '+eur(amt),
+      ()=>act('market_buy_listing',{p_player:p.id},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='xpropose'){
       const box=h.querySelector('.xbox'); if(!box||box.dataset.off==null){ alert('Обери гравця й перевір умови'); return; }
       const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0;
@@ -1421,6 +1459,7 @@ function bindModalActions(p){
       if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv},'Аукціон почато');
       else if(box.dataset.kind==='bid') await act('market_place_bid',{p_auction:box.dataset.ref,p_amount:eurv},'Ставку зроблено');
       else if(box.dataset.kind==='propose') await act('market_propose_transfer',{p_player:box.dataset.ref,p_amount:eurv},'Пропозицію надіслано');
+      else if(box.dataset.kind==='list') await act('market_list_player',{p_player:box.dataset.ref,p_ask:eurv},'Виставлено за '+eur(eurv));
     }
   });
   // наживо-валідація обміну (75% обом · ліміти обом · бюджет)
