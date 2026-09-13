@@ -235,6 +235,18 @@ table.t{width:100%;border-collapse:collapse}
 .ctr{font-size:11px;color:var(--text-dim);border:1px solid var(--line);border-radius:6px;padding:1px 6px;white-space:nowrap}
 .ctr.low{color:var(--red);border-color:var(--red);font-weight:700}
 .warnc{color:var(--red)}
+/* 📇 Колекція */
+.col-filters{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.col-filters input,.col-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.col-filters input{flex:1;min-width:160px}
+.col-grid{display:flex;flex-wrap:wrap;gap:14px}
+.colcard{width:150px;cursor:pointer}
+.colc-wrap{position:relative;width:150px;height:225px;overflow:hidden;border-radius:8px}
+.colc-wrap .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(.5)}  /* 150/300 */
+.colcard:hover .colc-wrap{outline:2px solid var(--accent)}
+.colc-own{margin-top:6px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
+  color:var(--text-dim);border:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.colc-own.mine{background:var(--green-soft);color:var(--up);border-color:var(--accent-d)}
 .mnote.warn{color:var(--down);font-weight:600}
 
 /* рядки трансферів */
@@ -493,7 +505,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 
 const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
-  listings:{}, listingsReady:false,
+  listings:{}, listingsReady:false, cards:{},
+  colF:{ q:'', pos:'', club:'', status:'all', sort:'rating' },
   f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -672,7 +685,7 @@ async function tok(){ const {data}=await sb.auth.getSession(); return data.sessi
 
 // ── ВКЛАДКИ (6, §F) ──
 function renderTabs(){
-  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['table','🏆','Таблиця'],['matches','⚽','Матчі'],['news','📰','News & Press']];
+  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['collection','📇','Колекція'],['table','🏆','Таблиця'],['matches','⚽','Матчі'],['news','📰','News & Press']];
   if(S.me && S.me.is_admin) tabs.push(['admin','⚙','Адмінка']);
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
@@ -696,6 +709,7 @@ async function go(tab){
   $('view').innerHTML='<div class="spin">завантаження…</div>';
   if(tab==='my')      return viewSquad();
   if(tab==='market')  return viewMarket();
+  if(tab==='collection') return viewCollection();
   if(tab==='table')   return viewTable();
   if(tab==='matches') return viewMatches();
   if(tab==='news')    return viewNews();
@@ -1597,6 +1611,56 @@ function bindModalActions(p){
     ['xOff','xDir','xAmt'].forEach(id=>{ const el=h.querySelector('#'+id); if(el){ el.onchange=xRefresh; el.oninput=xRefresh; } });
     xRefresh();
   }
+}
+
+// ── 📇 КОЛЕКЦІЯ — наскрізна сітка карток пулу (той самий компонент squadCardHTML, без дублю) ──
+async function viewCollection(){
+  // багаті поля картки (голи/асисти/країна) для всіх — один запит, graceful-degrade (потребує 422)
+  if(!Object.keys(S.cards).length){
+    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
+  }
+  const me=S.me.id, f=S.colF;
+  const clubs=[...new Set(S.players.map(p=>p.club_id))].map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
+  const card=(p)=>{
+    const oc = p.owner_participant_id===me?'mine':p.owner_participant_id?'other':'free';
+    const ot = oc==='mine'?'★ Твій':oc==='other'?esc(S.names[p.owner_participant_id]||'—'):'Вільний';
+    return `<div class="colcard" data-p="${p.id}" data-name="${esc((p.name||'').toLowerCase())}" data-pos="${p.position}" data-club="${p.club_id}" data-own="${oc}" data-rating="${p.season_avg_rating||0}" data-price="${p.market_value_current||0}">
+      <div class="colc-wrap">${squadCardHTML(p,'emerald',S.cards[p.id]||{})}</div>
+      <div class="colc-own ${oc}">${ot}</div></div>`;
+  };
+  $('view').innerHTML = `
+    <div class="head2"><h2>Колекція</h2><span class="sub" id="colSum"></span></div>
+    <div class="col-filters">
+      <input id="colQ" placeholder="Пошук по імені…" value="${esc(f.q)}">
+      <select id="colPos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>`<option value="${x}"${f.pos===x?' selected':''}>${posCat(x)}</option>`).join('')}</select>
+      <select id="colClub"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(([id,nm])=>`<option value="${id}"${f.club===String(id)?' selected':''}>${esc(nm)}</option>`).join('')}</select>
+      <select id="colStatus">${[['all','Статус: усі'],['mine','Мої'],['free','Вільні'],['other','Чужі']].map(([v,l])=>`<option value="${v}"${f.status===v?' selected':''}>${l}</option>`).join('')}</select>
+      <select id="colSort">${[['rating','За рейтингом'],['price','За ціною'],['name','За іменем']].map(([v,l])=>`<option value="${v}"${f.sort===v?' selected':''}>${l}</option>`).join('')}</select>
+    </div>
+    <div class="col-grid" id="colGrid">${S.players.map(card).join('')}</div>`;
+  const g=$('colGrid');
+  const apply=()=>{
+    const f=S.colF, q=(f.q||'').toLowerCase(); let vis=[];
+    g.querySelectorAll('.colcard').forEach(el=>{
+      let ok=true;
+      if(q && !el.dataset.name.includes(q)) ok=false;
+      if(f.pos && el.dataset.pos!==f.pos) ok=false;
+      if(f.club && el.dataset.club!==f.club) ok=false;
+      if(f.status!=='all' && el.dataset.own!==f.status) ok=false;
+      el.hidden=!ok; if(ok) vis.push(el);
+    });
+    vis.sort((a,b)=> f.sort==='price'? (b.dataset.price-a.dataset.price)
+      : f.sort==='name'? a.dataset.name.localeCompare(b.dataset.name)
+      : (b.dataset.rating-a.dataset.rating));
+    vis.forEach((el,i)=>el.style.order=i);
+    const total=S.players.length, mineN=S.players.filter(p=>p.owner_participant_id===me).length, freeN=S.players.filter(p=>!p.owner_participant_id).length;
+    const sum=$('colSum'); if(sum) sum.innerHTML=`усі картки пулу · ${total} · <b>${mineN}</b> твоїх · ${freeN} вільних · показано ${vis.length} · натисни картку для деталей`;
+  };
+  const bind=(id,key)=>{ const el=$(id); if(el) el.onchange=()=>{ S.colF[key]=el.value; apply(); }; };
+  const qi=$('colQ'); if(qi) qi.oninput=()=>{ S.colF.q=qi.value; apply(); };
+  bind('colPos','pos'); bind('colClub','club'); bind('colStatus','status'); bind('colSort','sort');
+  g.querySelectorAll('.colcard').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
+  apply();
 }
 
 // ── 🏆 ТАБЛИЦЯ = вбудована публічна борда (?embed ховає її шапку/бейдж).
