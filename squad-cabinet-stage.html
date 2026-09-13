@@ -232,6 +232,9 @@ table.t{width:100%;border-collapse:collapse}
 .pd.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}
 .pour-info{font-size:13px;color:var(--text-dim);margin-top:10px}
 .pour-info.bad{color:var(--red)}
+.ctr{font-size:11px;color:var(--text-dim);border:1px solid var(--line);border-radius:6px;padding:1px 6px;white-space:nowrap}
+.ctr.low{color:var(--red);border-color:var(--red);font-weight:700}
+.warnc{color:var(--red)}
 .mnote.warn{color:var(--down);font-weight:600}
 
 /* рядки трансферів */
@@ -581,7 +584,7 @@ async function loadRefs(){
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
-  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes&order=market_value_current.desc`);
+  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round&order=market_value_current.desc`);
   // активні аукціони (публічні)
   S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
@@ -839,7 +842,7 @@ function renderLineup(mine, round){
   </div>`;
 
   const row = (p, zone, idx) => {
-    const L=S.lineup[p.id], cl=clubName(p.club_id), col=clubCol(p.club_id), d=vDelta(p);
+    const L=S.lineup[p.id], cl=clubName(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
     let ctrl='';
     if(!round){ ctrl=''; }
     else if(zone==='start'){
@@ -863,7 +866,7 @@ function renderLineup(mine, round){
       <div>
         <div class="ptap" data-p="${p.id}" title="Детальна картка гравця">
           <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
-          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span></div>
+          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (перепідпис у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
@@ -1321,10 +1324,10 @@ function xRefresh(){
 function wageFor(mv,len){ const c=S.cfg||{};
   const pct=c.wage_pct??0.028, arr=c.wage_len_markup||[], mk=(arr[len-1]??0), floor=c.wage_floor_eur??800000;
   return Math.max(floor, Math.round((mv||0)*pct*(1+mk))); }
-function contractPicker(mv){
+function contractPicker(mv,freeAdd){
   const c=S.cfg||{}, max=c.max_contract_len??5, chips=[];
   for(let L=1;L<=max;L++) chips.push(`<button type="button" class="clen-chip${L===1?' on':''}" data-l="${L}">${L}</button>`);
-  return `<div class="clen" data-len="1" data-mv="${mv||0}">
+  return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="${freeAdd||0}">
     <div class="clab">Контракт (турів) — довше = дорожча зарплата, резерв утримується наперед</div>
     <div class="clen-row">${chips.join('')}</div>
     <div class="clen-info" id="clenInfo"></div></div>`;
@@ -1332,17 +1335,26 @@ function contractPicker(mv){
 function selectedLen(){ const el=$('mhost').querySelector('.clen'); return el?(+el.dataset.len||1):1; }
 function updClen(){
   const el=$('mhost').querySelector('.clen'); if(!el) return;
-  const mv=+el.dataset.mv||0, len=+el.dataset.len||1, w=wageFor(mv,len), res=w*len, wf=S.wageFree;
+  const mv=+el.dataset.mv||0, len=+el.dataset.len||1, w=wageFor(mv,len), res=w*len;
+  // при перепідписі старий резерв цього ж гравця вивільняється → додаємо назад (data-freeadd)
+  const wf=(S.wageFree!=null)?(S.wageFree+(+el.dataset.freeadd||0)):null;
   const info=el.querySelector('#clenInfo'); let bad=false;
   let txt=`${len} тур · ${eur(w)}/тур · резерв <b>${eur(res)}</b>`;
   if(wf!=null){ bad=res>wf; txt+=` · зарплатний вільно ${eur(wf)}${bad?' — не вистачає':''}`; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
 }
+// контракт owned-гравця: скільки турів лишилось, зарплата/тур, «добігає» (≤1)
+function contractInfo(p){ const rl=p.contract_rounds_left; return { rl, wage:p.wage_per_round, low:(rl!=null&&rl<=1) }; }
 function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
-    let h=`<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
+    const ci=contractInfo(p), oldReserve=(ci.rl!=null&&ci.wage)?ci.rl*ci.wage:0;
+    // КОНТРАКТ + ПЕРЕПІДПИС (415): нова довжина скидає лічильник, вивільняє старий резерв
+    let h=`<p class="mnote">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — перепідпиши, інакше після наступного туру автопродаж</b>':''}</p>
+      ${contractPicker(mv, oldReserve)}
+      <div class="macts"><button class="ghost" data-do="resign">Перепідписати (нова довжина)</button></div>`;
+    h+=`<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
       <p class="mnote">Заморозка блокує продаж під час туру; гравця в лайнапі незіграного туру продати не можна.</p>`;
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
     if(S.listingsReady){
@@ -1552,6 +1564,9 @@ function bindModalActions(p){
       ()=>act('market_buynow',{p_player:p.id,p_length:len},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='resign'){ const len=selectedLen();
+      confirmModal(`Перепідписати <b>${esc(p.name)}</b> на <b>${len} тур</b> (резерв ${eur(wageFor(p.market_value_current,len)*len)}, лічильник скинеться на ${len})?`, 'Перепідписати',
+      ()=>act('market_resign_contract',{p_player:p.id,p_length:len},'Контракт перепідписано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buylist'){ const amt=+b.dataset.amt, len=selectedLen();
       confirmModal(`Викупити <b>${esc(p.name)}</b> з вітрини за <b>${eur(amt)}</b> (миттєво, 0% комісії) · контракт <b>${len} тур</b>?`, 'Викупити · '+eur(amt),
       ()=>act('market_buy_listing',{p_player:p.id,p_length:len},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
