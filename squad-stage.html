@@ -14,9 +14,11 @@
   --line:#22362c; --ink:#e9f1ec; --muted:#8ba297; --dim:#5f7469;
   --accent:#18b47a; --accent-d:#0e6f4c; --gold:#e6c14b;
   --up:#26c281; --down:#e2585f; --frost:#7fbcff;
+  --text:#e9f1ec; --text-dim:#8ba297;   /* аліаси під ports із кабінету (pm-*) */
   --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
+.hide{display:none!important}
 body{margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
   background:
@@ -146,6 +148,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sq-rating .l{letter-spacing:.16em;color:#dbe3ea;font-weight:600;font-size:9px;margin-top:3px}
 .sq-pos{right:10%;top:7%;font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:12px;color:#eef3f6;
   border:1.5px solid var(--posbd);border-radius:7px;padding:2px 9px;background:rgba(10,16,20,.32)}
+.sq-inj{right:10%;top:16%;font-size:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
 .sq-ids{left:10%;top:28%;display:flex;flex-direction:column;gap:8px}
 .sq-ids .fl{font-size:20px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
 .sq-ids .cr{width:27px;height:27px;border-radius:6px;border:1px solid rgba(255,255,255,.16)}
@@ -169,6 +172,69 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sqfull .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(1.1333)}
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
   border-radius:50%;background:#111b16;color:var(--ink);font-size:20px;cursor:pointer;z-index:2}
+
+/* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт із кабінету — тримати в синхроні) ── */
+.modal-host{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{position:relative;background:var(--panel);border:1px solid var(--line);border-radius:16px;
+  max-width:540px;width:100%;max-height:90vh;overflow:auto;padding:22px}
+.modal .mx{position:absolute;top:12px;right:14px;color:var(--text-dim);background:none;border:0;
+  font-size:20px;cursor:pointer;padding:2px 6px;font-weight:400;z-index:3}
+.pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
+.pbadge.G{background:rgba(240,193,75,.14);color:#f0c14b;border-color:#5a4a1c}
+.pbadge.D{background:rgba(127,188,255,.12);color:#7fbcff;border-color:#274a63}
+.pbadge.M{background:rgba(24,180,122,.16);color:#8be3b0;border-color:#255a3e}
+.pbadge.F{background:rgba(255,157,122,.14);color:#ff9d7a;border-color:#5e3423}
+.crest{width:20px;height:20px;border-radius:5px;background:var(--club,#233);border:1px solid rgba(255,255,255,.14);flex:none}
+.modal.pmodal{max-width:880px;padding:0;overflow:hidden}
+.pm-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 46px 4px 22px}
+.pm-title{font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:.02em}
+.pm-state{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
+.pm-state i{width:8px;height:8px;border-radius:50%;background:var(--accent);flex:none}
+.pm-state b{font-family:var(--mono);font-weight:700;font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent)}
+.pm-state .hlp{color:var(--text-dim);font-size:10px}
+.pm-state.gold i{background:var(--gold)} .pm-state.gold b{color:var(--gold)}
+.pm-state.muted i{background:var(--text-dim)} .pm-state.muted b{color:var(--text-dim)}
+.pm-injury{margin:6px 22px 0;border:1px solid #8b3438;background:#3a2020;color:#f29b9f;border-radius:10px;
+  padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:7px}
+.pm-injury b{font-weight:600}.pm-injury .em{font-size:15px}
+.pm-body{display:grid;grid-template-columns:212px 1fr;gap:20px;padding:12px 22px}
+.pm-cardside{display:flex;flex-direction:column;gap:8px;align-items:center}
+.pm-cardside button.sqwrap{border:0;background:none;padding:0;cursor:pointer;display:block}
+.pm-showcard{border:1px solid #315041;background:#102019;color:#bfd0c6;border-radius:10px;height:36px;width:100%;
+  font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
+.pm-showcard:hover{border-color:var(--accent-d)}
+.pm-data{min-width:0}
+.pm-identity{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding-bottom:10px;border-bottom:1px solid var(--line)}
+.pm-identity h2{font-family:var(--mono);font-weight:700;font-size:27px;margin:0 0 7px;line-height:1}
+.pm-metarow{display:flex;align-items:center;gap:8px;color:var(--text-dim);font-size:11px;flex-wrap:wrap}
+.pm-metarow b{color:var(--text);font-weight:600}
+.pm-metarow .club{display:flex;align-items:center;gap:5px}
+.pm-metarow .crest{width:15px;height:15px;border-radius:4px}
+.pm-rating{text-align:right;flex:none}
+.pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
+.pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
+.pm-value{display:flex;gap:48px;padding:12px 0 6px}
+.pm-value .metric strong{font-family:var(--mono);font-weight:700;font-size:25px;display:block;line-height:1}
+.pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
+.pm-value .metric span{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:5px;display:block}
+.pm-perf{display:grid;grid-template-columns:1fr 176px;gap:16px;align-items:end;border-bottom:1px solid var(--line);padding-bottom:8px}
+.pm-seasons{display:grid;grid-template-columns:repeat(3,1fr)}
+.pm-seasons>div{text-align:center;border-left:1px solid var(--line)}
+.pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
+.pm-seasons span{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim)}
+.pm-inforow{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;padding-top:10px}
+.pm-box{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:8px 10px;min-height:50px}
+.pm-box>span{display:block;font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:5px}
+.pm-box strong{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;line-height:1.3}
+.pm-box .sdot{width:7px;height:7px;border-radius:50%;background:var(--up);flex:none}
+@media(max-width:720px){
+  .modal.pmodal{max-width:100%}
+  .pm-body{grid-template-columns:1fr}
+  .pm-cardside{max-width:220px;margin:0 auto}
+  .pm-perf{grid-template-columns:1fr} .pm-inforow{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -210,6 +276,8 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
     <button class="xbtn" onclick="closeM()">✕</button></div><div id="ovlB"></div></div>
 </div>
 
+<div id="mhost" class="modal-host hide"></div>
+
 <script>
 const SB_URL='https://wsdamzcezumjmgxmvakw.supabase.co';
 const SB_KEY='sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
@@ -230,7 +298,7 @@ const CLUB={
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
-const S={tour:null,rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null};
+const S={tour:null,rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{}};
 
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
@@ -239,6 +307,13 @@ function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
 // ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ──
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
+// недоступність (SofaScore): 🤕 травма / 🟥 дискваліфікація. null = здоровий
+function injIcon(p){
+  const j=p&&p.injury; if(!j) return '';
+  const susp=j.kind==='suspension';
+  const t=esc(j.note||j.expected_return||j.status||(susp?'дискваліфікований':'травмований'));
+  return `<div class="sq-ov sq-inj${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</div>`;
+}
 function monogram(n){ return (n||'?').split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase(); }
 function posCat(p){ return posShort[p]||p; }
 const FLAG={ESP:'🇪🇸',ENG:'🏴',GER:'🇩🇪',DEU:'🇩🇪',ITA:'🇮🇹',FRA:'🇫🇷',UKR:'🇺🇦',POR:'🇵🇹',NED:'🇳🇱',NLD:'🇳🇱',
@@ -265,7 +340,7 @@ function squadCardHTML(p, tier, card){
     <img class="sq-frame" src="frames/${tier}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
-    <div class="sq-ov sq-pos">${posCat(p.position)}</div>
+    <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}
     <div class="sq-ov sq-ids">${card.country?`<span class="fl">${flagEmoji(card.country)}</span>`:''}<span class="cr" style="background:${clubCol(p.club_id)}"></span></div>
     <div class="sq-ov sq-info">
       <div class="sq-name">${firstName(p.name)?esc(firstName(p.name))+'<br>':''}${esc(lastName(p.name))}</div>
@@ -284,11 +359,97 @@ function showFullCard(p, tier, card){
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
 }
+// ── модалка (порт із кабінету; на борді немає auth/дій → лише інформація) ──
+const $=id=>document.getElementById(id);
+function modalOpen(html){
+  const h=$('mhost');
+  h.innerHTML = `<div class="modal"><button class="mx" aria-label="закрити">✕</button>${html}</div>`;
+  h.classList.remove('hide');
+  h.onclick=(e)=>{ if(e.target===h) modalClose(); };
+  h.querySelector('.mx').onclick=modalClose;
+}
+function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
+function boardOwnerHist(card,p){
+  const h=(card&&card.owner_history)||[];
+  const cur = p.owner_participant_id ? (S.names[p.owner_participant_id]||card.owner_name||'—') : 'вільний';
+  if(!h.length){ return p.owner_participant_id? esc(cur) : 'вільний'; }
+  const chain=[]; h.forEach(x=>{ const nm=x.to||'вільний'; if(chain[chain.length-1]!==nm) chain.push(nm); });
+  chain.pop();
+  const prev = chain.length? chain.map(esc).join(' → ')+' → ' : '';
+  return prev+'зараз: <b>'+esc(cur)+'</b>';
+}
+function formSvg(arr){
+  const a=(arr||[]).filter(v=>v!=null); if(!a.length) return `<p style="margin:0;color:var(--muted);font-size:12px">Форма зʼявиться після зіграних турів.</p>`;
+  const W=340,H=76,pad=12, mn=Math.min(...a,6), mx=Math.max(...a,9);
+  const P=a.map((v,i)=>[pad+i*(W-2*pad)/Math.max(1,a.length-1), H-16-((v-mn)/Math.max(0.1,mx-mn))*(H-30)]);
+  const line=P.map(p=>p[0].toFixed(0)+' '+p[1].toFixed(0)).join(' L ');
+  const dots=P.map((p,i)=>`<text x="${p[0].toFixed(0)}" y="${(p[1]-9).toFixed(0)}" text-anchor="middle" fill="#b5c8bd" font-size="10" font-family="var(--mono)">${a[i]}</text><circle cx="${p[0].toFixed(0)}" cy="${p[1].toFixed(0)}" r="4" fill="#9ce1a8" stroke="#102019" stroke-width="2"/>`).join('');
+  return `<div><div style="color:var(--text-dim);font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Форма · рейтинги за 5 останніх матчів</div>
+    <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
+      <defs><linearGradient id="sqar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26c281" stop-opacity=".34"/><stop offset="1" stop-color="#26c281" stop-opacity="0"/></linearGradient></defs>
+      <path d="M ${line} L ${P[P.length-1][0].toFixed(0)} ${H} L ${P[0][0].toFixed(0)} ${H} Z" fill="url(#sqar)"/>
+      <path d="M ${line}" fill="none" stroke="#26c281" stroke-width="2"/>${dots}</svg></div>`;
+}
 async function openBoardCard(pid){
   const p=S.pById[pid]; if(!p) return;
+  const cl=(S.clubs[p.club_id]||{});
+  // багаті поля картки — якщо вьюха доступна (422); без неї — graceful degrade
   let card={};
   try{ card=(await sbGet(`market_player_card?id=eq.${pid}&select=*`))[0]||{}; }catch(e){ card={}; }
-  showFullCard(p, cardTier(p,card), card);
+  const tier=cardTier(p,card), dl=cardDelta(p,card);
+  // стан-лінія (на борді немає «мого» складу — лише «вільний / у складі NAME»)
+  const st = p.owner_participant_id
+    ? {tone:'muted',eb:'У СКЛАДІ: '+esc(S.names[p.owner_participant_id]||'—').toUpperCase(),hlp:'Гравець належить учаснику'}
+    : {tone:'',eb:'ВІЛЬНИЙ НА РИНКУ',hlp:'Гравець доступний для підписання'};
+  const meta=[
+    card.country?`<span class="fl">${flagEmoji(card.country)}</span><b>${esc(card.country)}</b>`:'',
+    card.age!=null?`<span>Вік ${card.age}</span>`:'',
+    card.shirt_number!=null?`<span>№${card.shirt_number}</span>`:'',
+    `<span class="club"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(cl.name||'')}</span>`,
+    `<span class="pbadge ${p.position}">${posCat(p.position)}</span>`
+  ].filter(Boolean).join('');
+  const form = (card.recent_ratings&&card.recent_ratings.length)
+    ? card.recent_ratings.slice(0,5).map(Number).reverse()
+    : (S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
+  const gk=p.position==='G' && (card.clean_sheets!=null||card.saves!=null);
+  const seasons = gk
+    ? [[card.clean_sheets??'—','Сухарі'],[card.saves??'—','Сейви'],[p.appearances??'—','Матчі']]
+    : [[card.goals??'—','Голи'],[card.assists??'—','Асисти'],[p.appearances??'—','Матчі']];
+  const inj = card.injury ? `<div class="pm-injury"><span class="em">🤕</span><b>Травмований</b><span>· ${esc(card.injury.note||card.injury.expected_return||card.injury.status||'')}</span></div>` : '';
+  const ownTxt = p.owner_participant_id ? ('у складі · '+esc(S.names[p.owner_participant_id]||'—')) : '🔒 Вільний';
+  const html = `
+    <header class="pm-head"><div>
+      <div class="pm-title">Детальна картка гравця</div>
+      <div class="pm-state ${st.tone}"><i></i><b>${st.eb}</b><span class="hlp">${st.hlp}</span></div>
+    </div></header>
+    ${inj}
+    <div class="pm-body">
+      <aside class="pm-cardside">
+        <button class="sqwrap" id="bmShowCard" aria-label="Показати картку">${squadCardHTML(p,tier,card)}</button>
+        <button class="pm-showcard" id="bmShowCard2">⤢ Показати картку</button>
+      </aside>
+      <section class="pm-data">
+        <div class="pm-identity">
+          <div><h2>${esc(p.name)}</h2><div class="pm-metarow">${meta}</div></div>
+          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг</span></div>
+        </div>
+        <div class="pm-value">
+          <div class="metric"><strong>${eur(p.market_value_current)}</strong><span>Вартість</span></div>
+          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong><span>Val Δ (тур)</span></div>
+        </div>
+        <div class="pm-perf">${formSvg(form)}
+          <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
+        </div>
+        <div class="pm-inforow">
+          <div class="pm-box"><span>Історія власників</span><strong>${boardOwnerHist(card,p)}</strong></div>
+          <div class="pm-box"><span>Статус</span><strong><span class="sdot"></span>${ownTxt}</strong></div>
+        </div>
+      </section>
+    </div>`;
+  modalOpen(html);
+  const md=$('mhost').querySelector('.modal'); if(md) md.classList.add('pmodal');
+  const openFull=()=>showFullCard(p,tier,card);
+  const b1=$('bmShowCard'), b2=$('bmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
 }
 
 async function boot(){
@@ -300,13 +461,15 @@ async function boot(){
 
     (await sbGet('market_clubs?select=id,name,league')).forEach(c=>S.clubs[c.id]=c);
     S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
+    S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
     S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
-    S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances`);
+    S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,injury`);
     S.players.forEach(p=>S.pById[p.id]=p);
     // лайнап (RLS: чужий видно після дедлайну) + очки гравця за тур
     S.lineup=await sbGet(`market_lineup?round_id=in.(${rids.join(',')})&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice`);
-    (await sbGet(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points`))
-      .forEach(r=>S.ppr[r.player_id+'|'+r.round_id]=r.points);
+    (await sbGet(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points,avg_rating&order=round_id.asc`))
+      .forEach(r=>{ S.ppr[r.player_id+'|'+r.round_id]=r.points;
+        (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating); });
 
     // поточний тур = останній ЗІГРАНИЙ (results_entered_at), інакше перший
     // (market_round_scores — view з рядком на КОЖЕН тур навіть при 0 очок,
