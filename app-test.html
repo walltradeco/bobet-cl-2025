@@ -2334,7 +2334,29 @@ function todo(){
   // (set_autopilot ставить 'assigned', щойно обрано кандидатів).
   const lastNum = S.gameweeks.reduce((mx, g) => Math.max(mx, g.number), 0);
   if (S.gw && lastNum > 0 && S.gw.number === lastNum) {
-    const unused = (S.stock || []).filter(u => u.status === 'in_stock').length;
+    // ⚠️ ГЛУХИЙ КУТ, якби рахували голий in_stock: буст, поставлений на
+    // матч цього вікенда, стає assigned ЛИШЕ під час підтвердження
+    // (save_prediction з p_boost_unit усередині reviewAndSave). До того
+    // він числиться in_stock. Тобто «сирий» in_stock-лічильник вимагав би
+    // того, що сам і блокує: на останньому вікенді з бустами кнопку не
+    // натиснути НІКОЛИ. Тому віднімаємо юніти, вже поставлені на матчі
+    // цього вікенда, — вони прикріпляться саме цим підтвердженням.
+    const inStock = (S.stock || []).filter(u => u.status === 'in_stock').length;
+    const { heldBy } = boostPool();
+    let willUse = 0;
+    for (const m of S.matches) {
+      const code = S.myPred[m.match_id]?.boost;
+      if (!code || code === 'autopilot') continue;
+      // Той самий буст уже прикріплений до цього матчу (assigned) — його
+      // немає в in_stock, нового вільного юніта він не забирає.
+      if (heldBy[m.match_id]?.boost_code === code) continue;
+      willUse++;
+    }
+    // Автопілот із 2 кандидатами теж заявиться при підтвердженні (1 юніт).
+    const apInStock = (S.stock || []).some(u =>
+      u.boost_code === 'autopilot' && u.status === 'in_stock');
+    if (apInStock && S.ap && (S.ap.picks || []).length === 2) willUse++;
+    const unused = Math.max(inStock - willUse, 0);
     if (unused) {
       gaps.push(`використати всі бусти (${unused} у запасі)`);
     }
