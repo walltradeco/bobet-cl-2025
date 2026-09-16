@@ -144,8 +144,14 @@ table.t{width:100%;border-collapse:collapse}
   padding:0;width:auto;max-width:none;-webkit-appearance:none}
 .mf select{cursor:pointer}
 .mf.search input{min-width:150px}
-.mf.range .rng{display:flex;flex-direction:column;gap:1px}
-.mf input[type=range]{width:90px;accent-color:var(--gold);cursor:pointer;height:14px}
+.mf.range .rng{position:relative;height:22px;width:128px}
+.mf.range .rng .track{position:absolute;top:9px;left:0;right:0;height:4px;border-radius:3px;background:var(--line)}
+.mf.range .rng .fill{position:absolute;top:9px;height:4px;border-radius:3px;background:var(--gold)}
+.mf.range input[type=range]{position:absolute;top:0;left:0;width:100%;height:22px;margin:0;background:none;pointer-events:none;-webkit-appearance:none;appearance:none}
+.mf.range input[type=range]::-webkit-slider-runnable-track{height:4px;background:none;border:none}
+.mf.range input[type=range]::-moz-range-track{height:4px;background:none;border:none}
+.mf.range input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;pointer-events:auto;width:15px;height:15px;margin-top:-5.5px;border-radius:50%;background:var(--gold);border:2px solid var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.5);cursor:pointer}
+.mf.range input[type=range]::-moz-range-thumb{pointer-events:auto;width:15px;height:15px;border-radius:50%;background:var(--gold);border:2px solid var(--panel);cursor:pointer}
 .mf .rv{color:var(--text);font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
 .msort{margin-left:auto;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-dim);
   display:flex;align-items:center;gap:7px;font-weight:700}
@@ -165,6 +171,7 @@ table.t{width:100%;border-collapse:collapse}
 .pbadge.D{background:rgba(127,188,255,.12);color:#7fbcff;border-color:#274a63}
 .pbadge.M{background:rgba(24,180,122,.16);color:#8be3b0;border-color:#255a3e}
 .pbadge.F{background:rgba(255,157,122,.14);color:#ff9d7a;border-color:#5e3423}
+.injb{font-size:12px;line-height:1;cursor:help;vertical-align:middle}
 .vdelta{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums}
 .vdelta.up{color:var(--up)} .vdelta.down{color:var(--down)} .vdelta.flat{color:var(--text-dim)}
 .mav{width:76px;height:76px;border-radius:50%;margin:0 auto 8px;background:var(--panel2);
@@ -327,6 +334,8 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .chk{font-size:12px;color:var(--text-dim);border:1px solid var(--line);border-radius:20px;padding:3px 10px;
   display:flex;gap:5px;align-items:center;background:var(--panel2)}
 .chk.ok{color:var(--up);border-color:#1f4d38}.chk.no{color:var(--down);border-color:#4d2427}
+.injwarn{margin:2px 0 12px;padding:9px 12px;border:1px solid #7a5320;background:rgba(240,180,75,.09);border-radius:10px;font-size:12.5px;line-height:1.5;color:#e8c98a}
+.injwarn b{color:#f4d9a0;font-weight:600}
 .btn{font-family:var(--mono);font-weight:700;letter-spacing:.03em;border-radius:9px;padding:11px 18px;
   border:1px solid var(--accent-d);background:var(--accent);color:#06120c;cursor:pointer;font-size:14.5px}
 .btn:disabled{background:var(--panel2);color:var(--dim);border-color:var(--line);cursor:not-allowed}
@@ -437,6 +446,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .sq-rating .l{letter-spacing:.16em;color:#dbe3ea;font-weight:600;font-size:9px;margin-top:3px}
 .sq-pos{right:10%;top:7%;font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:12px;color:#eef3f6;
   border:1.5px solid var(--posbd);border-radius:7px;padding:2px 9px;background:rgba(10,16,20,.32)}
+.sq-inj{right:10%;top:16%;font-size:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
 .sq-ids{left:10%;top:28%;display:flex;flex-direction:column;gap:8px}
 .sq-ids .fl{font-size:20px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
 .sq-ids .cr{width:27px;height:27px;border-radius:6px;border:1px solid rgba(255,255,255,.16)}
@@ -604,7 +614,7 @@ async function loadRefs(){
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
-  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round&order=market_value_current.desc`);
+  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round,injury&order=market_value_current.desc`);
   // активні аукціони (публічні)
   S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
@@ -861,6 +871,8 @@ function renderLineup(mine, round){
     ${chip(!!s.vice || s.st.length<2, s.vice?`Віце: ${lastName(s.vice.name)}`:'Віце не обраний')}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
   </div>`;
+  const injStart = s.st.filter(p=>p&&p.injury);
+  const injWarn = injStart.length ? `<div class="injwarn">🤕 У старті ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
 
   const row = (p, zone, idx) => {
     const L=S.lineup[p.id], cl=clubName(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
@@ -887,7 +899,7 @@ function renderLineup(mine, round){
       <div>
         <div class="ptap" data-p="${p.id}" title="Детальна картка гравця">
           <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
-          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (перепідпис у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
+          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (перепідпис у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
@@ -911,6 +923,7 @@ function renderLineup(mine, round){
          <div class="slot-h"><span>Стартова ${s.min5}</span><span>рейтинг · ціна</span></div>
          <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>'}</div>
          ${val}
+         ${injWarn}
          <button class="btn" id="ln-save" ${(!round||!s.ok)?'disabled':''} style="width:100%">Підтвердити склад${round?' на Тур '+round.number:''}</button>
          ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
          <p class="dim" style="margin-top:8px">Капітан і Віце — обидва обов'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).</p>
@@ -1039,7 +1052,7 @@ function acquireBlock(p){
 function mtile(p){
   const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
   return `<div class="mtile ${o.cls==='mine'?'mine':''}" data-p="${p.id}">
-    <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>
+    <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}
       <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
     ${avatar(p,76)}
     <div class="mnm">${esc(p.name)}</div>
@@ -1085,10 +1098,12 @@ function filterBar(){
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
     <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
+      <span class="track"></span><span class="fill" id="fill-r"></span>
       <input type="range" id="f-rmin" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMin}">
       <input type="range" id="f-rmax" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMax}"></div>
       <span class="rv" id="rv-r">${(+f.rMin).toFixed(1)}–${(+f.rMax).toFixed(1)}</span></div>
     <div class="mf range"><label>Ціна</label><div class="rng">
+      <span class="track"></span><span class="fill" id="fill-p"></span>
       <input type="range" id="f-pmin" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMin}">
       <input type="range" id="f-pmax" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMax}"></div>
       <span class="rv" id="rv-p">${eur(f.pMin)}–${eur(f.pMax)}</span></div>
@@ -1109,12 +1124,14 @@ function bindFilters(){
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
   bind('f-pos',v=>S.f.pos=v); bind('f-sort',v=>S.f.sort=v);
+  const paint=(el,inp,a,b)=>{ if(!el||!inp) return; const lo=+inp.min,hi=+inp.max,pc=v=>hi>lo?((v-lo)/(hi-lo))*100:0; el.style.left=pc(a)+'%'; el.style.width=Math.max(0,pc(b)-pc(a))+'%'; };
   const rmin=$('f-rmin'), rmax=$('f-rmax');
-  const syncR=()=>{ let a=+rmin.value,b=+rmax.value; if(a>b){[a,b]=[b,a];} S.f.rMin=a;S.f.rMax=b; $('rv-r').textContent=a.toFixed(1)+'–'+b.toFixed(1); renderGrid(); };
+  const syncR=()=>{ let a=+rmin.value,b=+rmax.value; if(a>b){[a,b]=[b,a];} S.f.rMin=a;S.f.rMax=b; $('rv-r').textContent=a.toFixed(1)+'–'+b.toFixed(1); paint($('fill-r'),rmin,a,b); renderGrid(); };
   if(rmin) rmin.oninput=syncR; if(rmax) rmax.oninput=syncR;
   const pmin=$('f-pmin'), pmax=$('f-pmax');
-  const syncP=()=>{ let a=+pmin.value,b=+pmax.value; if(a>b){[a,b]=[b,a];} S.f.pMin=a;S.f.pMax=b; $('rv-p').textContent=eur(a)+'–'+eur(b); renderGrid(); };
+  const syncP=()=>{ let a=+pmin.value,b=+pmax.value; if(a>b){[a,b]=[b,a];} S.f.pMin=a;S.f.pMax=b; $('rv-p').textContent=eur(a)+'–'+eur(b); paint($('fill-p'),pmin,a,b); renderGrid(); };
   if(pmin) pmin.oninput=syncP; if(pmax) pmax.oninput=syncP;
+  paint($('fill-r'),rmin,+S.f.rMin,+S.f.rMax); paint($('fill-p'),pmin,+S.f.pMin,+S.f.pMax);
 }
 
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
@@ -1399,6 +1416,20 @@ function wireClen(host){
 }
 // контракт owned-гравця: скільки турів лишилось, зарплата/тур, «добігає» (≤1)
 function contractInfo(p){ const rl=p.contract_rounds_left; return { rl, wage:p.wage_per_round, low:(rl!=null&&rl<=1) }; }
+// недоступність гравця (SofaScore): 🤕 травма / 🟥 дискваліфікація. null = здоровий
+function injuryBadge(p){
+  const j=p&&p.injury; if(!j) return '';
+  const susp = j.kind==='suspension';
+  const t = esc(j.note||j.expected_return||j.status||(susp?'дискваліфікований':'травмований'));
+  return `<span class="injb${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</span>`;
+}
+// overlay-варіант для великої картки (squadCardHTML)
+function injIcon(p){
+  const j=p&&p.injury; if(!j) return '';
+  const susp=j.kind==='suspension';
+  const t=esc(j.note||j.expected_return||j.status||(susp?'дискваліфікований':'травмований'));
+  return `<div class="sq-ov sq-inj${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</div>`;
+}
 function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
@@ -1516,7 +1547,7 @@ function squadCardHTML(p, tier, card){
     <img class="sq-frame" src="frames/${tier}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
-    <div class="sq-ov sq-pos">${posCat(p.position)}</div>
+    <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}
     <div class="sq-ov sq-ids">${card.country?`<span class="fl">${flagEmoji(card.country)}</span>`:''}<span class="cr" style="background:${clubCol(p.club_id)}"></span></div>
     <div class="sq-ov sq-info">
       <div class="sq-name">${firstName(p.name)?esc(firstName(p.name))+'<br>':''}${esc(lastName(p.name))}</div>
