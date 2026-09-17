@@ -133,6 +133,9 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
   --acc:#63f2ad;--nm:#fff;--posbd:#3ddd8b;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
 .sqcard[data-tier=steel]{--acc:#dfe6ee;--posbd:#c9d3db}
 .sqcard[data-tier=gold]{--acc:#f4d270;--posbd:#e6c25f}
+.sqcard[data-tier=emerald]{--acc:#63f2ad;--posbd:#3ddd8b}
+.sqcard.sqart{overflow:hidden;border-radius:16px}
+.sqart .sq-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
 .sq-frame{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
 .sq-photo{position:absolute;left:13%;top:4%;width:74%;z-index:2}
 .sq-photo img{width:100%;display:block;
@@ -329,15 +332,24 @@ function deltaPct(n){ return (n>0?'▲ +':n<0?'▼ ':'– ')+Math.abs(n).toFixed
 function cardDelta(p,card){
   const n=(card&&card.val_delta_tour_pct!=null)?card.val_delta_tour_pct:vDelta(p).pct*100;
   return { txt:deltaPct(n), dir:n>0.05?'up':n<-0.05?'down':'flat' }; }
-function cardTier(p,card){ return (card&&card.tier)||p.tier||'emerald'; }  // тіри — крок «rare/steel/gold»
+// файл рамки: модель зве базову рамку 'silver', а webp — 'steel' (та сама срібна)
+const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};
+const frameFile=(t)=>FRAME_FILE[t]||t;
+function cardTier(p,card){ return (card&&card.current_tier)||'silver'; }  // ЕФЕКТИВНИЙ дизайн (431)
 function squadCardHTML(p, tier, card){
-  card=card||{}; const cl=(S.clubs[p.club_id]||{});
+  card=card||{};
+  // rare/mega-арт — готовий PNG (current_card_png із market_player_card 431); база — рамка+фото
+  if(card.current_card_png){
+    return `<div class="sqcard sqart" data-tier="${esc(tier)}">
+      <img class="sq-art" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">${injIcon(p)}</div>`;
+  }
+  const cl=(S.clubs[p.club_id]||{}), ff=frameFile(tier);
   const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(p.photo_url)}" alt=""></div>`
     : `<div class="sq-mono">${esc(monogram(p.name))}</div>`;
   const g=card.goals??'—', a=card.assists??'—', m=p.appearances??'—';
   const dl=cardDelta(p,card);
-  return `<div class="sqcard" data-tier="${tier}">
-    <img class="sq-frame" src="frames/${tier}.webp" alt="">
+  return `<div class="sqcard" data-tier="${ff}">
+    <img class="sq-frame" src="frames/${ff}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
     <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}

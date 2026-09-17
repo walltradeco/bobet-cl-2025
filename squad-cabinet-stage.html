@@ -412,6 +412,15 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-box>span{display:block;font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:5px}
 .pm-box strong{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;line-height:1.3}
 .pm-box .sdot{width:7px;height:7px;border-radius:50%;background:var(--up);flex:none}
+.pm-design{grid-column:1/-1}
+.pm-design .dchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.dchip{border:1px solid var(--line);background:var(--panel2);color:var(--text-dim);border-radius:8px;
+  padding:5px 10px;font-size:11px;font-weight:600;cursor:pointer;transition:.12s}
+.dchip:hover{border-color:var(--accent-d);color:var(--text)}
+.dchip.on{border-color:var(--accent);background:rgba(38,194,129,.14);color:var(--text)}
+.dchip.rare{border-color:#caa24a;color:#e8cf86}
+.dchip.rare.on{background:rgba(202,162,74,.18);border-color:#e6c14b;color:#f4e2a8}
+.dnote{margin-top:6px;font-size:10px;color:var(--text-dim);line-height:1.35}
 .pm-box .roleI{width:17px;height:17px;border:1px solid var(--gold);color:var(--gold);border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:9px;flex:none}
 .pm-box .roleI.v{border-color:var(--text-dim);color:var(--text-dim)}
@@ -431,6 +440,9 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
   --acc:#63f2ad;--nm:#fff;--posbd:#3ddd8b;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
 .sqcard[data-tier=steel]{--acc:#dfe6ee;--posbd:#c9d3db}
 .sqcard[data-tier=gold]{--acc:#f4d270;--posbd:#e6c25f}
+.sqcard[data-tier=emerald]{--acc:#63f2ad;--posbd:#3ddd8b}
+.sqcard.sqart{overflow:hidden;border-radius:16px}
+.sqart .sq-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
 .sq-frame{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
 .sq-photo{position:absolute;left:13%;top:4%;width:74%;z-index:2}
 .sq-photo img{width:100%;display:block;
@@ -595,6 +607,7 @@ async function boot(){
   }
   S.me = me[0];
   S.me.id = S.me.participant_id;   // ⚠️ me() віддає колонку participant_id; увесь код кабінету чекає .id
+  S.myProfile = session.user.id;   // = profiles.id (auth.uid) — для карток/рамок (акаунт-рівень, крос-ліга)
 
   $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
   $('my-name').textContent = S.me.display_name;
@@ -614,7 +627,15 @@ async function loadRefs(){
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
-  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round,injury&order=market_value_current.desc`);
+  S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round,injury,sofascore_player_id&order=market_value_current.desc`);
+  // тіри (431): мої розблоковані рамки (emerald) + мої картки-предмети (для перемикача дизайну).
+  // graceful-degrade — якщо 430/431 ще не залито, картка лишається базовою.
+  S.myEmerald=false; S.myCards=[];
+  try{
+    const fe = await sbSel(`frame_entitlements?profile_id=eq.${S.myProfile}&frame=eq.emerald&select=frame`);
+    S.myEmerald = fe.length>0;
+    S.myCards = await sbSel(`card_items?owner_profile_id=eq.${S.myProfile}&select=id,card_key,tier,kind,png_path,eligible_sofa_ids`);
+  }catch(e){ S.myEmerald=false; S.myCards=[]; }
   // активні аукціони (публічні)
   S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
@@ -1536,15 +1557,24 @@ function formSvg(arr){
       <path d="M ${line} L ${P[P.length-1][0].toFixed(0)} ${H} L ${P[0][0].toFixed(0)} ${H} Z" fill="url(#sqar)"/>
       <path d="M ${line}" fill="none" stroke="#26c281" stroke-width="2"/>${dots}</svg></div>`;
 }
-// мінікартка/повна: рамка(webp) + фото/монограма + дані overlay
+// файл рамки: модель зве базову рамку 'silver', а webp — 'steel' (та сама срібна)
+const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};
+const frameFile=(t)=>FRAME_FILE[t]||t;
+// мінікартка/повна: rare/mega = готовий арт-PNG; база = рамка(webp)+фото+дані overlay
 function squadCardHTML(p, tier, card){
-  card=card||{}; const cl=(S.clubs[p.club_id]||{});
+  card=card||{};
+  // rare/mega-арт — готовий PNG (не збірка рамки). current_card_png із market_player_card (431)
+  if(card.current_card_png){
+    return `<div class="sqcard sqart" data-tier="${esc(tier)}">
+      <img class="sq-art" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">${injIcon(p)}</div>`;
+  }
+  const cl=(S.clubs[p.club_id]||{}), ff=frameFile(tier);
   const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(p.photo_url)}" alt=""></div>`
     : `<div class="sq-mono">${esc(monogram(p.name))}</div>`;
   const g=card.goals??'—', a=card.assists??'—', m=p.appearances??'—';
   const dl=cardDelta(p,card);
-  return `<div class="sqcard" data-tier="${tier}">
-    <img class="sq-frame" src="frames/${tier}.webp" alt="">
+  return `<div class="sqcard" data-tier="${ff}">
+    <img class="sq-frame" src="frames/${ff}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
     <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}
@@ -1567,6 +1597,27 @@ function showFullCard(p, tier, card){
   document.body.appendChild(el);
 }
 
+// перемикач дизайну (owned): рамки (silver/gold/emerald-розблокована) + мої solo-картки для гравця.
+// team-карта — авто (не в переліку), лише підказка. Вибір → set_card_design → reopen.
+function designSwitcher(p, card){
+  const curKey = card.current_card_key || null;
+  const curFrame = curKey ? null : (card.current_tier||'silver');
+  const frames=[['silver','Срібна'],['gold','Золота']];
+  if(S.myEmerald) frames.push(['emerald','Смарагдова']);
+  const myCards=(S.myCards||[]).filter(c=>c.kind==='solo' && p.sofascore_player_id!=null
+                && (c.eligible_sofa_ids||[]).includes(p.sofascore_player_id));
+  let chips=frames.map(([f,lbl])=>`<button class="dchip${curFrame===f?' on':''}" data-dframe="${f}">${lbl}</button>`).join('');
+  chips+=myCards.map(c=>`<button class="dchip rare${curKey===c.card_key?' on':''}" data-dcard="${c.id}">${c.tier==='mega_rare'?'MR ':''}★ ${esc(c.card_key.replace(/_/g,' '))}</button>`).join('');
+  const teamActive = curKey && !myCards.some(c=>c.card_key===curKey);
+  const note = teamActive ? '<div class="dnote">🏆 Активна командна карта — діє автоматично на всіх зображених. Обери рамку, щоб перекрити.</div>' : '';
+  return `<div class="pm-box pm-design"><span>Дизайн картки</span><div class="dchips">${chips}</div>${note}</div>`;
+}
+async function setDesign(pid, args){
+  try{ const {error}=await sb.rpc('set_card_design', args); if(error) throw error; }
+  catch(e){ alert('Дизайн: '+(e.message||e)); return; }
+  await openPlayerModal(pid);   // reopen з новим ефективним дизайном
+}
+
 async function openPlayerModal(pid){
   const p=S.players.find(x=>x.id===pid); if(!p) return;
   const cl=(S.clubs[p.club_id]||{}), o=ownerInfo(p);
@@ -1575,7 +1626,7 @@ async function openPlayerModal(pid){
   // багаті поля картки (вік/країна/№/голи/асисти/травма/історія) — якщо вьюха доступна
   let card={};
   try{ card=(await sbSel(`market_player_card?id=eq.${pid}&select=*`))[0]||{}; }catch(e){ card={}; }
-  const tier='emerald';   // дефолтний тір (базовий, усім); Rare/призначення тіру — окремо
+  const tier=card.current_tier||'silver';   // ЕФЕКТИВНИЙ дизайн (431): рамка/rare/mega/auto-team
   // стан-лінія
   let st;
   if(ctx.owned) st={tone:'gold',eb:'У ТВОЄМУ СКЛАДІ',hlp:'Активний гравець твоєї команди'};
@@ -1628,6 +1679,7 @@ async function openPlayerModal(pid){
           <div class="pm-box"><span>Історія власників</span><strong>${ownerHist(card,p)}</strong></div>
           <div class="pm-box"><span>Статус</span><strong><span class="sdot"></span>${o.txt}</strong></div>
           ${roleBox}
+          ${ctx.owned?designSwitcher(p,card):''}
         </div>
       </section>
     </div>
@@ -1671,6 +1723,9 @@ function bindModalActions(p){
       else if(box.dataset.kind==='list') await act('market_list_player',{p_player:box.dataset.ref,p_ask:eurv},'Виставлено за '+eur(eurv));
     }
   });
+  // перемикач дизайну (431): рамка або solo-картка → set_card_design → reopen
+  h.querySelectorAll('[data-dframe]').forEach(b=>b.onclick=()=>setDesign(p.id,{p_player:p.id,p_frame:b.dataset.dframe}));
+  h.querySelectorAll('[data-dcard]').forEach(b=>b.onclick=()=>setDesign(p.id,{p_player:p.id,p_card_item:b.dataset.dcard}));
   wireClen(h);   // пікери довжини контракту (Ф2) — усі в модалці
   // наживо-валідація обміну (75% обом · ліміти обом · бюджет)
   if(h.querySelector('.xbox')){
@@ -1683,7 +1738,7 @@ function bindModalActions(p){
 async function viewCollection(){
   // багаті поля картки (голи/асисти/країна) для всіх — один запит, graceful-degrade (потребує 422)
   if(!Object.keys(S.cards).length){
-    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
+    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
   }
   const me=S.me.id, f=S.colF;
   const clubs=[...new Set(S.players.map(p=>p.club_id))].map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
@@ -1691,7 +1746,7 @@ async function viewCollection(){
     const oc = p.owner_participant_id===me?'mine':p.owner_participant_id?'other':'free';
     const ot = oc==='mine'?'★ Твій':oc==='other'?esc(S.names[p.owner_participant_id]||'—'):'Вільний';
     return `<div class="colcard" data-p="${p.id}" data-name="${esc((p.name||'').toLowerCase())}" data-pos="${p.position}" data-club="${p.club_id}" data-own="${oc}" data-rating="${p.season_avg_rating||0}" data-price="${p.market_value_current||0}">
-      <div class="colc-wrap">${squadCardHTML(p,'emerald',S.cards[p.id]||{})}</div>
+      <div class="colc-wrap">${squadCardHTML(p,(S.cards[p.id]||{}).current_tier||'silver',S.cards[p.id]||{})}</div>
       <div class="colc-own ${oc}">${ot}</div></div>`;
   };
   $('view').innerHTML = `
