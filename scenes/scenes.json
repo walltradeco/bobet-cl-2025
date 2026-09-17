@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "decision": "no_boxes",
+  "scene_role": "static_environment_only",
+  "card_layer": "runtime_external",
+  "scenes": {
+    "steel": {
+      "name": "Steel Vault",
+      "usage": [
+        "steel"
+      ],
+      "mode": "flat_no_box",
+      "layers": {
+        "flat": "scenes/steel.webp"
+      },
+      "canvas": [
+        2560,
+        1600
+      ],
+      "bleed_percent": 12,
+      "light_dir": "top-left",
+      "dominant": [
+        "#07090b",
+        "#1a2026",
+        "#d9e5ee"
+      ],
+      "safe_zone": [
+        0.22,
+        0.1,
+        0.78,
+        0.86
+      ],
+      "card_contract": {
+        "source": "external_transparent_png",
+        "aspect_ratio": "2:3",
+        "height_vh": 0.72,
+        "anchor": "center_podium",
+        "tilt_max_deg": 15,
+        "idle_drift_deg": 3,
+        "background_parallax": 0.04
+      },
+      "asset": {
+        "bytes": 161848,
+        "webp_quality": 82
+      }
+    },
+    "gold": {
+      "name": "Gold Vault",
+      "usage": [
+        "gold"
+      ],
+      "mode": "flat_no_box",
+      "layers": {
+        "flat": "scenes/gold.webp"
+      },
+      "canvas": [
+        2560,
+        1600
+      ],
+      "bleed_percent": 12,
+      "light_dir": "top-left",
+      "dominant": [
+        "#0b0907",
+        "#2b1b0c",
+        "#d69d42"
+      ],
+      "safe_zone": [
+        0.22,
+        0.1,
+        0.78,
+        0.86
+      ],
+      "card_contract": {
+        "source": "external_transparent_png",
+        "aspect_ratio": "2:3",
+        "height_vh": 0.72,
+        "anchor": "center_podium",
+        "tilt_max_deg": 15,
+        "idle_drift_deg": 3,
+        "background_parallax": 0.04
+      },
+      "asset": {
+        "bytes": 231910,
+        "webp_quality": 82
+      }
+    },
+    "emerald": {
+      "name": "Emerald Vault",
+      "usage": [
+        "emerald"
+      ],
+      "mode": "flat_no_box",
+      "layers": {
+        "flat": "scenes/emerald.webp"
+      },
+      "canvas": [
+        2560,
+        1600
+      ],
+      "bleed_percent": 12,
+      "light_dir": "top-left",
+      "dominant": [
+        "#03120c",
+        "#063b24",
+        "#42d78a"
+      ],
+      "safe_zone": [
+        0.22,
+        0.1,
+        0.78,
+        0.86
+      ],
+      "card_contract": {
+        "source": "external_transparent_png",
+        "aspect_ratio": "2:3",
+        "height_vh": 0.72,
+        "anchor": "center_podium",
+        "tilt_max_deg": 15,
+        "idle_drift_deg": 3,
+        "background_parallax": 0.04
+      },
+      "asset": {
+        "bytes": 229730,
+        "webp_quality": 82
+      }
+    },
+    "rare": {
+      "name": "Pearl Rare Gallery",
+      "usage": [
+        "rare"
+      ],
+      "mode": "flat_no_box",
+      "layers": {
+        "flat": "scenes/rare.webp"
+      },
+      "canvas": [
+        2560,
+        1600
+      ],
+      "bleed_percent": 12,
+      "light_dir": "top-left",
+      "dominant": [
+        "#f0ece5",
+        "#8d8b89",
+        "#353637"
+      ],
+      "safe_zone": [
+        0.22,
+        0.1,
+        0.78,
+        0.86
+      ],
+      "card_contract": {
+        "source": "external_transparent_png",
+        "aspect_ratio": "2:3",
+        "height_vh": 0.72,
+        "anchor": "center_podium",
+        "tilt_max_deg": 15,
+        "idle_drift_deg": 3,
+        "background_parallax": 0.04
+      },
+      "asset": {
+        "bytes": 122560,
+        "webp_quality": 82
+      }
+    },
+    "mega_rare": {
+      "name": "White Eclipse Vault",
+      "usage": [
+        "mega_rare"
+      ],
+      "mode": "flat_no_box",
+      "layers": {
+        "flat": "scenes/mega_rare.webp"
+      },
+      "canvas": [
+        2560,
+        1600
+      ],
+      "bleed_percent": 12,
+      "light_dir": "top-left+corona",
+      "dominant": [
+        "#eeeae3",
+        "#242525",
+        "#fffaf0"
+      ],
+      "safe_zone": [
+        0.22,
+        0.1,
+        0.78,
+        0.86
+      ],
+      "card_contract": {
+        "source": "external_transparent_png",
+        "aspect_ratio": "2:3",
+        "height_vh": 0.72,
+        "anchor": "center_podium",
+        "tilt_max_deg": 15,
+        "idle_drift_deg": 3,
+        "background_parallax": 0.04
+      },
+      "asset": {
+        "bytes": 182386,
+        "webp_quality": 82
+      }
+    }
+  }
+}

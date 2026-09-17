@@ -478,10 +478,32 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 /* повнорозмірний overlay картки */
 .sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);backdrop-filter:blur(10px);
   display:flex;align-items:center;justify-content:center}
-.sqfull .sqbox{position:relative;width:340px;height:510px}
-.sqfull .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(1.1333)} /* 340/300 */
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
-  border-radius:50%;background:#111b16;color:var(--text);font-size:20px;cursor:pointer;z-index:2}
+  border-radius:50%;background:#111b16;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
+/* вітрина «Показати картку» — сцена-подіум per-tier (крок 4, референс _showcard_preview) */
+.sqfull .stage{position:relative;width:min(94vw,1000px);aspect-ratio:2560/1600;border-radius:16px;overflow:hidden;
+  background-size:cover;background-position:center;perspective:1500px}
+.sqfull .glow{position:absolute;left:50%;top:40%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
+@keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
+.sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.4),transparent 72%);filter:blur(9px);z-index:1}
+.sqfull .reflect{position:absolute;left:50%;transform:translateX(-50%) scaleY(-1);z-index:1;pointer-events:none;opacity:.26;filter:blur(1.1px);
+  -webkit-mask-image:linear-gradient(to top,#000,transparent 60%);mask-image:linear-gradient(to top,#000,transparent 60%)}
+.sqfull .reflect img,.sqfull .reflect .sqcard{display:block}
+.sqfull .podium-card{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);z-index:3}
+.sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
+  filter:drop-shadow(0 26px 30px rgba(0,0,0,.5));animation:sqsway 6s ease-in-out infinite}
+@keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
+.sqfull .podium-card img.rarepng{width:auto;display:block}
+.sqfull .tilt.fx{overflow:hidden}
+.sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
+@keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
+/* mega color-pulse — «дихання кольору» (фінальний ефект mega) */
+.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%);animation:sqglow 4s ease-in-out infinite,sqmega 6s ease-in-out infinite}
+@keyframes sqmega{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(45deg)}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before{animation:none}}
 </style>
 </head>
 <body>
@@ -1590,11 +1612,46 @@ function squadCardHTML(p, tier, card){
         <div><div class="v">${m}</div><div class="l">Матчі</div></div></div>
     </div></div>`;
 }
+// сцена за тіром: silver→steel (файл сцени), решта збігається
+const SCENE_FILE={silver:'steel',gold:'gold',emerald:'emerald',rare:'rare',mega_rare:'mega_rare'};
+function fitPodium(stage){
+  if(!stage) return;
+  const h=stage.clientHeight, target=h*0.62, isBase=stage.dataset.base==='true';
+  const pc=stage.querySelector('.podium-card'), card=pc&&pc.querySelector(isBase?'.sqcard':'img.rarepng');
+  if(!card) return;
+  if(isBase){ card.style.transformOrigin='bottom center'; card.style.transform='scale('+(target/450)+')'; }
+  else{ card.style.height=target+'px'; card.style.width='auto'; }
+  if(stage.dataset.reflect==='true'){
+    const rf=stage.querySelector('.reflect'), tl=pc.querySelector('.tilt');
+    const sr=stage.getBoundingClientRect(), cr=tl.getBoundingClientRect();
+    rf.innerHTML=tl.innerHTML;
+    const im=rf.querySelector('img.rarepng'); if(im){ im.style.height=target+'px'; im.style.width='auto'; }
+    rf.style.top=(cr.bottom-sr.top-2)+'px';
+  }
+}
 function showFullCard(p, tier, card){
+  card=card||{};
+  const scene=SCENE_FILE[tier]||'steel';
+  const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
+  const fx=(tier==='rare'||tier==='mega_rare'), reflect=(tier==='rare'), mega=(tier==='mega_rare');
+  const inner=isArt?`<img class="rarepng" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">`
+                   :squadCardHTML(p,tier,card);
   const el=document.createElement('div'); el.className='sqfull';
-  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button><div class="sqbox">${squadCardHTML(p,tier,card)}</div>`;
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
+    <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
+      ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
+      <div class="contact"></div>
+      <div class="podium-card"><div class="tilt${fx?' fx':''}">${inner}</div></div>
+    </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
+  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
+  fitPodium(stage); requestAnimationFrame(()=>fitPodium(stage));
+  stage.addEventListener('pointermove',e=>{
+    const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
+    tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*16+3).toFixed(1)}deg) rotateY(${(dx*22).toFixed(1)}deg)`;
+  });
+  stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
 }
 
 // перемикач дизайну (owned): рамки (silver/gold/emerald-розблокована) + мої solo-картки для гравця.
