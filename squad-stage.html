@@ -490,6 +490,10 @@ async function openBoardCard(pid){
     : [[card.goals??'—','Голи'],[card.assists??'—','Асисти'],[p.appearances??'—','Матчі']];
   const inj = card.injury ? `<div class="pm-injury"><span class="em">🤕</span><b>Травмований</b><span>· ${esc(card.injury.note||card.injury.expected_return||card.injury.status||'')}</span></div>` : '';
   const ownTxt = p.owner_participant_id ? ('у складі · '+esc(S.names[p.owner_participant_id]||'—')) : '🔒 Вільний';
+  // очки в турнірі (434) — НАШ турнір, чисті (без капітанського ×2)
+  const sp = (S.stats||{})[pid] || null;
+  const ptScored  = sp && sp.rounds_played>0  ? sp.scored_points  : '—';
+  const ptFielded = sp && sp.fielded_rounds>0 ? sp.fielded_points : '—';
   const html = `
     <header class="pm-head"><div>
       <div class="pm-title">Детальна картка гравця</div>
@@ -509,6 +513,10 @@ async function openBoardCard(pid){
         <div class="pm-value">
           <div class="metric"><strong>${eur(p.market_value_current)}</strong><span>Вартість</span></div>
           <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong><span>Val Δ (тур)</span></div>
+        </div>
+        <div class="pm-value pm-points">
+          <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
+          <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
         </div>
         <div class="pm-perf">${formSvg(form)}
           <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
@@ -538,6 +546,9 @@ async function boot(){
     S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
     S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,injury`);
     S.players.forEach(p=>S.pById[p.id]=p);
+    // статистика гравця в турнірі (434; market_player_stats публічна) — число очок у детальній картці; degrade якщо не залито
+    S.stats={};
+    try{ (await sbGet(`market_player_stats?tournament_id=eq.${S.tournament}&select=player_id,scored_points,rounds_played,fielded_points,fielded_rounds`)).forEach(s=>S.stats[s.player_id]=s); }catch(e){ S.stats={}; }
     // лайнап (RLS: чужий видно після дедлайну) + очки гравця за тур
     S.lineup=await sbGet(`market_lineup?round_id=in.(${rids.join(',')})&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice`);
     (await sbGet(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points,avg_rating&order=round_id.asc`))
