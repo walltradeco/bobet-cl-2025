@@ -4990,13 +4990,21 @@ function syncStickyOffset(){
 async function loadActiveTab(){
   const content = document.getElementById('content');
 
-  // SQUAD MODE — власний фронт (F1-борда), вбудований iframe-ом у оболонку
+  // ЕТАПИ-ряд оболонки: за замовчуванням показаний (решта турнірів). Squad має
+  // ВЛАСНУ ЕТАПИ-навігацію всередині iframe → ховаємо порожній ряд оболонки.
+  const etapiLbl = document.querySelector('.nav-lbl-sub');
+  if(etapiLbl) etapiLbl.style.display = '';
+  document.getElementById('tabs').style.display = '';
+
+  // SQUAD MODE — власний фронт (борда у стилі BoBet), вбудований iframe-ом у оболонку
   // BoBet. Свій файл (squad-stage.html), а не вплетений сюди: механіка
   // market_* не має спільного з прогнозами/бустами. embed=1 ховає власний
   // бейдж і заголовок борди (контекст уже дає шапка BoBet). Кабінет —
   // та сама кнопка, src перемикається в модалці кабінету.
   if(activeTournament.source === 'squad'){
     document.getElementById('tabs').innerHTML = '';
+    document.getElementById('tabs').style.display = 'none';
+    if(etapiLbl) etapiLbl.style.display = 'none';
     content.innerHTML =
       '<iframe src="squad-stage.html?embed=1" title="Squad Mode — борда" ' +
       'style="width:100%;border:0;min-height:82vh;display:block"></iframe>';

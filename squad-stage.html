@@ -7,23 +7,25 @@
 <title>Squad Mode · борда (STAGE)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0a0f0d; --bg2:#0e1712; --panel:#111b16; --panel2:#16241d;
-  --line:#22362c; --ink:#e9f1ec; --muted:#8ba297; --dim:#5f7469;
-  --accent:#18b47a; --accent-d:#0e6f4c; --gold:#e6c14b;
-  --up:#26c281; --down:#e2585f; --frost:#7fbcff;
-  --text:#e9f1ec; --text-dim:#8ba297;   /* аліаси під ports із кабінету (pm-*) */
-  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
+  /* тема BoBet-борди (test.html) — «стиль однаковий для всіх турнірів» */
+  --bg:#1B1B1B; --bg2:#1B251D; --panel:#151D17; --panel2:#1B251D; --panel3:#212D23;
+  --line:#2A362B; --ink:#EDEFE8; --muted:#8B9A8C; --dim:#6E7C70;
+  --accent:#2E8B57; --accent-d:#256B44; --gold:#F4C430;
+  --teal:#6FAFAF; --blue:#5E97D0; --purple:#A98FDB;
+  --up:#4CB07A; --down:#C75C4A; --frost:#5E97D0;
+  --text:#EDEFE8; --text-dim:#8B9A8C;   /* аліаси під ports із кабінету (pm-*) */
+  --field-line:rgba(237,239,232,0.06);
+  --mono:'IBM Plex Mono',monospace; --body:'Onest',sans-serif;
 }
 *{box-sizing:border-box}
 .hide{display:none!important}
 body{margin:0;color:var(--ink);font-family:var(--body);font-size:14px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
   background:
-   radial-gradient(1000px 460px at 15% -10%, #13291d 0%, transparent 55%),
-   radial-gradient(900px 400px at 100% 0%, #1a2417 0%, transparent 50%),
+   repeating-linear-gradient(0deg, var(--field-line) 0px, var(--field-line) 1px, transparent 1px, transparent 64px),
    var(--bg)}
 h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em}
 .tnum{font-variant-numeric:tabular-nums}
@@ -35,10 +37,21 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 body.embed .stage-badge, body.embed header{display:none}
 body.embed .wrap{padding-top:6px}
 
-.mock{background:linear-gradient(90deg,#16281e,#111b16);border:1px dashed var(--accent-d);
-  color:var(--muted);font-size:12px;padding:7px 14px;border-radius:8px;margin:14px 0 4px;
+.mock{background:var(--panel);border:1px solid var(--line);
+  color:var(--muted);font-size:12px;padding:8px 14px;border-radius:10px;margin:14px 0 4px;
   display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .mock b{color:var(--accent);font-family:var(--mono)}
+
+/* ЕТАПИ — стиль BoBet-борди: кольорові текст-вкладки з підкресленням активної */
+nav.etabs{display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid var(--line);margin:16px 0 18px;scrollbar-width:none}
+nav.etabs::-webkit-scrollbar{display:none}
+nav.etabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text-dim);
+  font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.01em;padding:0 0 12px;cursor:pointer;white-space:nowrap;opacity:.55}
+nav.etabs button:hover{opacity:1;color:var(--text)}
+nav.etabs button.stg-lb{color:var(--accent)}
+nav.etabs button.stg-s1{color:var(--teal)}
+nav.etabs button.stg-s2{color:var(--blue)}
+nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 
 /* публічна шапка */
 header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(18,32,24,.6),transparent)}
@@ -57,15 +70,15 @@ header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgb
 
 /* перемикач турів */
 .turnrow{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0 14px}
-.turnc{font-family:var(--mono);font-weight:600;font-size:14px;min-width:40px;height:40px;padding:0 8px;border-radius:9px;
-  border:1px solid var(--line);background:var(--panel);color:var(--muted);display:grid;place-items:center;cursor:pointer}
-.turnc[aria-selected=true]{background:var(--accent);color:#06120c;border-color:var(--accent);box-shadow:0 4px 14px rgba(24,180,122,.3)}
+.turnc{font-family:var(--mono);font-weight:600;font-size:14px;min-width:40px;height:38px;padding:0 8px;border-radius:8px;
+  border:1px solid var(--line);background:var(--panel2);color:var(--muted);display:grid;place-items:center;cursor:pointer}
+.turnc[aria-selected=true]{background:var(--panel3);color:var(--text);border-color:var(--accent-d)}
 .turnc.future{opacity:.4;cursor:default}
 
-.subtabs{display:flex;gap:5px;margin:2px 0 14px}
-.subtab{font-family:var(--mono);font-weight:600;font-size:14px;padding:8px 16px;border-radius:9px;
+.subtabs{display:flex;gap:6px;margin:2px 0 14px}
+.subtab{font-family:var(--mono);font-weight:600;font-size:14px;padding:8px 16px;border-radius:8px;
   border:1px solid var(--line);background:var(--panel);color:var(--muted);cursor:pointer}
-.subtab[aria-selected=true]{background:var(--accent-d);color:#dff5ea;border-color:var(--accent-d)}
+.subtab[aria-selected=true]{background:var(--panel3);color:var(--text);border-color:var(--accent-d)}
 [data-view]{display:none}[data-view].on{display:block;animation:fade .18s ease}
 @keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
 
@@ -280,21 +293,36 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 <div class="wrap">
   <div class="mock">🏁 <b>ПУБЛІЧНА БОРДА</b> — володіння видно завжди · склад на тур — після дедлайну · <b>Bank</b> — ніде й нікому.</div>
 
-  <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без Bank) · рух рангу ▲▼= як BoBet</span></div>
-  <div class="turnrow" id="turnRow"></div>
+  <nav class="etabs" id="etabs">
+    <button class="stg-lb active" data-stage="lb">Leaderboard</button>
+    <button class="stg-s1" data-stage="s1">1-5 Тур</button>
+    <button class="stg-s2" data-stage="s2">6-10 Тур</button>
+  </nav>
 
-  <div class="subtabs">
-    <button class="subtab" aria-selected="true" onclick="sub('tbl',this)">Таблиця</button>
-    <button class="subtab" aria-selected="false" onclick="sub('grid',this)">Очки по турах</button>
-  </div>
-
-  <section data-view="tbl" class="on">
-    <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
-    <div class="hint" id="tblHint">SQUAD — стартова 5 (клік → повний склад) · капітан ×2 · Squad Price = сума поточних вартостей складу</div>
+  <!-- Leaderboard (мінімум: ім'я + очки по стейджах + Разом) -->
+  <section id="secLB">
+    <div class="board"><div class="f1-scroll"><table class="f1" id="lbT"></table></div></div>
+    <div class="hint">Наскрізний залік · Разом = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>
   </section>
-  <section data-view="grid">
-    <div class="board"><div class="f1-scroll"><table class="f1 grid" id="gridT"></table></div></div>
-    <div class="hint">Наскрізний залік = сума очок за всі тури · рівні очки → ділять місце</div>
+
+  <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
+  <section id="secStage" class="hide">
+    <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без Bank) · рух рангу ▲▼=</span></div>
+    <div class="turnrow" id="turnRow"></div>
+
+    <div class="subtabs">
+      <button class="subtab" aria-selected="true" onclick="sub('tbl',this)">Таблиця</button>
+      <button class="subtab" aria-selected="false" onclick="sub('grid',this)">Очки по турах</button>
+    </div>
+
+    <section data-view="tbl" class="on">
+      <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
+      <div class="hint" id="tblHint">SQUAD — стартова 5 (клік → повний склад) · капітан ×2 · Squad Price = сума поточних вартостей складу</div>
+    </section>
+    <section data-view="grid">
+      <div class="board"><div class="f1-scroll"><table class="f1 grid" id="gridT"></table></div></div>
+      <div class="hint">Очки за кожен тур цього стейджа · рівні очки → ділять місце</div>
+    </section>
   </section>
 
   <div class="foot" id="foot">SQUAD MODE · публічна борда</div>
@@ -327,7 +355,19 @@ const CLUB={
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
-const S={tour:null,rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{}};
+const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{}};
+const STAGE1_MAX=5;   // турнір ~10 турів → стейдж1 = тури 1-5, стейдж2 = 6-10
+function stageRounds(stage){
+  if(stage==='s1') return S.rounds.filter(r=>r.number<=STAGE1_MAX);
+  if(stage==='s2') return S.rounds.filter(r=>r.number>STAGE1_MAX);
+  return S.rounds;
+}
+function stageSum(stage){   // сума очок кожного учасника за тури стейджа
+  const nums=new Set(stageRounds(stage).map(r=>r.number));
+  const sum={}; S.lb.forEach(p=>sum[p.participant_id]=0);
+  S.scores.forEach(s=>{ if(nums.has(s.round_number) && sum[s.participant_id]!=null) sum[s.participant_id]+=s.points||0; });
+  return sum;
+}
 
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
@@ -533,6 +573,43 @@ async function openBoardCard(pid){
   const b1=$('bmShowCard'), b2=$('bmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
 }
 
+// Leaderboard (мінімум): # · Учасник · 1-5 Тур · 6-10 Тур · Разом (рангово за Разом)
+function renderLB(){
+  const t=$('lbT'); if(!t) return;
+  if(!S.lb.length){ t.innerHTML=''; return; }
+  const s1=stageSum('s1'), s2=stageSum('s2'), tot={};
+  S.lb.forEach(p=>tot[p.participant_id]=(s1[p.participant_id]||0)+(s2[p.participant_id]||0));
+  const order=[...S.lb].sort((a,b)=>tot[b.participant_id]-tot[a.participant_id]);
+  const rank={}; order.forEach((p,i)=>{ const pid=p.participant_id;
+    rank[pid]=(i>0 && tot[order[i-1].participant_id]===tot[pid])? rank[order[i-1].participant_id] : i+1; });
+  const body=order.map(p=>{ const pid=p.participant_id, pl=rank[pid];
+    return `<tr onclick="openSquad('${pid}')">
+      <td class="rk">${pl<=3?`<span class="medal">${medal[pl-1]}</span>`:pl}</td>
+      <td class="name-c">${p.display_name}</td>
+      <td class="tnum">${s1[pid]||0}</td>
+      <td class="tnum">${s2[pid]||0}</td>
+      <td class="total tnum">${tot[pid]||0}</td>
+    </tr>`; }).join('');
+  t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th><th>1-5 Тур</th><th>6-10 Тур</th><th>Разом</th></tr></thead><tbody>${body}</tbody>`;
+}
+// перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур
+function goStage(stage){
+  S.stage=stage;
+  document.querySelectorAll('#etabs button').forEach(b=>b.classList.toggle('active', b.dataset.stage===stage));
+  const lb=(stage==='lb');
+  $('secLB').classList.toggle('hide', !lb);
+  $('secStage').classList.toggle('hide', lb);
+  if(lb){ renderLB(); return; }
+  const rs=stageRounds(stage);
+  if(!rs.length){
+    $('turnRow').innerHTML=''; $('h2tour').textContent='🏁 Турів ще не було';
+    $('f1').innerHTML='<tbody><tr><td style="padding:18px;color:var(--dim)">Тури цього стейджа ще не заведені.</td></tr></tbody>';
+    $('gridT').innerHTML=''; return;
+  }
+  const played=rs.filter(r=>r.results_entered_at).map(r=>r.number);
+  S.tour = played.length? Math.max(...played) : rs[0].number;
+  renderTours(); renderStandings(); renderByRound();
+}
 async function boot(){
   try{
     S.rounds=await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,results_entered_at,week_start,week_end&order=number.asc');
@@ -561,7 +638,8 @@ async function boot(){
     const played=S.rounds.filter(r=>r.results_entered_at).map(r=>r.number);
     S.tour = played.length? Math.max(...played) : S.rounds[0].number;
 
-    renderTours(); renderStandings(); renderByRound();
+    document.querySelectorAll('#etabs button').forEach(b=>b.onclick=()=>goStage(b.dataset.stage));
+    goStage('lb');   // старт із Leaderboard-огляду
   }catch(e){
     document.getElementById('h2tour').textContent='помилка: '+e.message;
   }
@@ -625,7 +703,7 @@ function tiles(pid){
 function renderTours(){
   const now=Date.now();
   document.getElementById('h2tour').textContent='🏁 Тур '+S.tour;
-  document.getElementById('turnRow').innerHTML=S.rounds.map(r=>{
+  document.getElementById('turnRow').innerHTML=stageRounds(S.stage).map(r=>{
     const future=new Date(r.deadline_at).getTime()>now && r.number!==S.tour;
     return `<div class="turnc ${future?'future':''}" aria-selected="${r.number===S.tour}" data-tour="${r.number}">${r.number}</div>`;
   }).join('');
@@ -658,13 +736,17 @@ function renderStandings(){
 function renderByRound(){
   const g=document.getElementById('gridT');
   if(!S.lb.length){ g.innerHTML=''; return; }
-  const head=`<thead><tr><th>Учасник</th>${S.rounds.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th>Total</th></tr></thead>`;
+  const rs=stageRounds(S.stage);
+  const head=`<thead><tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th>Разом</th></tr></thead>`;
   const body=S.lb.map(p=>{
-    const cells=S.rounds.map(r=>{
+    let sum=0;
+    const cells=rs.map(r=>{
       const row=S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
-      return `<td class="pn tnum">${row? row.points : '·'}</td>`;
+      const v=row? (row.points||0) : null;
+      if(v!=null) sum+=v;
+      return `<td class="pn tnum">${v!=null? v : '·'}</td>`;
     }).join('');
-    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${p.display_name}</td>${cells}<td class="total tnum">${p.total_points||0}</td></tr>`;
+    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${p.display_name}</td>${cells}<td class="total tnum">${sum}</td></tr>`;
   }).join('');
   g.innerHTML=head+'<tbody>'+body+'</tbody>';
 }
