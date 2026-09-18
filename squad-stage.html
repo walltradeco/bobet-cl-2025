@@ -35,23 +35,51 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .stage-badge{background:#C75C4A;color:#fff;text-align:center;font-size:12px;
   font-weight:700;letter-spacing:.05em;padding:4px;font-family:var(--mono)}
 body.embed .stage-badge, body.embed header{display:none}
-body.embed .wrap{padding-top:6px}
+/* в оболонці BoBet: тягнемось на всю ширину #content (не центруємось вузько),
+   контент лягає врівень із ЕТАПИ/таблицями решти турнірів */
+body.embed .wrap{max-width:none;margin:0;padding:2px 0 24px}
 
 .mock{background:var(--panel);border:1px solid var(--line);
   color:var(--muted);font-size:12px;padding:8px 14px;border-radius:10px;margin:14px 0 4px;
   display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .mock b{color:var(--accent);font-family:var(--mono)}
 
-/* ЕТАПИ — стиль BoBet-борди: кольорові текст-вкладки з підкресленням активної */
-nav.etabs{display:flex;gap:26px;overflow-x:auto;border-bottom:1px solid var(--line);margin:16px 0 18px;scrollbar-width:none}
+/* ЕТАПИ — точно стиль BoBet-борди (test.html nav-lbl + nav.tabs) */
+.nav-lbl{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;
+  color:var(--accent);opacity:.85;margin:16px 0 7px}
+nav.etabs{display:flex;gap:4px;overflow-x:auto;border-bottom:1px solid var(--line);margin:0 0 28px;scrollbar-width:none}
 nav.etabs::-webkit-scrollbar{display:none}
-nav.etabs button{background:none;border:0;border-bottom:2px solid transparent;color:var(--text-dim);
-  font-family:var(--mono);font-weight:600;font-size:15px;letter-spacing:.01em;padding:0 0 12px;cursor:pointer;white-space:nowrap;opacity:.55}
-nav.etabs button:hover{opacity:1;color:var(--text)}
+nav.etabs button{background:transparent;border:0;border-bottom:2px solid transparent;color:var(--text-dim);
+  font-family:'Montserrat',sans-serif;font-weight:600;font-size:17px;padding:12px 18px;cursor:pointer;
+  white-space:nowrap;transition:color .15s,border-color .15s}
 nav.etabs button.stg-lb{color:var(--accent)}
 nav.etabs button.stg-s1{color:var(--teal)}
 nav.etabs button.stg-s2{color:var(--blue)}
+nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2{opacity:.55}
+nav.etabs button:hover{opacity:1}
 nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
+
+/* Leaderboard-картки (стиль BoBet Leaderboards): 1-5 Тур · 6-10 Тур · General */
+.lbboards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start;margin-top:4px}
+.lbcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.lbcard .bh{padding:14px 18px;font-family:'Montserrat',sans-serif;font-weight:700;font-size:15px;letter-spacing:.1em;
+  text-transform:uppercase;border-bottom:1px solid var(--line);background:var(--panel2);color:var(--text)}
+.lbcard.tealh .bh{color:var(--teal);box-shadow:inset 0 3px 0 var(--teal)}
+.lbcard.blueh .bh{color:var(--blue);box-shadow:inset 0 3px 0 var(--blue)}
+.lbcard.goldh .bh{color:var(--gold);box-shadow:inset 0 3px 0 var(--gold)}
+.lbr{display:flex;align-items:center;gap:16px;padding:16px 22px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s}
+.lbr:last-child{border-bottom:none}
+.lbr:hover{background:var(--panel2)}
+.lbr.p1{background:linear-gradient(90deg,rgba(244,196,48,0.16),rgba(244,196,48,0.03))}
+.lbr.p2{background:linear-gradient(90deg,rgba(199,205,195,0.14),rgba(199,205,195,0.02))}
+.lbr.p3{background:linear-gradient(90deg,rgba(201,123,74,0.14),rgba(201,123,74,0.02))}
+.lbr .rnk{font-family:var(--mono);font-size:15px;font-weight:700;min-width:44px;display:flex;align-items:center;justify-content:center;color:var(--text-dim);flex-shrink:0}
+.lbr.p1 .rnk{color:var(--gold)}.lbr.p2 .rnk{color:#C7CDC3}.lbr.p3 .rnk{color:#C97B4A}
+.lbr .rnk .crown{font-size:26px}
+.lbr .nm{flex:1;font-family:'Montserrat',sans-serif;font-size:21px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lbr.p1 .nm,.lbr.p2 .nm,.lbr.p3 .nm{font-weight:700}
+.lbr .pts{font-family:var(--mono);font-weight:700;font-size:25px;color:var(--text);flex-shrink:0;font-variant-numeric:tabular-nums}
+.lbr.p1 .pts{color:var(--gold)}.lbr.p2 .pts{color:#C7CDC3}.lbr.p3 .pts{color:#C97B4A}
 
 /* публічна шапка */
 header{border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(18,32,24,.6),transparent)}
@@ -291,19 +319,15 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 </header>
 
 <div class="wrap">
-  <div class="mock">🏁 <b>ПУБЛІЧНА БОРДА</b> — володіння видно завжди · склад на тур — після дедлайну · <b>Bank</b> — ніде й нікому.</div>
-
+  <div class="nav-lbl">Етапи</div>
   <nav class="etabs" id="etabs">
     <button class="stg-lb active" data-stage="lb">Leaderboard</button>
     <button class="stg-s1" data-stage="s1">1-5 Тур</button>
     <button class="stg-s2" data-stage="s2">6-10 Тур</button>
   </nav>
 
-  <!-- Leaderboard (мінімум: ім'я + очки по стейджах + Разом) -->
-  <section id="secLB">
-    <div class="board"><div class="f1-scroll"><table class="f1" id="lbT"></table></div></div>
-    <div class="hint">Наскрізний залік · Разом = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>
-  </section>
+  <!-- Leaderboard — 3 картки (1-5 Тур · 6-10 Тур · General), заповнює renderLB -->
+  <section id="secLB"></section>
 
   <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
   <section id="secStage" class="hide">
@@ -573,24 +597,34 @@ async function openBoardCard(pid){
   const b1=$('bmShowCard'), b2=$('bmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
 }
 
-// Leaderboard (мінімум): # · Учасник · 1-5 Тур · 6-10 Тур · Разом (рангово за Разом)
+// Leaderboard — стиль BoBet Leaderboards: 3 картки (1-5 Тур · 6-10 Тур · General=сума)
+function lbCard(cls, title, metric, isGen){
+  const order=[...S.lb].sort((a,b)=>(metric[b.participant_id]||0)-(metric[a.participant_id]||0));
+  // tie-aware place (спільне місце при рівних очках)
+  const place={}; let k=0, pos=1;
+  while(k<order.length){ let j=k;
+    while(j+1<order.length && (metric[order[j+1].participant_id]||0)===(metric[order[k].participant_id]||0)) j++;
+    for(let q=k;q<=j;q++) place[order[q].participant_id]=pos-1;
+    pos+=(j-k+1); k=j+1; }
+  const rows=order.map(p=>{ const pid=p.participant_id, pl=place[pid];
+    const pc = pl===0?'p1':pl===1?'p2':pl===2?'p3':'';
+    const rank = pl<3 ? `<span class="crown">${medal[pl]}${pl===0&&isGen?'🏆':''}</span>` : (pl+1);
+    return `<div class="lbr ${pc}" onclick="openSquad('${pid}')">
+      <div class="rnk">${rank}</div><div class="nm">${p.display_name}</div><div class="pts">${metric[pid]||0}</div>
+    </div>`; }).join('');
+  return `<div class="lbcard ${cls}"><div class="bh">${title}</div>${rows}</div>`;
+}
 function renderLB(){
-  const t=$('lbT'); if(!t) return;
-  if(!S.lb.length){ t.innerHTML=''; return; }
+  const host=$('secLB'); if(!host) return;
+  if(!S.lb.length){ host.innerHTML='<div class="hint" style="padding:16px 2px">Ще немає учасників.</div>'; return; }
   const s1=stageSum('s1'), s2=stageSum('s2'), tot={};
   S.lb.forEach(p=>tot[p.participant_id]=(s1[p.participant_id]||0)+(s2[p.participant_id]||0));
-  const order=[...S.lb].sort((a,b)=>tot[b.participant_id]-tot[a.participant_id]);
-  const rank={}; order.forEach((p,i)=>{ const pid=p.participant_id;
-    rank[pid]=(i>0 && tot[order[i-1].participant_id]===tot[pid])? rank[order[i-1].participant_id] : i+1; });
-  const body=order.map(p=>{ const pid=p.participant_id, pl=rank[pid];
-    return `<tr onclick="openSquad('${pid}')">
-      <td class="rk">${pl<=3?`<span class="medal">${medal[pl-1]}</span>`:pl}</td>
-      <td class="name-c">${p.display_name}</td>
-      <td class="tnum">${s1[pid]||0}</td>
-      <td class="tnum">${s2[pid]||0}</td>
-      <td class="total tnum">${tot[pid]||0}</td>
-    </tr>`; }).join('');
-  t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th><th>1-5 Тур</th><th>6-10 Тур</th><th>Разом</th></tr></thead><tbody>${body}</tbody>`;
+  host.innerHTML=`<div class="lbboards">
+      ${lbCard('tealh','1-5 Тур', s1, false)}
+      ${lbCard('blueh','6-10 Тур', s2, false)}
+      ${lbCard('goldh','General', tot, true)}
+    </div>
+    <div class="hint">Наскрізний залік · General = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>`;
 }
 // перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур
 function goStage(stage){
