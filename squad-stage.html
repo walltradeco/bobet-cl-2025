@@ -145,6 +145,10 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
   font-family:var(--mono);font-weight:800;font-size:74px;color:rgba(255,255,255,.16);letter-spacing:.02em}
 .sq-scrim{position:absolute;inset:0;z-index:3;pointer-events:none;
   background:linear-gradient(to bottom,transparent 40%,rgba(5,8,7,.5) 55%,rgba(5,8,7,.86) 72%,rgba(5,8,7,.94) 100%)}
+/* scrim кліпнутий за alpha рамки — інакше непрозорий низ залазить у скошені кути = чорний прямокутник за межами рамки */
+.sqcard[data-tier=steel] .sq-scrim{-webkit-mask:url('frames/steel.webp') center/100% 100% no-repeat;mask:url('frames/steel.webp') center/100% 100% no-repeat}
+.sqcard[data-tier=gold] .sq-scrim{-webkit-mask:url('frames/gold.webp') center/100% 100% no-repeat;mask:url('frames/gold.webp') center/100% 100% no-repeat}
+.sqcard[data-tier=emerald] .sq-scrim{-webkit-mask:url('frames/emerald.webp') center/100% 100% no-repeat;mask:url('frames/emerald.webp') center/100% 100% no-repeat}
 .sq-ov{position:absolute;z-index:4}
 .sq-rating{left:10%;top:6.5%;font-family:var(--mono);font-weight:700;line-height:.78;text-shadow:0 2px 12px rgba(0,0,0,.95)}
 .sq-rating .n{display:block;color:var(--acc);font-size:35px}
@@ -174,7 +178,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
   border-radius:50%;background:#111b16;color:var(--ink);font-size:20px;cursor:pointer;z-index:130}
 /* вітрина «Показати картку» — сцена-подіум per-tier (крок 4, референс _showcard_preview) */
-.sqfull .stage{position:relative;width:min(94vw,1000px);aspect-ratio:2560/1600;border-radius:16px;overflow:hidden;
+.sqfull .stage{position:relative;width:min(96vw,calc(96vh * 2560/1600));aspect-ratio:2560/1600;border-radius:16px;overflow:hidden;
   background-size:cover;background-position:center;perspective:1500px}
 .sqfull .glow{position:absolute;left:50%;top:40%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
