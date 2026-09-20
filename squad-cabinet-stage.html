@@ -578,7 +578,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
   listings:{}, listingsReady:false, cards:{}, stats:{}, statsReady:false,
-  colF:{ q:'', pos:'', club:'', status:'all', sort:'rating' },
+  colF:{ q:'', pos:'', club:'', status:'all', sort:'rating', coll:'', rarity:'' },
   f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating', onlyPlayed:false } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -1838,13 +1838,21 @@ async function viewCollection(){
   if(!Object.keys(S.cards).length){
     try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
   }
+  // каталог карток (card_key→колекції) + реєстр колекцій для дропдауна (graceful-degrade)
+  if(!S.cardMeta){
+    S.cardMeta={}; S.collReg=[];
+    try{ (await sbSel(`card_items?select=card_key,tier,collections`)).forEach(c=>S.cardMeta[c.card_key]=c); }catch(e){}
+    try{ S.collReg=await sbSel(`card_collections?select=key,title&order=sort_order`); }catch(e){ S.collReg=[]; }
+  }
   const me=S.me.id, f=S.colF;
   const clubs=[...new Set(S.players.map(p=>p.club_id))].map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
   const card=(p)=>{
     const oc = p.owner_participant_id===me?'mine':p.owner_participant_id?'other':'free';
     const ot = oc==='mine'?'★ Твій':oc==='other'?esc(S.names[p.owner_participant_id]||'—'):'Вільний';
-    return `<div class="colcard" data-p="${p.id}" data-name="${esc((p.name||'').toLowerCase())}" data-pos="${p.position}" data-club="${p.club_id}" data-own="${oc}" data-rating="${p.season_avg_rating||0}" data-price="${p.market_value_current||0}">
-      <div class="colc-wrap">${squadCardHTML(p,(S.cards[p.id]||{}).current_tier||'silver',S.cards[p.id]||{})}</div>
+    const cc = S.cards[p.id]||{}, tier = cc.current_tier||'silver';
+    const colls = ((S.cardMeta[cc.current_card_key]||{}).collections||[]).join(' ');
+    return `<div class="colcard" data-p="${p.id}" data-name="${esc((p.name||'').toLowerCase())}" data-pos="${p.position}" data-club="${p.club_id}" data-own="${oc}" data-rating="${p.season_avg_rating||0}" data-price="${p.market_value_current||0}" data-tier="${tier}" data-coll="${esc(colls)}">
+      <div class="colc-wrap">${squadCardHTML(p,tier,cc)}</div>
       <div class="colc-own ${oc}">${ot}</div></div>`;
   };
   $('view').innerHTML = `
@@ -1853,8 +1861,10 @@ async function viewCollection(){
       <input id="colQ" placeholder="Пошук по імені…" value="${esc(f.q)}">
       <select id="colPos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>`<option value="${x}"${f.pos===x?' selected':''}>${posCat(x)}</option>`).join('')}</select>
       <select id="colClub"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(([id,nm])=>`<option value="${id}"${f.club===String(id)?' selected':''}>${esc(nm)}</option>`).join('')}</select>
+      <select id="colColl"><option value="">Колекція: усі</option>${(S.collReg||[]).map(c=>`<option value="${esc(c.key)}"${f.coll===c.key?' selected':''}>${esc(c.title)}</option>`).join('')}</select>
+      <select id="colRarity"><option value="">Рідкість: усі</option><option value="mega_rare"${f.rarity==='mega_rare'?' selected':''}>Mega Rare</option><option value="rare"${f.rarity==='rare'?' selected':''}>Rare</option></select>
       <select id="colStatus">${[['all','Статус: усі'],['mine','Мої'],['free','Вільні'],['other','Чужі']].map(([v,l])=>`<option value="${v}"${f.status===v?' selected':''}>${l}</option>`).join('')}</select>
-      <select id="colSort">${[['rating','За рейтингом'],['price','За ціною'],['name','За іменем']].map(([v,l])=>`<option value="${v}"${f.sort===v?' selected':''}>${l}</option>`).join('')}</select>
+      <select id="colSort">${[['rating','За рейтингом'],['price','За ціною'],['rarity','За рідкістю'],['name','За іменем']].map(([v,l])=>`<option value="${v}"${f.sort===v?' selected':''}>${l}</option>`).join('')}</select>
     </div>
     <div class="col-grid" id="colGrid">${S.players.map(card).join('')}</div>`;
   const g=$('colGrid');
@@ -1865,11 +1875,15 @@ async function viewCollection(){
       if(q && !el.dataset.name.includes(q)) ok=false;
       if(f.pos && el.dataset.pos!==f.pos) ok=false;
       if(f.club && el.dataset.club!==f.club) ok=false;
+      if(f.coll && !(el.dataset.coll||'').split(' ').filter(Boolean).includes(f.coll)) ok=false;
+      if(f.rarity && el.dataset.tier!==f.rarity) ok=false;
       if(f.status!=='all' && el.dataset.own!==f.status) ok=false;
       el.hidden=!ok; if(ok) vis.push(el);
     });
+    const rrank=t=> t==='mega_rare'?0 : t==='rare'?1 : 2;
     vis.sort((a,b)=> f.sort==='price'? (b.dataset.price-a.dataset.price)
       : f.sort==='name'? a.dataset.name.localeCompare(b.dataset.name)
+      : f.sort==='rarity'? (rrank(a.dataset.tier)-rrank(b.dataset.tier)) || a.dataset.name.localeCompare(b.dataset.name)
       : (b.dataset.rating-a.dataset.rating));
     vis.forEach((el,i)=>el.style.order=i);
     const total=S.players.length, mineN=S.players.filter(p=>p.owner_participant_id===me).length, freeN=S.players.filter(p=>!p.owner_participant_id).length;
@@ -1877,7 +1891,7 @@ async function viewCollection(){
   };
   const bind=(id,key)=>{ const el=$(id); if(el) el.onchange=()=>{ S.colF[key]=el.value; apply(); }; };
   const qi=$('colQ'); if(qi) qi.oninput=()=>{ S.colF.q=qi.value; apply(); };
-  bind('colPos','pos'); bind('colClub','club'); bind('colStatus','status'); bind('colSort','sort');
+  bind('colPos','pos'); bind('colClub','club'); bind('colColl','coll'); bind('colRarity','rarity'); bind('colStatus','status'); bind('colSort','sort');
   g.querySelectorAll('.colcard').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
   apply();
 }
