@@ -1145,7 +1145,7 @@ function mtile(p){
 // Спільний для Колекції й Ринку — щоб два місця не розійшлись.
 async function loadCardMeta(){
   if(!Object.keys(S.cards).length){
-    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
+    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
   }
   if(!S.cardMeta){
     S.cardMeta={}; S.collReg=[];
@@ -1161,12 +1161,7 @@ function marketList(){
   if(f.league) list=list.filter(p=>(S.clubs[p.club_id]||{}).league===f.league);
   if(f.club)   list=list.filter(p=>p.club_id===f.club);
   if(f.pos)    list=list.filter(p=>p.position===f.pos);
-  if(f.coll || f.rarity) list=list.filter(p=>{
-    const cc=S.cards[p.id]||{}, tier=cc.current_tier||'silver';
-    if(f.rarity && tier!==f.rarity) return false;
-    if(f.coll){ const colls=(((S.cardMeta||{})[cc.current_card_key]||{}).collections)||[]; if(!colls.includes(f.coll)) return false; }
-    return true;
-  });
+  if(f.rarity) list=list.filter(p=>((S.cards[p.id]||{}).current_tier||'silver')===f.rarity);   // фільтр Колекція — лише в Колекції/Крамниці (не в Ринку)
   if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
   if(f.rMin!=null) list=list.filter(p=>(p.season_avg_rating??0) >= f.rMin);
   if(f.rMax!=null) list=list.filter(p=>(p.season_avg_rating??99) <= f.rMax);
@@ -1195,7 +1190,6 @@ function filterBar(){
     <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
     <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
-    <div class="mf"><select id="f-coll"><option value="">Колекція: усі</option>${(S.collReg||[]).map(c=>opt(c.key,c.title,f.coll)).join('')}</select></div>
     <div class="mf"><select id="f-rarity"><option value="">Рідкість: усі</option><option value="mega_rare"${f.rarity==='mega_rare'?' selected':''}>Mega Rare</option><option value="rare"${f.rarity==='rare'?' selected':''}>Rare</option></select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
       <span class="track"></span><span class="fill" id="fill-r"></span>
@@ -1224,7 +1218,7 @@ function bindFilters(){
   const q=$('f-q'); if(q) q.oninput=()=>{ S.f.q=q.value; renderGrid(); };
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
-  bind('f-pos',v=>S.f.pos=v); bind('f-coll',v=>S.f.coll=v); bind('f-rarity',v=>S.f.rarity=v); bind('f-sort',v=>S.f.sort=v);
+  bind('f-pos',v=>S.f.pos=v); bind('f-rarity',v=>S.f.rarity=v); bind('f-sort',v=>S.f.sort=v);
   const pl=$('f-played'); if(pl) pl.onchange=()=>{ S.f.onlyPlayed=pl.checked; renderGrid(); };
   const paint=(el,inp,a,b)=>{ if(!el||!inp) return; const lo=+inp.min,hi=+inp.max,pc=v=>hi>lo?((v-lo)/(hi-lo))*100:0; el.style.left=pc(a)+'%'; el.style.width=Math.max(0,pc(b)-pc(a))+'%'; };
   const rmin=$('f-rmin'), rmax=$('f-rmax');
