@@ -502,9 +502,9 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
   border-radius:50%;background:#111b16;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
 /* вітрина «Показати картку» — сцена-подіум per-tier (крок 4, референс _showcard_preview) */
-.sqfull .stage{position:relative;width:min(96vw,calc(96vh * 2560/1600));aspect-ratio:2560/1600;border-radius:16px;overflow:hidden;
+.sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
   background-size:cover;background-position:center;perspective:1500px}
-.sqfull .glow{position:absolute;left:50%;top:40%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+.sqfull .glow{position:absolute;left:50%;top:36%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
 @keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
 .sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
@@ -512,19 +512,23 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .sqfull .reflect{position:absolute;left:50%;transform:translateX(-50%) scaleY(-1);z-index:1;pointer-events:none;opacity:.26;filter:blur(1.1px);
   -webkit-mask-image:linear-gradient(to top,#000,transparent 60%);mask-image:linear-gradient(to top,#000,transparent 60%)}
 .sqfull .reflect img,.sqfull .reflect .sqcard{display:block}
-.sqfull .podium-card{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);z-index:3}
+.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
-  filter:drop-shadow(0 26px 30px rgba(0,0,0,.5));animation:sqsway 6s ease-in-out infinite}
+  animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
 .sqfull .podium-card img.rarepng{width:auto;display:block}
-.sqfull .tilt.fx{overflow:hidden}
+/* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
+.sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
   background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
 @keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
-/* mega color-pulse — «дихання кольору» (фінальний ефект mega) */
-.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%);animation:sqglow 4s ease-in-out infinite,sqmega 6s ease-in-out infinite}
-@keyframes sqmega{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(45deg)}}
-@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before{animation:none}}
+/* ④ mega: дихання кольору (saturate/brightness) + легкий політ, БЕЗ жарин (провізорно — до точних ефектів Богдана) */
+.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
+.sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
+@keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
+.sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
+@keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 </style>
 </head>
 <body>
@@ -579,7 +583,7 @@ const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
   listings:{}, listingsReady:false, cards:{}, stats:{}, statsReady:false,
   colF:{ q:'', pos:'', club:'', status:'all', sort:'rating', coll:'', rarity:'' },
-  f:{ q:'', league:'', club:'', pos:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating', onlyPlayed:false } };
+  f:{ q:'', league:'', club:'', pos:'', coll:'', rarity:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating', onlyPlayed:false } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
@@ -1135,6 +1139,19 @@ function mtile(p){
 }
 
 // ── фільтрація + сортування ──
+// картки: ефективний дизайн гравців (market_player_card) + каталог (card_key→колекції) +
+// реєстр колекцій. Один лінивий запит на все, graceful-degrade (потребує 422/430/437).
+// Спільний для Колекції й Ринку — щоб два місця не розійшлись.
+async function loadCardMeta(){
+  if(!Object.keys(S.cards).length){
+    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
+  }
+  if(!S.cardMeta){
+    S.cardMeta={}; S.collReg=[];
+    try{ (await sbSel(`card_items?select=card_key,tier,collections`)).forEach(c=>S.cardMeta[c.card_key]=c); }catch(e){}
+    try{ S.collReg=await sbSel(`card_collections?select=key,title&order=sort_order`); }catch(e){ S.collReg=[]; }
+  }
+}
 function marketList(){
   const f=S.f; let list=S.players.slice();
   if(f.status==='free')  list=list.filter(p=>!p.owner_participant_id);
@@ -1143,6 +1160,12 @@ function marketList(){
   if(f.league) list=list.filter(p=>(S.clubs[p.club_id]||{}).league===f.league);
   if(f.club)   list=list.filter(p=>p.club_id===f.club);
   if(f.pos)    list=list.filter(p=>p.position===f.pos);
+  if(f.coll || f.rarity) list=list.filter(p=>{
+    const cc=S.cards[p.id]||{}, tier=cc.current_tier||'silver';
+    if(f.rarity && tier!==f.rarity) return false;
+    if(f.coll){ const colls=(((S.cardMeta||{})[cc.current_card_key]||{}).collections)||[]; if(!colls.includes(f.coll)) return false; }
+    return true;
+  });
   if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
   if(f.rMin!=null) list=list.filter(p=>(p.season_avg_rating??0) >= f.rMin);
   if(f.rMax!=null) list=list.filter(p=>(p.season_avg_rating??99) <= f.rMax);
@@ -1171,6 +1194,8 @@ function filterBar(){
     <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
     <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
+    <div class="mf"><select id="f-coll"><option value="">Колекція: усі</option>${(S.collReg||[]).map(c=>opt(c.key,c.title,f.coll)).join('')}</select></div>
+    <div class="mf"><select id="f-rarity"><option value="">Рідкість: усі</option><option value="mega_rare"${f.rarity==='mega_rare'?' selected':''}>Mega Rare</option><option value="rare"${f.rarity==='rare'?' selected':''}>Rare</option></select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
       <span class="track"></span><span class="fill" id="fill-r"></span>
       <input type="range" id="f-rmin" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMin}">
@@ -1198,7 +1223,7 @@ function bindFilters(){
   const q=$('f-q'); if(q) q.oninput=()=>{ S.f.q=q.value; renderGrid(); };
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
-  bind('f-pos',v=>S.f.pos=v); bind('f-sort',v=>S.f.sort=v);
+  bind('f-pos',v=>S.f.pos=v); bind('f-coll',v=>S.f.coll=v); bind('f-rarity',v=>S.f.rarity=v); bind('f-sort',v=>S.f.sort=v);
   const pl=$('f-played'); if(pl) pl.onchange=()=>{ S.f.onlyPlayed=pl.checked; renderGrid(); };
   const paint=(el,inp,a,b)=>{ if(!el||!inp) return; const lo=+inp.min,hi=+inp.max,pc=v=>hi>lo?((v-lo)/(hi-lo))*100:0; el.style.left=pc(a)+'%'; el.style.width=Math.max(0,pc(b)-pc(a))+'%'; };
   const rmin=$('f-rmin'), rmax=$('f-rmax');
@@ -1211,13 +1236,14 @@ function bindFilters(){
 }
 
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
-function viewMarket(){
+async function viewMarket(){
   const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length
                +(S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id).length;
   const subs=[['free','Вільні'],['all','Усі гравці'],['bids','Мої ставки'],['transfers','Трансфери'+(inCount?` (${inCount})`:'')]];
   const bar=`<div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>`;
   let body='';
   if(S.mktSub==='free'||S.mktSub==='all'){
+    await loadCardMeta();
     S.f.status = (S.mktSub==='free')?'free':'all';
     const t=(S.mktSub==='free')?['Вільні гравці','купити зараз (+15%) або поставити (аукціон 12 год, крок +5%)']:['Усі гравці','весь пул + власник · натисни на гравця для дій'];
     body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${t[0]}</h2><span class="sub">${t[1]} · <span id="mcount"></span></span></div><div class="mgrid" id="mgrid"></div>`;
@@ -1666,7 +1692,7 @@ function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel';
   const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
-  const fx=(tier==='rare'||tier==='mega_rare'), reflect=(tier==='rare'), mega=(tier==='mega_rare');
+  const fx=isArt, reflect=(tier==='rare'&&isArt), mega=(tier==='mega_rare');
   const inner=isArt?`<img class="rarepng" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">`
                    :squadCardHTML(p,tier,card);
   const el=document.createElement('div'); el.className='sqfull';
@@ -1674,7 +1700,7 @@ function showFullCard(p, tier, card){
     <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
       ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
       <div class="contact"></div>
-      <div class="podium-card"><div class="tilt${fx?' fx':''}">${inner}</div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(card.current_card_png)}')"`:''}>${inner}</div></div>
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
@@ -1694,12 +1720,14 @@ function designSwitcher(p, card){
   const curFrame = curKey ? null : (card.current_tier||'silver');
   const frames=[['silver','Срібна'],['gold','Золота']];
   if(S.myEmerald) frames.push(['emerald','Смарагдова']);
-  const myCards=(S.myCards||[]).filter(c=>c.kind==='solo' && p.sofascore_player_id!=null
+  // мої rare/mega-картки на цього гравця — solo І team (443: team вибирається ЯВНО, per-player)
+  const myCards=(S.myCards||[]).filter(c=> p.sofascore_player_id!=null
+                && (c.kind==='solo'||c.kind==='team')
                 && (c.eligible_sofa_ids||[]).includes(p.sofascore_player_id));
   let chips=frames.map(([f,lbl])=>`<button class="dchip${curFrame===f?' on':''}" data-dframe="${f}">${lbl}</button>`).join('');
-  chips+=myCards.map(c=>`<button class="dchip rare${curKey===c.card_key?' on':''}" data-dcard="${c.id}">${c.tier==='mega_rare'?'MR ':''}★ ${esc(c.card_key.replace(/_/g,' '))}</button>`).join('');
-  const teamActive = curKey && !myCards.some(c=>c.card_key===curKey);
-  const note = teamActive ? '<div class="dnote">🏆 Активна командна карта — діє автоматично на всіх зображених. Обери рамку, щоб перекрити.</div>' : '';
+  chips+=myCards.map(c=>{ const ic=c.kind==='team'?'👥':'★', mr=c.tier==='mega_rare'?'MR ':'';
+    return `<button class="dchip rare${curKey===c.card_key?' on':''}" data-dcard="${c.id}">${mr}${ic} ${esc(c.card_key.replace(/_/g,' '))}</button>`; }).join('');
+  const note = myCards.some(c=>c.kind==='team') ? '<div class="dnote">👥 Командна карта одягається на КОЖНОГО зображеного окремо — обери її на потрібних гравцях.</div>' : '';
   return `<div class="pm-box pm-design"><span>Дизайн картки</span><div class="dchips">${chips}</div>${note}</div>`;
 }
 async function setDesign(pid, args){
@@ -1716,7 +1744,7 @@ async function openPlayerModal(pid){
   // багаті поля картки (вік/країна/№/голи/асисти/травма/історія) — якщо вьюха доступна
   let card={};
   try{ card=(await sbSel(`market_player_card?id=eq.${pid}&select=*`))[0]||{}; }catch(e){ card={}; }
-  const tier=card.current_tier||'silver';   // ЕФЕКТИВНИЙ дизайн (431): рамка/rare/mega/auto-team
+  const tier=card.current_tier||'silver';   // ЕФЕКТИВНИЙ дизайн (443): рамка / rare/mega (solo|team, явний вибір) / silver
   // стан-лінія
   let st;
   if(ctx.owned) st={tone:'gold',eb:'У ТВОЄМУ СКЛАДІ',hlp:'Активний гравець твоєї команди'};
@@ -1834,16 +1862,7 @@ function bindModalActions(p){
 
 // ── 📇 КОЛЕКЦІЯ — наскрізна сітка карток пулу (той самий компонент squadCardHTML, без дублю) ──
 async function viewCollection(){
-  // багаті поля картки (голи/асисти/країна) для всіх — один запит, graceful-degrade (потребує 422)
-  if(!Object.keys(S.cards).length){
-    try{ (await sbSel(`market_player_card?tournament_id=eq.${S.tour.id}&select=id,goals,assists,appearances,country,val_delta_tour_pct,current_tier,current_card_key,current_card_png`)).forEach(c=>S.cards[c.id]=c); }catch(e){}
-  }
-  // каталог карток (card_key→колекції) + реєстр колекцій для дропдауна (graceful-degrade)
-  if(!S.cardMeta){
-    S.cardMeta={}; S.collReg=[];
-    try{ (await sbSel(`card_items?select=card_key,tier,collections`)).forEach(c=>S.cardMeta[c.card_key]=c); }catch(e){}
-    try{ S.collReg=await sbSel(`card_collections?select=key,title&order=sort_order`); }catch(e){ S.collReg=[]; }
-  }
+  await loadCardMeta();   // ефективний дизайн + каталог колекцій (спільно з Ринком)
   const me=S.me.id, f=S.colF;
   const clubs=[...new Set(S.players.map(p=>p.club_id))].map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
   const card=(p)=>{

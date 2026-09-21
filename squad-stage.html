@@ -219,9 +219,9 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
   border-radius:50%;background:#111b16;color:var(--ink);font-size:20px;cursor:pointer;z-index:130}
 /* вітрина «Показати картку» — сцена-подіум per-tier (крок 4, референс _showcard_preview) */
-.sqfull .stage{position:relative;width:min(96vw,calc(96vh * 2560/1600));aspect-ratio:2560/1600;border-radius:16px;overflow:hidden;
+.sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
   background-size:cover;background-position:center;perspective:1500px}
-.sqfull .glow{position:absolute;left:50%;top:40%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+.sqfull .glow{position:absolute;left:50%;top:36%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
 @keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
 .sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
@@ -229,19 +229,23 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sqfull .reflect{position:absolute;left:50%;transform:translateX(-50%) scaleY(-1);z-index:1;pointer-events:none;opacity:.26;filter:blur(1.1px);
   -webkit-mask-image:linear-gradient(to top,#000,transparent 60%);mask-image:linear-gradient(to top,#000,transparent 60%)}
 .sqfull .reflect img,.sqfull .reflect .sqcard{display:block}
-.sqfull .podium-card{position:absolute;left:50%;bottom:20%;transform:translateX(-50%);z-index:3}
+.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
-  filter:drop-shadow(0 26px 30px rgba(0,0,0,.5));animation:sqsway 6s ease-in-out infinite}
+  animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
 .sqfull .podium-card img.rarepng{width:auto;display:block}
-.sqfull .tilt.fx{overflow:hidden}
+/* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
+.sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
   background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
 @keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
-/* mega color-pulse — «дихання кольору» (фінальний ефект mega) */
-.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%);animation:sqglow 4s ease-in-out infinite,sqmega 6s ease-in-out infinite}
-@keyframes sqmega{0%,100%{filter:hue-rotate(0deg)}50%{filter:hue-rotate(45deg)}}
-@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before{animation:none}}
+/* ④ mega: дихання кольору (saturate/brightness) + легкий політ, БЕЗ жарин (провізорно — до точних ефектів Богдана) */
+.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
+.sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
+@keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
+.sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
+@keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт із кабінету — тримати в синхроні) ── */
 .modal-host{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);
@@ -476,7 +480,7 @@ function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel';
   const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
-  const fx=(tier==='rare'||tier==='mega_rare'), reflect=(tier==='rare'), mega=(tier==='mega_rare');
+  const fx=isArt, reflect=(tier==='rare'&&isArt), mega=(tier==='mega_rare');
   const inner=isArt?`<img class="rarepng" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">`
                    :squadCardHTML(p,tier,card);
   const el=document.createElement('div'); el.className='sqfull';
@@ -484,7 +488,7 @@ function showFullCard(p, tier, card){
     <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
       ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
       <div class="contact"></div>
-      <div class="podium-card"><div class="tilt${fx?' fx':''}">${inner}</div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(card.current_card_png)}')"`:''}>${inner}</div></div>
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
