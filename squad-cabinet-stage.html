@@ -522,7 +522,8 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
   background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
 @keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
-/* ④ mega: дихання кольору (saturate/brightness) + легкий політ, БЕЗ жарин (провізорно — до точних ефектів Богдана) */
+/* ④ mega: дихання кольору (saturate/brightness) + легкий політ, БЕЗ жарин і БЕЗ біжучого glint (рішення Богдана: glint-строка лише на rare; на mega — пульсація+паріння) */
+.sqfull .stage.mega .tilt.fx::before{content:none}
 .sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
 .sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
@@ -1692,7 +1693,7 @@ function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel';
   const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
-  const fx=isArt, reflect=(tier==='rare'&&isArt), mega=(tier==='mega_rare');
+  const fx=isArt, reflect=false, mega=(tier==='mega_rare');   // віддзеркалення на підлозі прибрано (рішення Богдана) — лишається контактна тінь
   const inner=isArt?`<img class="rarepng" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">`
                    :squadCardHTML(p,tier,card);
   const el=document.createElement('div'); el.className='sqfull';
