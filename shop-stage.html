@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Крамниця карт · BoOrbit (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<!-- шрифти BoBet — лише для екрана входу (вхід спільний для всіх ліг) -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c1310; --panel:#132019; --panel2:#18271f; --line:#243a30;
+  --text:#e9f1ec; --text-dim:#8ba297;
+  --gold:#e6c14b; --teal:#6fb0c9; --blue:#7fbcff; --purple:#a98fdb;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); --red:#e2585f;
+  --up:#26c281; --down:#e2585f;
+  --accent:#18b47a; --accent-d:#0e6f4c; --dim:#5f7469;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
+    radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
+    var(--bg)}
+h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
+.wrap{max-width:1200px;margin:0 auto;padding:0 16px 60px}
+a{color:var(--accent)}
+button{font-family:var(--mono);cursor:pointer}
+.hide{display:none!important}
+
+/* шапка */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .sq{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#18b47a,#0e6f4c);
+  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:16px;color:#04120c}
+.logo h1{font-size:20px;margin:0;line-height:1}
+.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);
+  border-radius:6px;padding:2px 8px;letter-spacing:.08em}
+.who{font-size:13px;color:var(--text-dim)}
+.who b{color:var(--text)}
+.abadge{font-size:10px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:1px 6px;letter-spacing:.08em}
+button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
+button.act{background:var(--green-soft);color:var(--up);border:1px solid var(--accent-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
+button.act.warn{background:transparent;color:var(--down);border-color:var(--down)}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+/* фільтри */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px}
+.filters input,.filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.filters input{flex:1;min-width:180px}
+
+/* сітка карток */
+.sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
+.grid{display:flex;flex-wrap:wrap;gap:16px}
+.card{width:170px;cursor:pointer}
+.card .art{position:relative;width:170px;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;
+  background:#0a120e;border:1px solid var(--line)}
+.card .art img{width:100%;height:100%;object-fit:contain;display:block}
+.card:hover .art{outline:2px solid var(--accent)}
+.card .rar{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
+.rar.rare{background:rgba(111,176,201,.2);color:#bfe0ee;border:1px solid #3d6d7e}
+.rar.mega_rare{background:rgba(230,193,75,.18);color:#f0d98a;border:1px solid #8a7228}
+.card .own{margin-top:6px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
+  color:var(--text-dim);border:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .own.free{background:var(--green-soft);color:var(--up);border-color:var(--accent-d)}
+.card .own.mine{background:rgba(230,193,75,.14);color:var(--gold);border-color:#8a7228}
+
+/* секції */
+.sec{margin:26px 0 10px}
+.sec h2{font-size:17px;margin:0 0 8px}
+.reqrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.reqrow .info{flex:1;min-width:220px;font-size:14px}
+.reqrow .kindb{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:2px 7px;border-radius:5px;margin-right:6px}
+.kindb.claim{background:var(--green-soft);color:var(--up);border:1px solid var(--accent-d)}
+.kindb.interest{background:rgba(169,143,219,.16);color:var(--purple);border:1px solid #5b4a86}
+.st{font-size:11px;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+.st.pending{color:var(--gold)}.st.approved{color:var(--up)}.st.rejected{color:var(--down)}
+
+/* модалка деталі */
+.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--panel2);border:1px solid var(--line);border-radius:16px;max-width:720px;width:100%;
+  max-height:90vh;overflow:auto;padding:0}
+.modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal .mhead h3{margin:0;font-size:18px;flex:1}
+.modal .mx{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
+.modal .mbody{display:grid;grid-template-columns:200px 1fr;gap:18px;padding:18px 20px}
+.modal .cardside .art{width:200px;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;background:#0a120e;border:1px solid var(--line)}
+.modal .cardside .art img{width:100%;height:100%;object-fit:contain}
+.modal .cardside button{width:100%;margin-top:10px}
+.dl{margin:0 0 14px}
+.dl .k{font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.dl .v{font-size:15px;font-weight:600}
+.prov{list-style:none;padding:0;margin:0}
+.prov li{font-size:13px;padding:4px 0;border-bottom:1px solid var(--line)}
+.prov li:last-child{border:none}
+.prov .arrow{color:var(--text-dim)}
+.acts{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:8px}
+.msg.err{background:rgba(226,88,95,.14);color:#f2b0b3}
+.msg.ok{background:var(--green-soft);color:var(--up)}
+@media(max-width:640px){.modal .mbody{grid-template-columns:1fr}}
+
+/* showFullCard — арт на сцені (порт із кабінету) */
+.sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.94);backdrop-filter:blur(10px)}
+.sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
+  border-radius:10px;background:rgba(10,18,14,.7);color:var(--text);font-size:18px;z-index:5}
+.sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
+  background-size:cover;background-position:center;perspective:1400px;display:flex;align-items:center;justify-content:center}
+.sqfull .glow{position:absolute;left:50%;top:38%;width:48%;height:60%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(24,180,122,.28),transparent 66%)}
+.sqfull .contact{position:absolute;left:50%;bottom:13%;width:20%;height:2.2%;transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.6),transparent 70%);z-index:2}
+.sqfull .podium-card{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);z-index:3;
+  filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
+  animation:shopidle 6s ease-in-out infinite}
+@keyframes shopidle{0%,100%{transform:rotateX(3deg) rotateY(-3deg)}50%{transform:rotateX(3deg) rotateY(3deg)}}
+.sqfull .podium-card img.rarepng{width:auto;height:62vh;display:block;border-radius:14px}
+.sqfull .tilt.fx::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:14px;
+  -webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;
+  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.42) 50%,transparent 62%);
+  background-size:280% 280%;animation:shopglint 3.4s linear infinite}
+@keyframes shopglint{0%{background-position:180% 0}100%{background-position:-80% 0}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt,.sqfull .tilt.fx::before{animation:none}}
+
+/* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама всіх ліг) ── */
+.login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
+.login h1{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--green);font-size:22px;letter-spacing:.04em}
+.login .stage-badge{font-family:'IBM Plex Mono',monospace}
+.login p{color:var(--text-dim);font-size:14px}
+.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;
+  padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
+.login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
+.login button.primary{width:100%;font-family:'Montserrat',sans-serif}
+#login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="sq">SQ</div>
+      <div><h1>Крамниця карт</h1><div class="sub">BoOrbit</div></div>
+    </div>
+    <div class="right">
+      <span class="stage-badge">STAGE</span>
+      <span id="who" class="who hide"></span>
+      <button id="btn-login" class="ghost">Увійти</button>
+      <button id="btn-logout" class="ghost hide">Вийти</button>
+    </div>
+  </div>
+
+  <!-- ВІТРИНА (публічна) -->
+  <div id="screen-shop">
+    <div class="filters">
+      <input id="f-q" placeholder="Пошук по назві картки…">
+      <select id="f-rar"><option value="">Рідкість: усі</option><option value="rare">Rare</option><option value="mega_rare">Mega Rare</option></select>
+      <select id="f-kind"><option value="">Тип: усі</option><option value="solo">Solo</option><option value="team">Team</option></select>
+      <select id="f-status"><option value="">Статус: усі</option><option value="free">Вільні</option><option value="taken">Зайняті</option><option value="mine">Мої</option></select>
+    </div>
+    <div id="sum" class="sum"></div>
+    <div id="grid" class="grid"></div>
+
+    <div id="mine-sec" class="sec hide"><h2>Мої заявки</h2><div id="mine-list"></div></div>
+    <div id="interest-sec" class="sec hide"><h2>Хочуть мої картки</h2><div id="interest-list"></div></div>
+    <div id="admin-sec" class="sec hide"><h2>Адмінка · заявки на видачу</h2><div id="admin-list"></div></div>
+  </div>
+
+  <!-- ЕКРАН ВХОДУ -->
+  <div id="screen-login" class="login hide">
+    <h1>BoOrbit <span class="stage-badge">STAGE</span></h1>
+    <div id="step-email">
+      <p>Увійди своєю поштою — для заявок на картки.</p>
+      <input id="in-email" type="email" placeholder="твоя пошта" autocomplete="email">
+      <button id="btn-send" class="primary">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p>Введи код із листа.</p>
+      <input id="in-code" class="code" inputmode="numeric" placeholder="000000">
+      <button id="btn-verify" class="primary">Увійти</button>
+      <button id="btn-back" class="ghost" style="margin-top:8px">Назад</button>
+    </div>
+    <div id="login-msg"></div>
+    <p style="margin-top:18px"><a href="#" id="lnk-back-shop">← до вітрини</a></p>
+  </div>
+</div>
+
+<div id="mhost"></div>
+
+<script type="module">
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+const S={ me:null, isAdmin:false, cards:[], f:{q:'',rar:'',kind:'',status:''} };
+const SCENE={rare:'rare',mega_rare:'mega_rare'};
+const RAR={rare:'Rare',mega_rare:'Mega Rare'};
+
+// ── boot: вітрина публічна, логін опційний ──
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  S.me = session ? session.user.id : null;
+  if(S.me){
+    // свій профіль (RLS: свій рядок) — ім'я + чи адмін
+    try{
+      const { data } = await sb.from('profiles').select('display_name,is_platform_admin').eq('id',S.me).maybeSingle();
+      if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
+    }catch(e){}
+    $('who').classList.remove('hide'); $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">адмін</span>':''}`;
+    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
+  }
+  await loadShop();
+  if(S.me){ await loadMine(); await loadInterest(); if(S.isAdmin) await loadAdmin(); }
+}
+
+async function loadShop(){
+  const { data, error } = await sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id,owner_name,is_free').order('tier').order('card_key');
+  S.cards = error ? [] : (data||[]);
+  renderGrid();
+}
+
+function shopList(){
+  const f=S.f; let l=S.cards.slice();
+  if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.card_key.toLowerCase().includes(q)); }
+  if(f.rar) l=l.filter(c=>c.tier===f.rar);
+  if(f.kind) l=l.filter(c=>c.kind===f.kind);
+  if(f.status==='free') l=l.filter(c=>c.is_free);
+  else if(f.status==='taken') l=l.filter(c=>!c.is_free);
+  else if(f.status==='mine') l=l.filter(c=>c.owner_profile_id===S.me);
+  return l;
+}
+function cardTitle(c){ return c.card_key.replace(/_/g,' '); }
+
+function renderGrid(){
+  const l=shopList();
+  const free=S.cards.filter(c=>c.is_free).length;
+  $('sum').textContent=`усього карток · ${S.cards.length} · вільних ${free} · показано ${l.length}`;
+  $('grid').innerHTML = l.map(c=>{
+    const mine=c.owner_profile_id===S.me && S.me;
+    const own = c.is_free ? `<div class="own free">Вільна</div>`
+      : `<div class="own ${mine?'mine':''}">${mine?'★ Твоя':esc(c.owner_name||'зайнята')}</div>`;
+    return `<div class="card" data-k="${esc(c.card_key)}">
+      <div class="art"><span class="rar ${c.tier}">${RAR[c.tier]||c.tier}</span>
+        <img src="${esc(c.png_path)}" alt="${esc(cardTitle(c))}" loading="lazy"></div>
+      ${own}</div>`;
+  }).join('') || '<div class="sum">Нічого не знайдено.</div>';
+  [...document.querySelectorAll('.card')].forEach(el=>el.onclick=()=>openCard(el.dataset.k));
+}
+
+// ── модалка деталі картки ──
+async function openCard(key){
+  const c=S.cards.find(x=>x.card_key===key); if(!c) return;
+  const mine=c.owner_profile_id===S.me && S.me;
+  // провенанс
+  let prov=[];
+  try{ const { data } = await sb.from('card_provenance').select('from_name,to_name,changed_at').eq('card_key',key).order('changed_at'); prov=data||[]; }catch(e){}
+  const provHtml = prov.length ? `<ul class="prov">${prov.map(p=>{
+    const from=p.from_name||'Крамниця', to=p.to_name||'Крамниця';
+    return `<li>${esc(from)} <span class="arrow">→</span> ${esc(to)} <span class="st" style="float:right">${new Date(p.changed_at).toLocaleDateString('uk')}</span></li>`;
+  }).join('')}</ul>` : '<div class="st">Історії ще немає.</div>';
+
+  // дії
+  let acts='';
+  if(!S.me){
+    acts=`<button class="ghost" data-login>Увійти, щоб подати заявку</button>`;
+  } else if(mine){
+    acts=`<div class="st">Це твоя картка.</div>`;
+  } else if(c.is_free){
+    acts=`<button class="act" data-req="claim">Запросити (claim)</button>`;
+  } else {
+    acts=`<button class="act" data-req="interest">Цікавить</button>`;
+  }
+
+  const host=$('mhost');
+  host.innerHTML=`<div class="mhost"><div class="modal">
+    <div class="mhead"><h3>${esc(cardTitle(c))}</h3><button class="mx" aria-label="закрити">✕</button></div>
+    <div class="mbody">
+      <div class="cardside">
+        <div class="art"><img src="${esc(c.png_path)}" alt=""></div>
+        <button class="ghost" data-full>↗ Показати карту</button>
+      </div>
+      <div class="info">
+        <div class="dl"><div class="k">Рідкість</div><div class="v">${RAR[c.tier]||c.tier} · ${c.kind==='team'?'командна':'соло'}</div></div>
+        <div class="dl"><div class="k">Власник</div><div class="v">${c.is_free?'<span style="color:var(--up)">Вільна</span>':esc(c.owner_name||'зайнята')}${mine?' (ти)':''}</div></div>
+        <div class="dl"><div class="k">Історія власників (провенанс)</div>${provHtml}</div>
+        <div class="acts">${acts}</div>
+        <div id="card-msg"></div>
+      </div>
+    </div>
+  </div></div>`;
+  const close=()=>host.innerHTML='';
+  host.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')||e.target.classList.contains('mx')) close(); };
+  const full=host.querySelector('[data-full]'); if(full) full.onclick=()=>showFullCard(c);
+  const lg=host.querySelector('[data-login]'); if(lg) lg.onclick=()=>{ close(); showLogin(); };
+  const rq=host.querySelector('[data-req]'); if(rq) rq.onclick=()=>doRequest(c.card_key, rq.dataset.req);
+}
+
+async function doRequest(key, kind){
+  const m=$('card-msg'); m.className='msg'; m.textContent='…';
+  const { error } = await sb.rpc('request_card', { p_card_key:key, p_kind:kind });
+  if(error){ m.className='msg err'; m.textContent='Крамниця: '+(error.message||'не вдалось'); return; }
+  m.className='msg ok'; m.textContent = kind==='claim' ? 'Заявку «Запросити» подано — адмін розгляне.' : 'Позначено «Цікавить» — власник побачить.';
+  await loadMine();
+}
+
+// ── showFullCard: арт на сцені (порт із кабінету) ──
+function showFullCard(c){
+  const scene=SCENE[c.tier]||'rare', mega=(c.tier==='mega_rare');
+  const el=document.createElement('div'); el.className='sqfull';
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
+    <div class="stage" style="background-image:url('scenes/${scene}.webp')">
+      <div class="glow"></div><div class="contact"></div>
+      <div class="podium-card"><div class="tilt fx" style="--m:url('${esc(c.png_path)}')">
+        <img class="rarepng" src="${esc(c.png_path)}" alt="${esc(cardTitle(c))}"></div></div>
+    </div>`;
+  el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
+  document.body.appendChild(el);
+  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
+  stage.addEventListener('pointermove',e=>{
+    const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
+    tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*14+3).toFixed(1)}deg) rotateY(${(dx*20).toFixed(1)}deg)`;
+  });
+  stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
+}
+
+// ── мої заявки / хочуть мої / адмінка ──
+async function loadMine(){
+  const { data } = await sb.from('card_requests').select('id,card_key,kind,status,created_at').eq('requester_id',S.me).order('created_at',{ascending:false});
+  const rows=(data||[]).filter(r=>true);
+  if(!rows.length){ $('mine-sec').classList.add('hide'); return; }
+  $('mine-sec').classList.remove('hide');
+  $('mine-list').innerHTML=rows.map(r=>`<div class="reqrow">
+    <div class="info"><span class="kindb ${r.kind}">${r.kind==='claim'?'Запросити':'Цікавить'}</span>${esc(r.card_key.replace(/_/g,' '))}</div>
+    <span class="st ${r.status}">${({pending:'на розгляді',approved:'схвалено',rejected:'відхилено'})[r.status]}</span>
+  </div>`).join('');
+}
+async function loadInterest(){
+  const { data, error } = await sb.rpc('my_card_interest');
+  const rows = error ? [] : (data||[]);
+  if(!rows.length){ $('interest-sec').classList.add('hide'); return; }
+  $('interest-sec').classList.remove('hide');
+  $('interest-list').innerHTML=rows.map(r=>`<div class="reqrow">
+    <div class="info"><span class="kindb interest">Цікавить</span><b>${esc(r.interested_name||'хтось')}</b> хоче <b>${esc(r.card_key.replace(/_/g,' '))}</b></div>
+    <span class="st">${new Date(r.created_at).toLocaleDateString('uk')}</span>
+  </div>`).join('');
+}
+async function loadAdmin(){
+  // RLS: адмін бачить УСІ заявки; показуємо pending claim НЕ свої
+  const { data } = await sb.from('card_requests').select('id,card_key,kind,status,requester_id,created_at').eq('kind','claim').eq('status','pending').order('created_at');
+  const rows=(data||[]).filter(r=>r.requester_id!==S.me);
+  if(!rows.length){ $('admin-sec').classList.add('hide'); return; }
+  $('admin-sec').classList.remove('hide');
+  $('admin-list').innerHTML=rows.map(r=>`<div class="reqrow" data-req="${r.id}">
+    <div class="info"><span class="kindb claim">Запросити</span>${esc(r.card_key.replace(/_/g,' '))}</div>
+    <button class="act" data-approve="${r.id}">Видати</button>
+    <button class="act warn" data-reject="${r.id}">Відхилити</button>
+  </div>`).join('');
+  [...document.querySelectorAll('[data-approve]')].forEach(b=>b.onclick=()=>adminAct('card_approve_request',b.dataset.approve));
+  [...document.querySelectorAll('[data-reject]')].forEach(b=>b.onclick=()=>adminAct('card_reject_request',b.dataset.reject));
+}
+async function adminAct(fn, id){
+  const { error } = await sb.rpc(fn, { p_request_id:id });
+  if(error){ alert('Крамниця: '+(error.message||'не вдалось')); return; }
+  await loadShop(); await loadAdmin(); await loadMine();
+}
+
+// ── фільтри ──
+$('f-q').oninput=e=>{ S.f.q=e.target.value; renderGrid(); };
+$('f-rar').onchange=e=>{ S.f.rar=e.target.value; renderGrid(); };
+$('f-kind').onchange=e=>{ S.f.kind=e.target.value; renderGrid(); };
+$('f-status').onchange=e=>{ S.f.status=e.target.value; renderGrid(); };
+
+// ── логін (OTP) ──
+function showLogin(){ $('screen-shop').classList.add('hide'); $('screen-login').classList.remove('hide'); }
+function showShop(){ $('screen-login').classList.add('hide'); $('screen-shop').classList.remove('hide'); }
+$('btn-login').onclick=showLogin;
+$('lnk-back-shop').onclick=e=>{ e.preventDefault(); showShop(); };
+$('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+$('btn-send').onclick=async()=>{
+  const email=$('in-email').value.trim(); if(!email) return;
+  $('login-msg').textContent='Надсилаю…';
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error){ $('login-msg').textContent='Помилка: '+error.message; return; }
+  window.__email=email; $('step-email').classList.add('hide'); $('step-code').classList.remove('hide'); $('login-msg').textContent='';
+};
+$('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); };
+$('btn-verify').onclick=async()=>{
+  const token=$('in-code').value.trim(); if(!token) return;
+  $('login-msg').textContent='Перевіряю…';
+  let res=await sb.auth.verifyOtp({ email:window.__email, token, type:'email' });
+  if(res.error) res=await sb.auth.verifyOtp({ email:window.__email, token, type:'magiclink' });
+  if(res.error){ $('login-msg').textContent='Помилка: '+res.error.message; return; }
+  location.reload();
+};
+
+boot().catch(e=>{ $('sum').textContent='Помилка завантаження: '+e.message; });
+</script>
+</body>
+</html>
