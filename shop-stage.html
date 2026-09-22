@@ -113,28 +113,37 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .msg.ok{background:var(--green-soft);color:var(--up)}
 @media(max-width:640px){.modal .mbody{grid-template-columns:1fr}}
 
-/* showFullCard — арт на сцені (порт із кабінету) */
-.sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.94);backdrop-filter:blur(10px)}
+/* showFullCard — арт на сцені-подіумі (ефекти = КАНОН кабінету 58dc504:
+   rare = glint по ФОРМІ картки; mega = БЕЗ glint, дихання кольору + паріння; reflect прибрано) */
+.sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);backdrop-filter:blur(10px);
+  display:flex;align-items:center;justify-content:center}
 .sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;
-  border-radius:10px;background:rgba(10,18,14,.7);color:var(--text);font-size:18px;z-index:5}
+  border-radius:50%;background:#111b16;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
 .sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;
-  background-size:cover;background-position:center;perspective:1400px;display:flex;align-items:center;justify-content:center}
-.sqfull .glow{position:absolute;left:50%;top:38%;width:48%;height:60%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
-  background:radial-gradient(ellipse at center,rgba(24,180,122,.28),transparent 66%)}
-.sqfull .contact{position:absolute;left:50%;bottom:13%;width:20%;height:2.2%;transform:translateX(-50%);
-  background:radial-gradient(ellipse at center,rgba(0,0,0,.6),transparent 70%);z-index:2}
-.sqfull .podium-card{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);z-index:3;
-  filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+  background-size:cover;background-position:center;perspective:1500px}
+.sqfull .glow{position:absolute;left:50%;top:36%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
+@keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
+.sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.4),transparent 72%);filter:blur(9px);z-index:1}
+.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
-  animation:shopidle 6s ease-in-out infinite}
-@keyframes shopidle{0%,100%{transform:rotateX(3deg) rotateY(-3deg)}50%{transform:rotateX(3deg) rotateY(3deg)}}
-.sqfull .podium-card img.rarepng{width:auto;height:62vh;display:block;border-radius:14px}
-.sqfull .tilt.fx::before{content:"";position:absolute;inset:0;z-index:2;pointer-events:none;border-radius:14px;
-  -webkit-mask:var(--m) center/contain no-repeat;mask:var(--m) center/contain no-repeat;
-  background:linear-gradient(115deg,transparent 38%,rgba(255,255,255,.42) 50%,transparent 62%);
-  background-size:280% 280%;animation:shopglint 3.4s linear infinite}
-@keyframes shopglint{0%{background-position:180% 0}100%{background-position:-80% 0}}
-@media(prefers-reduced-motion:reduce){.sqfull .tilt,.sqfull .tilt.fx::before{animation:none}}
+  animation:sqsway 6s ease-in-out infinite}
+@keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
+.sqfull .podium-card img.rarepng{width:auto;height:62vh;display:block}
+/* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
+.sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
+.sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
+@keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
+/* ④ mega: дихання кольору (saturate/brightness) + легкий політ, БЕЗ жарин і БЕЗ біжучого glint */
+.sqfull .stage.mega .tilt.fx::before{content:none}
+.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
+.sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
+@keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
+.sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
+@keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 
 /* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама всіх ліг) ── */
 .login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
@@ -170,6 +179,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
       <input id="f-q" placeholder="Пошук по назві картки…">
       <select id="f-rar"><option value="">Рідкість: усі</option><option value="rare">Rare</option><option value="mega_rare">Mega Rare</option></select>
       <select id="f-kind"><option value="">Тип: усі</option><option value="solo">Solo</option><option value="team">Team</option></select>
+      <select id="f-coll"><option value="">Колекція: усі</option></select>
       <select id="f-status"><option value="">Статус: усі</option><option value="free">Вільні</option><option value="taken">Зайняті</option><option value="mine">Мої</option></select>
     </div>
     <div id="sum" class="sum"></div>
@@ -209,7 +219,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
-const S={ me:null, isAdmin:false, cards:[], f:{q:'',rar:'',kind:'',status:''} };
+const S={ me:null, isAdmin:false, cards:[], collReg:[], f:{q:'',rar:'',kind:'',coll:'',status:''} };
 const SCENE={rare:'rare',mega_rare:'mega_rare'};
 const RAR={rare:'Rare',mega_rare:'Mega Rare'};
 
@@ -233,7 +243,20 @@ async function boot(){
 async function loadShop(){
   const { data, error } = await sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id,owner_name,is_free').order('tier').order('card_key');
   S.cards = error ? [] : (data||[]);
+  // колекції (437, anon): реєстр + collections на кожну картку (graceful degrade)
+  try{
+    S.collReg = (await sb.from('card_collections').select('key,title').order('sort_order')).data || [];
+    const meta = (await sb.from('card_items').select('card_key,collections')).data || [];
+    const map = {}; meta.forEach(m=>map[m.card_key]=m.collections||[]);
+    S.cards.forEach(c=>c.collections = map[c.card_key] || []);
+  }catch(e){ S.collReg=[]; S.cards.forEach(c=>c.collections=c.collections||[]); }
+  renderColl();
   renderGrid();
+}
+function renderColl(){
+  const sel=$('f-coll'); if(!sel) return;
+  sel.innerHTML = '<option value="">Колекція: усі</option>' +
+    S.collReg.map(c=>`<option value="${esc(c.key)}"${S.f.coll===c.key?' selected':''}>${esc(c.title)}</option>`).join('');
 }
 
 function shopList(){
@@ -241,6 +264,7 @@ function shopList(){
   if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.card_key.toLowerCase().includes(q)); }
   if(f.rar) l=l.filter(c=>c.tier===f.rar);
   if(f.kind) l=l.filter(c=>c.kind===f.kind);
+  if(f.coll) l=l.filter(c=>(c.collections||[]).includes(f.coll));
   if(f.status==='free') l=l.filter(c=>c.is_free);
   else if(f.status==='taken') l=l.filter(c=>!c.is_free);
   else if(f.status==='mine') l=l.filter(c=>c.owner_profile_id===S.me);
@@ -325,9 +349,9 @@ function showFullCard(c){
   const scene=SCENE[c.tier]||'rare', mega=(c.tier==='mega_rare');
   const el=document.createElement('div'); el.className='sqfull';
   el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
-    <div class="stage" style="background-image:url('scenes/${scene}.webp')">
+    <div class="stage${mega?' mega':''}" style="background-image:url('scenes/${scene}.webp')">
       <div class="glow"></div><div class="contact"></div>
-      <div class="podium-card"><div class="tilt fx" style="--m:url('${esc(c.png_path)}')">
+      <div class="podium-card${mega?' mega':''}"><div class="tilt fx" style="--m:url('${esc(c.png_path)}')">
         <img class="rarepng" src="${esc(c.png_path)}" alt="${esc(cardTitle(c))}"></div></div>
     </div>`;
   el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
@@ -385,6 +409,7 @@ async function adminAct(fn, id){
 $('f-q').oninput=e=>{ S.f.q=e.target.value; renderGrid(); };
 $('f-rar').onchange=e=>{ S.f.rar=e.target.value; renderGrid(); };
 $('f-kind').onchange=e=>{ S.f.kind=e.target.value; renderGrid(); };
+$('f-coll').onchange=e=>{ S.f.coll=e.target.value; renderGrid(); };
 $('f-status').onchange=e=>{ S.f.status=e.target.value; renderGrid(); };
 
 // ── логін (OTP) ──
