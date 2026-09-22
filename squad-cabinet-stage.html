@@ -1163,8 +1163,9 @@ function marketList(){
   if(f.pos)    list=list.filter(p=>p.position===f.pos);
   if(f.rarity) list=list.filter(p=>((S.cards[p.id]||{}).current_tier||'silver')===f.rarity);   // фільтр Колекція — лише в Колекції/Крамниці (не в Ринку)
   if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
-  if(f.rMin!=null) list=list.filter(p=>(p.season_avg_rating??0) >= f.rMin);
-  if(f.rMax!=null) list=list.filter(p=>(p.season_avg_rating??99) <= f.rMax);
+  // немає рейтингу (не грав/травма) ≠ рейтинг 0 — такий гравець не ріжеться слайдером рейтингу
+  if(f.rMin!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating >= f.rMin);
+  if(f.rMax!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating <= f.rMax);
   if(f.pMin!=null) list=list.filter(p=>(p.market_value_current||0) >= f.pMin);
   if(f.pMax!=null) list=list.filter(p=>(p.market_value_current||0) <= f.pMax);
   if(f.onlyPlayed) list=list.filter(p=>((S.stats[p.id]||{}).rounds_played||0)>0);
@@ -1181,8 +1182,10 @@ function marketList(){
 }
 function filterBar(){
   const f=S.f;
-  const leagues=[...new Set(Object.values(S.clubs).map(c=>c.league))].sort();
-  const clubs=Object.values(S.clubs).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
+  // показуємо лише клуби з гравцями в пулі (порожні засіяні клуби ховаємо; з'являться самі, коли додамо гравців)
+  const activeClubs=new Set(S.players.map(p=>p.club_id));
+  const leagues=[...new Set(Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).map(c=>c.league))].sort();
+  const clubs=Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
   const rB=S.rBounds, pB=S.pBounds;
   return `<div class="mfilters">
@@ -1962,7 +1965,9 @@ async function viewMatches(){
   const freeze = frozen? `<div class="rndbar" style="border-color:#244;background:#0e1a22">
       <span class="pill" style="background:#0e1a22;border:1px solid #244;color:var(--blue)">❄ Заморозка</span>
       <span class="txt">Тур ${round.number} у грі — ринок зачинено до внесення всіх результатів.</span></div>` : '';
-  const rf=fx.filter(f=>f.round_id===round.id);
+  // лише матчі клубів, що мають гравців у пулі (порожні засіяні клуби ховаємо)
+  const activeClubs=new Set(S.players.map(p=>p.club_id));
+  const rf=fx.filter(f=>f.round_id===round.id && activeClubs.has(f.home_club_id) && activeClubs.has(f.away_club_id));
   const rows = rf.length ? rf.map(f=>{
     const sched=f.home_score==null;
     const sc=sched? new Date(f.kickoff_at).toLocaleString('uk',{weekday:'short',hour:'2-digit',minute:'2-digit'}) : `${f.home_score}:${f.away_score}`;
@@ -1972,7 +1977,7 @@ async function viewMatches(){
       <div class="t away"><span>${esc(clubName(f.away_club_id))}</span><span class="crest" style="--club:${clubCol(f.away_club_id)}"></span></div>
     </div>`;
   }).join('') : '<div class="dim" style="padding:12px 4px">Фікстур на цей тур ще немає.</div>';
-  $('view').innerHTML = `<div class="head2"><h2>Матчі · Тур ${round.number}</h2><span class="sub">розклад/результати 19 клубів · клік на матч → рейтинги гравців пулу</span></div>
+  $('view').innerHTML = `<div class="head2"><h2>Матчі · Тур ${round.number}</h2><span class="sub">розклад/результати клубів пулу · клік на матч → рейтинги гравців пулу</span></div>
     ${sel}${freeze}<div class="panel" style="padding:4px 10px">${rows}</div>`;
   [...document.querySelectorAll('[data-mr]')].forEach(b=>b.onclick=()=>{ S.matchRound=b.dataset.mr; viewMatches(); });
   [...document.querySelectorAll('[data-fx]')].forEach(el=>el.onclick=()=>openMatchModal(round, el.dataset.fx));
