@@ -1928,8 +1928,9 @@ function viewStats(){
   const scored=p=>{ const st=S.stats[p.id]; return st && st.rounds_played>0 ? st.scored_points : null; };
   const byRating=pool.filter(p=>p.season_avg_rating!=null).sort((a,b)=>b.season_avg_rating-a.season_avg_rating).slice(0,N);
   const byPoints=pool.filter(p=>scored(p)!=null).sort((a,b)=>scored(b)-scored(a)).slice(0,N);
-  const up  =pool.slice().sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
-  const down=pool.slice().sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
+  // лише гравці з реальним рухом ціни (у пре-маркеті всі flat 0% → борди порожні, а не «топ-10 з –0%»)
+  const up  =pool.filter(p=>vDelta(p).pct> 0.0005).sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
+  const down=pool.filter(p=>vDelta(p).pct<-0.0005).sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
   const empty='<div class="dim" style="padding:12px 14px">Даних ще немає (зʼявляться після зіграних турів)</div>';
   const board=(title,sub,rows)=>`<div class="statcard"><div class="sthead"><b>${title}</b><span>${sub}</span></div>${rows||empty}</div>`;
   $('view').innerHTML=`
