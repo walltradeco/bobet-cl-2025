@@ -177,7 +177,7 @@ table.t{width:100%;border-collapse:collapse}
 .mav{width:76px;height:76px;border-radius:50%;margin:0 auto 8px;background:var(--panel2);
   border:2px solid var(--line);display:flex;align-items:center;justify-content:center;
   font-size:24px;font-weight:800;color:var(--text-dim);overflow:hidden;flex:none}
-.mav img{width:100%;height:100%;object-fit:cover}
+.mav img{width:100%;height:100%;object-fit:cover;object-position:center 15%}
 .mtile .mnm{font-weight:700;font-size:14px;line-height:1.2}
 .mtile .mclub{font-size:12px;color:var(--text-dim);margin-top:2px}
 .mrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}
@@ -461,30 +461,36 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .sqcard.sqart{overflow:hidden;border-radius:16px}
 .sqart .sq-art{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;z-index:1}
 .sq-frame{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
-.sq-photo{position:absolute;left:13%;top:4%;width:74%;z-index:2}
+.sq-photo{position:absolute;left:9%;top:13%;width:82%;z-index:2}
 .sq-photo img{width:100%;display:block;
-  -webkit-mask-image:linear-gradient(to bottom,#000 52%,rgba(0,0,0,.55) 72%,transparent 100%);
-          mask-image:linear-gradient(to bottom,#000 52%,rgba(0,0,0,.55) 72%,transparent 100%)}
+  -webkit-mask-image:linear-gradient(to bottom,#000 46%,rgba(0,0,0,.5) 62%,transparent 82%);
+          mask-image:linear-gradient(to bottom,#000 46%,rgba(0,0,0,.5) 62%,transparent 82%)}
 .sq-mono{position:absolute;left:0;right:0;top:14%;z-index:2;text-align:center;
   font-family:var(--mono);font-weight:800;font-size:74px;color:rgba(255,255,255,.16);letter-spacing:.02em}
 .sq-scrim{position:absolute;inset:0;z-index:3;pointer-events:none;
-  background:linear-gradient(to bottom,transparent 40%,rgba(5,8,7,.5) 55%,rgba(5,8,7,.86) 72%,rgba(5,8,7,.94) 100%)}
+  background:linear-gradient(to bottom,transparent 42%,rgba(5,8,7,.55) 56%,rgba(5,8,7,.88) 73%,rgba(5,8,7,.95) 100%)}
 /* scrim кліпнутий за alpha рамки — інакше непрозорий низ залазить у скошені кути = чорний прямокутник за межами рамки */
 .sqcard[data-tier=steel] .sq-scrim{-webkit-mask:url('frames/steel.webp') center/100% 100% no-repeat;mask:url('frames/steel.webp') center/100% 100% no-repeat}
 .sqcard[data-tier=gold] .sq-scrim{-webkit-mask:url('frames/gold.webp') center/100% 100% no-repeat;mask:url('frames/gold.webp') center/100% 100% no-repeat}
 .sqcard[data-tier=emerald] .sq-scrim{-webkit-mask:url('frames/emerald.webp') center/100% 100% no-repeat;mask:url('frames/emerald.webp') center/100% 100% no-repeat}
 .sq-ov{position:absolute;z-index:4}
-.sq-rating{left:10%;top:6.5%;font-family:var(--mono);font-weight:700;line-height:.78;text-shadow:0 2px 12px rgba(0,0,0,.95)}
-.sq-rating .n{display:block;color:var(--acc);font-size:35px}
+.sq-rating{left:9%;top:6%;font-family:var(--mono);font-weight:700;line-height:1;text-shadow:0 2px 12px rgba(0,0,0,.95)}
+.sq-rating .n{display:block;color:var(--acc);font-size:29px}
 .sq-rating .l{letter-spacing:.16em;color:#dbe3ea;font-weight:600;font-size:9px;margin-top:3px}
-.sq-pos{right:10%;top:7%;font-family:var(--mono);font-weight:700;letter-spacing:.06em;font-size:12px;color:#eef3f6;
+.sq-pos{right:12%;top:7%;font-family:var(--mono);font-weight:700;letter-spacing:.05em;font-size:11.5px;color:#eef3f6;
   border:1.5px solid var(--posbd);border-radius:7px;padding:2px 9px;background:rgba(10,16,20,.32)}
 .sq-inj{right:10%;top:16%;font-size:16px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.9))}
 .sq-ids{left:10%;top:28%;display:flex;flex-direction:column;gap:8px}
 .sq-ids .fl{font-size:20px;filter:drop-shadow(0 1px 3px rgba(0,0,0,.9))}
 .sq-ids .cr{width:27px;height:27px;border-radius:6px;border:1px solid rgba(255,255,255,.16)}
-.sq-info{left:10%;right:10%;top:48%;z-index:4}
-.sq-name{font-family:var(--mono);font-weight:700;line-height:.9;color:var(--nm);text-shadow:0 2px 13px rgba(0,0,0,.95);font-size:27px}
+.sq-info{left:7%;right:7%;bottom:8%;z-index:4}
+.sq-name{font-family:var(--mono);font-weight:700;line-height:.96;color:var(--nm);text-shadow:0 2px 13px rgba(0,0,0,.95);font-size:21px}
+.sq-natclub{display:flex;align-items:center;gap:7px;font-weight:700;font-size:12.5px;margin-top:2px}
+.sq-natclub .fl{font-size:15px;line-height:1}
+.sq-natclub .cd{font-family:var(--mono);font-weight:700;letter-spacing:.02em;color:#eef3f6;font-size:11px}
+.sq-natclub .sep{width:1px;height:13px;background:rgba(255,255,255,.28)}
+.sq-natclub .crest{width:18px;height:18px;object-fit:contain;filter:drop-shadow(0 1px 3px rgba(0,0,0,.8))}
+.sq-natclub .cn{color:#e8eef2;font-size:12.5px;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sq-club{color:#d5dee6;text-shadow:0 1px 8px rgba(0,0,0,.9);font-size:13px;margin-top:6px;font-weight:600}
 .sq-dv{height:1px;background:color-mix(in srgb,var(--acc) 26%,transparent);margin:10px 0}
 .sq-price{display:flex;align-items:baseline;gap:12px}
@@ -672,7 +678,7 @@ async function boot(){
 }
 
 async function loadRefs(){
-  const cs = await sbSel('market_clubs?select=id,name,league');
+  const cs = await sbSel('market_clubs?select=id,name,league,sofascore_tid');
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
@@ -1641,6 +1647,8 @@ function formSvg(arr){
 const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};
 const frameFile=(t)=>FRAME_FILE[t]||t;
 // мінікартка/повна: rare/mega = готовий арт-PNG; база = рамка(webp)+фото+дані overlay
+const NAT3={Algeria:'ALG',Argentina:'ARG',Austria:'AUT',Belgium:'BEL',Brazil:'BRA',Canada:'CAN',Colombia:'COL',"Cote d'Ivoire":'CIV',Croatia:'CRO',Denmark:'DEN',Ecuador:'ECU',Egypt:'EGY',England:'ENG',France:'FRA',Georgia:'GEO',Germany:'GER',Ghana:'GHA',Greece:'GRE',Guinea:'GUI',Hungary:'HUN',Italy:'ITA',Morocco:'MAR',Netherlands:'NED',Nigeria:'NGA','Northern Ireland':'NIR',Norway:'NOR',Poland:'POL',Portugal:'POR',Senegal:'SEN',Slovakia:'SVK',Slovenia:'SVN','South Korea':'KOR',Spain:'ESP',Sweden:'SWE',Switzerland:'SUI',Turkiye:'TUR',USA:'USA',Ukraine:'UKR',Uruguay:'URU',Uzbekistan:'UZB'};
+function natCode(c){ return NAT3[c]||(c||'').slice(0,3).toUpperCase(); }
 function squadCardHTML(p, tier, card){
   card=card||{};
   // rare/mega-арт — готовий PNG (не збірка рамки). current_card_png із market_player_card (431)
@@ -1651,23 +1659,17 @@ function squadCardHTML(p, tier, card){
   const cl=(S.clubs[p.club_id]||{}), ff=frameFile(tier);
   const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(p.photo_url)}" alt=""></div>`
     : `<div class="sq-mono">${esc(monogram(p.name))}</div>`;
-  const g=card.goals??'—', a=card.assists??'—', m=p.appearances??'—';
-  const dl=cardDelta(p,card);
+  const tid=cl.sofascore_tid, crest=tid?`<img class="crest" src="https://img.sofascore.com/api/v1/team/${tid}/image" alt="">`:'';
+  const nat=card.country?`<span class="fl">${flagEmoji(card.country)}</span><span class="cd">${natCode(card.country)}</span>`:'';
   return `<div class="sqcard" data-tier="${ff}">
     <img class="sq-frame" src="frames/${ff}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
-    <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span><span class="l">СЕР.</span></div>
+    <div class="sq-ov sq-rating"><span class="n">${p.season_avg_rating??'—'}</span></div>
     <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}
-    <div class="sq-ov sq-ids">${card.country?`<span class="fl">${flagEmoji(card.country)}</span>`:''}<span class="cr" style="background:${clubCol(p.club_id)}"></span></div>
     <div class="sq-ov sq-info">
       <div class="sq-name">${firstName(p.name)?esc(firstName(p.name))+'<br>':''}${esc(lastName(p.name))}</div>
-      <div class="sq-club">${esc(cl.name||'')}</div>
       <div class="sq-dv"></div>
-      <div class="sq-price"><span class="v">${eur(p.market_value_current)}</span><span class="d ${dl.dir}">${dl.txt}</span></div>
-      <div class="sq-plb">Ціна</div><div class="sq-dv"></div>
-      <div class="sq-stats"><div><div class="v">${g}</div><div class="l">Голи</div></div>
-        <div><div class="v">${a}</div><div class="l">Асисти</div></div>
-        <div><div class="v">${m}</div><div class="l">Матчі</div></div></div>
+      <div class="sq-natclub">${nat}${nat&&crest?'<span class="sep"></span>':''}${crest}<span class="cn">${esc(cl.name||'')}</span></div>
     </div></div>`;
 }
 // сцена за тіром: silver→steel (файл сцени), решта збігається
