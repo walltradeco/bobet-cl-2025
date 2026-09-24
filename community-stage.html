@@ -280,6 +280,7 @@ async function loadMineAndPending(){
   try{ S.mine = (await sb.rpc('my_communities')).data || []; }catch(e){ S.mine=[]; }
   try{ S.pending = (await sb.rpc('my_community_pending')).data || []; }catch(e){ S.pending=[]; }
   renderMine(); renderPending();
+  if(S.list.length) renderGrid();   // CTA огляду має знати про членство (S.mine вантажиться ПІСЛЯ loadList)
 }
 
 function listFiltered(){
