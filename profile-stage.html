@@ -219,6 +219,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');   // легка webp-мініатюра для сітки Колекції; повний PNG — у showFullCard
 
 const RAR={rare:'Rare',mega_rare:'Mega Rare'};
 const SCENE={rare:'rare',mega_rare:'mega_rare'};
@@ -337,7 +338,8 @@ function renderColl(){
   $('coll').innerHTML=S.cards.map(c=>`
     <div class="card" data-k="${esc(c.card_key)}">
       <div class="art"><span class="rar ${c.tier}">${RAR[c.tier]||c.tier}</span>
-        <img src="${esc(c.png_path)}" alt="${esc(c.card_key.replace(/_/g,' '))}" loading="lazy"></div>
+        <img src="${esc(cardThumb(c.png_path))}" alt="${esc(c.card_key.replace(/_/g,' '))}" loading="lazy" decoding="async"
+          onerror="this.onerror=null;this.src='${esc(c.png_path)}'"></div>
       <div class="cn">${esc(c.card_key.replace(/_/g,' '))}</div></div>`).join('');
   [...$('coll').querySelectorAll('.card')].forEach(el=>el.onclick=()=>{
     const c=S.cards.find(x=>x.card_key===el.dataset.k); if(c) showFullCard(c);

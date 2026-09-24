@@ -218,6 +218,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');   // легка webp-мініатюра для сіток; повний PNG — лише у showFullCard
 
 const S={ me:null, isAdmin:false, cards:[], collReg:[], f:{q:'',rar:'',kind:'',coll:'',status:''} };
 const SCENE={rare:'rare',mega_rare:'mega_rare'};
@@ -282,7 +283,8 @@ function renderGrid(){
       : `<div class="own ${mine?'mine':''}">${mine?'★ Твоя':esc(c.owner_name||'зайнята')}</div>`;
     return `<div class="card" data-k="${esc(c.card_key)}">
       <div class="art"><span class="rar ${c.tier}">${RAR[c.tier]||c.tier}</span>
-        <img src="${esc(c.png_path)}" alt="${esc(cardTitle(c))}" loading="lazy"></div>
+        <img src="${esc(cardThumb(c.png_path))}" alt="${esc(cardTitle(c))}" loading="lazy" decoding="async"
+             onerror="this.onerror=null;this.src='${esc(c.png_path)}'"></div>
       ${own}</div>`;
   }).join('') || '<div class="sum">Нічого не знайдено.</div>';
   [...document.querySelectorAll('.card')].forEach(el=>el.onclick=()=>openCard(el.dataset.k));
@@ -317,7 +319,8 @@ async function openCard(key){
     <div class="mhead"><h3>${esc(cardTitle(c))}</h3><button class="mx" aria-label="закрити">✕</button></div>
     <div class="mbody">
       <div class="cardside">
-        <div class="art"><img src="${esc(c.png_path)}" alt=""></div>
+        <div class="art"><img src="${esc(cardThumb(c.png_path))}" alt="" decoding="async"
+          onerror="this.onerror=null;this.src='${esc(c.png_path)}'"></div>
         <button class="ghost" data-full>↗ Показати карту</button>
       </div>
       <div class="info">
