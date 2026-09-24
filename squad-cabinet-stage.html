@@ -570,6 +570,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
       <div class="hstat bank"><span class="k">Мій Bank <span class="priv">лише я</span></span><span class="v tnum" id="h-bank">—</span></div>
       <div class="hstat"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div>
       <div class="me"><span class="av" id="h-av">—</span><span id="my-name" style="font-family:var(--mono);font-weight:600">—</span>
+        <a href="community-stage.html" target="_blank" class="btn ghost sm" style="margin-left:4px;text-decoration:none">🍻 Спільноти</a>
         <a href="shop-stage.html" target="_blank" class="btn ghost sm" style="margin-left:4px;text-decoration:none">🏪 Крамниця</a>
         <button id="btn-logout" class="btn ghost sm" style="margin-left:4px">Вийти</button></div>
     </div>
@@ -1168,7 +1169,7 @@ function marketList(){
   if(f.league) list=list.filter(p=>(S.clubs[p.club_id]||{}).league===f.league);
   if(f.club)   list=list.filter(p=>p.club_id===f.club);
   if(f.pos)    list=list.filter(p=>p.position===f.pos);
-  if(f.rarity) list=list.filter(p=>((S.cards[p.id]||{}).current_tier||'silver')===f.rarity);   // фільтр Колекція — лише в Колекції/Крамниці (не в Ринку)
+  // рарність/колекція — це косметика, у Ринку не фільтруємо (лише в Колекції/Крамниці)
   if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
   // немає рейтингу (не грав/травма) ≠ рейтинг 0 — такий гравець не ріжеться слайдером рейтингу
   if(f.rMin!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating >= f.rMin);
@@ -1200,7 +1201,6 @@ function filterBar(){
     <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
     <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
-    <div class="mf"><select id="f-rarity"><option value="">Рідкість: усі</option><option value="mega_rare"${f.rarity==='mega_rare'?' selected':''}>Mega Rare</option><option value="rare"${f.rarity==='rare'?' selected':''}>Rare</option></select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
       <span class="track"></span><span class="fill" id="fill-r"></span>
       <input type="range" id="f-rmin" min="${rB[0]}" max="${rB[1]}" step="0.1" value="${f.rMin}">
@@ -1228,7 +1228,7 @@ function bindFilters(){
   const q=$('f-q'); if(q) q.oninput=()=>{ S.f.q=q.value; renderGrid(); };
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
-  bind('f-pos',v=>S.f.pos=v); bind('f-rarity',v=>S.f.rarity=v); bind('f-sort',v=>S.f.sort=v);
+  bind('f-pos',v=>S.f.pos=v); bind('f-sort',v=>S.f.sort=v);
   const pl=$('f-played'); if(pl) pl.onchange=()=>{ S.f.onlyPlayed=pl.checked; renderGrid(); };
   const paint=(el,inp,a,b)=>{ if(!el||!inp) return; const lo=+inp.min,hi=+inp.max,pc=v=>hi>lo?((v-lo)/(hi-lo))*100:0; el.style.left=pc(a)+'%'; el.style.width=Math.max(0,pc(b)-pc(a))+'%'; };
   const rmin=$('f-rmin'), rmax=$('f-rmax');
@@ -1863,16 +1863,31 @@ function bindModalActions(p){
 
 // ── 📇 КОЛЕКЦІЯ — наскрізна сітка карток пулу (той самий компонент squadCardHTML, без дублю) ──
 async function viewCollection(){
+  S.cards={}; S.cardMeta=null;   // ЗАВЖДИ свіжо: видача/вдягання картки йде через SQL (grant) повз фронт,
+                                 // тож кеш стає застарілий — щойно додана rare/mega має з'явитись без релоаду
   await loadCardMeta();   // ефективний дизайн + каталог колекцій (спільно з Ринком)
+  // освіжаємо СВОЇ картки — щоб «чим володію» показувало щойно видані grant'ом (теж повз фронт)
+  try{ S.myCards = await sbSel(`card_items?owner_profile_id=eq.${S.myProfile}&select=id,card_key,tier,kind,png_path,eligible_sofa_ids`); }catch(e){}
   const me=S.me.id, f=S.colF;
   const clubs=[...new Set(S.players.map(p=>p.club_id))].map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
+  const rrank=t=> t==='mega_rare'?0 : t==='rare'?1 : 2;   // краща рідкість = менший ранг
   const card=(p)=>{
     const oc = p.owner_participant_id===me?'mine':p.owner_participant_id?'other':'free';
     const ot = oc==='mine'?'★ Твій':oc==='other'?esc(S.names[p.owner_participant_id]||'—'):'Вільний';
-    const cc = S.cards[p.id]||{}, tier = cc.current_tier||'silver';
-    const colls = ((S.cardMeta[cc.current_card_key]||{}).collections||[]).join(' ');
+    const cc = S.cards[p.id]||{};
+    // «Колекція = чим ВОЛОДІЮ»: для свого гравця, якщо я маю придатну картку — показуємо ЇЇ (найкращу
+    // рідкість), навіть якщо на полі вдягнуто silver/іншу (443 — вибір дизайну на полі окремий від володіння)
+    let owned=null;
+    if(oc==='mine' && p.sofascore_player_id!=null){
+      const cand=(S.myCards||[]).filter(c=>(c.eligible_sofa_ids||[]).includes(p.sofascore_player_id));
+      if(cand.length) owned=cand.slice().sort((a,b)=>rrank(a.tier)-rrank(b.tier))[0];
+    }
+    const tier = owned ? owned.tier : (cc.current_tier||'silver');
+    const key  = owned ? owned.card_key : cc.current_card_key;
+    const cardObj = owned ? {...cc, current_tier:owned.tier, current_card_key:owned.card_key, current_card_png:owned.png_path} : cc;
+    const colls = ((S.cardMeta[key]||{}).collections||[]).join(' ');
     return `<div class="colcard" data-p="${p.id}" data-name="${esc((p.name||'').toLowerCase())}" data-pos="${p.position}" data-club="${p.club_id}" data-own="${oc}" data-rating="${p.season_avg_rating||0}" data-price="${p.market_value_current||0}" data-tier="${tier}" data-coll="${esc(colls)}">
-      <div class="colc-wrap">${squadCardHTML(p,tier,cc)}</div>
+      <div class="colc-wrap">${squadCardHTML(p,tier,cardObj)}</div>
       <div class="colc-own ${oc}">${ot}</div></div>`;
   };
   $('view').innerHTML = `
