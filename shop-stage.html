@@ -322,7 +322,7 @@ async function openCard(key){
       </div>
       <div class="info">
         <div class="dl"><div class="k">Рідкість</div><div class="v">${RAR[c.tier]||c.tier} · ${c.kind==='team'?'командна':'соло'}</div></div>
-        <div class="dl"><div class="k">Власник</div><div class="v">${c.is_free?'<span style="color:var(--up)">Вільна</span>':esc(c.owner_name||'зайнята')}${mine?' (ти)':''}</div></div>
+        <div class="dl"><div class="k">Власник</div><div class="v">${c.is_free?'<span style="color:var(--up)">Вільна</span>':(c.owner_profile_id?`<a href="profile-stage.html?id=${esc(c.owner_profile_id)}" target="_blank" style="color:var(--accent)">${esc(c.owner_name||'зайнята')}</a>`:esc(c.owner_name||'зайнята'))}${mine?' (ти)':''}</div></div>
         <div class="dl"><div class="k">Історія власників (провенанс)</div>${provHtml}</div>
         <div class="acts">${acts}</div>
         <div id="card-msg"></div>

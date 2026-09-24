@@ -266,6 +266,8 @@ async function boot(){
   }
   await loadList();
   if(S.me){ await loadMineAndPending(); }
+  const openId=new URLSearchParams(location.search).get('id');   // профіль→спільнота
+  if(openId){ try{ await openCommunity(openId); }catch(e){} }
 }
 
 async function loadList(){
@@ -487,12 +489,13 @@ function renderMembers(perms){
     const canKick=perms.perm_manage_members && m.profile_id!==c.founder_id && m.profile_id!==S.me;
     const canRoles=perms.perm_manage_roles;
     return `<div class="mrow" ${canRoles?`data-mroles="${m.profile_id}"`:''}>
-      <span class="nm">${esc(m.display_name||'—')}</span>
+      <a class="nm" href="profile-stage.html?id=${esc(m.profile_id)}" target="_blank" style="color:inherit;text-decoration:none" title="Відкрити профіль" data-prof>${esc(m.display_name||'—')}</a>
       <span class="rroles">${owner}${founder}${roles||'<span class="st">без ролей</span>'}</span>
       ${plays?`<span class="st">${plays}</span>`:''}
       ${canKick?`<button class="ghost sm warn" data-kick="${m.profile_id}">Виключити</button>`:''}
     </div>`;
   }).join('');
+  $('ctab').querySelectorAll('a[data-prof]').forEach(a=>a.onclick=e=>e.stopPropagation());
   $('ctab').querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); kickMember(b.dataset.kick); });
   if(perms.perm_manage_roles) $('ctab').querySelectorAll('[data-mroles]').forEach(el=>el.onclick=()=>openAssignRoles(el.dataset.mroles));
 }
