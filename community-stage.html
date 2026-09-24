@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Спільноти · BoOrbit (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<!-- шрифти BoBet — лише для екрана входу (вхід спільний для всіх ліг) -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0c1310; --panel:#132019; --panel2:#18271f; --line:#243a30;
+  --text:#e9f1ec; --text-dim:#8ba297;
+  --gold:#e6c14b; --teal:#6fb0c9; --blue:#7fbcff; --purple:#a98fdb;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); --red:#e2585f;
+  --accent:#18b47a; --accent-d:#0e6f4c; --dim:#5f7469;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
+    radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
+    var(--bg)}
+h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 60px}
+a{color:var(--accent)}
+button{font-family:var(--mono);cursor:pointer}
+.hide{display:none!important}
+.st{font-size:11px;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+
+/* шапка */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .sq{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#18b47a,#0e6f4c);
+  display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo h1{font-size:20px;margin:0;line-height:1}
+.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);
+  border-radius:6px;padding:2px 8px;letter-spacing:.08em}
+.who{font-size:13px;color:var(--text-dim)}
+.who b{color:var(--text)}
+.abadge{font-size:10px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:1px 6px;letter-spacing:.08em}
+button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
+button.act{background:var(--green-soft);color:var(--green);border:1px solid var(--accent-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
+button.act.warn{background:transparent;color:var(--red);border-color:var(--red)}
+button.sm{padding:5px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+/* фільтри */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px;align-items:center}
+.filters input,.filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.filters input{flex:1;min-width:180px}
+.filters .grow{margin-left:auto}
+
+/* сітка карток спільнот */
+.sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.ccard{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column;transition:border-color .15s}
+.ccard:hover{border-color:var(--accent)}
+.ccard .band{height:8px}
+.ccard .cbody{padding:14px}
+.ccard .em{font-size:30px;line-height:1}
+.ccard .nm{font-family:var(--mono);font-size:18px;font-weight:700;margin:6px 0 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ccard .tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.tag{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-weight:700;
+  padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--text-dim)}
+.tag.priv{color:var(--purple);border-color:#5b4a86}
+.tag.open{color:var(--green);border-color:var(--accent-d)}
+.ccard .mot{color:var(--text-dim);font-size:13px;font-style:italic;min-height:20px;margin-bottom:8px}
+.ccard .foot{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);margin-top:auto}
+.ccard .foot .cnt{font-family:var(--mono);font-weight:700;color:var(--text)}
+.ccard .cta{margin-top:10px}
+
+/* секції */
+.sec{margin:26px 0 8px}
+.sec h2{font-size:17px;margin:0 0 8px}
+.reqrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.reqrow .info{flex:1;min-width:220px;font-size:14px}
+.kindb{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:2px 7px;border-radius:5px;margin-right:6px}
+.kindb.invite{background:rgba(127,188,255,.16);color:var(--blue);border:1px solid #3a597e}
+.kindb.request{background:var(--green-soft);color:var(--green);border:1px solid var(--accent-d)}
+.mini{display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:20px;
+  border:1px solid var(--line);color:var(--text-dim)}
+.chip.role{color:var(--teal);border-color:#3d6d7e}
+.chip.own{color:var(--gold);border-color:#8a7228}
+
+/* сторінка спільноти */
+.chead{border-radius:16px;overflow:hidden;border:1px solid var(--line);margin:14px 0 16px}
+.chead .cover{padding:20px 22px;display:flex;gap:16px;align-items:flex-start}
+.chead .cover .bigem{font-size:52px;line-height:1}
+.chead h2{margin:0;font-size:26px}
+.chead .mot{font-style:italic;opacity:.9;margin:4px 0 0}
+.chead .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:8px;opacity:.92}
+.chead .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{background:transparent;border:none;color:var(--text-dim);padding:9px 14px;font-size:14px;font-weight:600;
+  border-bottom:2px solid transparent}
+.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.tabpane{min-height:80px}
+
+/* стіна */
+.postbox{display:flex;gap:8px;margin-bottom:14px}
+.postbox textarea{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;
+  padding:10px 12px;font-family:inherit;font-size:14px;resize:vertical;min-height:44px}
+.post{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.post.pin{border-color:#8a7228;background:rgba(230,193,75,.06)}
+.post .ph{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);margin-bottom:6px}
+.post .ph b{color:var(--text);font-size:13px}
+.post .pbody{white-space:pre-wrap;font-size:14px}
+.post .pacts{margin-top:8px;display:flex;gap:6px}
+
+/* ростер / історія / правила */
+.mrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.mrow .nm{font-weight:600;min-width:120px}
+.mrow .rroles{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.logrow{font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--text-dim)}
+.logrow:last-child{border:none}
+.logrow b{color:var(--text)}
+.rules-box{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:14px}
+.relrow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+.rel-ally{color:var(--green)} .rel-enemy{color:var(--red)}
+.rel-mut{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:5px;border:1px solid}
+
+/* модалки / форми */
+.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.modal{background:var(--panel2);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;
+  max-height:92vh;overflow:auto}
+.modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal .mhead h3{margin:0;font-size:18px;flex:1}
+.modal .mx{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
+.modal .mbody{padding:16px 20px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:9px 11px;font-family:inherit;font-size:14px}
+.field textarea{resize:vertical;min-height:60px}
+.field.row{display:flex;gap:10px}.field.row>div{flex:1}
+.permgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.permgrid label{display:flex;align-items:center;gap:7px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:8px}
+.msg.err{background:rgba(226,88,95,.14);color:#f2b0b3}
+.msg.ok{background:var(--green-soft);color:var(--green)}
+.rolerow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rolerow:last-child{border:none}
+.rolerow .rl{font-weight:600;flex:1;min-width:120px}
+.perm-list{font-size:11px;color:var(--text-dim)}
+@media(max-width:640px){.chead .cover{flex-wrap:wrap}.chead .acts{margin-left:0;width:100%}.permgrid{grid-template-columns:1fr}}
+
+/* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама всіх ліг) ── */
+.login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
+.login h1{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--green);font-size:22px;letter-spacing:.04em}
+.login .stage-badge{font-family:'IBM Plex Mono',monospace}
+.login p{color:var(--text-dim);font-size:14px}
+.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;
+  padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
+.login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
+.login button.primary{width:100%;font-family:'Montserrat',sans-serif}
+#login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="sq">🍻</div>
+      <div><h1>Спільноти</h1><div class="sub">BoOrbit</div></div>
+    </div>
+    <div class="right">
+      <span class="stage-badge">STAGE</span>
+      <span id="who" class="who hide"></span>
+      <button id="btn-login" class="ghost">Увійти</button>
+      <button id="btn-logout" class="ghost hide">Вийти</button>
+    </div>
+  </div>
+
+  <!-- ОГЛЯД (публічний) -->
+  <div id="screen-list">
+    <div class="filters">
+      <input id="f-q" placeholder="Пошук спільноти…">
+      <select id="f-kind"><option value="">Тип: усі</option><option value="bar">🍺 Бар</option><option value="club">🛡 Клуб</option><option value="vip">🎩 VIP Ложа</option><option value="locker">🚪 Роздягальня</option></select>
+      <select id="f-join"><option value="">Вступ: будь-який</option><option value="open">🔓 Відкритий</option><option value="request">🔒 За заявкою</option></select>
+      <select id="f-sort"><option value="active">Сорт: найактивніші</option><option value="big">Найбільші</option><option value="new">Найновіші</option></select>
+      <button id="btn-create" class="primary grow">+ Створити</button>
+    </div>
+    <div id="sum" class="sum"></div>
+    <div id="grid" class="grid"></div>
+
+    <div id="pending-sec" class="sec hide"><h2>Мої запрошення</h2><div id="pending-list"></div></div>
+    <div id="mine-sec" class="sec hide"><h2>Мої спільноти</h2><div id="mine-list" class="grid"></div></div>
+  </div>
+
+  <!-- СТОРІНКА СПІЛЬНОТИ -->
+  <div id="screen-community" class="hide">
+    <button class="ghost sm" id="btn-back-list">← до Огляду</button>
+    <div id="chead"></div>
+    <div id="ctabs" class="tabs"></div>
+    <div id="ctab" class="tabpane"></div>
+  </div>
+
+  <!-- ЕКРАН ВХОДУ -->
+  <div id="screen-login" class="login hide">
+    <h1>BoOrbit <span class="stage-badge">STAGE</span></h1>
+    <div id="step-email">
+      <p>Увійди своєю поштою — щоб вступати у спільноти й керувати ними.</p>
+      <input id="in-email" type="email" placeholder="твоя пошта" autocomplete="email">
+      <button id="btn-send" class="primary">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p>Введи код із листа.</p>
+      <input id="in-code" class="code" inputmode="numeric" placeholder="000000">
+      <button id="btn-verify" class="primary">Увійти</button>
+      <button id="btn-back" class="ghost" style="margin-top:8px">Назад</button>
+    </div>
+    <div id="login-msg"></div>
+    <p style="margin-top:18px"><a href="#" id="lnk-back">← до Огляду</a></p>
+  </div>
+</div>
+
+<div id="mhost"></div>
+
+<script type="module">
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KIND={bar:'🍺 Бар',club:'🛡 Клуб',vip:'🎩 VIP Ложа',locker:'🚪 Роздягальня'};
+const KINDEM={bar:'🍺',club:'🛡',vip:'🎩',locker:'🚪'};
+const PERMKEYS=['perm_manage_info','perm_manage_roles','perm_manage_members','perm_moderate_wall','perm_manage_relations','perm_delete'];
+const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'Керувати ролями',perm_manage_members:'Керувати учасниками',perm_moderate_wall:'Модерувати стіну',perm_manage_relations:'Дипломатія',perm_delete:'Видаляти спільноту'};
+const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключено',
+  role_added:'отримав роль',role_removed:'втратив роль',invited:'запрошено',invite_accepted:'прийняв запрошення',
+  request_approved:'заявку схвалено',founder_transferred:'передав засновництво',
+  relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок'};
+
+const S={ me:null, name:null, isAdmin:false, list:[], mine:[], pending:[],
+  f:{q:'',kind:'',join:'',sort:'active'}, cur:null, tab:'wall' };
+
+// ── boot ──
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  S.me = session ? session.user.id : null;
+  if(S.me){
+    try{
+      const { data } = await sb.from('profiles').select('display_name,is_platform_admin').eq('id',S.me).maybeSingle();
+      if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
+    }catch(e){}
+    $('who').classList.remove('hide'); $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">адмін</span>':''}`;
+    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
+  }
+  await loadList();
+  if(S.me){ await loadMineAndPending(); }
+}
+
+async function loadList(){
+  const { data, error } = await sb.from('community_card')
+    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at');
+  S.list = error ? [] : (data||[]);
+  renderGrid();
+}
+async function loadMineAndPending(){
+  try{ S.mine = (await sb.rpc('my_communities')).data || []; }catch(e){ S.mine=[]; }
+  try{ S.pending = (await sb.rpc('my_community_pending')).data || []; }catch(e){ S.pending=[]; }
+  renderMine(); renderPending();
+}
+
+function listFiltered(){
+  const f=S.f; let l=S.list.slice();
+  if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.name.toLowerCase().includes(q)||(c.motto||'').toLowerCase().includes(q)); }
+  if(f.kind) l=l.filter(c=>c.kind===f.kind);
+  if(f.join) l=l.filter(c=>c.join_mode===f.join);
+  if(f.sort==='big') l.sort((a,b)=>b.member_count-a.member_count);
+  else if(f.sort==='new') l.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  else l.sort((a,b)=>new Date(b.last_post_at||0)-new Date(a.last_post_at||0)||b.member_count-a.member_count);
+  return l;
+}
+function ccardHTML(c){
+  const col=c.accent_color||'#18b47a';
+  const iAmMember=S.mine.some(m=>m.community_id===c.id);
+  let cta;
+  if(iAmMember) cta=`<button class="act sm" data-open="${c.id}">Відкрити →</button>`;
+  else if(!S.me) cta=`<button class="ghost sm" data-open="${c.id}">Переглянути</button>`;
+  else if(c.join_mode==='open') cta=`<button class="act sm" data-join="${c.id}">Вступити</button>`;
+  else cta=`<button class="act sm" data-join="${c.id}">Подати заявку</button>`;
+  return `<div class="ccard" data-open="${c.id}">
+    <div class="band" style="background:${esc(col)}"></div>
+    <div class="cbody">
+      <div class="em">${esc(c.emoji||KINDEM[c.kind]||'🍻')}</div>
+      <div class="nm">${esc(c.name)}</div>
+      <div class="tags"><span class="tag">${esc(KIND[c.kind]||c.kind)}</span>
+        <span class="tag ${c.join_mode==='open'?'open':''}">${c.join_mode==='open'?'🔓 відкритий':'🔒 за заявкою'}</span>
+        ${c.visibility==='private'?'<span class="tag priv">приватна</span>':''}</div>
+      <div class="mot">${esc(c.motto||'')}</div>
+      <div class="foot"><span class="cnt">👥 ${c.member_count}</span><span>Засновано: ${esc(c.founder_name||'—')}</span></div>
+      <div class="cta">${cta}</div>
+    </div>
+  </div>`;
+}
+function renderGrid(){
+  const l=listFiltered();
+  $('sum').textContent=`спільнот · ${S.list.length}${l.length!==S.list.length?` · показано ${l.length}`:''}`;
+  $('grid').innerHTML = l.map(ccardHTML).join('') || '<div class="sum">Спільнот поки немає. Створи першу!</div>';
+  bindCards($('grid'));
+}
+function renderMine(){
+  if(!S.mine.length){ $('mine-sec').classList.add('hide'); return; }
+  $('mine-sec').classList.remove('hide');
+  $('mine-list').innerHTML=S.mine.map(m=>{
+    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:''};
+    return ccardHTML(c);
+  }).join('');
+  bindCards($('mine-list'));
+}
+function renderPending(){
+  if(!S.pending.length){ $('pending-sec').classList.add('hide'); return; }
+  $('pending-sec').classList.remove('hide');
+  $('pending-list').innerHTML=S.pending.map(p=>{
+    const isInvite=p.kind==='invite';
+    const txt=isInvite
+      ? `Тебе запросили до <b>${esc(p.community_name)}</b>`
+      : `<b>${esc(p.subject_name||'хтось')}</b> просить вступити до <b>${esc(p.community_name)}</b>`;
+    const btns=isInvite
+      ? `<button class="act sm" data-inv-yes="${p.invite_id}">Прийняти</button><button class="ghost sm" data-inv-no="${p.invite_id}">Відхилити</button>`
+      : `<button class="act sm" data-req-yes="${p.invite_id}">Схвалити</button><button class="ghost sm" data-req-no="${p.invite_id}">Відхилити</button>`;
+    return `<div class="reqrow"><span class="kindb ${p.kind}">${isInvite?'Запрошення':'Заявка'}</span>
+      <div class="info">${txt}</div>${btns}</div>`;
+  }).join('');
+  const P=$('pending-list');
+  P.querySelectorAll('[data-inv-yes]').forEach(b=>b.onclick=()=>respondInvite(b.dataset.invYes,true));
+  P.querySelectorAll('[data-inv-no]').forEach(b=>b.onclick=()=>respondInvite(b.dataset.invNo,false));
+  P.querySelectorAll('[data-req-yes]').forEach(b=>b.onclick=()=>respondRequest(b.dataset.reqYes,true));
+  P.querySelectorAll('[data-req-no]').forEach(b=>b.onclick=()=>respondRequest(b.dataset.reqNo,false));
+}
+function bindCards(root){
+  root.querySelectorAll('[data-open]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); openCommunity(el.dataset.open); });
+  root.querySelectorAll('[data-join]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); joinCommunity(el.dataset.join); });
+}
+
+// ── дії списку ──
+async function joinCommunity(id){
+  if(!S.me){ showLogin(); return; }
+  const { data, error } = await sb.rpc('community_join', { p_community:id });
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return; }
+  await loadList(); await loadMineAndPending();
+  if(data==='joined') openCommunity(id);
+  else alert('Заявку подано — менеджери розглянуть.');
+}
+async function respondInvite(id,ok){
+  const { error } = await sb.rpc('community_respond_invite', { p_invite:id, p_accept:ok });
+  if(error){ alert('Спільноти: '+error.message); return; }
+  await loadList(); await loadMineAndPending();
+}
+async function respondRequest(id,ok){
+  const { error } = await sb.rpc('community_respond_request', { p_invite:id, p_approve:ok });
+  if(error){ alert('Спільноти: '+error.message); return; }
+  await loadMineAndPending(); if(S.cur) await openCommunity(S.cur.id,true);
+}
+
+// ── СТОРІНКА СПІЛЬНОТИ ──
+async function openCommunity(id, keepTab){
+  const detail=(await sb.from('community_detail').select('*').eq('id',id).maybeSingle()).data;
+  const card=(await sb.from('community_card').select('*').eq('id',id).maybeSingle()).data;
+  if(!detail && !card){ alert('Спільноту не знайдено'); return; }
+  const [members,wall,log,roles,rels] = await Promise.all([
+    sb.from('community_member_list').select('*').eq('community_id',id),
+    sb.from('community_wall').select('*').eq('community_id',id).order('is_pinned',{ascending:false}).order('created_at',{ascending:false}),
+    sb.from('community_log_view').select('*').eq('community_id',id).order('created_at',{ascending:false}).limit(80),
+    sb.from('community_roles_view').select('*').eq('community_id',id).order('sort_order'),
+    sb.from('community_relations_view').select('*').eq('community_id',id)
+  ]);
+  S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
+    log:log.data||[], roles:roles.data||[], rels:rels.data||[],
+    visible: !!detail };
+  if(!keepTab) S.tab = S.cur.visible ? 'wall' : 'about';
+  $('screen-list').classList.add('hide'); $('screen-login').classList.add('hide');
+  $('screen-community').classList.remove('hide');
+  renderCommunity();
+}
+function myPerms(){
+  const P={}; PERMKEYS.forEach(k=>P[k]=false);
+  if(!S.me) return P;
+  if(S.isAdmin){ PERMKEYS.forEach(k=>P[k]=true); return P; }
+  const me=(S.cur.members||[]).find(m=>m.profile_id===S.me);
+  if(!me) return P;
+  if(me.is_owner){ PERMKEYS.forEach(k=>P[k]=true); return P; }
+  (me.roles||[]).forEach(lbl=>{ const r=S.cur.roles.find(x=>x.label===lbl); if(r) PERMKEYS.forEach(k=>{ if(r[k]) P[k]=true; }); });
+  return P;
+}
+function iAmMember(){ return !!(S.cur.members||[]).find(m=>m.profile_id===S.me); }
+function iAmFounder(){ const c=S.cur.card||S.cur.detail; return S.me && c && c.founder_id===S.me; }
+
+function renderCommunity(){
+  const c=S.cur.card||S.cur.detail; const col=c.accent_color||'#18b47a';
+  const perms=myPerms(), member=iAmMember();
+  // шапка
+  let stateBtn='';
+  if(!S.me) stateBtn=`<button class="ghost sm" id="c-login">Увійти</button>`;
+  else if(member && !iAmFounder()) stateBtn=`<button class="ghost sm" id="c-leave">Вийти</button>`;
+  else if(!member) stateBtn=(c.join_mode==='open')
+    ? `<button class="act sm" id="c-join">Вступити</button>`
+    : `<button class="act sm" id="c-join">Подати заявку</button>`;
+  const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
+  const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
+  $('chead').innerHTML=`<div class="chead"><div class="cover" style="border-left:5px solid ${esc(col)};background:linear-gradient(90deg,${esc(col)}18,transparent 60%)">
+    <div class="bigem">${esc(c.emoji||KINDEM[c.kind]||'🍻')}</div>
+    <div style="flex:1">
+      <h2>${esc(c.name)}</h2>
+      ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
+      <div class="meta"><span>${esc(KIND[c.kind]||c.kind)}</span>
+        <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
+        ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
+        <span>👥 ${c.member_count}</span>
+        <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
+    </div>
+    <div class="acts">${stateBtn}${manageBtn}</div>
+  </div></div>`;
+  const lg=$('c-login'); if(lg) lg.onclick=showLogin;
+  const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
+  const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
+  const mg=$('c-manage');if(mg) mg.onclick=()=>openManage();
+
+  // вкладки
+  const tabs = S.cur.visible
+    ? [['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
+    : [['about','Про нас']];
+  $('ctabs').innerHTML=tabs.map(([k,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('');
+  $('ctabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderCommunity(); });
+  renderTab(perms, member);
+}
+
+function renderTab(perms, member){
+  const box=$('ctab');
+  if(!S.cur.visible){
+    box.innerHTML=`<div class="rules-box">🔒 Приватна спільнота. Вступи, щоб бачити стіну, учасників та історію.</div>`;
+    return;
+  }
+  if(S.tab==='wall') return renderWall(perms, member);
+  if(S.tab==='members') return renderMembers(perms);
+  if(S.tab==='history') return renderHistory();
+  if(S.tab==='rules') return renderRules();
+  if(S.tab==='about') return renderAbout();
+  if(S.tab==='rel') return renderRel(perms);
+}
+function renderWall(perms, member){
+  const box=$('ctab');
+  const composer = member ? `<div class="postbox"><textarea id="p-body" placeholder="Написати у спільноту…"></textarea><button class="act" id="p-send">Опублікувати</button></div>` : '';
+  const posts=S.cur.wall.map(p=>{
+    const canDel = (p.author_id===S.me) || perms.perm_moderate_wall;
+    const canPin = perms.perm_moderate_wall;
+    return `<div class="post ${p.is_pinned?'pin':''}">
+      <div class="ph">${p.is_pinned?'📌 ':''}<b>${esc(p.author_name||'—')}</b><span>${new Date(p.created_at).toLocaleString('uk')}</span></div>
+      <div class="pbody">${esc(p.body)}</div>
+      ${(canDel||canPin)?`<div class="pacts">
+        ${canPin?`<button class="ghost sm" data-pin="${p.id}" data-on="${p.is_pinned?0:1}">${p.is_pinned?'Відкріпити':'Закріпити'}</button>`:''}
+        ${canDel?`<button class="ghost sm warn" data-del="${p.id}">Видалити</button>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('') || '<div class="sum">Постів ще немає.</div>';
+  box.innerHTML=composer+posts;
+  const send=$('p-send'); if(send) send.onclick=postToWall;
+  box.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>pinPost(b.dataset.pin, b.dataset.on==='1'));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delPost(b.dataset.del));
+}
+function renderMembers(perms){
+  const c=S.cur.card||S.cur.detail;
+  $('ctab').innerHTML=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).map(m=>{
+    const roles=(m.roles||[]).map(r=>`<span class="chip role">${esc(r)}</span>`).join('');
+    const owner=m.is_owner?'<span class="chip own">👑 Власник</span>':'';
+    const founder=(m.is_founder&&!m.is_owner)?'<span class="chip">Засновник</span>':'';
+    const plays=[m.plays_bobet?'BoBet':null,m.plays_psl?'PSL':null].filter(Boolean).join(' · ');
+    const canKick=perms.perm_manage_members && m.profile_id!==c.founder_id && m.profile_id!==S.me;
+    const canRoles=perms.perm_manage_roles;
+    return `<div class="mrow" ${canRoles?`data-mroles="${m.profile_id}"`:''}>
+      <span class="nm">${esc(m.display_name||'—')}</span>
+      <span class="rroles">${owner}${founder}${roles||'<span class="st">без ролей</span>'}</span>
+      ${plays?`<span class="st">${plays}</span>`:''}
+      ${canKick?`<button class="ghost sm warn" data-kick="${m.profile_id}">Виключити</button>`:''}
+    </div>`;
+  }).join('');
+  $('ctab').querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); kickMember(b.dataset.kick); });
+  if(perms.perm_manage_roles) $('ctab').querySelectorAll('[data-mroles]').forEach(el=>el.onclick=()=>openAssignRoles(el.dataset.mroles));
+}
+function renderHistory(){
+  $('ctab').innerHTML=S.cur.log.map(l=>{
+    const who=`<b>${esc(l.actor_name||'—')}</b>`;
+    const tgt=l.target_name?` <b>${esc(l.target_name)}</b>`:'';
+    const rl=l.role_label?` «${esc(l.role_label)}»`:'';
+    const dt=l.detail?` (${esc(l.detail)})`:'';
+    return `<div class="logrow">${who} ${EVLBL[l.event]||l.event}${tgt}${rl}${dt}
+      <span class="st" style="float:right">${new Date(l.created_at).toLocaleDateString('uk')}</span></div>`;
+  }).join('') || '<div class="sum">Історія порожня.</div>';
+}
+function renderRules(){
+  const r=(S.cur.detail||{}).rules;
+  $('ctab').innerHTML=r?`<div class="rules-box">${esc(r)}</div>`:'<div class="sum">Правил ще немає.</div>';
+}
+function renderAbout(){
+  const d=S.cur.detail||S.cur.card||{};
+  $('ctab').innerHTML=d.description?`<div class="rules-box">${esc(d.description)}</div>`:'<div class="sum">Опису ще немає.</div>';
+}
+function renderRel(perms){
+  const out=S.cur.rels.filter(r=>r.direction==='out'), inc=S.cur.rels.filter(r=>r.direction==='in');
+  const relLine=(r)=>{
+    const em=r.type==='ally'?'🤝':'⚔️';
+    const mut=r.mutual?`<span class="rel-mut ${r.type==='ally'?'rel-ally':'rel-enemy'}" style="border-color:currentColor">${r.type==='ally'?'СОЮЗ':'ДЕРБІ'}</span>`:'';
+    return `<div class="relrow"><span>${em} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
+      <span class="${r.type==='ally'?'rel-ally':'rel-enemy'}">${r.type==='ally'?'партнер':'ворог'}</span>${mut}
+      ${perms.perm_manage_relations?`<button class="ghost sm warn" data-relclear="${r.other_id}" style="margin-left:auto">Скасувати</button>`:''}</div>`;
+  };
+  const incLine=(r)=>`<div class="relrow"><span>${r.type==='ally'?'🤝':'⚔️'} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
+    <span class="st">${r.type==='ally'?'вважає партнером':'вважає ворогом'}</span></div>`;
+  $('ctab').innerHTML=
+    `${perms.perm_manage_relations?`<button class="act sm" id="rel-add" style="margin-bottom:10px">+ Оголосити звʼязок</button>`:''}
+     <h3 style="font-size:15px;margin:6px 0">Наші звʼязки</h3>${out.map(relLine).join('')||'<div class="sum">Ще нікого не оголосили.</div>'}
+     <h3 style="font-size:15px;margin:14px 0 6px">Нас вважають</h3>${inc.map(incLine).join('')||'<div class="sum">Поки нікого.</div>'}`;
+  const add=$('rel-add'); if(add) add.onclick=openRelAdd;
+  $('ctab').querySelectorAll('[data-relclear]').forEach(b=>b.onclick=()=>clearRel(b.dataset.relclear));
+}
+
+// ── дії спільноти ──
+async function act(fn, args, after){
+  const { error } = await sb.rpc(fn, args);
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return false; }
+  if(after) await after();
+  return true;
+}
+const reopen=async()=>{ await openCommunity(S.cur.id,true); };
+async function leaveCommunity(id){ if(confirm('Вийти зі спільноти?')) if(await act('community_leave',{p_community:id})){ await loadMineAndPending(); backToList(); } }
+async function kickMember(pid){ if(confirm('Виключити учасника?')) await act('community_kick',{p_community:S.cur.id,p_target:pid},reopen); }
+async function postToWall(){ const b=$('p-body').value.trim(); if(!b) return; if(await act('community_post',{p_community:S.cur.id,p_body:b},reopen)){} }
+async function pinPost(id,on){ await act('community_post_pin',{p_post:id,p_pinned:on},reopen); }
+async function delPost(id){ if(confirm('Видалити пост?')) await act('community_post_delete',{p_post:id},reopen); }
+async function clearRel(toId){ await act('community_clear_relation',{p_from:S.cur.id,p_to:toId},reopen); }
+
+// ── модалка: створити ──
+function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal">${html}</div></div>`;
+  const h=$('mhost'); h.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) h.innerHTML=''; };
+  const x=h.querySelector('.mx'); if(x) x.onclick=()=>h.innerHTML=''; return h; }
+function closeModal(){ $('mhost').innerHTML=''; }
+
+function formFields(v){ v=v||{};
+  return `<div class="field"><label>Назва</label><input id="cf-name" maxlength="80" value="${esc(v.name||'')}"></div>
+    <div class="field row">
+      <div><label>Тип</label><select id="cf-kind">${Object.keys(KIND).map(k=>`<option value="${k}"${v.kind===k?' selected':''}>${KIND[k]}</option>`).join('')}</select></div>
+      <div><label>Емодзі-емблема</label><input id="cf-emoji" maxlength="4" value="${esc(v.emoji||'')}" placeholder="🍺"></div>
+      <div><label>Колір</label><input id="cf-color" type="color" value="${esc(v.accent_color||'#18b47a')}"></div>
+    </div>
+    <div class="field"><label>Девіз / кричалка (до 200)</label><input id="cf-motto" maxlength="200" value="${esc(v.motto||'')}"></div>
+    <div class="field"><label>Опис (Про нас)</label><textarea id="cf-desc">${esc(v.description||'')}</textarea></div>
+    <div class="field"><label>Правила</label><textarea id="cf-rules">${esc(v.rules||'')}</textarea></div>
+    <div class="field row">
+      <div><label>Вступ</label><select id="cf-join"><option value="open"${v.join_mode==='open'?' selected':''}>🔓 Відкритий</option><option value="request"${v.join_mode==='request'?' selected':''}>🔒 За заявкою</option></select></div>
+      <div><label>Видимість</label><select id="cf-vis"><option value="public"${v.visibility==='public'?' selected':''}>Публічна</option><option value="private"${v.visibility==='private'?' selected':''}>Приватна</option></select></div>
+    </div>`;
+}
+function formVals(){
+  return { p_name:$('cf-name').value.trim(), p_kind:$('cf-kind').value,
+    p_motto:$('cf-motto').value.trim()||null, p_description:$('cf-desc').value.trim()||null,
+    p_rules:$('cf-rules').value.trim()||null, p_emoji:$('cf-emoji').value.trim()||null,
+    p_accent_color:$('cf-color').value, p_join_mode:$('cf-join').value, p_visibility:$('cf-vis').value };
+}
+function openCreate(){
+  if(!S.me){ showLogin(); return; }
+  modal(`<div class="mhead"><h3>Нова спільнота</h3><button class="mx">✕</button></div>
+    <div class="mbody">${formFields()}<button class="act" id="cf-save">Створити</button><div id="cf-msg"></div></div>`);
+  $('cf-save').onclick=async()=>{
+    const v=formVals(); if(v.p_name.length<2){ $('cf-msg').className='msg err'; $('cf-msg').textContent='Назва: від 2 символів'; return; }
+    const { data, error }=await sb.rpc('community_create',v);
+    if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
+    closeModal(); await loadList(); await loadMineAndPending(); openCommunity(data);
+  };
+}
+function openEdit(){
+  const d=S.cur.detail;
+  modal(`<div class="mhead"><h3>Редагувати спільноту</h3><button class="mx">✕</button></div>
+    <div class="mbody">${formFields(d)}<div class="st" style="margin:4px 0 10px">Тип змінити не можна після створення.</div>
+      <button class="act" id="cf-save">Зберегти</button><div id="cf-msg"></div></div>`);
+  $('cf-kind').disabled=true;
+  $('cf-save').onclick=async()=>{
+    const v=formVals(); delete v.p_kind;
+    const { error }=await sb.rpc('community_update',{ p_community:S.cur.id, ...v });
+    if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
+    closeModal(); await reopen();
+  };
+}
+
+// ── модалка: керування ──
+function openManage(){
+  const p=myPerms();
+  const rows=[
+    p.perm_manage_info   && `<button class="act" data-m="edit">✎ Редагувати інфо</button>`,
+    p.perm_manage_roles  && `<button class="act" data-m="roles">🏷 Ролі й дозволи</button>`,
+    p.perm_manage_members&& `<button class="act" data-m="invite">✉ Запросити людину</button>`,
+    p.perm_manage_relations&& `<button class="act" data-m="rel">🤝 Дипломатія</button>`,
+    iAmFounder()         && `<button class="act" data-m="transfer">👑 Передати засновництво</button>`,
+    p.perm_delete        && `<button class="act warn" data-m="delete">🗑 Знести спільноту</button>`,
+  ].filter(Boolean);
+  modal(`<div class="mhead"><h3>⚙ Керування</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div style="display:flex;flex-direction:column;gap:8px">${rows.join('')}</div></div>`);
+  $('mhost').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ closeModal();
+    ({edit:openEdit,roles:openRoles,invite:openInvite,rel:openRelAdd,transfer:openTransfer,delete:doDelete})[b.dataset.m](); });
+}
+async function doDelete(){
+  if(!confirm('Знести спільноту НАЗАВЖДИ? Усі пости, ролі й історія зникнуть.')) return;
+  if(await act('community_delete',{p_community:S.cur.id})){ await loadList(); await loadMineAndPending(); backToList(); }
+}
+function openTransfer(){
+  const others=S.cur.members.filter(m=>m.profile_id!==S.me);
+  modal(`<div class="mhead"><h3>Передати засновництво</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Новий власник (з учасників)</label>
+      <select id="tf-who">${others.map(m=>`<option value="${m.profile_id}">${esc(m.display_name)}</option>`).join('')}</select></div>
+      <div class="st" style="margin-bottom:10px">«Засновано: ${esc((S.cur.card||{}).founder_name||'')}» лишиться незмінним.</div>
+      <button class="act warn" id="tf-go">Передати</button><div id="tf-msg"></div></div>`);
+  $('tf-go').onclick=async()=>{ const who=$('tf-who').value; if(!who) return;
+    if(!confirm('Передати засновництво? Ти втратиш ексклюзивні права власника.')) return;
+    if(await act('community_transfer_founder',{p_community:S.cur.id,p_new:who},reopen)) closeModal(); };
+}
+function openInvite(){
+  // список профілів, що НЕ у складі (з community_card ми не маємо людей — беремо з усіх, кого бачимо в member_list інших? простіше — по display_name пошук через profiles RLS не дасть чужих)
+  modal(`<div class="mhead"><h3>Запросити людину</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="st" style="margin-bottom:8px">Постав ID профілю або обери зі списку учасників інших спільнот (майбутнє — пошук за іменем).</div>
+      <div class="field"><label>Profile ID (uuid)</label><input id="iv-id" placeholder="uuid профілю"></div>
+      <button class="act" id="iv-go">Запросити</button><div id="iv-msg"></div></div>`);
+  $('iv-go').onclick=async()=>{ const id=$('iv-id').value.trim(); if(!id) return;
+    const { error }=await sb.rpc('community_invite',{p_community:S.cur.id,p_target:id});
+    if(error){ $('iv-msg').className='msg err'; $('iv-msg').textContent=error.message; return; }
+    $('iv-msg').className='msg ok'; $('iv-msg').textContent='Запрошення надіслано.'; };
+}
+function openRelAdd(){
+  const targets=S.list.filter(c=>c.id!==S.cur.id);
+  modal(`<div class="mhead"><h3>Оголосити звʼязок</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Спільнота</label>
+      <select id="rl-to">${targets.map(c=>`<option value="${c.id}">${esc(c.emoji||'')} ${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Тип</label><select id="rl-type"><option value="ally">🤝 Партнер</option><option value="enemy">⚔️ Ворог</option></select></div>
+      <button class="act" id="rl-go">Оголосити</button><div id="rl-msg"></div></div>`);
+  $('rl-go').onclick=async()=>{ const to=$('rl-to').value, type=$('rl-type').value; if(!to) return;
+    if(await act('community_set_relation',{p_from:S.cur.id,p_to:to,p_type:type},reopen)) closeModal(); };
+}
+
+// ── ролі: список + create/edit/remove ──
+function permCheckboxes(pre, v){ v=v||{};
+  return `<div class="permgrid">${PERMKEYS.map(k=>`<label><input type="checkbox" id="${pre}-${k}"${v[k]?' checked':''}> ${PERMLBL[k]}</label>`).join('')}</div>`;
+}
+function readPerms(pre){ const o={}; PERMKEYS.forEach(k=>o[k]=$(`${pre}-${k}`).checked); return o; }
+function openRoles(){
+  const rolesHtml=S.cur.roles.map(r=>{
+    const perms=PERMKEYS.filter(k=>r[k]).map(k=>PERMLBL[k]).join(', ')||'без прав';
+    return `<div class="rolerow"><span class="rl">${esc(r.label)}${r.is_owner_preset?' 👑':''}</span>
+      <span class="perm-list">${esc(perms)} · ${r.holders} носіїв</span>
+      <button class="ghost sm" data-redit="${r.id}">✎</button>
+      <button class="ghost sm warn" data-rrem="${r.id}">✕</button></div>`;
+  }).join('');
+  modal(`<div class="mhead"><h3>🏷 Ролі й дозволи</h3><button class="mx">✕</button></div>
+    <div class="mbody">${rolesHtml}
+      <h3 style="font-size:15px;margin:14px 0 8px">+ Нова роль</h3>
+      <div class="field"><label>Назва ролі</label><input id="nr-label" maxlength="60"></div>
+      ${permCheckboxes('nr')}
+      <button class="act" id="nr-add" style="margin-top:8px">Створити роль</button><div id="nr-msg"></div></div>`);
+  $('nr-add').onclick=async()=>{ const label=$('nr-label').value.trim(); if(!label) return;
+    const args={p_community:S.cur.id,p_label:label};
+    const pm=readPerms('nr'); args.p_info=pm.perm_manage_info; args.p_roles=pm.perm_manage_roles; args.p_members=pm.perm_manage_members;
+    args.p_wall=pm.perm_moderate_wall; args.p_relations=pm.perm_manage_relations; args.p_delete=pm.perm_delete;
+    const { error }=await sb.rpc('community_role_add',args);
+    if(error){ $('nr-msg').className='msg err'; $('nr-msg').textContent=error.message; return; }
+    await reopen(); openRoles(); };
+  $('mhost').querySelectorAll('[data-redit]').forEach(b=>b.onclick=()=>openRoleEdit(b.dataset.redit));
+  $('mhost').querySelectorAll('[data-rrem]').forEach(b=>b.onclick=async()=>{ if(confirm('Видалити роль? Вона знімається з усіх.'))
+    if(await act('community_role_remove',{p_role:b.dataset.rrem},reopen)) openRoles(); });
+}
+function openRoleEdit(id){
+  const r=S.cur.roles.find(x=>x.id===id); if(!r) return;
+  modal(`<div class="mhead"><h3>Роль «${esc(r.label)}»</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Назва</label><input id="er-label" maxlength="60" value="${esc(r.label)}"></div>
+      ${permCheckboxes('er',r)}
+      <button class="act" id="er-save" style="margin-top:8px">Зберегти</button><div id="er-msg"></div></div>`);
+  $('er-save').onclick=async()=>{ const pm=readPerms('er');
+    const { error }=await sb.rpc('community_role_update',{p_role:id,p_label:$('er-label').value.trim(),
+      p_info:pm.perm_manage_info,p_roles:pm.perm_manage_roles,p_members:pm.perm_manage_members,
+      p_wall:pm.perm_moderate_wall,p_relations:pm.perm_manage_relations,p_delete:pm.perm_delete});
+    if(error){ $('er-msg').className='msg err'; $('er-msg').textContent=error.message; return; }
+    await reopen(); openRoles(); };
+}
+function openAssignRoles(pid){
+  const m=S.cur.members.find(x=>x.profile_id===pid); if(!m) return;
+  const has=new Set(m.roles||[]);
+  const list=S.cur.roles.map(r=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0">
+    <input type="checkbox" data-role="${r.id}" data-label="${esc(r.label)}" ${has.has(r.label)?'checked':''}> ${esc(r.label)}</label>`).join('');
+  modal(`<div class="mhead"><h3>Ролі: ${esc(m.display_name)}</h3><button class="mx">✕</button></div>
+    <div class="mbody">${list}<div id="ar-msg" class="st" style="margin-top:8px">Клік = миттєво призначити/зняти.</div></div>`);
+  $('mhost').querySelectorAll('[data-role]').forEach(cb=>cb.onchange=async()=>{
+    const fn=cb.checked?'community_assign_role':'community_unassign_role';
+    const { error }=await sb.rpc(fn,{p_community:S.cur.id,p_target:pid,p_role:cb.dataset.role});
+    if(error){ $('ar-msg').className='msg err'; $('ar-msg').textContent=error.message; cb.checked=!cb.checked; return; }
+    await reopen();
+  });
+}
+
+// ── навігація ──
+function backToList(){ $('screen-community').classList.add('hide'); $('screen-list').classList.remove('hide'); S.cur=null; renderGrid(); renderMine(); renderPending(); }
+
+// ── фільтри ──
+$('f-q').oninput=e=>{ S.f.q=e.target.value; renderGrid(); };
+$('f-kind').onchange=e=>{ S.f.kind=e.target.value; renderGrid(); };
+$('f-join').onchange=e=>{ S.f.join=e.target.value; renderGrid(); };
+$('f-sort').onchange=e=>{ S.f.sort=e.target.value; renderGrid(); };
+$('btn-create').onclick=openCreate;
+$('btn-back-list').onclick=backToList;
+
+// ── логін (OTP) ──
+function showLogin(){ $('screen-list').classList.add('hide'); $('screen-community').classList.add('hide'); $('screen-login').classList.remove('hide'); }
+function showList(){ $('screen-login').classList.add('hide'); $('screen-list').classList.remove('hide'); }
+$('btn-login').onclick=showLogin;
+$('lnk-back').onclick=e=>{ e.preventDefault(); showList(); };
+$('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+$('btn-send').onclick=async()=>{
+  const email=$('in-email').value.trim(); if(!email) return;
+  $('login-msg').textContent='Надсилаю…';
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error){ $('login-msg').textContent='Помилка: '+error.message; return; }
+  window.__email=email; $('step-email').classList.add('hide'); $('step-code').classList.remove('hide'); $('login-msg').textContent='';
+};
+$('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); };
+$('btn-verify').onclick=async()=>{
+  const token=$('in-code').value.trim(); if(!token) return;
+  $('login-msg').textContent='Перевіряю…';
+  let res=await sb.auth.verifyOtp({ email:window.__email, token, type:'email' });
+  if(res.error) res=await sb.auth.verifyOtp({ email:window.__email, token, type:'magiclink' });
+  if(res.error){ $('login-msg').textContent='Помилка: '+res.error.message; return; }
+  location.reload();
+};
+
+boot().catch(e=>{ $('sum').textContent='Помилка завантаження: '+e.message; });
+</script>
+</body>
+</html>
