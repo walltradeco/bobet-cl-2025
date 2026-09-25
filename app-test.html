@@ -1206,10 +1206,13 @@ async function viewMatches(){
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
   const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
-  // Rivals 2.0: жорсткий дедлайн вікенда — абсолютна межа для зміни
-  // суперника (окремо від ліміту «1 зміна після відкриття», який
-  // рахується всередині renderRivalBox з rival_board.post_open_used).
-  const deadlinePassed = Date.now() >= new Date(S.gw.deadline_at).getTime();
+  // Rivals 2.0: прогнози/бусти/стиль/бонус замикаються о deadline_at (21:59).
+  // Зміна суперника (та сама «1 зміна після відкриття», post_open_used)
+  // лишається ще 2 год — до 23:59. Сервер тримає це в rival_pick
+  // (deadline_at + 2 год, файл 452); тут дзеркалимо межу для екрана.
+  const RIVALS_WINDOW_MS = 2 * 60 * 60 * 1000;
+  const rivalsCloseMs = new Date(S.gw.deadline_at).getTime() + RIVALS_WINDOW_MS;
+  const deadlinePassed = Date.now() >= rivalsCloseMs;
 
   // Заголовок вікенда в базі — «Вікенд 1 · 15-16 серпня». Ріжемо по
   // роздільнику, щоб номер стояв назвою, а дати — дрібним рядком під
@@ -1242,7 +1245,8 @@ async function viewMatches(){
       <div>
         <div class="cap">${open ? 'прогнози відкрито' : 'до дедлайну'}</div>
         <div class="t">${open ? 'вікенд закрито' : (left || 'закрито')}</div>
-        ${open ? '' : `<div class="when">приймаємо до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
+        ${open ? '' : `<div class="when">прогнози · бусти · стиль · бонус — до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
+        ${open ? '' : `<div class="when" style="opacity:.75">⚔️ суперника можна змінити ще 2 год — до ${esc(fmtDeadline(new Date(rivalsCloseMs).toISOString()))}</div>`}
       </div>
       <div style="text-align:right">
         <div class="cap">прогнози</div>
@@ -2915,6 +2919,9 @@ async function viewDraft(){
     const pct = Math.min(100, sp / budget * 100);
 
     $('view').innerHTML = `
+      ${closed ? '' : `<div class="deadline"><span>До дедлайну</span>
+        <span class="t">${esc(countdown(t.draft_deadline) || 'закрито')}</span></div>
+        <div class="dim" style="font-size:13px;margin:-2px 0 8px">приймаємо до ${esc(fmtDeadline(t.draft_deadline))}</div>`}
       <div class="budget">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span class="dim">Витрачено</span>
@@ -3649,7 +3656,8 @@ async function viewBonus(){
              <span class="t">дедлайн минув</span></div>`;
   } else {
     html += `<div class="deadline"><span>До дедлайну</span>
-             <span class="t">${esc(left)}</span></div>`;
+             <span class="t">${esc(left)}</span></div>
+             <div class="dim" style="font-size:13px;margin:-2px 0 8px">приймаємо до ${esc(fmtDeadline(dl))}</div>`;
   }
 
   // Хто вже здав бонуси (пункт 13). Показується всім, не лише адміну:
