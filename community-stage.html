@@ -221,8 +221,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 /* ── ВКЛАДКА «ОГЛЯД» ── */
 .ov{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
-.sec-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;gap:10px;flex-wrap:wrap}
 .sec-h h3{font-size:18px;margin:0}
+.sec-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
+.sec-links .lnk-sep{color:var(--text-dim)}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
 .card+.card{margin-top:16px}
 .card.side h4{font-size:15px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -616,7 +618,7 @@ function renderOverview(perms, member){
   wall.filter(p=>!p.is_pinned).forEach(p=>items.push({t:new Date(p.created_at),k:'post',d:p}));
   log.forEach(l=>items.push({t:new Date(l.created_at),k:'log',d:l}));
   items.sort((a,b)=>b.t-a.t);
-  const recent=items.slice(0,3);
+  const recent=items.slice(0,5);   // дайджест зі Стіни + Історії разом
   const evRow=it=>{
     if(it.k==='post'){ const p=it.d;
       return `<div class="evrow"><div class="evic">📝</div><div class="evtx"><b>${esc(trunc(p.body,58))}</b>
@@ -639,8 +641,8 @@ function renderOverview(perms, member){
     : '<div class="sum">Правил ще немає.</div>';
   const mem=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).slice(0,3);
   const memRow=m=>{
-    const sub=[m.is_owner?'Власник':(m.is_founder?'Засновник':null),...(m.roles||[])].filter(Boolean).join(' · ')||'Учасник';
-    const badge=m.is_owner?'<span class="chip own">👑 Власник</span>':'';
+    const sub=(m.roles||[]).join(' · ')||'Учасник';
+    const badge=m.is_founder?'<span class="chip">Засновник</span>':'';   // факт (не роль, без іконки)
     return `<div class="ovm"><div class="ava">${esc(initials(m.display_name))}</div>
       <div class="mi"><div class="mn">${esc(m.display_name||'—')}</div><div class="mr">${esc(sub)}</div></div>${badge}</div>`;
   };
@@ -656,7 +658,8 @@ function renderOverview(perms, member){
   box.innerHTML=`<div class="ov">
     <div class="ovmain">
       <div id="ov-stream">
-        <div class="sec-h"><h3>Зі стіни</h3><a href="#" data-goto="wall">Відкрити стіну →</a></div>
+        <div class="sec-h"><h3>Зі стіни та історії</h3>
+          <div class="sec-links"><a href="#" data-goto="wall">Відкрити стіну →</a><span class="lnk-sep">·</span><a href="#" data-goto="history">Відкрити історію →</a></div></div>
         ${streamBody}
       </div>
       <div class="duo" id="ov-duo">
@@ -702,14 +705,13 @@ function renderMembers(perms){
   const c=S.cur.card||S.cur.detail;
   $('ctab').innerHTML=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).map(m=>{
     const roles=(m.roles||[]).map(r=>`<span class="chip role">${esc(r)}</span>`).join('');
-    const owner=m.is_owner?'<span class="chip own">👑 Власник</span>':'';
-    const founder=(m.is_founder&&!m.is_owner)?'<span class="chip">Засновник</span>':'';
+    const founder=m.is_founder?'<span class="chip">Засновник</span>':'';   // факт (не роль, без іконки)
     const plays=[m.plays_bobet?'BoBet':null,m.plays_psl?'PSL':null].filter(Boolean).join(' · ');
     const canKick=perms.perm_manage_members && m.profile_id!==c.founder_id && m.profile_id!==S.me;
     const canRoles=perms.perm_manage_roles;
     return `<div class="mrow" ${canRoles?`data-mroles="${m.profile_id}"`:''}>
       <a class="nm" href="profile-stage.html?id=${esc(m.profile_id)}" target="_blank" style="color:inherit;text-decoration:none" title="Відкрити профіль" data-prof>${esc(m.display_name||'—')}</a>
-      <span class="rroles">${owner}${founder}${roles||'<span class="st">без ролей</span>'}</span>
+      <span class="rroles">${founder}${roles||'<span class="st">без ролей</span>'}</span>
       ${plays?`<span class="st">${plays}</span>`:''}
       ${canKick?`<button class="ghost sm warn" data-kick="${m.profile_id}">Виключити</button>`:''}
     </div>`;
