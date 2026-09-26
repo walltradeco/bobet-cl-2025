@@ -2237,7 +2237,7 @@ async function buildMonthRows(tournamentKey){
   // Порожньо — і в етапу без Legend-пулу (нема учасників взагалі), і в
   // того, хто ще не обрав слоти.
   const legendRows = await sbGet(
-    'legend_board?select=display_name,team_id,team_name,role_code,role_icon,role_title,points,' +
+    'legend_board?select=display_name,team_id,team_name,role_code,role_icon,role_title,legend_name,points,' +
     'club_matches_played,club_matches_total&tournament_id=eq.' + tid);
   // Журнал по матчах (386) — для розбивки "Вікенд N: +X" у підказці.
   // Один рядок на матч; вікенди, де клуб НЕ грав, просто відсутні в
@@ -2258,7 +2258,7 @@ async function buildMonthRows(tournamentKey){
       .sort((a, b) => a.gameweek_number - b.gameweek_number)
       .map(m => ({ gw: m.gameweek_number, points: m.points }));
     (legendByName[r.display_name] = legendByName[r.display_name] || []).push({
-      club: r.team_name, icon: r.role_icon, title: r.role_title,
+      club: r.team_name, icon: r.role_icon, title: r.role_title, legendName: r.legend_name,
       points: r.points, played: r.club_matches_played, total: r.club_matches_total,
       matches
     });
@@ -3492,14 +3492,16 @@ function legendBadge(name){
   const total = Math.min(LIVE_LEGEND_CAP, picks.reduce((s, p) => s + (p.points || 0), 0));
   const rows = picks
     .map(p => {
-      const label = p.title || p.role;
+      // Підпис легенди: ім'я/прізвище легенди клубу (Баварія·Канонада →
+      // Lewandowski), fallback на назву ролі, якщо ім'я не задане (459/460).
+      const label = p.legendName || p.title || p.role;
       const pts = p.played > 0
         ? `<span class="win">+${p.points || 0}</span>`
         : '<span class="pending">очікує</span>';
       const breakdown = (p.matches || [])
         .map(m => `Вікенд ${m.gw}: ${m.points > 0 ? '+' + m.points : '0'}`)
         .join(' · ');
-      return `<div class="rv-tip-row">${escapeHtml(p.club)} — ${escapeHtml(label)}
+      return `<div class="rv-tip-row">${escapeHtml(p.club)} — ${p.icon || ''} ${escapeHtml(label)}
         · ${p.played}/${p.total} матчів · ${pts}</div>`
         + (breakdown ? `<div class="rv-tip-row" style="opacity:0.75">${breakdown}</div>` : '');
     })
