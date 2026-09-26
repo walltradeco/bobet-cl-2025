@@ -12,19 +12,22 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0c1310; --panel:#132019; --panel2:#18271f; --line:#243a30;
-  --text:#e9f1ec; --text-dim:#8ba297;
-  --gold:#e6c14b; --teal:#6fb0c9; --blue:#7fbcff; --purple:#a98fdb;
-  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); --red:#e2585f;
-  --accent:#18b47a; --accent-d:#0e6f4c; --dim:#5f7469;
+  --bg:#0D1014; --panel:#15191E; --panel2:#1A1F25;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#F2EFE7; --text-dim:#8b9299;
+  --gold:#D9B45B; --gold-d:#8a7228;
+  --blue:#7898B8; --blue-d:#3a597e;
+  --teal:#6f93b0; --purple:#a98fdb; --red:#D96B6B;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); /* лишається ЛИШЕ для екрана входу */
+  --accent:#7898B8; --accent-d:#3a597e; --dim:#5f7469;
   --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
 body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
   -webkit-font-smoothing:antialiased;
   background:
-    radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
-    radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
+    radial-gradient(1100px 520px at 85% -12%, #18222f 0%, transparent 58%),
+    radial-gradient(820px 380px at 2% 2%, #141820 0%, transparent 52%),
     var(--bg)}
 h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
 .wrap{max-width:1120px;margin:0 auto;padding:0 16px 60px}
@@ -36,8 +39,11 @@ button{font-family:var(--mono);cursor:pointer}
 /* шапка */
 .topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 10px}
 .logo{display:flex;align-items:center;gap:10px}
-.logo .sq{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#18b47a,#0e6f4c);
-  display:flex;align-items:center;justify-content:center;font-size:20px}
+.logo .sq{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);
+  background:linear-gradient(150deg,#1e2632,#141922);color:#c7d4e2;
+  display:flex;align-items:center;justify-content:center}
+.logo .sq .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
+  background:var(--gold);border:2px solid var(--bg)}
 .logo h1{font-size:20px;margin:0;line-height:1}
 .logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase}
 .topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
@@ -48,7 +54,7 @@ button{font-family:var(--mono);cursor:pointer}
 .abadge{font-size:10px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:1px 6px;letter-spacing:.08em}
 button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px}
 button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
-button.act{background:var(--green-soft);color:var(--green);border:1px solid var(--accent-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
+button.act{background:rgba(120,152,184,.14);color:var(--blue);border:1px solid var(--blue-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
 button.act.warn{background:transparent;color:var(--red);border-color:var(--red)}
 button.sm{padding:5px 10px;font-size:12px}
 button:disabled{opacity:.45;cursor:not-allowed}
@@ -74,7 +80,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .tag{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-weight:700;
   padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--text-dim)}
 .tag.priv{color:var(--purple);border-color:#5b4a86}
-.tag.open{color:var(--green);border-color:var(--accent-d)}
+.tag.open{color:var(--blue);border-color:var(--blue-d)}
 .ccard .mot{color:var(--text-dim);font-size:13px;font-style:italic;min-height:20px;margin-bottom:8px}
 .ccard .foot{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);margin-top:auto}
 .ccard .foot .cnt{font-family:var(--mono);font-weight:700;color:var(--text)}
@@ -97,17 +103,21 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .chip.own{color:var(--gold);border-color:#8a7228}
 
 /* сторінка спільноти */
-.chead{border-radius:16px;overflow:hidden;border:1px solid var(--line);margin:14px 0 16px}
-.chead .cover{padding:20px 22px;display:flex;gap:16px;align-items:flex-start}
-.chead .cover .bigem{font-size:52px;line-height:1}
-.chead h2{margin:0;font-size:26px}
-.chead .mot{font-style:italic;opacity:.9;margin:4px 0 0}
-.chead .meta{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;margin-top:8px;opacity:.92}
-.chead .acts{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}
+.chead{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:14px 0 4px}
+.chead .accent-bar{position:absolute;left:0;top:0;bottom:0;width:5px;z-index:1}
+.chead .cover{position:relative;z-index:2;display:flex;gap:20px;align-items:center;padding:24px 26px 24px 30px}
+.chead .crest{position:relative;width:92px;height:92px;border-radius:22px;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:42px;line-height:1}
+.chead .htext{flex:1;min-width:0}
+.chead h2{margin:0;font-size:28px;line-height:1.1}
+.chead .mot{font-style:italic;color:var(--text-dim);margin:4px 0 0;font-size:15px}
+.chead .meta{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-top:12px;color:var(--text-dim)}
+.chead .meta b{color:var(--text)}
+.chead .acts{display:flex;gap:8px;align-items:flex-start}
 .tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
 .tabs button{background:transparent;border:none;color:var(--text-dim);padding:9px 14px;font-size:14px;font-weight:600;
   border-bottom:2px solid transparent}
-.tabs button.on{color:var(--text);border-bottom-color:var(--accent)}
+.tabs button.on{color:var(--text);border-bottom-color:var(--gold)}
 .tabpane{min-height:80px}
 
 /* стіна */
@@ -131,7 +141,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .logrow b{color:var(--text)}
 .rules-box{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:14px}
 .relrow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px}
-.rel-ally{color:var(--green)} .rel-enemy{color:var(--red)}
+.rel-ally{color:var(--gold)} .rel-enemy{color:var(--red)}
 .rel-mut{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:5px;border:1px solid}
 
 /* модалки / форми */
@@ -170,6 +180,105 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
 .login button.primary{width:100%;font-family:'Montserrat',sans-serif}
 #login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+
+/* ── ГЕРБ + РІВНІ ОФОРМЛЕННЯ (Base / Rare / Mega Rare) ──
+   Колір спільноти лишається базою на всіх рівнях; рівень додає фініш.
+   Рівень поки лише 'base' (поле відкриється системою Престижу). */
+.crest-sm{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:26px;line-height:1;margin-bottom:10px}
+.crest-sm.rare{box-shadow:inset 0 0 18px var(--cc-a,transparent),0 0 12px var(--cc-a,transparent)}
+.crest-sm.mega{border:2px solid transparent!important;
+  background:linear-gradient(150deg,#0e1218,#0e1218) padding-box,
+    linear-gradient(150deg,var(--gold),var(--cc-b,#7898B8),var(--gold)) border-box!important;
+  box-shadow:0 0 16px var(--cc-a,transparent)}
+.chead .crest.rare{box-shadow:inset 0 0 26px var(--cc-a,transparent),0 0 16px var(--cc-a,transparent)}
+.chead .crest.mega{border:2px solid transparent;
+  background:linear-gradient(150deg,#0e1218,#0e1218) padding-box,
+    linear-gradient(150deg,var(--gold),var(--cc-b,#7898B8),var(--gold)) border-box;
+  box-shadow:0 0 22px var(--cc-a,transparent),inset 0 0 22px rgba(217,180,91,.16)}
+.tierbadge{position:absolute;top:12px;right:12px;z-index:3;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.1em;padding:3px 9px;border-radius:20px}
+.tierbadge.rare{color:var(--blue);border:1px solid var(--blue-d);background:rgba(120,152,184,.1)}
+.tierbadge.mega{color:var(--gold);border:1px solid var(--gold);background:rgba(217,180,91,.1)}
+.t-rare{position:relative;border-color:var(--cc-b,var(--blue))}
+.t-rare::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
+  background:linear-gradient(135deg,var(--cc-a,transparent) 0%,transparent 42%)}
+.t-mega{position:relative;border:1.5px solid transparent!important;
+  background:linear-gradient(var(--panel),var(--panel)) padding-box,
+    linear-gradient(135deg,var(--gold) 0%,var(--cc-b,#7898B8) 50%,var(--gold) 100%) border-box!important}
+.t-mega .shine{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit;z-index:1}
+.t-mega .shine::before{content:'';position:absolute;top:-40%;left:-60%;width:40%;height:180%;
+  background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);transform:rotate(8deg);
+  animation:sweep 6.5s ease-in-out infinite}
+.t-mega .spark{position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
+  background-image:
+    radial-gradient(1.5px 1.5px at 22% 30%,rgba(217,180,91,.4),transparent),
+    radial-gradient(1.5px 1.5px at 68% 22%,rgba(255,255,255,.33),transparent),
+    radial-gradient(1.5px 1.5px at 82% 64%,rgba(217,180,91,.33),transparent),
+    radial-gradient(1.5px 1.5px at 40% 74%,rgba(255,255,255,.27),transparent)}
+@keyframes sweep{0%,72%{left:-60%}100%{left:130%}}
+@media(prefers-reduced-motion:reduce){.t-mega .shine::before{animation:none;opacity:.3}}
+
+/* ── ВКЛАДКА «ОГЛЯД» ── */
+.ov{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px}
+.sec-h h3{font-size:18px;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card+.card{margin-top:16px}
+.card.side h4{font-size:15px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card.side h4 .n{font-size:12px;color:var(--text-dim);font-weight:500}
+.post .pfoot{margin-top:12px;font-size:12px;color:var(--text-dim)}
+.post .ph .pinbadge{color:var(--gold)}
+.post .ph .time{text-transform:none;letter-spacing:0}
+.evrow{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.evrow .evic{width:34px;height:34px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--panel2);border:1px solid var(--line);color:var(--blue);font-size:15px}
+.evrow .evic.gold{color:var(--gold)}
+.evrow .evtx{flex:1;min-width:0}
+.evrow .evtx b{font-size:14px;font-weight:600}
+.evrow .evtx .sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.evrow .evt{font-size:12px;color:var(--text-dim);white-space:nowrap}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.duo .card h4{font-size:14px;display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;gap:8px}
+.duo .about-tx{font-size:13.5px;color:#cfd5d0}
+.rules-n{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:8px 0}
+.rules-n .num{font-family:var(--mono);color:var(--gold);font-weight:700;font-size:12px;min-width:22px}
+.ovm{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
+.ovm:last-of-type{border:none}
+.ava{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#20293a,#161b26);border:1px solid var(--line2);color:#a9c0da;
+  font-family:var(--mono);font-weight:700;font-size:13px}
+.ovm .mi,.ovrel .ri{flex:1;min-width:0}
+.ovm .mn,.ovrel .rn{font-weight:600;font-size:14px}
+.ovm .mr,.ovrel .rt{font-size:12px;color:var(--text-dim)}
+.wbtn{width:100%;margin-top:14px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);
+  border-radius:10px;padding:10px;font-size:13px;font-weight:600}
+.diplo-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.dstat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.dstat .num{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
+.dstat .lbl{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.ovrel{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ovrel:last-of-type{border:none}
+@media(max-width:820px){
+  .ov{display:flex;flex-direction:column;gap:16px}
+  .ovmain,.ovside{display:contents}
+  #ov-stream{order:1}#ov-members{order:2}#ov-diplo{order:3}#ov-duo{order:4;margin-top:0}
+  .duo{grid-template-columns:1fr}
+}
+
+/* ── пресети кольору у формі ── */
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.preset{cursor:pointer;border:1px solid var(--line2);border-radius:9px;padding:6px 9px;display:flex;align-items:center;
+  gap:7px;font-size:12px;background:var(--panel);color:var(--text)}
+.preset:hover{border-color:var(--blue)}
+.preset .dotc{width:16px;height:16px;border-radius:5px;flex:none}
+.preset .lab{color:var(--text-dim)}
+.preset .lab .tg{font-family:var(--mono);font-size:9px;letter-spacing:.05em;margin-left:5px}
+
+/* ── екран входу лишається BoBet-зеленим (спільна брама ліг) ── */
+body:has(#screen-login:not(.hide)){
+  background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
 </style>
 </head>
 <body>
@@ -177,7 +286,10 @@ button:disabled{opacity:.45;cursor:not-allowed}
 <div class="wrap">
   <div class="topbar">
     <div class="logo">
-      <div class="sq">🍻</div>
+      <div class="sq" aria-hidden="true"><span class="dot"></span>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M18 21a6 6 0 0 0-12 0"/>
+          <path d="M22 21a5 5 0 0 0-6.4-4.8"/><path d="M2 21a5 5 0 0 1 6.4-4.8"/></svg></div>
       <div><h1>Спільноти</h1><div class="sub">BoOrbit</div></div>
     </div>
     <div class="right">
@@ -192,7 +304,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <div id="screen-list">
     <div class="filters">
       <input id="f-q" placeholder="Пошук спільноти…">
-      <select id="f-kind"><option value="">Тип: усі</option><option value="bar">🍺 Бар</option><option value="club">🛡 Клуб</option><option value="vip">🎩 VIP Ложа</option><option value="locker">🚪 Роздягальня</option></select>
+      <select id="f-kind"><option value="">Тип: усі</option><option value="club">🏟️ Клуб</option><option value="bar">🍻 Бар</option></select>
       <select id="f-join"><option value="">Вступ: будь-який</option><option value="open">🔓 Відкритий</option><option value="request">🔒 За заявкою</option></select>
       <select id="f-sort"><option value="active">Сорт: найактивніші</option><option value="big">Найбільші</option><option value="new">Найновіші</option></select>
       <button id="btn-create" class="primary grow">+ Створити</button>
@@ -240,8 +352,38 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const KIND={bar:'🍺 Бар',club:'🛡 Клуб',vip:'🎩 VIP Ложа',locker:'🚪 Роздягальня'};
-const KINDEM={bar:'🍺',club:'🛡',vip:'🎩',locker:'🚪'};
+const KIND={club:'🏟️ Клуб',bar:'🍻 Бар'};
+const KINDEM={club:'🏟️',bar:'🍻'};
+const KIND_LEGACY={vip:'🎩 VIP Ложа',locker:'🚪 Роздягальня'};   // старі типи — лише щоб не ламати показ наявних
+const kindLabel=k=>KIND[k]||KIND_LEGACY[k]||k;
+const kindEmoji=c=>c.emoji||KINDEM[c.kind]||({vip:'🎩',locker:'🚪'})[c.kind]||'🍻';
+const HEX_RE=/^#[0-9a-fA-F]{3,8}$/;
+const safeCol=v=>HEX_RE.test(v||'')?v:'#7898B8';
+// Пресети кольору. Рівень Rare/Mega відкриється спільноті за Престиж — окреме поле, поки не пишеться.
+const COLOR_PRESETS=[
+  {name:'Winter Derby',hex:'#7d9fc4',tier:'rare'},
+  {name:'Autumn Cup',hex:'#9a5a4a',tier:'rare'},
+  {name:'Amber House',hex:'#b5804a',tier:'rare'},
+  {name:'Anniversary',hex:'#d9b45b',tier:'mega'},
+  {name:'Neon Night',hex:'#8a6fae',tier:'mega'},
+];
+const EV_IC={joined:'＋',left:'↩',kicked:'⊘',role_added:'★',role_removed:'☆',invited:'✉',invite_accepted:'✔',
+  request_approved:'✔',founder_transferred:'👑',relation_ally:'↔',relation_enemy:'⚔',relation_cleared:'✕',created:'🏳'};
+const tierOf=c=>(c&&c.tier)||'base';   // 'base'|'rare'|'mega' — поле рівня додамо із системою Престижу
+const tierClass=t=>t==='rare'?'t-rare':t==='mega'?'t-mega':'';
+const tierBadge=t=>t==='rare'?'<span class="tierbadge rare">RARE</span>':t==='mega'?'<span class="tierbadge mega">MEGA RARE</span>':'';
+const megaFx=t=>t==='mega'?'<div class="shine"></div><div class="spark"></div>':'';
+const crestTier=t=>t==='rare'?'rare':t==='mega'?'mega':'';
+const tierVars=col=>`--cc:${col};--cc-b:${col};--cc-a:${col}22`;
+const crestStyle=col=>`--cc-a:${col}2e;background:linear-gradient(150deg,${col}2e,${col}10);border:1px solid ${col}55`;
+const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
+const trunc=(s,n)=>{ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; };
+function ago(iso){ const s=(Date.now()-new Date(iso))/1000;
+  if(s<3600) return Math.max(1,Math.round(s/60))+' хв';
+  if(s<86400) return Math.round(s/3600)+' год';
+  if(s<7*86400) return Math.round(s/86400)+' дн';
+  return new Date(iso).toLocaleDateString('uk'); }
+let formEmoji=null;   // збережений емодзі спільноти (поля у формі нема; на редагуванні не затираємо)
 const PERMKEYS=['perm_manage_info','perm_manage_roles','perm_manage_members','perm_moderate_wall','perm_manage_relations','perm_delete'];
 const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'Керувати ролями',perm_manage_members:'Керувати учасниками',perm_moderate_wall:'Модерувати стіну',perm_manage_relations:'Дипломатія',perm_delete:'Видаляти спільноту'};
 const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключено',
@@ -294,19 +436,20 @@ function listFiltered(){
   return l;
 }
 function ccardHTML(c){
-  const col=c.accent_color||'#18b47a';
+  const col=safeCol(c.accent_color), t=tierOf(c), tc=tierClass(t);
   const iAmMember=S.mine.some(m=>m.community_id===c.id);
   let cta;
   if(iAmMember) cta=`<button class="act sm" data-open="${c.id}">Відкрити →</button>`;
   else if(!S.me) cta=`<button class="ghost sm" data-open="${c.id}">Переглянути</button>`;
   else if(c.join_mode==='open') cta=`<button class="act sm" data-join="${c.id}">Вступити</button>`;
   else cta=`<button class="act sm" data-join="${c.id}">Подати заявку</button>`;
-  return `<div class="ccard" data-open="${c.id}">
+  return `<div class="ccard ${tc}" data-open="${c.id}"${t!=='base'?` style="${tierVars(col)}"`:''}>
+    ${megaFx(t)}${tierBadge(t)}
     <div class="band" style="background:${esc(col)}"></div>
     <div class="cbody">
-      <div class="em">${esc(c.emoji||KINDEM[c.kind]||'🍻')}</div>
+      <div class="crest-sm ${crestTier(t)}" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
       <div class="nm">${esc(c.name)}</div>
-      <div class="tags"><span class="tag">${esc(KIND[c.kind]||c.kind)}</span>
+      <div class="tags"><span class="tag">${esc(kindLabel(c.kind))}</span>
         <span class="tag ${c.join_mode==='open'?'open':''}">${c.join_mode==='open'?'🔓 відкритий':'🔒 за заявкою'}</span>
         ${c.visibility==='private'?'<span class="tag priv">приватна</span>':''}</div>
       <div class="mot">${esc(c.motto||'')}</div>
@@ -390,7 +533,7 @@ async function openCommunity(id, keepTab){
   S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
     log:log.data||[], roles:roles.data||[], rels:rels.data||[],
     visible: !!detail };
-  if(!keepTab) S.tab = S.cur.visible ? 'wall' : 'about';
+  if(!keepTab) S.tab = S.cur.visible ? 'overview' : 'about';
   $('screen-list').classList.add('hide'); $('screen-login').classList.add('hide');
   $('screen-community').classList.remove('hide');
   renderCommunity();
@@ -409,7 +552,7 @@ function iAmMember(){ return !!(S.cur.members||[]).find(m=>m.profile_id===S.me);
 function iAmFounder(){ const c=S.cur.card||S.cur.detail; return S.me && c && c.founder_id===S.me; }
 
 function renderCommunity(){
-  const c=S.cur.card||S.cur.detail; const col=c.accent_color||'#18b47a';
+  const c=S.cur.card||S.cur.detail; const col=safeCol(c.accent_color); const t=tierOf(c);
   const perms=myPerms(), member=iAmMember();
   // шапка
   let stateBtn='';
@@ -420,19 +563,23 @@ function renderCommunity(){
     : `<button class="act sm" id="c-join">Подати заявку</button>`;
   const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
   const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
-  $('chead').innerHTML=`<div class="chead"><div class="cover" style="border-left:5px solid ${esc(col)};background:linear-gradient(90deg,${esc(col)}18,transparent 60%)">
-    <div class="bigem">${esc(c.emoji||KINDEM[c.kind]||'🍻')}</div>
-    <div style="flex:1">
-      <h2>${esc(c.name)}</h2>
-      ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
-      <div class="meta"><span>${esc(KIND[c.kind]||c.kind)}</span>
-        <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
-        ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
-        <span>👥 ${c.member_count}</span>
-        <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
+  $('chead').innerHTML=`<div class="chead ${tierClass(t)}"${t!=='base'?` style="${tierVars(col)}"`:''}>
+    ${megaFx(t)}${tierBadge(t)}
+    <div class="accent-bar" style="background:${esc(col)}"></div>
+    <div class="cover" style="background:linear-gradient(100deg,${esc(col)}1c,transparent 62%)">
+      <div class="crest ${crestTier(t)}" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
+      <div class="htext">
+        <h2>${esc(c.name)}</h2>
+        ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
+        <div class="meta"><span>${esc(kindLabel(c.kind))}</span>
+          <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
+          ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
+          <span><b>${c.member_count}</b> учасників</span>
+          <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
+      </div>
+      <div class="acts">${stateBtn}${manageBtn}</div>
     </div>
-    <div class="acts">${stateBtn}${manageBtn}</div>
-  </div></div>`;
+  </div>`;
   const lg=$('c-login'); if(lg) lg.onclick=showLogin;
   const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
   const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
@@ -440,7 +587,7 @@ function renderCommunity(){
 
   // вкладки
   const tabs = S.cur.visible
-    ? [['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
+    ? [['overview','Огляд'],['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
     : [['about','Про нас']];
   $('ctabs').innerHTML=tabs.map(([k,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('');
   $('ctabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderCommunity(); });
@@ -453,12 +600,83 @@ function renderTab(perms, member){
     box.innerHTML=`<div class="rules-box">🔒 Приватна спільнота. Вступи, щоб бачити стіну, учасників та історію.</div>`;
     return;
   }
+  if(S.tab==='overview') return renderOverview(perms, member);
   if(S.tab==='wall') return renderWall(perms, member);
   if(S.tab==='members') return renderMembers(perms);
   if(S.tab==='history') return renderHistory();
   if(S.tab==='rules') return renderRules();
   if(S.tab==='about') return renderAbout();
   if(S.tab==='rel') return renderRel(perms);
+}
+function renderOverview(perms, member){
+  const box=$('ctab'); const c=S.cur.card||S.cur.detail;
+  const wall=S.cur.wall||[], log=S.cur.log||[];
+  const pinned=wall.find(p=>p.is_pinned);
+  const items=[];
+  wall.filter(p=>!p.is_pinned).forEach(p=>items.push({t:new Date(p.created_at),k:'post',d:p}));
+  log.forEach(l=>items.push({t:new Date(l.created_at),k:'log',d:l}));
+  items.sort((a,b)=>b.t-a.t);
+  const recent=items.slice(0,3);
+  const evRow=it=>{
+    if(it.k==='post'){ const p=it.d;
+      return `<div class="evrow"><div class="evic">📝</div><div class="evtx"><b>${esc(trunc(p.body,58))}</b>
+        <div class="sub">Пост · ${esc(p.author_name||'—')}</div></div><div class="evt">${ago(p.created_at)}</div></div>`; }
+    const l=it.d; const gold=(l.event==='role_added'||l.event==='created'||l.event==='founder_transferred')?' gold':'';
+    const tgt=l.target_name?` ${esc(l.target_name)}`:''; const rl=l.role_label?` «${esc(l.role_label)}»`:'';
+    return `<div class="evrow"><div class="evic${gold}">${EV_IC[l.event]||'•'}</div>
+      <div class="evtx"><b>${esc(l.actor_name||'—')} ${esc(EVLBL[l.event]||l.event)}${tgt}${rl}</b>
+      <div class="sub">Історія</div></div><div class="evt">${ago(l.created_at)}</div></div>`;
+  };
+  const pinHTML = pinned ? `<div class="post pin">
+      <div class="ph"><span class="pinbadge">📌 Закріплено</span><span class="time" style="margin-left:auto">${ago(pinned.created_at)}</span></div>
+      <div class="pbody">${esc(pinned.body)}</div>
+      <div class="pfoot"><span>${esc(pinned.author_name||'—')}</span></div></div>` : '';
+  const streamBody = pinHTML + (recent.map(evRow).join('') || (pinned?'':'<div class="sum">Тут поки тихо.</div>'));
+  const about=((S.cur.detail||{}).description||'').trim();
+  const rulesArr=(((S.cur.detail||{}).rules)||'').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);
+  const rulesHTML=rulesArr.length
+    ? rulesArr.map((r,i)=>`<div class="rules-n"><span class="num">${String(i+1).padStart(2,'0')}</span><span>${esc(r)}</span></div>`).join('')
+    : '<div class="sum">Правил ще немає.</div>';
+  const mem=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).slice(0,3);
+  const memRow=m=>{
+    const sub=[m.is_owner?'Власник':(m.is_founder?'Засновник':null),...(m.roles||[])].filter(Boolean).join(' · ')||'Учасник';
+    const badge=m.is_owner?'<span class="chip own">👑 Власник</span>':'';
+    return `<div class="ovm"><div class="ava">${esc(initials(m.display_name))}</div>
+      <div class="mi"><div class="mn">${esc(m.display_name||'—')}</div><div class="mr">${esc(sub)}</div></div>${badge}</div>`;
+  };
+  const outs=S.cur.rels.filter(r=>r.direction==='out');
+  const allies=outs.filter(r=>r.type==='ally').length, enemies=outs.filter(r=>r.type==='enemy').length;
+  const relRow=r=>{
+    const mut=r.mutual?`<span class="rel-mut ${r.type==='ally'?'rel-ally':'rel-enemy'}" style="border-color:currentColor">${r.type==='ally'?'Союз':'Дербі'}</span>`:'';
+    const sub=r.type==='ally'?(r.mutual?'Взаємне партнерство':'Партнер'):(r.mutual?'Взаємне суперництво':'Суперник');
+    return `<div class="ovrel"><div class="ava">${esc(initials(r.other_name))}</div>
+      <div class="ri"><div class="rn">${esc(r.other_name)}</div><div class="rt">${sub}</div></div>${mut}</div>`;
+  };
+  const relHTML=outs.length?outs.slice(0,2).map(relRow).join(''):'<div class="sum">Звʼязків ще немає.</div>';
+  box.innerHTML=`<div class="ov">
+    <div class="ovmain">
+      <div id="ov-stream">
+        <div class="sec-h"><h3>Зі стіни</h3><a href="#" data-goto="wall">Відкрити стіну →</a></div>
+        ${streamBody}
+      </div>
+      <div class="duo" id="ov-duo">
+        <div class="card"><h4>Про нас <a href="#" data-goto="about" style="font-size:12px;font-weight:500">Докладніше</a></h4>
+          <div class="about-tx">${about?esc(trunc(about,180)):'<span class="st">Опису ще немає.</span>'}</div></div>
+        <div class="card"><h4>Головні правила <a href="#" data-goto="rules" style="font-size:12px;font-weight:500">Усі правила</a></h4>${rulesHTML}</div>
+      </div>
+    </div>
+    <div class="ovside">
+      <div class="card side" id="ov-members"><h4>Учасники <span class="n">${c.member_count} учасників</span></h4>
+        ${mem.map(memRow).join('')}<button class="wbtn" data-goto="members">Усі учасники</button></div>
+      <div class="card side" id="ov-diplo"><h4>Дипломатія ${outs.length?`<a href="#" data-goto="rel" style="font-size:12px;font-weight:500">Відкрити все</a>`:''}</h4>
+        <div class="diplo-stats"><div class="dstat"><div class="num">${allies}</div><div class="lbl">Партнери</div></div>
+          <div class="dstat"><div class="num">${enemies}</div><div class="lbl">Суперники</div></div></div>
+        ${relHTML}
+        ${perms.perm_manage_relations?`<button class="wbtn" id="ov-rel-add">Оголосити звʼязок</button>`:''}</div>
+    </div>
+  </div>`;
+  box.querySelectorAll('[data-goto]').forEach(a=>a.onclick=e=>{ e.preventDefault(); S.tab=a.dataset.goto; renderCommunity(); });
+  const ra=$('ov-rel-add'); if(ra) ra.onclick=openRelAdd;
 }
 function renderWall(perms, member){
   const box=$('ctab');
@@ -559,12 +777,14 @@ function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal
 function closeModal(){ $('mhost').innerHTML=''; }
 
 function formFields(v){ v=v||{};
+  const presets=COLOR_PRESETS.map(p=>`<button type="button" class="preset" data-preset="${p.hex}"><span class="dotc" style="background:${p.hex}"></span><span class="lab">${p.name}<span class="tg" style="color:${p.tier==='mega'?'var(--gold)':'var(--blue)'}">${p.tier==='mega'?'MEGA':'RARE'}</span></span></button>`).join('');
   return `<div class="field"><label>Назва</label><input id="cf-name" maxlength="80" value="${esc(v.name||'')}"></div>
     <div class="field row">
       <div><label>Тип</label><select id="cf-kind">${Object.keys(KIND).map(k=>`<option value="${k}"${v.kind===k?' selected':''}>${KIND[k]}</option>`).join('')}</select></div>
-      <div><label>Емодзі-емблема</label><input id="cf-emoji" maxlength="4" value="${esc(v.emoji||'')}" placeholder="🍺"></div>
-      <div><label>Колір</label><input id="cf-color" type="color" value="${esc(v.accent_color||'#18b47a')}"></div>
+      <div><label>Колір</label><input id="cf-color" type="color" value="${esc(safeCol(v.accent_color||'#7898B8'))}" style="height:42px;padding:4px"></div>
     </div>
+    <div class="field"><label>Пресети (колір)</label><div class="presets">${presets}</div>
+      <div class="st" style="margin-top:6px">Пресет ставить колір. Фініш Rare / Mega відкривається спільноті за Престиж — окремо.</div></div>
     <div class="field"><label>Девіз / кричалка (до 200)</label><input id="cf-motto" maxlength="200" value="${esc(v.motto||'')}"></div>
     <div class="field"><label>Опис (Про нас)</label><textarea id="cf-desc">${esc(v.description||'')}</textarea></div>
     <div class="field"><label>Правила</label><textarea id="cf-rules">${esc(v.rules||'')}</textarea></div>
@@ -573,16 +793,19 @@ function formFields(v){ v=v||{};
       <div><label>Видимість</label><select id="cf-vis"><option value="public"${v.visibility==='public'?' selected':''}>Публічна</option><option value="private"${v.visibility==='private'?' selected':''}>Приватна</option></select></div>
     </div>`;
 }
+function wirePresets(){ document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ const el=$('cf-color'); if(el) el.value=b.dataset.preset; }); }
 function formVals(){
   return { p_name:$('cf-name').value.trim(), p_kind:$('cf-kind').value,
     p_motto:$('cf-motto').value.trim()||null, p_description:$('cf-desc').value.trim()||null,
-    p_rules:$('cf-rules').value.trim()||null, p_emoji:$('cf-emoji').value.trim()||null,
+    p_rules:$('cf-rules').value.trim()||null, p_emoji:formEmoji,
     p_accent_color:$('cf-color').value, p_join_mode:$('cf-join').value, p_visibility:$('cf-vis').value };
 }
 function openCreate(){
   if(!S.me){ showLogin(); return; }
+  formEmoji=null;
   modal(`<div class="mhead"><h3>Нова спільнота</h3><button class="mx">✕</button></div>
     <div class="mbody">${formFields()}<button class="act" id="cf-save">Створити</button><div id="cf-msg"></div></div>`);
+  wirePresets();
   $('cf-save').onclick=async()=>{
     const v=formVals(); if(v.p_name.length<2){ $('cf-msg').className='msg err'; $('cf-msg').textContent='Назва: від 2 символів'; return; }
     const { data, error }=await sb.rpc('community_create',v);
@@ -592,9 +815,11 @@ function openCreate(){
 }
 function openEdit(){
   const d=S.cur.detail;
+  formEmoji=(d&&d.emoji)||null;
   modal(`<div class="mhead"><h3>Редагувати спільноту</h3><button class="mx">✕</button></div>
     <div class="mbody">${formFields(d)}<div class="st" style="margin:4px 0 10px">Тип змінити не можна після створення.</div>
       <button class="act" id="cf-save">Зберегти</button><div id="cf-msg"></div></div>`);
+  wirePresets();
   $('cf-kind').disabled=true;
   $('cf-save').onclick=async()=>{
     const v=formVals(); delete v.p_kind;
