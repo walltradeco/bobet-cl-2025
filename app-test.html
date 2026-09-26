@@ -1245,7 +1245,7 @@ async function viewMatches(){
       <div>
         <div class="cap">${open ? 'прогнози відкрито' : 'до дедлайну'}</div>
         <div class="t">${open ? 'вікенд закрито' : (left || 'закрито')}</div>
-        ${open ? '' : `<div class="when">прогнози · бусти · стиль · бонус — до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
+        ${open ? '' : `<div class="when">прогнози · бусти · стиль — до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
         ${open ? '' : `<div class="when" style="opacity:.75">⚔️ суперника можна змінити ще 2 год — до ${esc(fmtDeadline(new Date(rivalsCloseMs).toISOString()))}</div>`}
       </div>
       <div style="text-align:right">
@@ -2790,11 +2790,12 @@ function legendBoxHtml(L, locked, state){
     </div>
     <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Обери <b>2 пасивки</b> на весь етап — кожна це <b>клуб + роль</b>. Бали йдуть
-      у загальний залік (впливають на місця й гроші), але <b>НЕ рахуються
-      для Rivals і MVP тижня</b> — це окрема, суто етапна механіка. Стеля —
-      <b>${cap} балів Legend за етап</b> (сума обох слотів): 8 клубів грають по
-      4 матчі (макс 8 за роль × 2 слоти = ${cap}), лише Мілан і Ювентус — по 5.
-      Незмінне до кінця етапу, як бусти.
+      у загальний залік, <b>те саме що і Бонусні Питання</b> (впливають на місця
+      й гроші), але <b>НЕ рахуються для Rivals і MVP тижня</b> — це окрема, суто
+      етапна механіка. Стеля — <b>8 балів за роль</b> (${cap} разом за 2 слоти):
+      клубу досить 4 матчів для максимуму; у Мілана та Ювентуса 5 матчів —
+      <b>більше шансів</b> набрати ці 8, але не більше. Незмінне до кінця етапу,
+      як бусти.
     </div>`;
 
   // Вибір: 2 слоти, кожен = селект клубу + чіпи ролей. Щойно клуб обрано,
@@ -2919,9 +2920,10 @@ async function viewDraft(){
     const pct = Math.min(100, sp / budget * 100);
 
     $('view').innerHTML = `
-      ${closed ? '' : `<div class="deadline"><span>До дедлайну</span>
-        <span class="t">${esc(countdown(t.draft_deadline) || 'закрито')}</span></div>
-        <div class="dim" style="font-size:13px;margin:-2px 0 8px">приймаємо до ${esc(fmtDeadline(t.draft_deadline))}</div>`}
+      ${closed ? '' : `<div class="deadline">
+        <div><span>До дедлайну</span>
+          <div class="when">приймаємо до ${esc(fmtDeadline(t.draft_deadline))}</div></div>
+        <span class="t">${esc(countdown(t.draft_deadline) || 'закрито')}</span></div>`}
       <div class="budget">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span class="dim">Витрачено</span>
@@ -3655,9 +3657,10 @@ async function viewBonus(){
     html += `<div class="deadline closed"><span>Час вийшов</span>
              <span class="t">дедлайн минув</span></div>`;
   } else {
-    html += `<div class="deadline"><span>До дедлайну</span>
-             <span class="t">${esc(left)}</span></div>
-             <div class="dim" style="font-size:13px;margin:-2px 0 8px">приймаємо до ${esc(fmtDeadline(dl))}</div>`;
+    html += `<div class="deadline">
+             <div><span>До дедлайну</span>
+               <div class="when">приймаємо до ${esc(fmtDeadline(dl))}</div></div>
+             <span class="t">${esc(left)}</span></div>`;
   }
 
   // Хто вже здав бонуси (пункт 13). Показується всім, не лише адміну:

@@ -3495,8 +3495,12 @@ function legendBadge(name){
       // Підпис легенди: ім'я/прізвище легенди клубу (Баварія·Канонада →
       // Lewandowski), fallback на назву ролі, якщо ім'я не задане (459/460).
       const label = p.legendName || p.title || p.role;
+      // Стеля 8 на роль (462): журнал по матчах сирий, points — зрізаний.
+      // Якщо сира сума більша — показуємо «(зі N, стеля)», як 👔 Style.
+      const rawSum = (p.matches || []).reduce((s, m) => s + (m.points || 0), 0);
+      const capped = rawSum > (p.points || 0);
       const pts = p.played > 0
-        ? `<span class="win">+${p.points || 0}</span>`
+        ? `<span class="win">+${p.points || 0}</span>${capped ? ` <span class="cap">(зі ${rawSum}, стеля)</span>` : ''}`
         : '<span class="pending">очікує</span>';
       const breakdown = (p.matches || [])
         .map(m => `Вікенд ${m.gw}: ${m.points > 0 ? '+' + m.points : '0'}`)
