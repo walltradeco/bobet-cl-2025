@@ -2794,7 +2794,7 @@ function legendBoxHtml(L, locked, state){
       й гроші), але <b>НЕ рахуються для Rivals і MVP тижня</b> — це окрема, суто
       етапна механіка. Стеля — <b>8 балів за роль</b> (${cap} разом за 2 слоти):
       клубу досить 4 матчів для максимуму; у Мілана та Ювентуса 5 матчів —
-      <b>більше шансів</b> набрати ці 8, але не більше. Незмінне до кінця етапу,
+      <b>більше шансів</b> набрати ці 8 балів за роль. Незмінне до кінця етапу,
       як бусти.
     </div>`;
 
@@ -3110,7 +3110,7 @@ async function viewStock(){
     const poolCodes  = poolRes.data.map(p => p.role_code);
     const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
     html += `<div class="card tight" style="margin-bottom:10px">
-      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
+      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>8 балів за роль</b> (${legendCapV} разом за 2 слоти): клубу досить 4 матчів для максимуму; у <b>Мілана та Ювентуса</b> 5 матчів — <b>більше шансів</b> набрати ці 8 балів за роль. Незмінне до кінця етапу, як бусти.</div>
       <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
         roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
     </div>`;
