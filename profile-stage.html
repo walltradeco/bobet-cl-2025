@@ -406,10 +406,10 @@ const CHAMP_LEAGUE={bobet:'BOBET',psl:'PSL',squad:'Squad'};
 const STATUS_LABEL={active:'триває',finished:'завершено',draft:'чернетка'};
 // ── Огляд-конструктор: реєстр модулів ──
 const OVMODS={
-  cups:{name:'Кубки',em:'🏆',pick:true,cap:20,link:'trophies'},
-  medals:{name:'Медалі',em:'🥇',pick:true,cap:6,link:'trophies'},
-  records:{name:'Рекорди ліги',em:'📊',pick:true,cap:4,link:'records'},
-  collection:{name:'Колекція',em:'🃏',pick:true,cap:8,link:'collection'},
+  cups:{name:'Кубки',em:'🏆',pick:true,cap:null,link:'trophies'},        // без лімітів (рішення Богдана)
+  medals:{name:'Медалі',em:'🥇',pick:true,cap:null,link:'trophies'},
+  records:{name:'Рекорди ліги',em:'📊',pick:true,cap:null,link:'records'},
+  collection:{name:'Колекція',em:'🃏',pick:true,cap:null,link:'collection'},
   portrait:{name:'Портрет гравця',em:'🧬',pick:false,link:'portrait'},
   communities:{name:'Спільноти',em:'🍻',pick:false,link:'communities'},
   playing:{name:'Де грає зараз',em:'📍',pick:false,link:null},
@@ -512,7 +512,7 @@ function renderHead(){
   const champ=!!ov.is_champion && ov.show_champion!==false, theme=CHAMP_THEME[ov.champion_league]||'';
   const col = (ov.avatar_color && /^#[0-9a-fA-F]{6}$/.test(ov.avatar_color)) ? ov.avatar_color : null;
   const avInner = esc(initials(name));                        // емодзі-аватар прибрано — лише ініціали
-  const avStyle = col ? ` style="background:${col}"` : '';
+  const avStyle = '';                                         // аватар БЕЗ кольору (колір лише на шапці)
   const frame = champ
     ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${ic('crown',16)}</span></div>`
     : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
@@ -913,7 +913,6 @@ function showFullCard(c){
 }
 
 // ── керування профілем (перейменування + аватар в одній модалці) ──
-const PROFILE_SWATCHES=['#d9b45b','#7e9dbb','#18b47a','#c75c4a','#9b6dd8','#e0863c','#4db6ac','#8dc0ec'];
 function openEdit(){
   const host=$('mhost');
   const col=(S.ov.avatar_color&&/^#[0-9a-fA-F]{6}$/.test(S.ov.avatar_color))?S.ov.avatar_color:'#7e9dbb';
@@ -929,17 +928,13 @@ function openEdit(){
       <label>Імʼя</label>
       <input type="text" id="rn-name" maxlength="24" value="${esc(S.ov.display_name||'')}">
       <label>Колір шапки</label>
-      <div class="palrow">${PROFILE_SWATCHES.map(c=>`<button class="sw-col" data-col="${c}" style="background:${c}"></button>`).join('')}<input type="color" id="av-col" value="${esc(col)}"></div>
-      <div class="prev" id="av-prev" style="background:${esc(col)}">${esc(initials(S.ov.display_name))}</div>
+      <input type="color" id="av-col" value="${esc(col)}" style="width:100%;height:44px;padding:4px;border:1px solid var(--line2);border-radius:10px;background:none;cursor:pointer">
       ${chBlock}
       <div class="msg" id="ed-msg" style="display:none"></div>
     </div>
     <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="ed-save">Зберегти</button></div>
   </div></div>`;
   wireModal(host);
-  const upd=()=>{ $('av-prev').textContent=initials($('rn-name').value); $('av-prev').style.background=$('av-col').value; };
-  $('av-col').oninput=upd; $('rn-name').oninput=upd;
-  host.querySelectorAll('.sw-col[data-col]').forEach(b=>b.onclick=()=>{ $('av-col').value=b.dataset.col; upd(); });
   if(isChamp){ $('ch-sw').onclick=()=>{ showChamp=!showChamp; $('ch-sw').classList.toggle('on',showChamp); }; }
   $('ed-save').onclick=async()=>{
     const m=$('ed-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
