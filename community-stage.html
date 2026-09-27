@@ -567,8 +567,7 @@ function renderCommunity(){
   const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
   $('chead').innerHTML=`<div class="chead ${tierClass(t)}"${t!=='base'?` style="${tierVars(col)}"`:''}>
     ${megaFx(t)}${tierBadge(t)}
-    <div class="accent-bar" style="background:${esc(col)}"></div>
-    <div class="cover" style="background:linear-gradient(100deg,${esc(col)}1c,transparent 62%)">
+    <div class="cover" style="background:linear-gradient(110deg,${esc(col)}59,${esc(col)}2e 55%,${esc(col)}17)">
       <div class="crest ${crestTier(t)}" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
       <div class="htext">
         <h2>${esc(c.name)}</h2>
@@ -779,14 +778,11 @@ function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal
 function closeModal(){ $('mhost').innerHTML=''; }
 
 function formFields(v){ v=v||{};
-  const presets=COLOR_PRESETS.map(p=>`<button type="button" class="preset" data-preset="${p.hex}"><span class="dotc" style="background:${p.hex}"></span><span class="lab">${p.name}<span class="tg" style="color:${p.tier==='mega'?'var(--gold)':'var(--blue)'}">${p.tier==='mega'?'MEGA':'RARE'}</span></span></button>`).join('');
   return `<div class="field"><label>Назва</label><input id="cf-name" maxlength="80" value="${esc(v.name||'')}"></div>
     <div class="field row">
       <div><label>Тип</label><select id="cf-kind">${Object.keys(KIND).map(k=>`<option value="${k}"${v.kind===k?' selected':''}>${KIND[k]}</option>`).join('')}</select></div>
-      <div><label>Колір</label><input id="cf-color" type="color" value="${esc(safeCol(v.accent_color||'#7898B8'))}" style="height:42px;padding:4px"></div>
+      <div><label>Колір шапки</label><input id="cf-color" type="color" value="${esc(safeCol(v.accent_color||'#7898B8'))}" style="height:42px;padding:4px"></div>
     </div>
-    <div class="field"><label>Пресети (колір)</label><div class="presets">${presets}</div>
-      <div class="st" style="margin-top:6px">Пресет ставить колір. Фініш Rare / Mega відкривається спільноті за Престиж — окремо.</div></div>
     <div class="field"><label>Девіз / кричалка (до 200)</label><input id="cf-motto" maxlength="200" value="${esc(v.motto||'')}"></div>
     <div class="field"><label>Опис (Про нас)</label><textarea id="cf-desc">${esc(v.description||'')}</textarea></div>
     <div class="field"><label>Правила</label><textarea id="cf-rules">${esc(v.rules||'')}</textarea></div>
