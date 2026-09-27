@@ -12,123 +12,216 @@
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0c1310; --panel:#132019; --panel2:#18271f; --line:#243a30;
-  --text:#e9f1ec; --text-dim:#8ba297;
-  --gold:#e6c14b; --teal:#6fb0c9; --blue:#7fbcff; --purple:#a98fdb;
-  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); --red:#e2585f;
-  --accent:#18b47a; --accent-d:#0e6f4c;
+  --bg:#0d1014; --panel:#15191e; --panel2:#1a1f25; --panel3:#20262d;
+  --line:rgba(255,255,255,.085); --line2:rgba(255,255,255,.14);
+  --text:#f2efe7; --copy:#a9adb0; --text-dim:#767c82;
+  --gold:#d9b45b; --gold-rgb:217,180,91; --gold-d:#8a7228;
+  --blue:#7e9dbb; --blue-rgb:126,157,187; --blue-d:#3a597e;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14);   /* лише екран входу */
+  --red:#d87976;
   --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
-  -webkit-font-smoothing:antialiased;
-  background:
-    radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
-    radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
-    var(--bg)}
-h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
-.wrap{max-width:1000px;margin:0 auto;padding:0 16px 60px}
-a{color:var(--accent);text-decoration:none}
-button{font-family:var(--mono);cursor:pointer}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1100px 520px at 88% -12%, rgba(var(--blue-rgb),.09) 0%, transparent 40%), var(--bg)}
+body:has(#screen-login:not(.hide)){background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
+h1,h2,h3,h4{font-family:var(--mono);letter-spacing:.01em;margin:0}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:var(--mono);cursor:pointer;color:inherit}
 .hide{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+.ic{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.empty{padding:26px;border:1px dashed var(--line2);border-radius:14px;text-align:center;color:var(--text-dim);font-size:13px}
+.sum{font-size:13px;color:var(--text-dim)}
 
-/* шапка сторінки */
-.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 10px}
-.logo{display:flex;align-items:center;gap:10px}
-.logo .sq{width:40px;height:40px;border-radius:10px;background:linear-gradient(135deg,#18b47a,#0e6f4c);
-  display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:16px;color:#04120c}
-.logo h1{font-size:20px;margin:0;line-height:1}
-.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase}
-.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
-.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);
-  border-radius:6px;padding:2px 8px;letter-spacing:.08em}
-.who{font-size:13px;color:var(--text-dim)}.who b{color:var(--text)}
-.abadge{font-size:10px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:1px 6px;letter-spacing:.08em}
-button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px}
-button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
-button.act{background:var(--green-soft);color:var(--green);border:1px solid var(--accent-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
-button:disabled{opacity:.45;cursor:not-allowed}
+/* топбар */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:20px 0 8px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo .sq{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#aac0d3;
+  border:1px solid rgba(var(--blue-rgb),.28);background:linear-gradient(145deg,rgba(var(--blue-rgb),.15),rgba(var(--gold-rgb),.07))}
+.logo h1{font-size:21px;line-height:1}
+.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.16em;text-transform:uppercase}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--copy)}
+.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid rgba(201,108,105,.55);border-radius:6px;padding:2px 8px;letter-spacing:.1em}
+.who b{color:var(--text)}
+.abadge{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em}
+button.ghost{border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.025);padding:8px 13px;font-size:13px;color:var(--text)}
+button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9px;padding:9px 16px;font-weight:700;font-size:13px}
 
-/* картка профілю (шапка) */
-.phead{display:flex;gap:18px;align-items:center;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
-  border-radius:16px;padding:20px 22px;margin-top:6px}
-.avatar{width:88px;height:88px;border-radius:20px;flex:none;display:flex;align-items:center;justify-content:center;
-  font-size:46px;line-height:1;background:var(--panel2);border:1px solid var(--line)}
-.pinfo{flex:1;min-width:220px}
-.pinfo h2{font-size:26px;margin:0 0 4px}
-.pstat{display:flex;gap:16px;flex-wrap:wrap;color:var(--text-dim);font-size:13px;margin-top:4px}
-.pstat b{color:var(--text);font-size:16px;font-family:var(--mono)}
-.pstat .u{display:flex;flex-direction:column;line-height:1.15}
-.pacts{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;width:100%}
-.launch{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
-.launch a{background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-size:13px;
-  color:var(--text);font-family:var(--mono);font-weight:600}
-.launch a:hover{border-color:var(--accent)}
+/* герой профілю */
+.hero{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center;
+  min-height:172px;padding:26px 28px;overflow:hidden;border:1px solid var(--line);border-radius:20px;margin-top:6px;
+  background:linear-gradient(115deg,rgba(var(--blue-rgb),.08),transparent 42%),var(--panel)}
+.hero.champ{border-color:rgba(var(--gold-rgb),.22);
+  background:radial-gradient(circle at 80% 10%,rgba(var(--gold-rgb),.13),transparent 34%),linear-gradient(115deg,rgba(var(--blue-rgb),.10),transparent 38%),var(--panel)}
+.hero.champ::before{content:"";position:absolute;left:-1px;top:20px;bottom:20px;width:4px;border-radius:0 5px 5px 0;
+  background:linear-gradient(180deg,var(--gold),var(--blue));box-shadow:0 0 18px rgba(var(--gold-rgb),.28)}
+.frame{position:relative;width:104px;height:104px;display:grid;place-items:center;border-radius:30px;flex:none}
+.frame .av{font-family:var(--mono);font-weight:700;font-size:34px;color:#e9e4d8;letter-spacing:.02em;line-height:1}
+.frame.plain{border:1px solid var(--line2);background:var(--panel2)}
+.frame.champ{border:1px solid rgba(var(--gold-rgb),.76);background:linear-gradient(145deg,rgba(var(--gold-rgb),.18),rgba(var(--blue-rgb),.12));
+  box-shadow:0 0 0 5px var(--panel),0 0 0 6px rgba(var(--gold-rgb),.28),0 14px 34px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.10)}
+.frame.champ.glow{box-shadow:0 0 0 5px var(--panel),0 0 0 6px rgba(var(--gold-rgb),.28),0 14px 34px rgba(0,0,0,.30),0 0 26px rgba(var(--gold-rgb),.13),inset 0 1px 0 rgba(255,255,255,.10)}
+.frame.champ::after{content:"";position:absolute;inset:7px;border:1px solid rgba(255,255,255,.06);border-radius:23px}
+.frame.psl{--gold-rgb:166,194,215}
+.frame.squad{--gold-rgb:125,184,232}
+.crown-seal{position:absolute;right:-9px;bottom:-8px;z-index:2;width:34px;height:34px;display:grid;place-items:center;
+  border:3px solid var(--panel);border-radius:50%;color:#1a1b1c;background:var(--gold);box-shadow:0 5px 14px rgba(0,0,0,.3)}
+.identity{min-width:0}
+.eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.champ-label{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid rgba(var(--gold-rgb),.45);border-radius:7px;
+  color:var(--gold);background:rgba(var(--gold-rgb),.08);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em}
+.champ-season{color:var(--text-dim);font-size:10px;letter-spacing:.1em;font-family:var(--mono);text-transform:uppercase}
+.identity h2{font-size:31px;line-height:1.05;letter-spacing:-.02em}
+.who-sub{margin:6px 0 14px;color:var(--copy);font-size:13px}
+.stats{display:flex;flex-wrap:wrap;gap:20px}
+.stat{display:flex;align-items:baseline;gap:5px}
+.stat b{font-size:17px;font-weight:700;font-family:var(--mono)}
+.stat span{color:var(--text-dim);font-size:11px}
+.edit{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--line);border-radius:11px;
+  background:rgba(255,255,255,.025);color:var(--copy);font-size:12px;font-weight:600;align-self:flex-start}
+.edit .ic{width:14px;height:14px}
+.hactions{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
 
-/* секції */
-.sec{margin:28px 0 8px}
-.sec h2{font-size:17px;margin:0 0 12px}
-.sec .empty{font-size:13px;color:var(--text-dim)}
+/* вкладки */
+.tabs{display:flex;gap:3px;margin-top:17px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;border:0;background:transparent;color:var(--text-dim);padding:13px 15px 14px;white-space:nowrap;font-size:14px;font-weight:600}
+.tab.on{color:var(--text)}
+.tab.on::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;border-radius:2px;background:var(--gold);box-shadow:0 0 12px rgba(var(--gold-rgb),.18)}
 
-/* турніри «де грає» */
-.tgrid{display:flex;flex-wrap:wrap;gap:12px}
-.tcard{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;min-width:210px;flex:1;max-width:320px}
-.tcard .lg{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-  padding:2px 8px;border-radius:6px;display:inline-block}
-.lg.BoBet{background:rgba(230,193,75,.16);color:var(--gold);border:1px solid #8a7228}
-.lg.PSL{background:rgba(111,176,201,.18);color:var(--teal);border:1px solid #3d6d7e}
-.lg.Squad{background:rgba(127,188,255,.16);color:var(--blue);border:1px solid #3a5f8a}
-.tcard .nm{font-size:15px;font-weight:600;margin:8px 0 2px}
-.tcard .pl{font-family:var(--mono);font-size:22px;font-weight:700}
-.tcard .pl small{font-size:12px;color:var(--text-dim);font-weight:500}
-.tcard .stt{font-size:11px;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+/* сітка Огляду */
+.ov{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,.72fr);gap:16px;align-items:start;margin-top:19px}
+.col{display:grid;gap:14px;align-content:start}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:2px 2px 0}
+.sec-head h3{font-size:18px}
+.link{border:0;background:transparent;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer}
+.link:hover{text-decoration:underline}
 
-/* колекція карток */
-.grid{display:flex;flex-wrap:wrap;gap:16px}
-.card{width:150px;cursor:pointer}
-.card .art{position:relative;width:150px;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;background:#0a120e;border:1px solid var(--line)}
-.card .art img{width:100%;height:100%;object-fit:contain;display:block}
-.card:hover .art{outline:2px solid var(--accent)}
-.card .rar{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:10px;font-weight:700;
-  letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
-.rar.rare{background:rgba(111,176,201,.2);color:#bfe0ee;border:1px solid #3d6d7e}
-.rar.mega_rare{background:rgba(230,193,75,.18);color:#f0d98a;border:1px solid #8a7228}
-.card .cn{margin-top:6px;text-align:center;font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* трофейна вітрина */
+.showcase{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(180px,.75fr);gap:12px}
+.hero-tr{position:relative;min-height:250px;padding:22px;overflow:hidden;border:1px solid rgba(var(--gold-rgb),.26);border-radius:17px;
+  background:radial-gradient(circle at 80% 16%,rgba(var(--gold-rgb),.15),transparent 38%),linear-gradient(135deg,rgba(var(--gold-rgb),.08),transparent 48%),var(--panel)}
+.hero-tr::after{content:"";position:absolute;right:-42px;bottom:-68px;width:190px;height:190px;border:1px solid rgba(var(--gold-rgb),.11);border-radius:50%;
+  box-shadow:0 0 0 25px rgba(var(--gold-rgb),.025),0 0 0 50px rgba(var(--gold-rgb),.018)}
+.tr-top{display:flex;align-items:center;justify-content:space-between;color:var(--text-dim);font-size:10px;letter-spacing:.1em;font-family:var(--mono)}
+.tr-mark{width:70px;height:70px;display:grid;place-items:center;margin:26px 0 18px;border:1px solid rgba(var(--gold-rgb),.30);border-radius:22px;
+  color:var(--gold);background:rgba(var(--gold-rgb),.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);font-size:30px}
+.hero-tr h4{position:relative;z-index:1;max-width:84%;font-size:22px;letter-spacing:-.01em}
+.hero-tr p{position:relative;z-index:1;margin:8px 0 0;color:var(--copy);font-size:12px}
+.mini-col{display:grid;grid-template-rows:1fr 1fr;gap:12px}
+.mini-tr{display:flex;flex-direction:column;justify-content:space-between;padding:17px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.mini-ic{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#a9bfd2;background:rgba(var(--blue-rgb),.12);font-size:16px}
+.mini-tr strong{display:block;margin-top:15px;font-size:13px;font-weight:600}
+.mini-tr span{display:block;margin-top:5px;color:var(--text-dim);font-size:10px}
 
-/* спільноти */
-.ccard{display:flex;align-items:center;gap:12px;background:var(--panel);border:1px solid var(--line);
-  border-radius:12px;padding:12px 14px;min-width:240px;flex:1;max-width:340px}
-.ccard .em{width:44px;height:44px;border-radius:12px;flex:none;display:flex;align-items:center;justify-content:center;font-size:22px}
-.ccard .cinfo{flex:1;min-width:0}
-.ccard .cn{font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ccard .cr{font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ownb{font-size:10px;font-weight:700;color:var(--gold);border:1px solid #8a7228;border-radius:5px;padding:1px 6px;letter-spacing:.06em;margin-left:6px}
+/* картки-контейнери */
+.card{padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.card-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}
+.collectible{position:relative;aspect-ratio:1024/1536;overflow:hidden;border-radius:12px;border:1px solid rgba(var(--blue-rgb),.19);background:#12161b;cursor:pointer}
+.collectible.gold{border-color:rgba(var(--gold-rgb),.27)}
+.collectible:hover{border-color:var(--blue)}
+.collectible img{width:100%;height:100%;object-fit:contain;display:block}
+.card-tag{position:absolute;left:8px;top:8px;z-index:2;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.13em;color:#9fc0da}
+.gold .card-tag{color:var(--gold)}
+.card-name{position:absolute;left:8px;right:8px;bottom:9px;z-index:2;font-size:9px;line-height:1.3;color:#dadddd;text-shadow:0 1px 3px rgba(0,0,0,.85)}
 
-/* трофеї-плейсхолдер */
-.trophies{background:var(--panel);border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--text-dim)}
+/* «де грає» */
+.play-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.play-row:first-of-type{border-top:0}
+.lg{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:6px}
+.lg.BoBet{background:rgba(var(--gold-rgb),.16);color:var(--gold);border:1px solid var(--gold-d)}
+.lg.PSL{background:rgba(var(--blue-rgb),.16);color:var(--blue);border:1px solid var(--blue-d)}
+.lg.Squad{background:rgba(125,184,232,.16);color:#8dc0ec;border:1px solid #3a5f8a}
+.play-row .pn{flex:1;min-width:0;font-size:13px}
+.play-row .pn small{color:var(--text-dim)}
+.play-row .pp{font-family:var(--mono);font-weight:700;font-size:16px}
+.play-row .pp small{font-size:11px;color:var(--text-dim);font-weight:500}
+
+/* rail-картки */
+.side{padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.side-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.side-title>div{display:flex;align-items:center;gap:8px}
+.side-title .ic{width:16px;height:16px;color:var(--blue)}
+.side-title h4{font-size:15px}
+.rec-list{display:grid;margin-top:12px}
+.rec{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:11px 0;border-top:1px solid var(--line)}
+.rec:first-child{border-top:0}
+.rec span{color:var(--text-dim);font-size:11px}
+.rec strong{font-size:15px;font-weight:600;font-family:var(--mono)}
+.portrait-box{margin-top:12px;padding:15px;border-radius:13px;background:linear-gradient(135deg,rgba(var(--blue-rgb),.10),transparent),var(--panel2)}
+.portrait-box strong{display:block;font-size:16px}
+.portrait-box p{margin:6px 0 12px;color:var(--text-dim);font-size:11px;line-height:1.5}
+.traits{display:flex;flex-wrap:wrap;gap:6px}
+.trait{padding:5px 8px;border:1px solid var(--line);border-radius:7px;color:#9da3a6;font-size:10px}
+.comm-list{display:grid;gap:9px;margin-top:12px}
+.comm{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.014)}
+.comm-ic{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:rgba(var(--blue-rgb),.10);font-size:18px}
+.comm-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}
+.comm-copy span{display:block;margin-top:3px;color:var(--text-dim);font-size:10px}
+.owner{padding:3px 7px;border:1px solid rgba(var(--gold-rgb),.30);border-radius:6px;color:var(--gold);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em}
+
+/* окремі панелі вкладок */
+.panel{padding:22px;border:1px solid var(--line);border-radius:17px;background:var(--panel)}
+.panel-title{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.panel-title h3{font-size:21px}
+.panel-title p{margin:5px 0 0;color:var(--text-dim);font-size:11px}
+.tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.award{min-height:130px;padding:18px;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--panel2)}
+.award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}
+.award .aw-ic{font-size:22px}
+.award h4{margin:14px 0 6px;font-size:15px}
+.award p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.5}
+.nom-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.nom{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.nom .nv{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--gold);line-height:1;min-width:42px}
+.nom .nb strong{display:block;font-size:13px}
+.nom .nb span{display:block;margin-top:3px;color:var(--text-dim);font-size:10px;line-height:1.45}
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rec-tile{min-height:110px;padding:18px;border:1px solid var(--line);border-radius:15px;background:var(--panel2)}
+.rec-tile span{color:var(--text-dim);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono)}
+.rec-tile strong{display:block;margin-top:24px;font-size:26px;font-weight:700;font-family:var(--mono)}
+.coll-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.portrait-full{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:stretch}
+.portrait-sym{min-height:230px;display:grid;place-items:center;border:1px solid rgba(var(--blue-rgb),.20);border-radius:20px;color:#a6bdd0;
+  background:radial-gradient(circle,rgba(var(--blue-rgb),.14),transparent 60%),var(--panel2)}
+.portrait-sym .ic{width:54px;height:54px}
+.portrait-copy h3{margin:6px 0 8px;font-size:26px}
+.portrait-copy p{margin:0 0 20px;max-width:600px;color:var(--copy);font-size:13px;line-height:1.6}
+.bars{display:grid;gap:12px;max-width:520px}
+.bar-row{display:grid;grid-template-columns:150px 1fr auto;align-items:center;gap:12px;color:#9ca1a4;font-size:11px}
+.bar{height:5px;overflow:hidden;border-radius:5px;background:rgba(255,255,255,.05)}
+.bar b{display:block;height:100%;border-radius:inherit;background:var(--blue)}
+.comm-big-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.comm-big{min-height:130px;padding:18px;border:1px solid var(--line);border-radius:15px;background:var(--panel2)}
+.comm-big .comm-ic{margin-bottom:16px}
+.comm-big h4{font-size:15px}
+.comm-big p{margin:6px 0 0;color:var(--text-dim);font-size:10px}
+.launch{display:flex;gap:8px;flex-wrap:wrap}
+.launch a{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--copy);font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.launch a:hover{border-color:var(--blue);text-decoration:none}
 
 /* модалка (аватар/перейменування) */
-.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);
-  display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--panel2);border:1px solid var(--line);border-radius:16px;max-width:420px;width:100%;padding:0}
+.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--panel2);border:1px solid var(--line2);border-radius:16px;max-width:420px;width:100%;padding:0}
 .modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
-.modal .mhead h3{margin:0;font-size:18px;flex:1}
-.modal .mx{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
+.modal .mhead h3{font-size:18px;flex:1}
+.modal .mx{width:34px;height:34px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
 .modal .mbody{padding:18px 20px}
 .modal label{display:block;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px}
 .modal input[type=text]{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit}
 .modal .emrow{display:flex;gap:10px;align-items:center}
 .modal .emrow input[type=text]{flex:1;text-align:center;font-size:24px}
 .modal input[type=color]{width:52px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:2px}
-.modal .prev{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;border:1px solid var(--line);margin:12px auto 0}
+.modal .prev{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;border:1px solid var(--line);margin:12px auto 0;color:#e9e4d8;font-family:var(--mono);font-weight:700}
 .modal .mfoot{display:flex;gap:8px;justify-content:flex-end;padding:0 20px 18px}
 .msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:10px}
-.msg.err{background:rgba(226,88,95,.14);color:#f2b0b3}
-.msg.ok{background:var(--green-soft);color:var(--green)}
+.msg.err{background:rgba(216,121,118,.14);color:#f2b0b3}
 
 /* showFullCard — арт на сцені (порт shop-stage; ефекти = КАНОН) */
 .sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center}
-.sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #355445;border-radius:50%;background:#111b16;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
+.sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #3a4550;border-radius:50%;background:#161b21;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
 .sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background-size:cover;background-position:center;perspective:1500px}
 .sqfull .glow{position:absolute;left:50%;top:36%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
   background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
@@ -149,46 +242,57 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
 .sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
 @keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
-@media(prefers-reduced-motion:reduce){.sqfull .tilt,.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
+@media(prefers-reduced-motion:reduce){.frame.champ.glow,.sqfull .tilt,.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 
-/* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама) ── */
+/* екран входу = BoBet/ЄвроСезон (спільна брама) */
 .login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
 .login h1{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--green);font-size:22px;letter-spacing:.04em}
-.login .stage-badge{font-family:'IBM Plex Mono',monospace}
+.login .stage-badge{font-family:'IBM Plex Mono',monospace;color:#e2585f;border-color:#e2585f}
 .login p{color:var(--text-dim);font-size:14px}
-.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;
-  padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
+.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
 .login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
 .login button.primary{width:100%;font-family:'Montserrat',sans-serif}
 #login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+
+@media(max-width:900px){ .ov{grid-template-columns:1fr} .coll-grid{grid-template-columns:repeat(4,1fr)} }
+@media(max-width:680px){
+  .hero{grid-template-columns:auto 1fr;padding:22px 18px}
+  .hactions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:stretch}
+  .edit{align-self:auto}
+  .showcase{grid-template-columns:1fr}.mini-col{grid-template-columns:repeat(2,1fr);grid-template-rows:none}
+  .tr-grid,.rec-grid,.comm-big-grid,.nom-grid{grid-template-columns:1fr}.portrait-full{grid-template-columns:1fr}
+  .card-row{grid-template-columns:repeat(2,1fr)}.coll-grid{grid-template-columns:repeat(2,1fr)}
+}
 </style>
 </head>
 <body>
+<!-- ІКОНКИ (Lucide-стиль, inline-спрайт) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-user"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></g>
+<g id="i-crown"><path d="M2 18h20"/><path d="m3 8 4.5 4L12 5l4.5 7L21 8l-1.7 8H4.7z"/></g>
+<g id="i-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></g>
+<g id="i-chart"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 9v9"/><path d="M17 5v13"/></g>
+<g id="i-print"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.5-.26 4"/><path d="M14 13.1c0 2.4 0 6.4-1 8.9"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.1a4 4 0 0 1 0 7.75"/></g>
+<g id="i-sliders"><path d="M4 6h9"/><circle cx="16" cy="6" r="2.2"/><path d="M18 6h2"/><path d="M4 12h4"/><circle cx="11" cy="12" r="2.2"/><path d="M13 12h7"/><path d="M4 18h9"/><circle cx="16" cy="18" r="2.2"/><path d="M18 18h2"/></g>
+<g id="i-layers"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></g>
+</defs></svg>
 
 <div class="wrap">
   <div class="topbar">
-    <div class="logo">
-      <div class="sq">BO</div>
-      <div><h1>Профіль</h1><div class="sub">BoOrbit</div></div>
-    </div>
-    <div class="right">
-      <span class="stage-badge">STAGE</span>
+    <div class="logo"><div class="sq"><svg class="ic" style="width:22px;height:22px"><use href="#i-user"/></svg></div>
+      <div><h1>Профіль</h1><div class="sub">BoOrbit</div></div></div>
+    <div class="right"><span class="stage-badge">STAGE</span>
       <span id="who" class="who hide"></span>
       <button id="btn-login" class="ghost">Увійти</button>
-      <button id="btn-logout" class="ghost hide">Вийти</button>
-    </div>
+      <button id="btn-logout" class="ghost hide">Вийти</button></div>
   </div>
 
   <!-- ПРОФІЛЬ -->
   <div id="screen-profile">
     <div id="phead"></div>
-
-    <div class="sec"><h2>🎯 Де грає</h2><div id="play" class="tgrid"></div></div>
-    <div class="sec"><h2>🎴 Колекція</h2><div id="coll" class="grid"></div></div>
-    <div class="sec"><h2>🍻 Спільноти</h2><div id="comm" class="tgrid"></div></div>
-    <div class="sec"><h2>🏆 Трофеї</h2>
-      <div class="trophies">Медалі, рекорди й DNA з’являться після завершення сезону.</div>
-    </div>
+    <nav id="ptabs" class="tabs"></nav>
+    <div id="ptab"></div>
   </div>
 
   <!-- ЕКРАН ВХОДУ -->
@@ -219,16 +323,23 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');   // легка webp-мініатюра для сітки Колекції; повний PNG — у showFullCard
+const ic=(n,sz)=>`<svg class="ic"${sz?` style="width:${sz}px;height:${sz}px"`:''}><use href="#i-${n}"/></svg>`;
+const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
 
-const RAR={rare:'Rare',mega_rare:'Mega Rare'};
+const RAR={rare:'RARE',mega_rare:'MEGA RARE'};
 const SCENE={rare:'rare',mega_rare:'mega_rare'};
-const KIND_EMOJI={bar:'🍺',club:'🛡',vip:'🎩',locker:'🚪'};
+const KIND_EMOJI={bar:'🍻',club:'🏟️',vip:'🎩',locker:'🚪'};
 const KIND_LABEL={bar:'Бар',club:'Клуб',vip:'VIP Ложа',locker:'Роздягальня'};
+const CHAMP_THEME={bobet:'',psl:'psl',squad:'squad'};
+const CHAMP_LEAGUE={bobet:'BoBet',psl:'PSL',squad:'Squad'};
 const STATUS_LABEL={active:'триває',finished:'завершено',draft:'чернетка'};
+const cssColor=c=>(c && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : 'var(--panel2)';
+const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
+const num=v=>(v==null?'—':v);
 
 const S={ me:null, name:null, isAdmin:false, view:null, isOwn:false,
-          ov:null, tours:[], cards:[], comms:[] };
+  ov:null, tours:[], cards:[], comms:[], trophies:[], records:null, portrait:null, noms:[],
+  tab:'overview' };
 
 // ── boot ──
 async function boot(){
@@ -240,7 +351,7 @@ async function boot(){
       if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
     }catch(e){}
     $('who').classList.remove('hide');
-    $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">адмін</span>':''}`;
+    $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">АДМІН</span>':''}`;
     $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
   }
   const urlId=new URLSearchParams(location.search).get('id');
@@ -248,116 +359,280 @@ async function boot(){
   S.isOwn = !!(S.view && S.view===S.me);
 
   if(!S.view){
-    $('phead').innerHTML=`<div class="phead"><div class="avatar">👤</div>
-      <div class="pinfo"><h2>Твій профіль</h2>
-      <p class="empty">Увійди, щоб відкрити свій профіль, або відкрий чийсь за посиланням.</p>
-      <div class="pacts"><button class="primary" id="go-login">Увійти</button></div></div></div>`;
-    $('go-login').onclick=showLogin;
-    ['play','coll','comm'].forEach(id=>$(id).innerHTML='');
-    document.querySelectorAll('#screen-profile .sec').forEach(s=>s.classList.add('hide'));
+    $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
+      <div class="identity"><h2>Твій профіль</h2><div class="who-sub">Увійди, щоб відкрити свій профіль, або відкрий чийсь за посиланням.</div>
+      <button class="primary" id="go-login">Увійти</button></div></section>`;
+    $('go-login').onclick=showLogin; $('ptabs').innerHTML=''; $('ptab').innerHTML='';
     return;
   }
   await loadProfile();
 }
 
 async function loadProfile(){
-  // шапка
   const { data:ov } = await sb.from('profile_overview')
-    .select('profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count')
+    .select('profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count,medals_count,title_count,is_champion,champion_league,honor_name')
     .eq('profile_id',S.view).maybeSingle();
   S.ov=ov;
   if(!ov){
-    $('phead').innerHTML=`<div class="phead"><div class="avatar">👤</div>
-      <div class="pinfo"><h2>Профіль не знайдено</h2></div></div>`;
-    document.querySelectorAll('#screen-profile .sec').forEach(s=>s.classList.add('hide'));
-    return;
+    $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
+      <div class="identity"><h2>Профіль не знайдено</h2></div></section>`;
+    $('ptabs').innerHTML=''; $('ptab').innerHTML=''; return;
   }
-  renderHead();
-
-  // паралельно: де грає / колекція / спільноти
-  const [t,c,m]=await Promise.all([
-    sb.rpc('profile_tournaments',{ p_profile:S.view }),
-    sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id').eq('owner_profile_id',S.view).order('tier').order('card_key'),
-    sb.rpc('profile_communities',{ p_profile:S.view })
+  const R=(fn,args)=>sb.rpc(fn,args).then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+  const [t,c,m,tr,rec,por,nm]=await Promise.all([
+    R('profile_tournaments',{ p_profile:S.view }),
+    sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id').eq('owner_profile_id',S.view).order('tier').order('card_key').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
+    R('profile_communities',{ p_profile:S.view }),
+    R('profile_trophies',{ p_profile:S.view }),
+    R('profile_records',{ p_profile:S.view }),
+    R('profile_portrait',{ p_profile:S.view }),
+    R('profile_nominations',{ p_profile:S.view })
   ]);
-  S.tours = t.error?[]:(t.data||[]);
-  S.cards = c.error?[]:(c.data||[]);
-  S.comms = m.error?[]:(m.data||[]);
-  renderPlay(); renderColl(); renderComm();
+  S.tours=t; S.cards=c; S.comms=m; S.trophies=tr; S.noms=nm;
+  S.records=rec[0]||null; S.portrait=por[0]||null;
+  renderHead(); renderTabs(); renderTab();
 }
 
+// ── шапка ──
 function renderHead(){
   const ov=S.ov, name=ov.display_name||'Гравець';
-  const av = ov.avatar_emoji
-    ? `<div class="avatar" style="background:${cssColor(ov.avatar_color)}">${esc(ov.avatar_emoji)}</div>`
-    : `<div class="avatar">${esc((name[0]||'👤').toUpperCase())}</div>`;
-  const stat = `
-    <div class="pstat">
-      <span class="u"><b>${ov.tournaments_count}</b>турнірів</span>
-      <span class="u"><b>${ov.cards_count}</b>карток</span>
-      <span class="u"><b>${ov.communities_count}</b>спільнот</span>
-    </div>`;
+  const champ=!!ov.is_champion, theme=CHAMP_THEME[ov.champion_league]||'';
+  const avInner = ov.avatar_emoji ? esc(ov.avatar_emoji) : esc(initials(name));
+  const avStyle = ov.avatar_emoji && ov.avatar_color ? ` style="background:${cssColor(ov.avatar_color)}"` : '';
+  const frame = champ
+    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${ic('crown',16)}</span></div>`
+    : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
+
+  // чемпіонський бейдж + титули
+  let eyebrow='';
+  if(champ){
+    const titleTours=S.trophies.filter(t=>t.phase_kind==='general' && t.place===1).map(t=>t.tournament);
+    const cnt=ov.title_count||titleTours.length;
+    const seas=`${cnt>1?'×'+cnt+' · ':''}${titleTours.join(' · ')}`.toUpperCase();
+    eyebrow=`<div class="eyebrow"><span class="champ-label">${ic('trophy',11)}${CHAMP_LEAGUE[ov.champion_league]||'BoBet'} CHAMPION</span>
+      <span class="champ-season">${esc(seas)}</span></div>`;
+  }
+  // підпис: архетип + найяскравіший рекорд
+  const arch=S.portrait?S.portrait.archetype:null;
+  const hl = S.records && S.records.tournament_wins>0 ? `переможець ${S.records.tournament_wins} турнір${S.records.tournament_wins>1?'ів':'у'} ліги`
+    : (S.records && S.records.top3_general===S.records.tournaments_played && S.records.tournaments_played>0 ? `топ-3 в усіх ${S.records.tournaments_played} турнірах` : 'учасник ліги');
+  const sub = arch ? `${esc(arch)} · ${hl}` : hl;
+
+  const stat=`<div class="stats">
+    <div class="stat"><b>${num(ov.medals_count)}</b><span>медал${ov.medals_count===1?'ь':(ov.medals_count>=2&&ov.medals_count<=4?'і':'ей')}</span></div>
+    <div class="stat"><b>${num(ov.tournaments_count)}</b><span>турнір${ov.tournaments_count===1?'':'и'}</span></div>
+    <div class="stat"><b>${num(ov.cards_count)}</b><span>карток</span></div>
+    <div class="stat"><b>${num(ov.communities_count)}</b><span>спільнот${ov.communities_count===1?'а':''}</span></div>
+  </div>`;
+
   let actions='';
   if(S.isOwn){
-    actions=`
-      <div class="pacts">
-        <button class="ghost" id="a-rename">✎ Перейменувати</button>
-        <button class="ghost" id="a-avatar">🎨 Аватар</button>
-      </div>
-      <div class="launch">
-        <a href="shop-stage.html">🏪 Моя Крамниця</a>
-        <a href="community-stage.html">🍻 Мої Спільноти</a>
-        <a href="#" id="a-tours">🎯 Мої турніри</a>
-      </div>`;
+    actions=`<div class="hactions">
+      <button class="edit" id="a-edit">${ic('sliders')}Керувати профілем</button>
+      <div class="launch"><a href="shop-stage.html">${ic('layers',13)}Крамниця</a><a href="community-stage.html">🍻 Спільноти</a></div>
+    </div>`;
   }
-  $('phead').innerHTML=`<div class="phead">${av}
-    <div class="pinfo"><h2>${esc(name)}</h2>${stat}${actions}</div></div>`;
-  if(S.isOwn){
-    $('a-rename').onclick=openRename;
-    $('a-avatar').onclick=openAvatar;
-    $('a-tours').onclick=e=>{ e.preventDefault(); document.querySelector('#screen-profile .sec').scrollIntoView({behavior:'smooth'}); };
+  $('phead').innerHTML=`<section class="hero${champ?' champ':''}">${frame}
+    <div class="identity">${eyebrow}<h2>${esc(name)}</h2><div class="who-sub">${esc(sub)}</div>${stat}</div>
+    ${actions}</section>`;
+  if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
+}
+
+// ── вкладки ──
+const TABS=[['overview','Огляд'],['trophies','Трофеї'],['collection','Колекція'],['records','Рекорди'],['portrait','Портрет гравця'],['communities','Спільноти']];
+function renderTabs(){
+  $('ptabs').innerHTML=TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" role="tab" aria-selected="${S.tab===k}" data-tab="${k}">${l}</button>`).join('');
+  $('ptabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderTabs(); renderTab(); });
+}
+function goTab(k){ S.tab=k; renderTabs(); renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── головний трофей + міні ──
+function trophyMain(){ return S.trophies[0]||null; }   // сорт: general спершу, потім за місцем
+function trophyTitle(t){
+  const medalWord = t.place===1?'Чемпіон':t.place===2?'Віце-чемпіон':t.place===3?'Бронза':t.place+' місце';
+  return t.phase_kind==='general' ? `${medalWord} · ${t.tournament}` : `${t.medal} ${t.tournament} · ${t.phase}`;
+}
+
+function renderTab(){
+  const box=$('ptab');
+  if(S.tab==='overview') return renderOverview(box);
+  if(S.tab==='trophies') return renderTrophies(box);
+  if(S.tab==='collection') return renderCollection(box);
+  if(S.tab==='records') return renderRecords(box);
+  if(S.tab==='portrait') return renderPortrait(box);
+  if(S.tab==='communities') return renderCommunities(box);
+}
+
+// ── ОГЛЯД ──
+function renderOverview(box){
+  const main=trophyMain();
+  // вітрина
+  let showcase;
+  if(main){
+    const minis=(S.noms.slice(0,2)); const miniFill=S.trophies.slice(1);
+    const miniHTML=[0,1].map(i=>{
+      if(minis[i]) return `<article class="mini-tr"><div class="mini-ic">${ic('trophy',16)}</div><div><strong>${esc(minis[i].nomination)}</strong><span>${esc(minis[i].note||'')}</span></div></article>`;
+      const t=miniFill[i]; if(!t) return '';
+      return `<article class="mini-tr"><div class="mini-ic">${esc(t.medal)}</div><div><strong>${esc(t.tournament)}</strong><span>${esc(t.phase)} · ${t.place} місце</span></div></article>`;
+    }).join('');
+    showcase=`<div class="sec-head"><h3>Трофейна вітрина</h3><button class="link" data-go="trophies">Усі трофеї →</button></div>
+      <section class="showcase">
+        <article class="hero-tr"><div class="tr-top"><span>ГОЛОВНИЙ ЗДОБУТОК</span><span>${esc(main.tournament||'')}</span></div>
+          <div class="tr-mark">${main.medal||ic('trophy',30)}</div>
+          <h4>${esc(trophyTitle(main))}</h4><p>BoBet · ${esc(main.label||'')} · ${main.points} очок</p></article>
+        <div class="mini-col">${miniHTML}</div>
+      </section>`;
+  } else {
+    showcase=`<div class="sec-head"><h3>Трофейна вітрина</h3></div>
+      <div class="empty">Нагороди зʼявляться після завершення турнірів — тут буде трофейна вітрина.</div>`;
   }
-}
-function cssColor(c){ return (c && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : 'var(--panel2)'; }
+  // колекція (4)
+  const coll = S.cards.length
+    ? `<div class="card-row">${S.cards.slice(0,4).map(cardCell).join('')}</div>`
+    : `<div class="empty" style="margin-top:15px">Колекція порожня.</div>`;
+  // де грає
+  const play = S.tours.length
+    ? S.tours.slice().sort(sortTours).map(playRow).join('')
+    : `<div class="empty" style="margin-top:12px">Ще ніде не грає.</div>`;
 
-function renderPlay(){
-  if(!S.tours.length){ $('play').innerHTML='<div class="empty">Ще ніде не грає.</div>'; return; }
-  const order={BoBet:0,PSL:1,Squad:2};
-  const l=S.tours.slice().sort((a,b)=>(order[a.league]??9)-(order[b.league]??9));
-  $('play').innerHTML=l.map(t=>`
-    <div class="tcard">
-      <span class="lg ${esc(t.league)}">${esc(t.league)}</span>
-      <div class="nm">${esc(t.tournament_name)} · ${esc(t.kind)}</div>
-      <div class="pl">${t.place!=null?t.place:'—'} <small>${t.place!=null?'місце':''}</small></div>
-      <div class="stt">${STATUS_LABEL[t.status]||esc(t.status||'')}</div>
-    </div>`).join('');
+  // rail
+  const rail=`
+    <section class="side"><div class="side-title"><div>${ic('chart')}<h4>Рекорди</h4></div><button class="link" data-go="records">Усі</button></div>
+      ${recordsRail()}</section>
+    <section class="side"><div class="side-title"><div>${ic('print')}<h4>Портрет гравця</h4></div><button class="link" data-go="portrait">Деталі</button></div>
+      ${portraitBox()}</section>
+    <section class="side"><div class="side-title"><div>${ic('users')}<h4>Спільноти</h4></div><button class="link" data-go="communities">Усі</button></div>
+      ${commRail()}</section>`;
+
+  box.innerHTML=`<div class="ov">
+    <div class="col">
+      ${showcase}
+      <section class="card"><div class="sec-head" style="margin:0"><h3 style="font-size:17px">Колекція</h3>${S.cards.length?'<button class="link" data-go="collection">Відкрити всю →</button>':''}</div>${coll}</section>
+      <section class="card"><div class="sec-head" style="margin:0"><h3 style="font-size:17px">Де грає зараз</h3></div><div style="margin-top:6px">${play}</div></section>
+    </div>
+    <div class="col">${rail}</div>
+  </div>`;
+  wireGo(box); wireCards(box);
+}
+function recordsRail(){
+  const r=S.records; if(!r) return `<div class="empty" style="margin-top:12px">Статистика зʼявиться після завершення турнірів.</div>`;
+  const rows = r.tournament_wins>0
+    ? [['Титули',r.tournament_wins],['Найкращий фініш',(r.best_general_place!=null?r.best_general_place+' місце':'—')],['Фініші у топ-3',r.top3_general]]
+    : [['Медалі всього',r.medals_total],['Найкращий фініш',(r.best_general_place!=null?r.best_general_place+' місце':'—')],['Фініші у топ-3',r.top3_general]];
+  return `<div class="rec-list">${rows.map(([k,v])=>`<div class="rec"><span>${k}</span><strong>${num(v)}</strong></div>`).join('')}</div>`;
+}
+function portraitBox(){
+  const p=S.portrait; if(!p) return `<div class="empty" style="margin-top:12px">Портрет зʼявиться, коли назбирається статистика прогнозів.</div>`;
+  const tr=portraitTraits(p).slice(0,3).map(t=>`<span class="trait">${esc(t)}</span>`).join('');
+  return `<div class="portrait-box"><strong>${esc(p.archetype||'—')}</strong><p>${esc(p.archetype_note||'')}</p><div class="traits">${tr}</div></div>`;
+}
+function portraitTraits(p){
+  const out=[];
+  if(p.result_pct!=null) out.push('Точність '+p.result_pct+'%');
+  if(p.draws_pct!=null) out.push('Нічиї '+p.draws_pct+'%');
+  if(p.streak_result!=null) out.push('Серія '+p.streak_result);
+  if(p.repertoire!=null) out.push('Репертуар '+p.repertoire);
+  return out;
+}
+function commRail(){
+  if(!S.comms.length) return `<div class="empty" style="margin-top:12px">Ще не в жодній спільноті.</div>`;
+  return `<div class="comm-list">${S.comms.slice(0,3).map(c=>{
+    const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Власник':'учасник');
+    return `<a class="comm" href="community-stage.html?id=${esc(c.community_id)}">
+      <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
+      <div class="comm-copy"><strong>${esc(c.name)}</strong><span>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</span></div>
+      ${c.is_owner?'<span class="owner">ВЛАСНИК</span>':'<span></span>'}</a>`;
+  }).join('')}</div>`;
 }
 
-function renderColl(){
-  if(!S.cards.length){ $('coll').innerHTML='<div class="empty">Колекція порожня.</div>'; return; }
-  $('coll').innerHTML=S.cards.map(c=>`
-    <div class="card" data-k="${esc(c.card_key)}">
-      <div class="art"><span class="rar ${c.tier}">${RAR[c.tier]||c.tier}</span>
-        <img src="${esc(cardThumb(c.png_path))}" alt="${esc(c.card_key.replace(/_/g,' '))}" loading="lazy" decoding="async"
-          onerror="this.onerror=null;this.src='${esc(c.png_path)}'"></div>
-      <div class="cn">${esc(c.card_key.replace(/_/g,' '))}</div></div>`).join('');
-  [...$('coll').querySelectorAll('.card')].forEach(el=>el.onclick=()=>{
-    const c=S.cards.find(x=>x.card_key===el.dataset.k); if(c) showFullCard(c);
-  });
+// ── ТРОФЕЇ ──
+function renderTrophies(box){
+  if(!S.trophies.length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
+  const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
+  const awards=S.trophies.map(t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
+    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BoBet · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
+  const noms=S.noms.length?`<div class="panel-title" style="margin:22px 0 0"><div><h3 style="font-size:17px">Рекорди ліги</h3><p>Номінації, де гравець — власник.</p></div></div>
+    <div class="nom-grid">${S.noms.map(n=>`<div class="nom"><div class="nv">${esc(n.value)}</div><div class="nb"><strong>${esc(n.nomination)}</strong><span>${esc(n.note||'')}</span></div></div>`).join('')}</div>`:'';
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні медалі за історію BoOrbit (архів завершених турнірів).</p></div>
+    ${S.ov.title_count>0?`<span class="champ-label">${ic('crown',11)}${S.ov.title_count} ТИТУЛ${S.ov.title_count>1?'И':''}</span>`:''}</div>
+    <div class="tr-grid">${awards}</div>${noms}</section>`;
+}
+function trophyPlaceLabel(t){
+  const m=t.place===1?'золото':t.place===2?'2 місце':'3 місце';
+  return t.phase_kind==='general'?(t.place===1?'переможець загального заліку':m+' загального заліку'):m+' етапу';
 }
 
-function renderComm(){
-  if(!S.comms.length){ $('comm').innerHTML='<div class="empty">Ще не в жодній спільноті.</div>'; return; }
-  $('comm').innerHTML=S.comms.map(c=>{
-    const roles=(c.roles&&c.roles.length)?c.roles.join(', '):(c.is_owner?'':'учасник');
-    return `<a class="ccard" href="community-stage.html?id=${esc(c.community_id)}">
-      <div class="em" style="background:${cssColor(c.accent_color)}">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</div>
-      <div class="cinfo">
-        <div class="cn">${esc(c.name)}${c.is_owner?'<span class="ownb">власник</span>':''}</div>
-        <div class="cr">${esc(KIND_LABEL[c.kind]||c.kind)}${roles?' · '+esc(roles):''}</div>
-      </div></a>`;
-  }).join('');
+// ── КОЛЕКЦІЯ ──
+function renderCollection(box){
+  if(!S.cards.length){ box.innerHTML=`<section class="panel"><div class="empty">Колекція порожня.</div></section>`; return; }
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Колекція</h3><p>Картки, здобуті у BoBet та повʼязаних лігах.</p></div><span class="champ-season">${S.cards.length} КАРТОК</span></div>
+    <div class="coll-grid">${S.cards.map(cardCell).join('')}</div></section>`;
+  wireCards(box);
 }
+function cardCell(c){
+  const gold=c.tier==='mega_rare'?' gold':'';
+  return `<div class="collectible${gold}" data-k="${esc(c.card_key)}"><span class="card-tag">${RAR[c.tier]||c.tier}</span>
+    <img src="${esc(cardThumb(c.png_path))}" alt="${esc(c.card_key.replace(/_/g,' '))}" loading="lazy" decoding="async"
+      onerror="this.onerror=null;this.src='${esc(c.png_path)}'">
+    <span class="card-name">${esc(c.card_key.replace(/_/g,' '))}</span></div>`;
+}
+function wireCards(root){ root.querySelectorAll('.collectible[data-k]').forEach(el=>el.onclick=()=>{ const c=S.cards.find(x=>x.card_key===el.dataset.k); if(c) showFullCard(c); }); }
+
+// ── РЕКОРДИ ──
+function renderRecords(box){
+  const r=S.records;
+  const tilesHTML = r ? `<div class="rec-grid">
+    <div class="rec-tile"><span>Перемоги в турнірах</span><strong>${num(r.tournament_wins)}</strong></div>
+    <div class="rec-tile"><span>Найкращий фініш</span><strong>${r.best_general_place!=null?r.best_general_place+' місце':'—'}</strong></div>
+    <div class="rec-tile"><span>Фініші у топ-3</span><strong>${num(r.top3_general)}</strong></div>
+    <div class="rec-tile"><span>Участь у турнірах</span><strong>${num(r.tournaments_played)}</strong></div>
+    <div class="rec-tile"><span>Медалі всього</span><strong>${num(r.medals_total)}</strong></div>
+    <div class="rec-tile"><span>Точних рахунків</span><strong>${num(r.exact_hits)}</strong></div>
+  </div>` : `<div class="empty">Статистика зʼявиться після завершення турнірів.</div>`;
+  const play = S.tours.length ? `<div class="panel-title" style="margin:22px 0 0"><div><h3 style="font-size:17px">Де грає зараз</h3><p>Поточні позиції в активних турнірах.</p></div></div>
+    <div>${S.tours.slice().sort(sortTours).map(playRow).join('')}</div>` : '';
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Рекорди</h3><p>Коротка статистична історія гравця (архів BoOrbit).</p></div></div>${tilesHTML}${play}</section>`;
+}
+
+// ── ПОРТРЕТ ──
+function renderPortrait(box){
+  const p=S.portrait;
+  if(!p){ box.innerHTML=`<section class="panel"><div class="empty">Портрет формується з реальних прогнозів. Зʼявиться, коли назбирається статистика.</div></section>`; return; }
+  const bars=[
+    ['Точність результату', p.result_pct, p.result_pct, '%'],
+    ['Нічиї в прогнозах', p.draws_pct, Math.min(100,(p.draws_pct||0)*2.2), '%'],
+    ['Репертуар рахунків', p.repertoire, Math.min(100,(p.repertoire||0)/30*100), ''],
+    ['Серія результатів', p.streak_result, Math.min(100,(p.streak_result||0)/10*100), '']
+  ].filter(b=>b[1]!=null);
+  box.innerHTML=`<section class="panel portrait-full">
+    <div class="portrait-sym">${ic('print')}</div>
+    <div class="portrait-copy"><span class="champ-season">Портрет гравця</span><h3>${esc(p.archetype||'—')}</h3>
+      <p>${esc(p.archetype_note||'')} Портрет формується з реальних прогнозів, а не обирається вручну${p.matches?` (${p.matches} прогнозів)`:''}.</p>
+      <div class="bars">${bars.map(([l,v,w,u])=>`<div class="bar-row"><span>${l}</span><div class="bar"><b style="width:${Math.round(w)}%"></b></div><b>${v}${u}</b></div>`).join('')}</div>
+    </div></section>`;
+}
+
+// ── СПІЛЬНОТИ ──
+function renderCommunities(box){
+  if(!S.comms.length){ box.innerHTML=`<section class="panel"><div class="empty">Ще не в жодній спільноті. Приєднайся у розділі «Спільноти».</div></section>`; return; }
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Спільноти</h3><p>Клуби та бари, у яких перебуває гравець.</p></div><span class="champ-season">${S.comms.length} СПІЛЬНОТ${S.comms.length===1?'А':''}</span></div>
+    <div class="comm-big-grid">${S.comms.map(c=>{
+      const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Власник':'учасник');
+      return `<a class="comm-big" href="community-stage.html?id=${esc(c.community_id)}" style="text-decoration:none;color:inherit;display:block">
+        <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
+        <h4>${esc(c.name)}${c.is_owner?' <span class="owner">ВЛАСНИК</span>':''}</h4><p>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</p></a>`;
+    }).join('')}</div></section>`;
+}
+
+// ── «де грає» рядок ──
+const _ord={BoBet:0,PSL:1,Squad:2};
+function sortTours(a,b){ return (_ord[a.league]??9)-(_ord[b.league]??9); }
+function playRow(t){
+  return `<div class="play-row"><span class="lg ${esc(t.league)}">${esc(t.league)}</span>
+    <div class="pn">${esc(t.tournament_name)} <small>· ${esc(t.kind)} · ${STATUS_LABEL[t.status]||esc(t.status||'')}</small></div>
+    <div class="pp">${t.place!=null?t.place:'—'} <small>${t.place!=null?'місце':''}</small></div></div>`;
+}
+function wireGo(root){ root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go)); }
 
 // ── showFullCard (порт shop-stage) ──
 function showFullCard(c){
@@ -379,57 +654,38 @@ function showFullCard(c){
   stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
 }
 
-// ── перейменування ──
-function openRename(){
+// ── керування профілем (перейменування + аватар в одній модалці) ──
+function openEdit(){
   const host=$('mhost');
+  const em=S.ov.avatar_emoji||'', col=(S.ov.avatar_color&&/^#[0-9a-fA-F]{6}$/.test(S.ov.avatar_color))?S.ov.avatar_color:'#7e9dbb';
   host.innerHTML=`<div class="mhost"><div class="modal">
-    <div class="mhead"><h3>Перейменувати</h3><button class="mx">✕</button></div>
+    <div class="mhead"><h3>Керувати профілем</h3><button class="mx">✕</button></div>
     <div class="mbody">
-      <label>Нове ім’я</label>
+      <label>Імʼя</label>
       <input type="text" id="rn-name" maxlength="24" value="${esc(S.ov.display_name||'')}">
-      <div class="msg" id="rn-msg" style="display:none"></div>
+      <label>Аватар — емодзі + колір</label>
+      <div class="emrow"><input type="text" id="av-em" maxlength="4" value="${esc(em)}" placeholder="напр. 🦁"><input type="color" id="av-col" value="${esc(col)}"></div>
+      <div class="prev" id="av-prev" style="background:${esc(col)}">${esc(em||initials(S.ov.display_name))}</div>
+      <div class="msg" id="ed-msg" style="display:none"></div>
     </div>
-    <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="rn-save">Зберегти</button></div>
+    <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="ed-save">Зберегти</button></div>
   </div></div>`;
   wireModal(host);
-  $('rn-save').onclick=async()=>{
-    const name=$('rn-name').value.trim();
-    const m=$('rn-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
-    const { error }=await sb.rpc('rename_profile',{ p_new_name:name });
-    if(error){ m.className='msg err'; m.textContent=error.message||'Не вдалось'; return; }
-    host.innerHTML=''; await boot();
-  };
-}
-
-// ── аватар ──
-function openAvatar(){
-  const host=$('mhost');
-  const em=S.ov.avatar_emoji||'', col=cssColor(S.ov.avatar_color)==='var(--panel2)'?'#18b47a':S.ov.avatar_color;
-  host.innerHTML=`<div class="mhost"><div class="modal">
-    <div class="mhead"><h3>Аватар</h3><button class="mx">✕</button></div>
-    <div class="mbody">
-      <label>Емодзі</label>
-      <div class="emrow">
-        <input type="text" id="av-em" maxlength="4" value="${esc(em)}" placeholder="напр. 🦁">
-        <input type="color" id="av-col" value="${esc(col)}">
-      </div>
-      <div class="prev" id="av-prev" style="background:${esc(col)}">${esc(em||'👤')}</div>
-      <div class="msg" id="av-msg" style="display:none"></div>
-    </div>
-    <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="av-save">Зберегти</button></div>
-  </div></div>`;
-  wireModal(host);
-  const upd=()=>{ $('av-prev').textContent=$('av-em').value||'👤'; $('av-prev').style.background=$('av-col').value; };
-  $('av-em').oninput=upd; $('av-col').oninput=upd;
-  $('av-save').onclick=async()=>{
+  const upd=()=>{ $('av-prev').textContent=$('av-em').value||initials($('rn-name').value); $('av-prev').style.background=$('av-col').value; };
+  $('av-em').oninput=upd; $('av-col').oninput=upd; $('rn-name').oninput=upd;
+  $('ed-save').onclick=async()=>{
+    const m=$('ed-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
+    const newName=$('rn-name').value.trim();
+    if(newName && newName!==(S.ov.display_name||'')){
+      const { error }=await sb.rpc('rename_profile',{ p_new_name:newName });
+      if(error){ m.className='msg err'; m.textContent=error.message||'Не вдалось перейменувати'; return; }
+    }
     const emoji=$('av-em').value.trim()||null, color=$('av-col').value;
-    const m=$('av-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
-    const { error }=await sb.rpc('set_profile_avatar',{ p_emoji:emoji, p_color:color });
-    if(error){ m.className='msg err'; m.textContent=error.message||'Не вдалось'; return; }
+    const { error:e2 }=await sb.rpc('set_profile_avatar',{ p_emoji:emoji, p_color:color });
+    if(e2){ m.className='msg err'; m.textContent=e2.message||'Не вдалось зберегти аватар'; return; }
     host.innerHTML=''; await boot();
   };
 }
-
 function wireModal(host){
   const close=()=>host.innerHTML='';
   host.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) close(); };
@@ -460,7 +716,7 @@ $('btn-verify').onclick=async()=>{
   location.href='profile-stage.html';
 };
 
-boot().catch(e=>{ $('phead').innerHTML='<div class="empty" style="padding:20px">Помилка завантаження: '+esc(e.message)+'</div>'; });
+boot().catch(e=>{ $('phead').innerHTML='<div class="empty" style="margin-top:20px">Помилка завантаження: '+esc(e.message)+'</div>'; });
 </script>
 </body>
 </html>
