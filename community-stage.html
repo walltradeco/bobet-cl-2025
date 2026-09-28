@@ -181,43 +181,21 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .login button.primary{width:100%;font-family:'Montserrat',sans-serif}
 #login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
 
-/* ── ГЕРБ + РІВНІ ОФОРМЛЕННЯ (Base / Rare / Mega Rare) ──
-   Колір спільноти лишається базою на всіх рівнях; рівень додає фініш.
-   Рівень поки лише 'base' (поле відкриється системою Престижу). */
+/* ── Герб спільноти (колір=акцент). 469: рівень показуємо НАЗВОЮ РАНГУ
+   (9-рангова драбина), а не Rare/Mega-фінішем — rare/mega лишаються для карток. */
 .crest-sm{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;
   font-size:26px;line-height:1;margin-bottom:10px}
-.crest-sm.rare{box-shadow:inset 0 0 18px var(--cc-a,transparent),0 0 12px var(--cc-a,transparent)}
-.crest-sm.mega{border:2px solid transparent!important;
-  background:linear-gradient(150deg,#0e1218,#0e1218) padding-box,
-    linear-gradient(150deg,var(--gold),var(--cc-b,#7898B8),var(--gold)) border-box!important;
-  box-shadow:0 0 16px var(--cc-a,transparent)}
-.chead .crest.rare{box-shadow:inset 0 0 26px var(--cc-a,transparent),0 0 16px var(--cc-a,transparent)}
-.chead .crest.mega{border:2px solid transparent;
-  background:linear-gradient(150deg,#0e1218,#0e1218) padding-box,
-    linear-gradient(150deg,var(--gold),var(--cc-b,#7898B8),var(--gold)) border-box;
-  box-shadow:0 0 22px var(--cc-a,transparent),inset 0 0 22px rgba(217,180,91,.16)}
-.tierbadge{position:absolute;top:12px;right:12px;z-index:3;font-family:var(--mono);font-size:10px;font-weight:700;
-  letter-spacing:.1em;padding:3px 9px;border-radius:20px}
-.tierbadge.rare{color:var(--blue);border:1px solid var(--blue-d);background:rgba(120,152,184,.1)}
-.tierbadge.mega{color:var(--gold);border:1px solid var(--gold);background:rgba(217,180,91,.1)}
-.t-rare{position:relative;border-color:var(--cc-b,var(--blue))}
-.t-rare::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
-  background:linear-gradient(135deg,var(--cc-a,transparent) 0%,transparent 42%)}
-.t-mega{position:relative;border:1.5px solid transparent!important;
-  background:linear-gradient(var(--panel),var(--panel)) padding-box,
-    linear-gradient(135deg,var(--gold) 0%,var(--cc-b,#7898B8) 50%,var(--gold) 100%) border-box!important}
-.t-mega .shine{position:absolute;inset:0;overflow:hidden;pointer-events:none;border-radius:inherit;z-index:1}
-.t-mega .shine::before{content:'';position:absolute;top:-40%;left:-60%;width:40%;height:180%;
-  background:linear-gradient(100deg,transparent,rgba(255,255,255,.14),transparent);transform:rotate(8deg);
-  animation:sweep 6.5s ease-in-out infinite}
-.t-mega .spark{position:absolute;inset:0;pointer-events:none;border-radius:inherit;z-index:1;
-  background-image:
-    radial-gradient(1.5px 1.5px at 22% 30%,rgba(217,180,91,.4),transparent),
-    radial-gradient(1.5px 1.5px at 68% 22%,rgba(255,255,255,.33),transparent),
-    radial-gradient(1.5px 1.5px at 82% 64%,rgba(217,180,91,.33),transparent),
-    radial-gradient(1.5px 1.5px at 40% 74%,rgba(255,255,255,.27),transparent)}
-@keyframes sweep{0%,72%{left:-60%}100%{left:130%}}
-@media(prefers-reduced-motion:reduce){.t-mega .shine::before{animation:none;opacity:.3}}
+/* пілюля рангу на картці сітки (замість Rare/Mega-бейджа) */
+.rankpill{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--text-dim)}
+/* драбина рангів (вкладка Престиж) */
+.ladder{margin-top:16px;display:grid;gap:2px}
+.lrank{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;font-size:13px;color:var(--text-dim)}
+.lrank .lno{width:18px;font-family:var(--mono);font-size:11px;text-align:center;opacity:.7}
+.lrank .lnm{flex:1}
+.lrank .lmin{font-family:var(--mono);font-size:11px;opacity:.6}
+.lrank.on{background:var(--panel2);color:var(--text);font-weight:600}
+.lrank.on .lno,.lrank.on .lmin{opacity:1}
 
 /* ── ВКЛАДКА «ОГЛЯД» ── */
 .ov{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
@@ -281,8 +259,6 @@ button:disabled{opacity:.45;cursor:not-allowed}
 /* ── престиж (чіп у шапці + блок Огляду + вкладка) ── */
 .plevel{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:700;
   letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--text-dim)}
-.plevel.rare{color:var(--blue);border-color:var(--blue-d)}
-.plevel.mega{color:var(--gold);border-color:var(--gold)}
 .pbig{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;margin:8px 0 2px}
 .pbig small{font-size:12px;color:var(--text-dim);font-weight:500;font-family:inherit;margin-left:6px}
 .pbar{height:8px;border-radius:999px;background:var(--panel2);overflow:hidden;margin:12px 0 6px}
@@ -395,13 +371,10 @@ const COLOR_PRESETS=[
 ];
 const EV_IC={joined:'＋',left:'↩',kicked:'⊘',role_added:'★',role_removed:'☆',invited:'✉',invite_accepted:'✔',
   request_approved:'✔',founder_transferred:'👑',relation_ally:'↔',relation_enemy:'⚔',relation_cleared:'✕',created:'🏳'};
-const tierOf=c=>(c&&c.tier)||'base';   // 'base'|'rare'|'mega' — поле рівня додамо із системою Престижу
-const tierClass=t=>t==='rare'?'t-rare':t==='mega'?'t-mega':'';
-const tierBadge=t=>t==='rare'?'<span class="tierbadge rare">RARE</span>':t==='mega'?'<span class="tierbadge mega">MEGA RARE</span>':'';
-const megaFx=t=>t==='mega'?'<div class="shine"></div><div class="spark"></div>':'';
-const crestTier=t=>t==='rare'?'rare':t==='mega'?'mega':'';
-const TIERLBL={base:'Base',rare:'Rare',mega:'Mega Rare'};   // 468 престиж
-const tierVars=col=>`--cc:${col};--cc-b:${col};--cc-a:${col}22`;
+// 469: спільноти мають 9-РАНГОВУ ДРАБИНУ престижу (назва рангу + прогрес), а НЕ
+// Rare/Mega — ті лишаються для КАРТ. Рівень показуємо назвою рангу.
+const hasPrestige=c=>!!c&&(c.kind==='bar'||c.kind==='club');
+const rankName=c=>(c&&c.rank_name)||'';
 const crestStyle=col=>`--cc-a:${col}2e;background:linear-gradient(150deg,${col}2e,${col}10);border:1px solid ${col}55`;
 const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
 const trunc=(s,n)=>{ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; };
@@ -441,7 +414,7 @@ async function boot(){
 
 async function loadList(){
   const { data, error } = await sb.from('community_card')
-    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,prestige_recent,tier');
+    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,rank_no,rank_name');
   S.list = error ? [] : (data||[]);
   renderGrid();
 }
@@ -457,31 +430,31 @@ function listFiltered(){
   if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.name.toLowerCase().includes(q)||(c.motto||'').toLowerCase().includes(q)); }
   if(f.kind) l=l.filter(c=>c.kind===f.kind);
   if(f.join) l=l.filter(c=>c.join_mode===f.join);
-  if(f.sort==='prestige') l.sort((a,b)=>(b.prestige_recent||0)-(a.prestige_recent||0)||(b.prestige_total||0)-(a.prestige_total||0));
+  if(f.sort==='prestige') l.sort((a,b)=>(b.prestige_total||0)-(a.prestige_total||0));
   else if(f.sort==='big') l.sort((a,b)=>b.member_count-a.member_count);
   else if(f.sort==='new') l.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   else l.sort((a,b)=>new Date(b.last_post_at||0)-new Date(a.last_post_at||0)||b.member_count-a.member_count);
   return l;
 }
 function ccardHTML(c){
-  const col=safeCol(c.accent_color), t=tierOf(c), tc=tierClass(t);
+  const col=safeCol(c.accent_color);
   const iAmMember=S.mine.some(m=>m.community_id===c.id);
   let cta;
   if(iAmMember) cta=`<button class="act sm" data-open="${c.id}">Відкрити →</button>`;
   else if(!S.me) cta=`<button class="ghost sm" data-open="${c.id}">Переглянути</button>`;
   else if(c.join_mode==='open') cta=`<button class="act sm" data-join="${c.id}">Вступити</button>`;
   else cta=`<button class="act sm" data-join="${c.id}">Подати заявку</button>`;
-  return `<div class="ccard ${tc}" data-open="${c.id}"${t!=='base'?` style="${tierVars(col)}"`:''}>
-    ${megaFx(t)}${tierBadge(t)}
+  const rank=(hasPrestige(c)&&rankName(c))?`<span class="rankpill">${esc(rankName(c))}</span>`:'';
+  return `<div class="ccard" data-open="${c.id}">
     <div class="band" style="background:${esc(col)}"></div>
     <div class="cbody">
-      <div class="crest-sm ${crestTier(t)}" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
+      <div class="crest-sm" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
       <div class="nm">${esc(c.name)}</div>
       <div class="tags"><span class="tag">${esc(kindLabel(c.kind))}</span>
         <span class="tag ${c.join_mode==='open'?'open':''}">${c.join_mode==='open'?'🔓 відкритий':'🔒 за заявкою'}</span>
         ${c.visibility==='private'?'<span class="tag priv">приватна</span>':''}</div>
       <div class="mot">${esc(c.motto||'')}</div>
-      <div class="foot"><span class="cnt">👥 ${c.member_count}</span>${(c.kind==='bar'||c.kind==='club')?`<span class="cnt">⚡ ${c.prestige_total||0}</span>`:''}<span>Засновано: ${esc(c.founder_name||'—')}</span></div>
+      <div class="foot"><span class="cnt">👥 ${c.member_count}</span>${hasPrestige(c)?`<span class="cnt">⚡ ${c.prestige_total||0}</span>${rank}`:''}<span>Засновано: ${esc(c.founder_name||'—')}</span></div>
       <div class="cta">${cta}</div>
     </div>
   </div>`;
@@ -496,7 +469,7 @@ function renderMine(){
   if(!S.mine.length){ $('mine-sec').classList.add('hide'); return; }
   $('mine-sec').classList.remove('hide');
   $('mine-list').innerHTML=S.mine.map(m=>{
-    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:'',prestige_total:0,prestige_recent:0,tier:'base'};
+    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:'',prestige_total:0,rank_no:null,rank_name:''};
     return ccardHTML(c);
   }).join('');
   bindCards($('mine-list'));
@@ -582,7 +555,7 @@ function iAmMember(){ return !!(S.cur.members||[]).find(m=>m.profile_id===S.me);
 function iAmFounder(){ const c=S.cur.card||S.cur.detail; return S.me && c && c.founder_id===S.me; }
 
 function renderCommunity(){
-  const c=S.cur.card||S.cur.detail; const col=safeCol(c.accent_color); const t=tierOf(c);
+  const c=S.cur.card||S.cur.detail; const col=safeCol(c.accent_color);
   const perms=myPerms(), member=iAmMember();
   // шапка
   let stateBtn='';
@@ -593,10 +566,9 @@ function renderCommunity(){
     : `<button class="act sm" id="c-join">Подати заявку</button>`;
   const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
   const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
-  $('chead').innerHTML=`<div class="chead ${tierClass(t)}"${t!=='base'?` style="${tierVars(col)}"`:''}>
-    ${megaFx(t)}${tierBadge(t)}
+  $('chead').innerHTML=`<div class="chead">
     <div class="cover" style="background:linear-gradient(110deg,${esc(col)}59,${esc(col)}2e 55%,${esc(col)}17)">
-      <div class="crest ${crestTier(t)}" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
+      <div class="crest" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
       <div class="htext">
         <h2>${esc(c.name)}</h2>
         ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
@@ -604,7 +576,7 @@ function renderCommunity(){
           <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
           ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
           <span><b>${c.member_count}</b> учасників</span>
-          ${(c.kind==='bar'||c.kind==='club')?`<span>⚡ <b>${c.prestige_total||0}</b> престижу</span>`:''}
+          ${hasPrestige(c)?`<span>⚡ <b>${c.prestige_total||0}</b> престижу${rankName(c)?` · <b>${esc(rankName(c))}</b>`:''}</span>`:''}
           <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
       </div>
       <div class="acts">${stateBtn}${manageBtn}</div>
@@ -713,16 +685,22 @@ function renderOverview(perms, member){
   const ob=$('p-beer'); if(ob) ob.onclick=drinkBeer;
 }
 
-// ── ПРЕСТИЖ (468) ──
+// ── ПРЕСТИЖ (468→469: 9-рангова драбина) ──
+function curRankMin(pr){ const r=(pr.ranks||[]).find(x=>x.rank_no===pr.rank_no); return r?r.min:0; }
 function prestigeBar(pr,col){
   if(!pr) return '';
-  if(pr.next_at){
-    const from=pr.tier==='rare'?(pr.rare_at||0):0;
-    const pct=Math.max(4,Math.min(100,Math.round((pr.total-from)/Math.max(1,pr.next_at-from)*100)));
+  if(pr.next_min!=null){
+    const from=curRankMin(pr);
+    const pct=Math.max(4,Math.min(100,Math.round((pr.total-from)/Math.max(1,pr.next_min-from)*100)));
     return `<div class="pbar"><i style="width:${pct}%;background:${esc(col)}"></i></div>
-      <div class="pnext">До <b>${TIERLBL[pr.next_tier]}</b> — ще <b>${Math.max(0,pr.next_at-pr.total)}</b> (${pr.total}/${pr.next_at})</div>`;
+      <div class="pnext">До <b>${esc(pr.next_rank_name||'')}</b> — ще <b>${Math.max(0,pr.next_min-pr.total)}</b> (${pr.total}/${pr.next_min})</div>`;
   }
-  return `<div class="pnext">Максимальний рівень 🏆</div>`;
+  return `<div class="pnext">Найвищий ранг 🏆</div>`;
+}
+function ladderHTML(pr){
+  if(!(pr.ranks&&pr.ranks.length)) return '';
+  return `<div class="ladder">${pr.ranks.map(r=>`<div class="lrank${r.rank_no===pr.rank_no?' on':''}">
+    <span class="lno">${r.rank_no}</span><span class="lnm">${esc(r.name)}</span><span class="lmin">${r.min}</span></div>`).join('')}</div>`;
 }
 function beerBtnHTML(){
   const me=(S.cur.prestige||{}).me; if(!me) return '';
@@ -733,11 +711,11 @@ function beerBtnHTML(){
     <div class="beerhint">${hint}</div>`;
 }
 function prestigeCardHTML(c, member){
-  if(!(c.kind==='bar'||c.kind==='club')) return '';
+  if(!hasPrestige(c)) return '';
   const pr=S.cur.prestige; if(!pr) return '';
   const col=safeCol(c.accent_color);
   const beer=(c.kind==='bar'&&member)?beerBtnHTML():'';
-  return `<div class="card side" id="ov-prestige"><h4>Престиж <span class="plevel ${pr.tier}">${TIERLBL[pr.tier]||'Base'}</span></h4>
+  return `<div class="card side" id="ov-prestige"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
     <div class="pbig">${pr.total}<small>${c.kind==='bar'?'за пиво':'за досягнення'}</small></div>
     ${prestigeBar(pr,col)}${beer}
     <button class="wbtn" data-goto="prestige">Детальніше</button></div>`;
@@ -751,16 +729,17 @@ async function drinkBeer(){
 }
 function renderPrestige(perms, member){
   const box=$('ctab'); const c=S.cur.card||S.cur.detail; const pr=S.cur.prestige;
-  if(!(c.kind==='bar'||c.kind==='club')){ box.innerHTML=`<div class="how">Престиж мають бари й клуби.</div>`; return; }
+  if(!hasPrestige(c)){ box.innerHTML=`<div class="how">Престиж мають бари й клуби.</div>`; return; }
   if(!pr){ box.innerHTML=`<div class="sum">Дані престижу недоступні.</div>`; return; }
   const col=safeCol(c.accent_color);
   const how = c.kind==='bar'
     ? `<h5>🍻 Як росте престиж бару</h5>Престиж бару росте, коли учасники <b>заходять випити пиво</b>.
        Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
-       Активний бар піднімається <b>Base → Rare → Mega</b>. Рейтинг — за <b>останні 30 днів</b>.`
-    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b> у турнірах BoBet:
-       титул <b>+5</b>, золото етапу <b>+4</b>, срібло <b>+3</b>, бронза <b>+2</b>, участь <b>+1</b>.
-       Що титулованіші гравці — тим престижніший клуб. Досягнення <b>не тануть</b>.`;
+       Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.`
+    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b>:
+       медалі (титул <b>+5</b>, золото <b>+4</b>, срібло <b>+3</b>, бронза <b>+2</b>, участь <b>+1</b>),
+       рідкісні картки (<b>rare +2</b>, <b>mega +3</b>) та рекорди ліги (<b>+1</b> кожен).
+       Клуб росте від <b>Дворової команди</b> до <b>Династії</b>. Досягнення <b>не тануть</b>.`;
   const beer=(c.kind==='bar')
     ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';
   const donors=(pr.donors||[]).map((d,i)=>`<div class="donor"><span class="drank">${i+1}</span>
@@ -768,10 +747,11 @@ function renderPrestige(perms, member){
     || '<div class="sum">Поки без внесків.</div>';
   box.innerHTML=`<div class="pgrid">
     <div>
-      <div class="card"><h4>Престиж <span class="plevel ${pr.tier}">${TIERLBL[pr.tier]||'Base'}</span></h4>
-        <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${pr.recent} за 30 днів`:'за досягнення'}</small></div>
+      <div class="card"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
+        <div class="pbig">${pr.total}<small>${c.kind==='bar'?'за пиво':'за досягнення'}</small></div>
         ${prestigeBar(pr,col)}${beer}</div>
       <div class="how" style="margin-top:16px">${how}</div>
+      ${ladderHTML(pr)}
     </div>
     <div class="card"><h4>${c.kind==='bar'?'Хто наливає':'Внесок учасників'}</h4>${donors}</div>
   </div>`;
@@ -844,13 +824,15 @@ function renderRel(perms){
       ${perms.perm_manage_relations?`<button class="ghost sm warn" data-relclear="${r.other_id}" style="margin-left:auto">Скасувати</button>`:''}</div>`;
   };
   const incLine=(r)=>`<div class="relrow"><span>${r.type==='ally'?'🤝':'⚔️'} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
-    <span class="st">${r.type==='ally'?'вважає партнером':'вважає ворогом'}</span></div>`;
+    <span class="st">${r.type==='ally'?'вважає партнером':'вважає ворогом'}</span>
+    ${(perms.perm_manage_relations&&!r.mutual)?`<button class="act sm" data-relconfirm="${r.other_id}" data-reltype="${r.type}" style="margin-left:auto">Підтвердити ${r.type==='ally'?'союз':'дербі'}</button>`:''}</div>`;
   $('ctab').innerHTML=
     `${perms.perm_manage_relations?`<button class="act sm" id="rel-add" style="margin-bottom:10px">+ Оголосити звʼязок</button>`:''}
      <h3 style="font-size:15px;margin:6px 0">Наші звʼязки</h3>${out.map(relLine).join('')||'<div class="sum">Ще нікого не оголосили.</div>'}
      <h3 style="font-size:15px;margin:14px 0 6px">Нас вважають</h3>${inc.map(incLine).join('')||'<div class="sum">Поки нікого.</div>'}`;
   const add=$('rel-add'); if(add) add.onclick=openRelAdd;
   $('ctab').querySelectorAll('[data-relclear]').forEach(b=>b.onclick=()=>clearRel(b.dataset.relclear));
+  $('ctab').querySelectorAll('[data-relconfirm]').forEach(b=>b.onclick=()=>confirmRel(b.dataset.relconfirm,b.dataset.reltype));
 }
 
 // ── дії спільноти ──
@@ -867,6 +849,7 @@ async function postToWall(){ const b=$('p-body').value.trim(); if(!b) return; if
 async function pinPost(id,on){ await act('community_post_pin',{p_post:id,p_pinned:on},reopen); }
 async function delPost(id){ if(confirm('Видалити пост?')) await act('community_post_delete',{p_post:id},reopen); }
 async function clearRel(toId){ await act('community_clear_relation',{p_from:S.cur.id,p_to:toId},reopen); }
+async function confirmRel(toId,type){ await act('community_set_relation',{p_from:S.cur.id,p_to:toId,p_type:type},reopen); }
 
 // ── модалка: створити ──
 function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal">${html}</div></div>`;
