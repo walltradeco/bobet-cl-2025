@@ -265,7 +265,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @media(max-width:820px){
   .ov{display:flex;flex-direction:column;gap:16px}
   .ovmain,.ovside{display:contents}
-  #ov-stream{order:1}#ov-members{order:2}#ov-diplo{order:3}#ov-duo{order:4;margin-top:0}
+  #ov-stream{order:1}#ov-prestige{order:2}#ov-members{order:3}#ov-diplo{order:4}#ov-duo{order:5;margin-top:0}
   .duo{grid-template-columns:1fr}
 }
 
@@ -277,6 +277,30 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .preset .dotc{width:16px;height:16px;border-radius:5px;flex:none}
 .preset .lab{color:var(--text-dim)}
 .preset .lab .tg{font-family:var(--mono);font-size:9px;letter-spacing:.05em;margin-left:5px}
+
+/* ── престиж (чіп у шапці + блок Огляду + вкладка) ── */
+.plevel{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--text-dim)}
+.plevel.rare{color:var(--blue);border-color:var(--blue-d)}
+.plevel.mega{color:var(--gold);border-color:var(--gold)}
+.pbig{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;margin:8px 0 2px}
+.pbig small{font-size:12px;color:var(--text-dim);font-weight:500;font-family:inherit;margin-left:6px}
+.pbar{height:8px;border-radius:999px;background:var(--panel2);overflow:hidden;margin:12px 0 6px}
+.pbar > i{display:block;height:100%;border-radius:999px}
+.pnext{font-size:12px;color:var(--text-dim)}
+.beerbtn{width:100%;margin-top:12px;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;
+  background:var(--gold);color:#1a1206;cursor:pointer}
+.beerbtn:disabled{opacity:.45;cursor:default}
+.beerhint{font-size:12px;color:var(--text-dim);margin-top:8px;text-align:center}
+.how{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:13px;
+  line-height:1.55;color:var(--text-dim)}
+.how b{color:var(--text)}.how h5{margin:0 0 8px;font-size:13px;color:var(--text)}
+.donor{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.donor:last-child{border:none}
+.donor .drank{width:20px;color:var(--text-dim);font-family:var(--mono);font-size:13px}
+.donor .dn{flex:1;font-size:14px}.donor .dp{font-family:var(--mono);font-weight:700}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:820px){.pgrid{grid-template-columns:1fr}}
 
 /* ── екран входу лишається BoBet-зеленим (спільна брама ліг) ── */
 body:has(#screen-login:not(.hide)){
@@ -308,7 +332,7 @@ body:has(#screen-login:not(.hide)){
       <input id="f-q" placeholder="Пошук спільноти…">
       <select id="f-kind"><option value="">Тип: усі</option><option value="club">🏟️ Клуб</option><option value="bar">🍻 Бар</option></select>
       <select id="f-join"><option value="">Вступ: будь-який</option><option value="open">🔓 Відкритий</option><option value="request">🔒 За заявкою</option></select>
-      <select id="f-sort"><option value="active">Сорт: найактивніші</option><option value="big">Найбільші</option><option value="new">Найновіші</option></select>
+      <select id="f-sort"><option value="active">Сорт: найактивніші</option><option value="prestige">За престижем</option><option value="big">Найбільші</option><option value="new">Найновіші</option></select>
       <button id="btn-create" class="primary grow">+ Створити</button>
     </div>
     <div id="sum" class="sum"></div>
@@ -376,6 +400,7 @@ const tierClass=t=>t==='rare'?'t-rare':t==='mega'?'t-mega':'';
 const tierBadge=t=>t==='rare'?'<span class="tierbadge rare">RARE</span>':t==='mega'?'<span class="tierbadge mega">MEGA RARE</span>':'';
 const megaFx=t=>t==='mega'?'<div class="shine"></div><div class="spark"></div>':'';
 const crestTier=t=>t==='rare'?'rare':t==='mega'?'mega':'';
+const TIERLBL={base:'Base',rare:'Rare',mega:'Mega Rare'};   // 468 престиж
 const tierVars=col=>`--cc:${col};--cc-b:${col};--cc-a:${col}22`;
 const crestStyle=col=>`--cc-a:${col}2e;background:linear-gradient(150deg,${col}2e,${col}10);border:1px solid ${col}55`;
 const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
@@ -416,7 +441,7 @@ async function boot(){
 
 async function loadList(){
   const { data, error } = await sb.from('community_card')
-    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at');
+    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,prestige_recent,tier');
   S.list = error ? [] : (data||[]);
   renderGrid();
 }
@@ -432,7 +457,8 @@ function listFiltered(){
   if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.name.toLowerCase().includes(q)||(c.motto||'').toLowerCase().includes(q)); }
   if(f.kind) l=l.filter(c=>c.kind===f.kind);
   if(f.join) l=l.filter(c=>c.join_mode===f.join);
-  if(f.sort==='big') l.sort((a,b)=>b.member_count-a.member_count);
+  if(f.sort==='prestige') l.sort((a,b)=>(b.prestige_recent||0)-(a.prestige_recent||0)||(b.prestige_total||0)-(a.prestige_total||0));
+  else if(f.sort==='big') l.sort((a,b)=>b.member_count-a.member_count);
   else if(f.sort==='new') l.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
   else l.sort((a,b)=>new Date(b.last_post_at||0)-new Date(a.last_post_at||0)||b.member_count-a.member_count);
   return l;
@@ -455,7 +481,7 @@ function ccardHTML(c){
         <span class="tag ${c.join_mode==='open'?'open':''}">${c.join_mode==='open'?'🔓 відкритий':'🔒 за заявкою'}</span>
         ${c.visibility==='private'?'<span class="tag priv">приватна</span>':''}</div>
       <div class="mot">${esc(c.motto||'')}</div>
-      <div class="foot"><span class="cnt">👥 ${c.member_count}</span><span>Засновано: ${esc(c.founder_name||'—')}</span></div>
+      <div class="foot"><span class="cnt">👥 ${c.member_count}</span>${(c.kind==='bar'||c.kind==='club')?`<span class="cnt">⚡ ${c.prestige_total||0}</span>`:''}<span>Засновано: ${esc(c.founder_name||'—')}</span></div>
       <div class="cta">${cta}</div>
     </div>
   </div>`;
@@ -470,7 +496,7 @@ function renderMine(){
   if(!S.mine.length){ $('mine-sec').classList.add('hide'); return; }
   $('mine-sec').classList.remove('hide');
   $('mine-list').innerHTML=S.mine.map(m=>{
-    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:''};
+    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:'',prestige_total:0,prestige_recent:0,tier:'base'};
     return ccardHTML(c);
   }).join('');
   bindCards($('mine-list'));
@@ -525,15 +551,17 @@ async function openCommunity(id, keepTab){
   const detail=(await sb.from('community_detail').select('*').eq('id',id).maybeSingle()).data;
   const card=(await sb.from('community_card').select('*').eq('id',id).maybeSingle()).data;
   if(!detail && !card){ alert('Спільноту не знайдено'); return; }
-  const [members,wall,log,roles,rels] = await Promise.all([
+  const [members,wall,log,roles,rels,prestige] = await Promise.all([
     sb.from('community_member_list').select('*').eq('community_id',id),
     sb.from('community_wall').select('*').eq('community_id',id).order('is_pinned',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('community_log_view').select('*').eq('community_id',id).order('created_at',{ascending:false}).limit(80),
     sb.from('community_roles_view').select('*').eq('community_id',id).order('sort_order'),
-    sb.from('community_relations_view').select('*').eq('community_id',id)
+    sb.from('community_relations_view').select('*').eq('community_id',id),
+    sb.rpc('community_prestige_detail',{p_community:id})
   ]);
   S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
     log:log.data||[], roles:roles.data||[], rels:rels.data||[],
+    prestige:(prestige&&prestige.data)||null,
     visible: !!detail };
   if(!keepTab) S.tab = S.cur.visible ? 'overview' : 'about';
   $('screen-list').classList.add('hide'); $('screen-login').classList.add('hide');
@@ -576,6 +604,7 @@ function renderCommunity(){
           <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
           ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
           <span><b>${c.member_count}</b> учасників</span>
+          ${(c.kind==='bar'||c.kind==='club')?`<span>⚡ <b>${c.prestige_total||0}</b> престижу</span>`:''}
           <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
       </div>
       <div class="acts">${stateBtn}${manageBtn}</div>
@@ -588,7 +617,7 @@ function renderCommunity(){
 
   // вкладки
   const tabs = S.cur.visible
-    ? [['overview','Огляд'],['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
+    ? [['overview','Огляд'],['prestige','Престиж'],['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
     : [['about','Про нас']];
   $('ctabs').innerHTML=tabs.map(([k,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('');
   $('ctabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderCommunity(); });
@@ -602,6 +631,7 @@ function renderTab(perms, member){
     return;
   }
   if(S.tab==='overview') return renderOverview(perms, member);
+  if(S.tab==='prestige') return renderPrestige(perms, member);
   if(S.tab==='wall') return renderWall(perms, member);
   if(S.tab==='members') return renderMembers(perms);
   if(S.tab==='history') return renderHistory();
@@ -668,6 +698,7 @@ function renderOverview(perms, member){
       </div>
     </div>
     <div class="ovside">
+      ${prestigeCardHTML(c, member)}
       <div class="card side" id="ov-members"><h4>Учасники <span class="n">${c.member_count} учасників</span></h4>
         ${mem.map(memRow).join('')}<button class="wbtn" data-goto="members">Усі учасники</button></div>
       <div class="card side" id="ov-diplo"><h4>Дипломатія ${outs.length?`<a href="#" data-goto="rel" style="font-size:12px;font-weight:500">Відкрити все</a>`:''}</h4>
@@ -679,6 +710,72 @@ function renderOverview(perms, member){
   </div>`;
   box.querySelectorAll('[data-goto]').forEach(a=>a.onclick=e=>{ e.preventDefault(); S.tab=a.dataset.goto; renderCommunity(); });
   const ra=$('ov-rel-add'); if(ra) ra.onclick=openRelAdd;
+  const ob=$('p-beer'); if(ob) ob.onclick=drinkBeer;
+}
+
+// ── ПРЕСТИЖ (468) ──
+function prestigeBar(pr,col){
+  if(!pr) return '';
+  if(pr.next_at){
+    const from=pr.tier==='rare'?(pr.rare_at||0):0;
+    const pct=Math.max(4,Math.min(100,Math.round((pr.total-from)/Math.max(1,pr.next_at-from)*100)));
+    return `<div class="pbar"><i style="width:${pct}%;background:${esc(col)}"></i></div>
+      <div class="pnext">До <b>${TIERLBL[pr.next_tier]}</b> — ще <b>${Math.max(0,pr.next_at-pr.total)}</b> (${pr.total}/${pr.next_at})</div>`;
+  }
+  return `<div class="pnext">Максимальний рівень 🏆</div>`;
+}
+function beerBtnHTML(){
+  const me=(S.cur.prestige||{}).me; if(!me) return '';
+  const hint = me.can_drink ? `Сьогодні ${me.today}/${me.daily_cap}`
+    : (me.today>=me.daily_cap ? `Сьогодні вже ${me.daily_cap} 🍺`
+       : `Ще рано${me.next_at?` · ${new Date(me.next_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}`:''}`);
+  return `<button class="beerbtn" id="p-beer" ${me.can_drink?'':'disabled'}>🍺 Випити пиво</button>
+    <div class="beerhint">${hint}</div>`;
+}
+function prestigeCardHTML(c, member){
+  if(!(c.kind==='bar'||c.kind==='club')) return '';
+  const pr=S.cur.prestige; if(!pr) return '';
+  const col=safeCol(c.accent_color);
+  const beer=(c.kind==='bar'&&member)?beerBtnHTML():'';
+  return `<div class="card side" id="ov-prestige"><h4>Престиж <span class="plevel ${pr.tier}">${TIERLBL[pr.tier]||'Base'}</span></h4>
+    <div class="pbig">${pr.total}<small>${c.kind==='bar'?'за пиво':'за досягнення'}</small></div>
+    ${prestigeBar(pr,col)}${beer}
+    <button class="wbtn" data-goto="prestige">Детальніше</button></div>`;
+}
+async function drinkBeer(){
+  const b=$('p-beer'); if(b) b.disabled=true;
+  const c=S.cur.card||S.cur.detail;
+  const { error } = await sb.rpc('community_drink_beer',{p_community:c.id});
+  if(error){ alert(error.message||'Не вдалося випити'); if(b) b.disabled=false; return; }
+  await openCommunity(c.id, true);   // reload — оновить престиж у шапці/сітці/вкладці
+}
+function renderPrestige(perms, member){
+  const box=$('ctab'); const c=S.cur.card||S.cur.detail; const pr=S.cur.prestige;
+  if(!(c.kind==='bar'||c.kind==='club')){ box.innerHTML=`<div class="how">Престиж мають бари й клуби.</div>`; return; }
+  if(!pr){ box.innerHTML=`<div class="sum">Дані престижу недоступні.</div>`; return; }
+  const col=safeCol(c.accent_color);
+  const how = c.kind==='bar'
+    ? `<h5>🍻 Як росте престиж бару</h5>Престиж бару росте, коли учасники <b>заходять випити пиво</b>.
+       Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
+       Активний бар піднімається <b>Base → Rare → Mega</b>. Рейтинг — за <b>останні 30 днів</b>.`
+    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b> у турнірах BoBet:
+       титул <b>+5</b>, золото етапу <b>+4</b>, срібло <b>+3</b>, бронза <b>+2</b>, участь <b>+1</b>.
+       Що титулованіші гравці — тим престижніший клуб. Досягнення <b>не тануть</b>.`;
+  const beer=(c.kind==='bar')
+    ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';
+  const donors=(pr.donors||[]).map((d,i)=>`<div class="donor"><span class="drank">${i+1}</span>
+    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}</span></div>`).join('')
+    || '<div class="sum">Поки без внесків.</div>';
+  box.innerHTML=`<div class="pgrid">
+    <div>
+      <div class="card"><h4>Престиж <span class="plevel ${pr.tier}">${TIERLBL[pr.tier]||'Base'}</span></h4>
+        <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${pr.recent} за 30 днів`:'за досягнення'}</small></div>
+        ${prestigeBar(pr,col)}${beer}</div>
+      <div class="how" style="margin-top:16px">${how}</div>
+    </div>
+    <div class="card"><h4>${c.kind==='bar'?'Хто наливає':'Внесок учасників'}</h4>${donors}</div>
+  </div>`;
+  const bb=$('p-beer'); if(bb) bb.onclick=drinkBeer;
 }
 function renderWall(perms, member){
   const box=$('ctab');
