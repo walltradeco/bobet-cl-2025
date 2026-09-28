@@ -687,13 +687,17 @@ function renderOverview(perms, member){
 
 // ── ПРЕСТИЖ (468→469: 9-рангова драбина) ──
 function curRankMin(pr){ const r=(pr.ranks||[]).find(x=>x.rank_no===pr.rank_no); return r?r.min:0; }
+const LITERS_PER_BEER=0.5;                                  // 1 пиво = 0.5 л
+const litres=n=>{ const l=(n||0)*LITERS_PER_BEER; return (l%1===0?l:l.toFixed(1)); };
 function prestigeBar(pr,col){
   if(!pr) return '';
   if(pr.next_min!=null){
     const from=curRankMin(pr);
     const pct=Math.max(4,Math.min(100,Math.round((pr.total-from)/Math.max(1,pr.next_min-from)*100)));
+    const need=Math.max(0,pr.next_min-pr.total);
+    const barL=pr.kind==='bar'?` · <b>${litres(need)} л</b>`:'';
     return `<div class="pbar"><i style="width:${pct}%;background:${esc(col)}"></i></div>
-      <div class="pnext">До <b>${esc(pr.next_rank_name||'')}</b> — ще <b>${Math.max(0,pr.next_min-pr.total)}</b> (${pr.total}/${pr.next_min})</div>`;
+      <div class="pnext">До <b>${esc(pr.next_rank_name||'')}</b> — ще <b>${need}</b>${pr.kind==='bar'?' пива':''}${barL} (${pr.total}/${pr.next_min})</div>`;
   }
   return `<div class="pnext">Найвищий ранг 🏆</div>`;
 }
@@ -716,7 +720,7 @@ function prestigeCardHTML(c, member){
   const col=safeCol(c.accent_color);
   const beer=(c.kind==='bar'&&member)?beerBtnHTML():'';
   return `<div class="card side" id="ov-prestige"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
-    <div class="pbig">${pr.total}<small>${c.kind==='bar'?'за пиво':'за досягнення'}</small></div>
+    <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${litres(pr.total)} л`:'за досягнення'}</small></div>
     ${prestigeBar(pr,col)}${beer}
     <button class="wbtn" data-goto="prestige">Детальніше</button></div>`;
 }
@@ -735,7 +739,8 @@ function renderPrestige(perms, member){
   const how = c.kind==='bar'
     ? `<h5>🍻 Як росте престиж бару</h5>Престиж бару росте, коли учасники <b>заходять випити пиво</b>.
        Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
-       Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.`
+       Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.
+       Одне пиво = <b>0.5 л</b>.`
     : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b>:
        титул <b>+5</b>, медалі (золото <b>+4</b>, срібло <b>+3</b>, бронза <b>+2</b>, участь <b>+1</b>)
        та рекорди ліги (<b>+1</b> кожен). Пізніше, коли дограється Євросезон, додадуться
@@ -744,17 +749,17 @@ function renderPrestige(perms, member){
   const beer=(c.kind==='bar')
     ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';
   const donors=(pr.donors||[]).map((d,i)=>`<div class="donor"><span class="drank">${i+1}</span>
-    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}</span></div>`).join('')
+    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}${c.kind==='bar'?` · ${litres(d.pts)} л`:''}</span></div>`).join('')
     || '<div class="sum">Поки без внесків.</div>';
   box.innerHTML=`<div class="pgrid">
     <div>
       <div class="card"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
-        <div class="pbig">${pr.total}<small>${c.kind==='bar'?'за пиво':'за досягнення'}</small></div>
+        <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${litres(pr.total)} л`:'за досягнення'}</small></div>
         ${prestigeBar(pr,col)}${beer}</div>
       <div class="how" style="margin-top:16px">${how}</div>
       ${ladderHTML(pr)}
     </div>
-    <div class="card"><h4>${c.kind==='bar'?'Хто наливає':'Внесок учасників'}</h4>${donors}</div>
+    <div class="card"><h4>${c.kind==='bar'?'Скільки випив':'Внесок учасників'}</h4>${donors}</div>
   </div>`;
   const bb=$('p-beer'); if(bb) bb.onclick=drinkBeer;
 }
