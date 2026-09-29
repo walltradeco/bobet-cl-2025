@@ -168,6 +168,14 @@ body.cabinet-lock{overflow:hidden;}
 }
 #winmodal-overlay.min #winmodal-frame{display:none;}
 #winmodal-overlay.min #winmodal-bar{border-bottom:0;}
+/* Одне згорнуте — по центру внизу; обидва згорнуті — розводимо в кути, щоб
+   бари 560px не наклались (`:has` бачить стан сусіднього оверлея). */
+body:has(#winmodal-overlay.min) #cabinet-overlay.min #cabinet-shell{
+  margin-left:0; margin-right:auto;   /* кабінет → низ-ліворуч */
+}
+body:has(#cabinet-overlay.min) #winmodal-overlay.min #winmodal-shell{
+  margin-left:auto; margin-right:0;   /* вікно → низ-праворуч */
+}
 #winmodal-bar{
   flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
   gap:12px; padding:10px 14px; border-bottom:1px solid var(--line);
@@ -1214,6 +1222,7 @@ fromHash();
   }, true);
 
   window.addEventListener('message', e => {
+    if (e.origin !== location.origin) return;   // лише свій кабінет (той самий домен)
     const d = e.data;
     if(d && typeof d === 'object' && d.type === 'boorbit:openwin') openWin(d.href, d.title);
   });
