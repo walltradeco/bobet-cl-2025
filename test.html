@@ -1666,9 +1666,10 @@
     display:none;
     padding:16px;
   }
-  #cabinet-overlay.open{display:block;}
+  #cabinet-overlay.open{display:flex; flex-direction:column;}
   #cabinet-shell{
     position:relative;
+    align-self:center; width:100%;
     /* ⚠️ 1200 → 1440 (14.08.2026). ЦЕ ПЕРША З ДВОХ СТЕЛЬ, і без неї
        розширення кабінету не видно взагалі: коли він відкритий модалкою
        звідси, ширину ріже саме це вікно, ще до власних `.wrap` у
@@ -1682,6 +1683,19 @@
     box-shadow:0 20px 60px rgba(0,0,0,0.55);
     display:flex; flex-direction:column;
   }
+  /* Згорнуте «в себе» — той самий жест, що у вікні Профіль/Спільноти/Крамниця
+     (рішення Богдана 29.09): фон прозорий (борд під кабінетом клікабельний),
+     лишається лише вузький заголовок, докнутий донизу; клік по ньому розгортає. */
+  #cabinet-overlay.min{
+    background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none;
+    padding:14px; pointer-events:none;
+  }
+  #cabinet-overlay.min #cabinet-shell{
+    height:auto; max-width:560px; margin-top:auto; pointer-events:auto;
+    cursor:pointer;
+  }
+  #cabinet-overlay.min #cabinet-frame{display:none;}
+  #cabinet-overlay.min #cabinet-bar{border-bottom:0;}
   #cabinet-bar{
     flex:0 0 auto;
     display:flex; align-items:center; justify-content:space-between;
@@ -1694,11 +1708,13 @@
     letter-spacing:0.1em; text-transform:uppercase;
     color:var(--green);
   }
-  #cabinet-close{
+  #cabinet-bar .acts{display:flex; gap:8px; flex:0 0 auto;}
+  #cabinet-min, #cabinet-close{
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     font-family:'IBM Plex Mono',monospace; font-size:13px;
     padding:7px 14px; border-radius:6px; cursor:pointer;
   }
+  #cabinet-min:hover{border-color:var(--gold); color:var(--gold);}
   #cabinet-close:hover{border-color:var(--red); color:var(--red);}
   #cabinet-frame{
     flex:1 1 auto; width:100%; border:0; display:block; background:var(--bg);
@@ -1707,7 +1723,8 @@
 
   @media (max-width:720px){
     #cabinet-overlay{padding:0;}
-    #cabinet-shell{border-radius:0; border:0; max-width:none;}
+    #cabinet-overlay.open #cabinet-shell{border-radius:0; border:0; max-width:none;}
+    #cabinet-overlay.min{padding:10px;}
     #cabinet-btn{margin-left:0;}
   }
 
@@ -1948,7 +1965,10 @@
   <div id="cabinet-shell">
     <div id="cabinet-bar">
       <div class="t">Bo<span>Bet</span> · Кабінет</div>
-      <button id="cabinet-close" type="button">Закрити ✕</button>
+      <div class="acts">
+        <button id="cabinet-min" type="button" title="Згорнути">▁ Згорнути</button>
+        <button id="cabinet-close" type="button">Закрити ✕</button>
+      </div>
     </div>
     <iframe id="cabinet-frame" title="Кабінет учасника" allow="clipboard-write"></iframe>
   </div>
@@ -5252,6 +5272,8 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   const frame   = document.getElementById('cabinet-frame');
   const btn     = document.getElementById('cabinet-btn');
   const closeBtn= document.getElementById('cabinet-close');
+  const minBtn  = document.getElementById('cabinet-min');
+  const bar     = document.getElementById('cabinet-bar');
 
   // Чи є жива сесія Supabase — щоб підписати кнопку
   function signedIn(){
@@ -5289,9 +5311,11 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   }
 
   async function open(){
-    // Модалку показуємо одразу
+    // Модалку показуємо одразу (і розгортаємо, якщо була згорнута)
+    overlay.classList.remove('min');
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
+    minBtn.textContent = '▁ Згорнути';
     // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
     // щоразу, бо між відкриттями турнір міг змінитись.
     const want = await desiredCabinetSrc();
@@ -5299,17 +5323,43 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
       frame.setAttribute('src', want);
     }
   }
-  function close(){
-    overlay.classList.remove('open');
+  // «Згорнути в себе» (як у вікні Профіль/Спільноти/Крамниця): кабінет стискається
+  // до заголовка внизу, борд під ним знову клікабельний. iframe лишається живим —
+  // src не скидаємо, сесія й вкладка кабінету зберігаються.
+  function minimize(){
+    if(!overlay.classList.contains('open')) return;
+    overlay.classList.add('min');
     document.body.classList.remove('cabinet-lock');
+    minBtn.textContent = '▢ Розгорнути';
+  }
+  function restore(){
+    overlay.classList.remove('min');
+    document.body.classList.add('cabinet-lock');
+    minBtn.textContent = '▁ Згорнути';
+  }
+  function close(){
+    overlay.classList.remove('open','min');
+    document.body.classList.remove('cabinet-lock');
+    minBtn.textContent = '▁ Згорнути';
     labelBtn();
   }
 
   btn.addEventListener('click', open);
-  closeBtn.addEventListener('click', close);
-  overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
+  minBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    overlay.classList.contains('min') ? restore() : minimize();
+  });
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); close(); });
+  // Клік по згорнутому заголовку (не по кнопках) — розгорнути назад
+  bar.addEventListener('click', () => { if(overlay.classList.contains('min')) restore(); });
+  // Клік по темному фону повного кабінету — згорнути (стан не втрачається)
+  overlay.addEventListener('mousedown', e => {
+    if (e.target === overlay && overlay.classList.contains('open')
+        && !overlay.classList.contains('min')) minimize();
+  });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && overlay.classList.contains('open')) close();
+    if (e.key !== 'Escape' || !overlay.classList.contains('open')) return;
+    overlay.classList.contains('min') ? close() : minimize();
   });
 
   // app.html може попросити закритись: parent.postMessage('bobet:close','*')
