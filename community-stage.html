@@ -275,6 +275,16 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .donor:last-child{border:none}
 .donor .drank{width:20px;color:var(--text-dim);font-family:var(--mono);font-size:13px}
 .donor .dn{flex:1;font-size:14px}.donor .dp{font-family:var(--mono);font-weight:700}
+/* Інвестиція в престиж — ЛИШЕ опис можливості (купівля окремо, за реальні кошти, як картки) */
+.invest{margin-top:16px}
+.invest h4{font-size:15px;margin:0 0 6px}
+.invest .il{font-size:13.5px;color:#cfd5d0;margin:0 0 14px;line-height:1.5}
+.invest .il b{color:var(--text)}
+.investgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.invtier{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:16px 10px;text-align:center}
+.invtier .invn{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold);line-height:1}
+.invtier .invu{font-size:11px;color:var(--text-dim);margin-top:6px}
+@media(max-width:560px){.investgrid{grid-template-columns:repeat(2,1fr)}}
 .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
 @media(max-width:820px){.pgrid{grid-template-columns:1fr}}
 
@@ -760,8 +770,27 @@ function renderPrestige(perms, member){
       ${ladderHTML(pr)}
     </div>
     <div class="card"><h4>${c.kind==='bar'?'Скільки випив':'Внесок учасників'}</h4>${donors}</div>
-  </div>`;
+  </div>
+  ${investHTML(c)}`;
   const bb=$('p-beer'); if(bb) bb.onclick=drinkBeer;
+}
+// Інвестиція в престиж — лише опис можливості. Купівля відбувається окремо
+// (за реальні кошти, як колекційні картки); тут ні RPC, ні платежу — суть у тому,
+// щоб опція була видима й пояснена. Тіри: бар 10/20/50/100 пива, клуб 10/20/50/100 престижу.
+function investHTML(c){
+  const bar=c.kind==='bar';
+  const tiers=[10,20,50,100].map(n=>`<div class="invtier">
+      <div class="invn">+${n}</div>
+      <div class="invu">${bar?`пива · ${litres(n)} л`:'престижу'}</div>
+    </div>`).join('');
+  return `<div class="card invest">
+    <h4>💎 Інвестиція в престиж</h4>
+    <div class="il">Хочеш прискорити ріст <b>${bar?'бару':'клубу'}</b>? Престиж можна
+      <b>докупити за реальні кошти</b> — як колекційні картки. За інвестицію твоє
+      <b>ім'я лишиться в спільноті назавжди</b>.</div>
+    <div class="investgrid">${tiers}</div>
+    <div class="st" style="margin-top:12px">Купівля — окремо від сайту (домовляєшся напряму, як за картки). Тут лише опис можливості.</div>
+  </div>`;
 }
 function renderWall(perms, member){
   const box=$('ctab');
@@ -909,7 +938,10 @@ function openEdit(){
     const v=formVals(); delete v.p_kind;
     const { error }=await sb.rpc('community_update',{ p_community:S.cur.id, ...v });
     if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
-    closeModal(); await reopen();
+    // ⚠️ reopen() освіжає лише сторінку спільноти (S.cur.card). Сітка Огляду
+    // читає окремий кеш S.list — без loadList() картка там лишалась би зі старим
+    // кольором/назвою до перезавантаження. Тож перечитуємо список теж.
+    closeModal(); await reopen(); await loadList(); renderMine();
   };
 }
 
