@@ -139,6 +139,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .logrow{font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--text-dim)}
 .logrow:last-child{border:none}
 .logrow b{color:var(--text)}
+/* історія може бути довгою (кожне пиво пишеться) — робимо її прокручуваною */
+.histscroll{max-height:62vh;overflow-y:auto;padding-right:6px}
 .rules-box{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:14px}
 .relrow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px}
 .rel-ally{color:var(--gold)} .rel-enemy{color:var(--red)}
@@ -380,7 +382,7 @@ const COLOR_PRESETS=[
   {name:'Neon Night',hex:'#8a6fae',tier:'mega'},
 ];
 const EV_IC={joined:'＋',left:'↩',kicked:'⊘',role_added:'★',role_removed:'☆',invited:'✉',invite_accepted:'✔',
-  request_approved:'✔',founder_transferred:'👑',relation_ally:'↔',relation_enemy:'⚔',relation_cleared:'✕',created:'🏳'};
+  request_approved:'✔',founder_transferred:'👑',relation_ally:'↔',relation_enemy:'⚔',relation_cleared:'✕',created:'🏳',beer:'🍺'};
 // 469: спільноти мають 9-РАНГОВУ ДРАБИНУ престижу (назва рангу + прогрес), а НЕ
 // Rare/Mega — ті лишаються для КАРТ. Рівень показуємо назвою рангу.
 const hasPrestige=c=>!!c&&(c.kind==='bar'||c.kind==='club');
@@ -399,7 +401,8 @@ const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'�
 const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключено',
   role_added:'отримав роль',role_removed:'втратив роль',invited:'запрошено',invite_accepted:'прийняв запрошення',
   request_approved:'заявку схвалено',founder_transferred:'передав засновництво',
-  relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок'};
+  relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок',
+  beer:'випив пиво'};
 
 const S={ me:null, name:null, isAdmin:false, list:[], mine:[], pending:[],
   f:{q:'',kind:'',join:'',sort:'active'}, cur:null, tab:'wall' };
@@ -699,6 +702,8 @@ function renderOverview(perms, member){
 function curRankMin(pr){ const r=(pr.ranks||[]).find(x=>x.rank_no===pr.rank_no); return r?r.min:0; }
 const LITERS_PER_BEER=0.5;                                  // 1 пиво = 0.5 л
 const litres=n=>{ const l=(n||0)*LITERS_PER_BEER; return (l%1===0?l:l.toFixed(1)); };
+// правильний відмінок: 1 пиво · 2/3/4 пива · 5+ пив
+const beerWord=n=>{ n=Math.abs(n||0)%100; const d=n%10; if(n>10&&n<20)return'пив'; if(d===1)return'пиво'; if(d>=2&&d<=4)return'пива'; return'пив'; };
 function prestigeBar(pr,col){
   if(!pr) return '';
   if(pr.next_min!=null){
@@ -759,7 +764,7 @@ function renderPrestige(perms, member){
   const beer=(c.kind==='bar')
     ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';
   const donors=(pr.donors||[]).map((d,i)=>`<div class="donor"><span class="drank">${i+1}</span>
-    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}${c.kind==='bar'?` · ${litres(d.pts)} л`:''}</span></div>`).join('')
+    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}${c.kind==='bar'?` ${beerWord(d.pts)} · ${litres(d.pts)} л`:''}</span></div>`).join('')
     || '<div class="sum">Поки без внесків.</div>';
   box.innerHTML=`<div class="pgrid">
     <div>
@@ -773,6 +778,12 @@ function renderPrestige(perms, member){
   </div>
   ${investHTML(c)}`;
   const bb=$('p-beer'); if(bb) bb.onclick=drinkBeer;
+  // «Цікавить» — просто підказка «звернись до засновника» (купівля окремо, без БД)
+  const ib=$('inv-interest');
+  if(ib) ib.onclick=()=>{ const m=$('inv-msg');
+    m.style.display='block';
+    m.innerHTML=`Щоб інвестувати — напиши засновнику: <b>${esc(c.founder_name||'засновнику спільноти')}</b>. Купівля відбувається окремо від сайту.`;
+    ib.disabled=true; };
 }
 // Інвестиція в престиж — лише опис можливості. Купівля відбувається окремо
 // (за реальні кошти, як колекційні картки); тут ні RPC, ні платежу — суть у тому,
@@ -786,10 +797,11 @@ function investHTML(c){
   return `<div class="card invest">
     <h4>💎 Інвестиція в престиж</h4>
     <div class="il">Хочеш прискорити ріст <b>${bar?'бару':'клубу'}</b>? Престиж можна
-      <b>докупити за реальні кошти</b> — як колекційні картки. За інвестицію твоє
-      <b>ім'я лишиться в спільноті назавжди</b>.</div>
+      <b>докупити</b>. За інвестицію твоє <b>ім'я лишиться в спільноті назавжди</b>.</div>
     <div class="investgrid">${tiers}</div>
-    <div class="st" style="margin-top:12px">Купівля — окремо від сайту (домовляєшся напряму, як за картки). Тут лише опис можливості.</div>
+    <div class="st" style="margin-top:12px">Купівля — окремо від сайту. Тут лише опис можливості.</div>
+    <button class="act" id="inv-interest" style="margin-top:12px">Цікавить</button>
+    <div id="inv-msg" class="il" style="margin-top:10px;display:none"></div>
   </div>`;
 }
 function renderWall(perms, member){
@@ -832,14 +844,15 @@ function renderMembers(perms){
   if(perms.perm_manage_roles) $('ctab').querySelectorAll('[data-mroles]').forEach(el=>el.onclick=()=>openAssignRoles(el.dataset.mroles));
 }
 function renderHistory(){
-  $('ctab').innerHTML=S.cur.log.map(l=>{
+  const rows=S.cur.log.map(l=>{
     const who=`<b>${esc(l.actor_name||'—')}</b>`;
     const tgt=l.target_name?` <b>${esc(l.target_name)}</b>`:'';
     const rl=l.role_label?` «${esc(l.role_label)}»`:'';
-    const dt=l.detail?` (${esc(l.detail)})`:'';
+    const dt=l.detail?` (${esc(l.detail)})`:'';   // причина/прощальне слово (left/kicked)
     return `<div class="logrow">${who} ${EVLBL[l.event]||l.event}${tgt}${rl}${dt}
       <span class="st" style="float:right">${new Date(l.created_at).toLocaleDateString('uk')}</span></div>`;
-  }).join('') || '<div class="sum">Історія порожня.</div>';
+  }).join('');
+  $('ctab').innerHTML = rows ? `<div class="histscroll">${rows}</div>` : '<div class="sum">Історія порожня.</div>';
 }
 function renderRules(){
   const r=(S.cur.detail||{}).rules;
@@ -878,8 +891,34 @@ async function act(fn, args, after){
   return true;
 }
 const reopen=async()=>{ await openCommunity(S.cur.id,true); };
-async function leaveCommunity(id){ if(confirm('Вийти зі спільноти?')) if(await act('community_leave',{p_community:id})){ await loadMineAndPending(); backToList(); } }
-async function kickMember(pid){ if(confirm('Виключити учасника?')) await act('community_kick',{p_community:S.cur.id,p_target:pid},reopen); }
+// Вихід із спільноти — вікно з НЕОБОВ'ЯЗКОВИМ прощальним словом (іде в історію).
+function leaveCommunity(id){
+  modal(`<div class="mhead"><h3>Вийти зі спільноти</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label>Прощальне слово (необов'язково)</label>
+        <textarea id="lv-reason" maxlength="500" placeholder="Чому йдеш? Можна лишити порожнім."></textarea></div>
+      <button class="act warn" id="lv-go">Вийти</button><div id="lv-msg"></div>
+    </div>`);
+  $('lv-go').onclick=async()=>{
+    const r=$('lv-reason').value.trim()||null;
+    if(await act('community_leave',{p_community:id,p_reason:r})){ closeModal(); await loadMineAndPending(); backToList(); }
+  };
+}
+// Виключення — вікно з НЕОБОВ'ЯЗКОВОЮ причиною (її пише той, хто виключає; іде в історію).
+function kickMember(pid){
+  const m=(S.cur.members||[]).find(x=>x.profile_id===pid);
+  const nm=(m&&m.display_name)||'учасника';
+  modal(`<div class="mhead"><h3>Виключити ${esc(nm)}</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label>Причина (необов'язково)</label>
+        <textarea id="kk-reason" maxlength="500" placeholder="За що виключаєш? Можна лишити порожнім."></textarea></div>
+      <button class="act warn" id="kk-go">Виключити</button><div id="kk-msg"></div>
+    </div>`);
+  $('kk-go').onclick=async()=>{
+    const r=$('kk-reason').value.trim()||null;
+    if(await act('community_kick',{p_community:S.cur.id,p_target:pid,p_reason:r},reopen)) closeModal();
+  };
+}
 async function postToWall(){ const b=$('p-body').value.trim(); if(!b) return; if(await act('community_post',{p_community:S.cur.id,p_body:b},reopen)){} }
 async function pinPost(id,on){ await act('community_post_pin',{p_post:id,p_pinned:on},reopen); }
 async function delPost(id){ if(confirm('Видалити пост?')) await act('community_post_delete',{p_post:id},reopen); }
