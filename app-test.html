@@ -438,8 +438,8 @@
         <b id="my-name">—</b>
         <span id="my-email"></span>
         <div style="margin-top:5px">
-          <a href="profile-stage.html" target="_blank" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">👤 Мій профіль</a>
-          <a href="community-stage.html" target="_blank" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">🍻 Спільноти</a>
+          <a href="profile-stage.html" target="_blank" class="win-open" data-title="👤 Профіль" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">👤 Мій профіль</a>
+          <a href="community-stage.html" target="_blank" class="win-open" data-title="🍻 Спільноти" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">🍻 Спільноти</a>
           <button class="ghost" id="btn-log" style="padding:3px 8px;font-size:13px">📋 Журнал</button>
           <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:13px">вийти</button>
         </div>
@@ -5516,6 +5516,24 @@ function closeModal(){ $('modal-host').innerHTML = ''; }
 
 // =====================================================================
 boot();
+</script>
+<!-- Профіль/Спільноти → вікном на борді, а не новою вкладкою. Класичний
+     (не module) скрипт: делегує клік по `.win-open` і, коли кабінет живе
+     в iframe борда, постить `boorbit:openwin` у parent. Standalone (не в
+     iframe) — лишається старий target="_blank". -->
+<script>
+document.addEventListener('click', function(e){
+  var a = e.target.closest && e.target.closest('.win-open');
+  if(!a) return;
+  if(window.parent && window.parent !== window){
+    e.preventDefault();
+    window.parent.postMessage({
+      type:'boorbit:openwin',
+      href:a.getAttribute('href'),
+      title:a.getAttribute('data-title') || a.textContent.trim()
+    }, '*');
+  }
+});
 </script>
 </body>
 </html>

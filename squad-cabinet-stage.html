@@ -570,9 +570,9 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
       <div class="hstat bank"><span class="k">Мій Bank <span class="priv">лише я</span></span><span class="v tnum" id="h-bank">—</span></div>
       <div class="hstat"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div>
       <div class="me"><span class="av" id="h-av">—</span><span id="my-name" style="font-family:var(--mono);font-weight:600">—</span>
-        <a href="profile-stage.html" target="_blank" class="btn ghost sm" style="margin-left:4px;text-decoration:none">👤 Мій профіль</a>
-        <a href="community-stage.html" target="_blank" class="btn ghost sm" style="margin-left:4px;text-decoration:none">🍻 Спільноти</a>
-        <a href="shop-stage.html" target="_blank" class="btn ghost sm" style="margin-left:4px;text-decoration:none">🏪 Крамниця</a>
+        <a href="profile-stage.html" target="_blank" class="btn ghost sm win-open" data-title="👤 Профіль" style="margin-left:4px;text-decoration:none">👤 Мій профіль</a>
+        <a href="community-stage.html" target="_blank" class="btn ghost sm win-open" data-title="🍻 Спільноти" style="margin-left:4px;text-decoration:none">🍻 Спільноти</a>
+        <a href="shop-stage.html" target="_blank" class="btn ghost sm win-open" data-title="🏪 Крамниця" style="margin-left:4px;text-decoration:none">🏪 Крамниця</a>
         <button id="btn-logout" class="btn ghost sm" style="margin-left:4px">Вийти</button></div>
     </div>
     <nav class="tabs" id="tabs"></nav>
@@ -2086,6 +2086,22 @@ function viewAdmin(){
 
 sb.auth.onAuthStateChange((_e, session)=>{ if(session) boot(); });
 boot();
+</script>
+<!-- Профіль/Спільноти/Крамниця → вікном на борді (test.html хостить цей
+     кабінет), а не новою вкладкою. Класичний скрипт, делегує `.win-open`. -->
+<script>
+document.addEventListener('click', function(e){
+  var a = e.target.closest && e.target.closest('.win-open');
+  if(!a) return;
+  if(window.parent && window.parent !== window){
+    e.preventDefault();
+    window.parent.postMessage({
+      type:'boorbit:openwin',
+      href:a.getAttribute('href'),
+      title:a.getAttribute('data-title') || a.textContent.trim()
+    }, '*');
+  }
+});
 </script>
 </body>
 </html>
