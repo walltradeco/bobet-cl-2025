@@ -1657,6 +1657,19 @@
     transition:background .15s;
   }
   #cabinet-btn:hover{background:var(--gold-soft);}
+  /* Профіль / Спільноти — вікна-модалки (openWin), кнопки поруч із кабінетом */
+  .hdr-btn2{
+    background:transparent; border:1px solid var(--line); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:9px 14px;
+    border-radius:6px; cursor:pointer; margin-top:8px; margin-left:8px;
+    transition:border-color .15s,color .15s;
+  }
+  .hdr-btn2:hover{border-color:var(--gold); color:var(--gold);}
+  .hdr-btn2:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  /* 👤 біля імені гравця → профіль (окрема іконка, клік по тексту не чіпаємо) */
+  .pf-ic{display:inline-block; margin-left:5px; font-size:.85em; opacity:.55; cursor:pointer;
+    text-decoration:none; vertical-align:baseline; filter:grayscale(.3);}
+  .pf-ic:hover{opacity:1;}
   #cabinet-btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
 
   #cabinet-overlay{
@@ -1953,6 +1966,8 @@
         <div id="updated-at">Завантаження...</div>
         <button id="refresh-btn">⟳ Оновити дані</button>
         <button id="cabinet-btn">⚽ Кабінет</button>
+        <button id="profile-btn" class="hdr-btn2" type="button">👤 Профіль</button>
+        <button id="comm-btn" class="hdr-btn2" type="button">🍻 Спільноти</button>
       </div>
     </div>
     <!-- Підписи над навігацією: у медалей уже стоїть пара
@@ -5446,6 +5461,61 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
     if (e.origin !== location.origin) return;   // лише свій кабінет (той самий домен)
     const d = e.data;
     if(d && typeof d === 'object' && d.type === 'boorbit:openwin') openWin(d.href, d.title);
+  });
+})();
+
+/* ======== ПРОФІЛЬ / СПІЛЬНОТИ: кнопки + 👤 біля імені ========
+   Вікна відкриває той самий openWin (winmodal), що й для кабінету: шлемо собі
+   повідомлення 'boorbit:openwin'. ⚠️ Адреси зібрані в ДВОХ константах — це
+   єдине місце, яке promote.py міняє при промоуті (profile-stage → profile). */
+const PROFILE_URL   = 'profile-stage.html';
+const COMMUNITY_URL = 'community-stage.html';
+function openBoorbitWin(href, title){
+  window.postMessage({ type:'boorbit:openwin', href, title }, location.origin);
+}
+document.getElementById('profile-btn').addEventListener('click',
+  () => openBoorbitWin(PROFILE_URL, '👤 Профіль'));
+document.getElementById('comm-btn').addEventListener('click',
+  () => openBoorbitWin(COMMUNITY_URL, '🍻 Спільноти'));
+
+/* 👤 біля імені: ім'я → profile_id з публічної вьюхи profile_overview (лише
+   ті, хто має профіль; архівні гравці без профілю іконки не мають). Іконка —
+   ОКРЕМИЙ елемент, клік по самому імені (сортування, розгортання) не чіпаємо.
+   Борд перемальовується цілком, тому стежимо MutationObserver-ом. */
+(function(){
+  let byName = null;
+  const norm = t => (t || '').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').trim();
+  async function loadNames(){
+    try{
+      const rows = await sbGet('profile_overview?select=profile_id,display_name&display_name=not.is.null');
+      byName = {};
+      rows.forEach(r => { byName[norm(r.display_name)] = r.profile_id; });
+    }catch(e){ byName = {}; }
+  }
+  function decorate(){
+    if(!byName || document.body.classList.contains('embed')) return;
+    const root = document.getElementById('content');
+    if(!root) return;
+    root.querySelectorAll('th, td, .lb-name, .gp-name').forEach(el => {
+      if(el.querySelector('.pf-ic') || el.children.length > 2) return;
+      const pid = byName[norm(el.textContent)];
+      if(!pid) return;
+      const a = document.createElement('a');
+      a.className = 'pf-ic'; a.textContent = '👤'; a.title = 'Відкрити профіль';
+      a.href = PROFILE_URL + '?id=' + pid;
+      a.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        openBoorbitWin(a.getAttribute('href'), '👤 Профіль');
+      });
+      el.appendChild(a);
+    });
+  }
+  let t = null;
+  function schedule(){ clearTimeout(t); t = setTimeout(decorate, 120); }
+  loadNames().then(() => {
+    decorate();
+    const root = document.getElementById('content');
+    if(root) new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
   });
 })();
 
