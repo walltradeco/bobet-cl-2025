@@ -1016,16 +1016,44 @@ function openTransfer(){
     if(!confirm('Передати засновництво? Ти втратиш ексклюзивні права власника.')) return;
     if(await act('community_transfer_founder',{p_community:S.cur.id,p_new:who},reopen)) closeModal(); };
 }
-function openInvite(){
-  // список профілів, що НЕ у складі (з community_card ми не маємо людей — беремо з усіх, кого бачимо в member_list інших? простіше — по display_name пошук через profiles RLS не дасть чужих)
+async function openInvite(){
+  // Пікер зі списку профілів системи (довідник profile_directory, 473) —
+  // тих, хто ще НЕ у складі цієї спільноти. Замість вставляння UUID.
+  const memberIds=new Set((S.cur.members||[]).map(m=>m.profile_id));
   modal(`<div class="mhead"><h3>Запросити людину</h3><button class="mx">✕</button></div>
-    <div class="mbody"><div class="st" style="margin-bottom:8px">Постав ID профілю або обери зі списку учасників інших спільнот (майбутнє — пошук за іменем).</div>
-      <div class="field"><label>Profile ID (uuid)</label><input id="iv-id" placeholder="uuid профілю"></div>
-      <button class="act" id="iv-go">Запросити</button><div id="iv-msg"></div></div>`);
-  $('iv-go').onclick=async()=>{ const id=$('iv-id').value.trim(); if(!id) return;
+    <div class="mbody">
+      <div class="st" style="margin-bottom:8px">Обери людину зі списку профілів системи.</div>
+      <div class="field"><input id="iv-q" placeholder="Пошук за іменем…" autocomplete="off"></div>
+      <div id="iv-list" class="histscroll" style="margin-top:4px">Завантаження…</div>
+      <div id="iv-msg" class="msg"></div>
+    </div>`);
+  const { data, error }=await sb.from('profile_directory').select('id,display_name,avatar_emoji').order('display_name');
+  if(error){ $('iv-list').innerHTML=`<div class="st">Не вдалось завантажити список: ${esc(error.message)}</div>`; return; }
+  const people=(data||[]).filter(p=>!memberIds.has(p.id));
+  const invited=new Set();
+  const render=(q)=>{
+    q=(q||'').trim().toLowerCase();
+    const rows=people.filter(p=>!q || (p.display_name||'').toLowerCase().includes(q));
+    if(!rows.length){ $('iv-list').innerHTML='<div class="st">Нікого не знайдено (усі вже у складі?).</div>'; return; }
+    $('iv-list').innerHTML=rows.map(p=>{
+      const done=invited.has(p.id);
+      return `<div class="mrow"><span class="nm">${esc(p.avatar_emoji||'👤')} ${esc(p.display_name||'—')}</span>
+        <span class="rroles"></span>
+        ${done?'<span class="chip">✓ запрошено</span>'
+             :`<button class="ghost sm" data-inv="${esc(p.id)}">Запросити</button>`}</div>`;
+    }).join('');
+  };
+  render('');
+  $('iv-q').oninput=e=>render(e.target.value);
+  $('iv-list').onclick=async e=>{
+    const b=e.target.closest('[data-inv]'); if(!b) return;
+    const id=b.dataset.inv; b.disabled=true; b.textContent='…';
     const { error }=await sb.rpc('community_invite',{p_community:S.cur.id,p_target:id});
-    if(error){ $('iv-msg').className='msg err'; $('iv-msg').textContent=error.message; return; }
-    $('iv-msg').className='msg ok'; $('iv-msg').textContent='Запрошення надіслано.'; };
+    const msg=$('iv-msg');
+    if(error){ b.disabled=false; b.textContent='Запросити'; msg.className='msg err'; msg.textContent=error.message; return; }
+    invited.add(id); msg.className='msg ok'; msg.textContent='Запрошення надіслано.';
+    render($('iv-q').value);
+  };
 }
 function openRelAdd(){
   const targets=S.list.filter(c=>c.id!==S.cur.id);
