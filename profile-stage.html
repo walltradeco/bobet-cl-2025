@@ -70,7 +70,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
   border:3px solid var(--panel);border-radius:50%;color:#1a1b1c;background:var(--gold);box-shadow:0 5px 14px rgba(0,0,0,.3)}
 .identity{min-width:0}
 .eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
-.champ-label .cl-seal{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#1a1b1c;flex:none}
+.champ-label .cl-seal{display:inline-grid;place-items:center;width:21px;height:21px;border-radius:50%;background:var(--gold);color:#1a1b1c;flex:none}
 .champ-label .cl-seal .ic{width:11px;height:11px;stroke-width:2}
 .champ-label{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border:1px solid rgba(var(--gold-rgb),.45);border-radius:20px;
   color:var(--gold);background:rgba(var(--gold-rgb),.08);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em}
@@ -413,6 +413,8 @@ const STATUS_LABEL={active:'триває',finished:'завершено',draft:'�
 // ⚠️ HIDE_CARDS: у БОЙОВІЙ версії (profile.html) картки/крамниця/колекція сховані — Squad Mode і
 // картки лишаються лише на STAGE. Одна константа: promote.py перемикає false → true при промоуті.
 const HIDE_CARDS=false;
+// суцільна корона для бейджів чемпіона (контурна ic('crown') на 11-16px зливалась у пляму)
+const crownIc=(sz)=>`<svg class="crown-fill" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" aria-hidden="true"><path d="M3 7.5l4.6 4.2L12 4.5l4.4 7.2L21 7.5l-1.6 9.5H4.6z"/><rect x="4.6" y="18.3" width="14.8" height="2.4" rx="1"/></svg>`;
 // ── Огляд-конструктор: реєстр модулів ──
 const OVMODS={
   cups:{name:'Кубки',em:'🏆',pick:true,cap:null,link:'trophies'},        // без лімітів (рішення Богдана)
@@ -547,18 +549,14 @@ function renderHead(){
   const avInner = esc(initials(name));                        // емодзі-аватар прибрано — лише ініціали
   const avStyle = '';                                         // аватар БЕЗ кольору (колір лише на шапці)
   const frame = champ
-    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${ic('crown',16)}</span></div>`
+    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${crownIc(19)}</span></div>`
     : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
   const heroStyle = col ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
 
   // чемпіонський бейдж + титули
   let eyebrow='';
   if(champ){
-    const titleTours=S.trophies.filter(t=>t.phase_kind==='general' && t.place===1).map(t=>t.tournament);
-    const cnt=ov.title_count||titleTours.length;
-    const seas=`${cnt>1?'×'+cnt+' · ':''}${titleTours.join(' · ')}`.toUpperCase();
-    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${ic('crown',11)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span>
-      <span class="champ-season">${esc(seas)}</span></div>`;
+    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span></div>`;
   }
   // підпис: архетип + найяскравіший рекорд
   const arch=S.portrait?S.portrait.archetype:null;
@@ -568,7 +566,7 @@ function renderHead(){
 
   const stat=`<div class="stats">
     <div class="stat"><b>${num(ov.medals_count)}</b><span>медал${ov.medals_count===1?'ь':(ov.medals_count>=2&&ov.medals_count<=4?'і':'ей')}</span></div>
-    <div class="stat"><b>${num(ov.tournaments_count)}</b><span>турнір${ov.tournaments_count===1?'':'и'}</span></div>
+    <div class="stat"><b>${num(ov.tournaments_count)}</b><span>${plural(ov.tournaments_count||0,'турнір','турніри','турнірів')}</span></div>
     ${HIDE_CARDS?'':`<div class="stat"><b>${num(ov.cards_count)}</b><span>карток</span></div>`}
     <div class="stat"><b>${num(ov.communities_count)}</b><span>спільнот${ov.communities_count===1?'а':''}</span></div>
   </div>`;
@@ -632,7 +630,7 @@ function ovEffLayout(){                                   // ефективна 
 }
 function ovItems(k){                                      // усі елементи модуля
   if(k==='cups')       return S.trophies.filter(isTitle).slice().sort((a,b)=>a.tournament_order-b.tournament_order);
-  if(k==='medals')     return S.trophies.filter(t=>!isTitle(t)).slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
+  if(k==='medals')     return S.trophies.slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
   if(k==='records')    return S.noms;
   if(k==='collection') return S.cards;
   return [];
@@ -658,7 +656,7 @@ function ovChipLabel(k,it){
 }
 function cupCardHTML(t){                                   // кубок = 🏆 + назва турніру (без «Чемпіон BOBET»)
   return `<div class="title-card"><span class="tc-ic">🏆</span>
-    <div><strong>${esc(t.tournament)}</strong><span>загальний залік</span></div></div>`;
+    <div><strong>${esc(t.tournament)}</strong><span>General</span></div></div>`;
 }
 function ovModContent(k){                                  // ГОЛОВНА колонка (повні рендери); '' → сховати
   if(k==='cups'){ const it=ovPick('cups'); if(!it.length) return '';
@@ -816,7 +814,7 @@ function renderTrophies(box){
   const titles=S.trophies.filter(isTitle).sort((a,b)=>a.tournament_order-b.tournament_order);
   const cupSec = titles.length ? `<h4 class="cup-h">🏆 Кубки</h4><div class="title-strip">${titles.map(cupCardHTML).join('')}</div>` : '';
   // МЕДАЛІ — усе, крім титулів; від золота до бронзи (як посортовано на борді)
-  const medals=S.trophies.filter(t=>!isTitle(t)).sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
+  const medals=S.trophies.slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
   const awards=medals.map(t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
     <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BOBET · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
   const medalSec = medals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${awards}</div>` : '';
@@ -825,7 +823,7 @@ function renderTrophies(box){
 }
 function trophyPlaceLabel(t){
   const m=t.place===1?'золото':t.place===2?'2 місце':'3 місце';
-  return t.phase_kind==='general'?(t.place===1?'переможець загального заліку':m+' загального заліку'):m+' етапу';
+  return t.phase_kind==='general'?m+' General':m+' етапу';   // термінологія як у Нагородах: General
 }
 
 // ── КОЛЕКЦІЯ ──
@@ -979,7 +977,7 @@ const _ord={BoBet:0,PSL:1,Squad:2};
 function sortTours(a,b){ return (_ord[a.league]??9)-(_ord[b.league]??9); }
 function playRow(t){
   return `<div class="play-row"><span class="lg ${esc(t.league)}">${esc(t.league)}</span>
-    <div class="pn">${esc(t.tournament_name)} <small>· ${esc(t.kind)} · ${STATUS_LABEL[t.status]||esc(t.status||'')}</small></div>
+    <div class="pn">${esc(t.tournament_name)} <small>· ${esc(t.kind==='загальний залік'?'General':t.kind)} · ${STATUS_LABEL[t.status]||esc(t.status||'')}</small></div>
     <div class="pp">${t.place!=null?t.place:'—'} <small>${t.place!=null?'місце':''}</small></div></div>`;
 }
 function wireGo(root){ root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go)); }
