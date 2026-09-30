@@ -481,6 +481,8 @@ async function loadProfile(){
   ]);
   S.tours=t; S.cards=c; S.comms=m; S.trophies=tr; S.noms=nm;
   S.records=rec[0]||null; S.portrait=por[0]||null;
+  // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
+  S.pending = S.isOwn ? await R('my_community_pending',{}) : [];
   // розкладка вітрини «Огляд» (конструктор, 465); немає → дефолт
   const lay=await sb.from('profile_layout').select('module_order,module_on,featured')
     .eq('profile_id',S.view).maybeSingle().then(r=>r.error?null:r.data).catch(()=>null);
@@ -756,7 +758,7 @@ function portraitTraits(p){
 function commRail(){
   if(!S.comms.length) return `<div class="empty" style="margin-top:12px">Ще не в жодній спільноті.</div>`;
   return `<div class="comm-list">${S.comms.slice(0,3).map(c=>{
-    const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Власник':'учасник');
+    const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Засновник':'учасник');
     return `<a class="comm" href="community-stage.html?id=${esc(c.community_id)}">
       <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
       <div class="comm-copy"><strong>${esc(c.name)}</strong><span>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</span></div>
@@ -873,15 +875,52 @@ function renderPortrait(box){
 }
 
 // ── СПІЛЬНОТИ ──
+// Відповісти на запрошення (invite → прийняти/відхилити) або заявку
+// (request → схвалити/відхилити), тоді освіжити pending + список спільнот.
+async function respondPending(id, kind, ok){
+  const fn  = kind==='invite' ? 'community_respond_invite' : 'community_respond_request';
+  const arg = kind==='invite' ? { p_invite:id, p_accept:ok } : { p_invite:id, p_approve:ok };
+  const { error }=await sb.rpc(fn, arg);
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return; }
+  const R=(f,a)=>sb.rpc(f,a).then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+  S.pending = await R('my_community_pending',{});
+  S.comms   = await R('profile_communities',{ p_profile:S.view });
+  renderTab();
+}
 function renderCommunities(box){
-  if(!S.comms.length){ box.innerHTML=`<section class="panel"><div class="empty">Ще не в жодній спільноті. Приєднайся у розділі «Спільноти».</div></section>`; return; }
-  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Спільноти</h3><p>Клуби та бари, у яких перебуває гравець.</p></div><span class="champ-season">${S.comms.length} СПІЛЬНОТ${S.comms.length===1?'А':''}</span></div>
-    <div class="comm-big-grid">${S.comms.map(c=>{
-      const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Власник':'учасник');
-      return `<a class="comm-big" href="community-stage.html?id=${esc(c.community_id)}" style="text-decoration:none;color:inherit;display:block">
-        <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
-        <h4>${esc(c.name)}${c.is_owner?' <span class="founder">Засновник</span>':''}</h4><p>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</p></a>`;
-    }).join('')}</div></section>`;
+  let html='';
+  // Блок запрошень/заявок — лише на СВОЄМУ профілі
+  if(S.isOwn && S.pending && S.pending.length){
+    html += `<section class="panel"><div class="panel-title"><div><h3>Запрошення в спільноти</h3>
+        <p>Тебе кличуть або чекають твого рішення.</p></div>
+        <span class="champ-season">${S.pending.length}</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">${S.pending.map(p=>{
+        const inv=p.kind==='invite';
+        const label=inv?`Запрошення в «${esc(p.community_name)}»`
+                       :`Заявка від ${esc(p.subject_name||'—')} у «${esc(p.community_name)}»`;
+        const yes=inv?'Прийняти':'Схвалити';
+        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)">
+          <span style="flex:1;min-width:180px">${label}</span>
+          <button class="pbtn" data-pend="${esc(p.invite_id)}" data-kind="${p.kind}" data-ok="1"
+            style="border:1px solid rgba(var(--gold-rgb),.4);color:var(--gold);background:transparent;border-radius:7px;padding:4px 12px;cursor:pointer;font-weight:600">${yes}</button>
+          <button class="pbtn" data-pend="${esc(p.invite_id)}" data-kind="${p.kind}" data-ok="0"
+            style="border:1px solid var(--line);color:var(--text-dim);background:transparent;border-radius:7px;padding:4px 12px;cursor:pointer">Відхилити</button>
+        </div>`;
+      }).join('')}</div></section>`;
+  }
+  if(!S.comms.length){
+    html += `<section class="panel"><div class="empty">Ще не в жодній спільноті. Приєднайся у розділі «Спільноти».</div></section>`;
+  } else {
+    html += `<section class="panel"><div class="panel-title"><div><h3>Спільноти</h3><p>Клуби та бари, у яких перебуває гравець.</p></div><span class="champ-season">${S.comms.length} СПІЛЬНОТ${S.comms.length===1?'А':''}</span></div>
+      <div class="comm-big-grid">${S.comms.map(c=>{
+        const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Засновник':'учасник');
+        return `<a class="comm-big" href="community-stage.html?id=${esc(c.community_id)}" style="text-decoration:none;color:inherit;display:block">
+          <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
+          <h4>${esc(c.name)}${c.is_owner?' <span class="founder">Засновник</span>':''}</h4><p>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</p></a>`;
+      }).join('')}</div></section>`;
+  }
+  box.innerHTML=html;
+  box.querySelectorAll('[data-pend]').forEach(b=>b.onclick=()=>respondPending(b.dataset.pend,b.dataset.kind,b.dataset.ok==='1'));
 }
 
 // ── «де грає» рядок ──

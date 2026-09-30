@@ -571,7 +571,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
       <div class="hstat"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div>
       <div class="me"><span class="av" id="h-av">—</span><span id="my-name" style="font-family:var(--mono);font-weight:600">—</span>
         <a href="profile-stage.html" target="_blank" class="btn ghost sm win-open" data-title="👤 Профіль" style="margin-left:4px;text-decoration:none">👤 Мій профіль</a>
-        <a href="community-stage.html" target="_blank" class="btn ghost sm win-open" data-title="🍻 Спільноти" style="margin-left:4px;text-decoration:none">🍻 Спільноти</a>
+        <a id="btn-communities" href="community-stage.html" target="_blank" class="btn ghost sm win-open" data-title="🍻 Спільноти" style="margin-left:4px;text-decoration:none">🍻 Спільноти</a>
         <a href="shop-stage.html" target="_blank" class="btn ghost sm win-open" data-title="🏪 Крамниця" style="margin-left:4px;text-decoration:none">🏪 Крамниця</a>
         <button id="btn-logout" class="btn ghost sm" style="margin-left:4px">Вийти</button></div>
     </div>
@@ -2103,5 +2103,29 @@ document.addEventListener('click', function(e){
   }
 });
 </script>
+<!-- Бейдж лічильника запрошень/заявок на кнопці «🍻 Спільноти» (self-contained:
+     читає сесію з localStorage supabase-js, опитує my_community_pending). -->
+<script>
+(function(){
+  var A=document.getElementById('btn-communities'); if(!A) return;
+  var REF='wsdamzcezumjmgxmvakw', KEY='sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo', badge=null;
+  function tok(){ try{ var r=localStorage.getItem('sb-'+REF+'-auth-token'); return r?(JSON.parse(r)||{}).access_token:null; }catch(e){ return null; } }
+  function upd(n){
+    if(!n){ if(badge){ badge.remove(); badge=null; } return; }
+    if(!badge){ badge=document.createElement('span');
+      badge.style.cssText='display:inline-block;margin-left:5px;min-width:16px;height:16px;line-height:16px;text-align:center;font-size:11px;font-weight:700;background:#F4C430;color:#1a1206;border-radius:9px;padding:0 4px;vertical-align:middle';
+      A.appendChild(badge); }
+    badge.textContent=n; A.title=n+' запрошень/заявок чекають на відповідь';
+  }
+  function poll(){ var t=tok(); if(!t) return;
+    fetch('https://'+REF+'.supabase.co/rest/v1/rpc/my_community_pending',{method:'POST',
+      headers:{apikey:KEY,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:'{}'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(rows){ if(rows) upd(rows.length); }).catch(function(){});
+  }
+  poll(); setInterval(poll, 20000);
+})();
+</script>
+
 </body>
 </html>
