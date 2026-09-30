@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Профіль · BoOrbit (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<!-- шрифти BoBet — лише для екрана входу (вхід спільний для всіх ліг) -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d1014; --panel:#15191e; --panel2:#1a1f25; --panel3:#20262d;
+  --line:rgba(255,255,255,.085); --line2:rgba(255,255,255,.14);
+  --text:#f2efe7; --copy:#a9adb0; --text-dim:#767c82;
+  --gold:#d9b45b; --gold-rgb:217,180,91; --gold-d:#8a7228;
+  --blue:#7e9dbb; --blue-rgb:126,157,187; --blue-d:#3a597e;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14);   /* лише екран входу */
+  --red:#d87976;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1100px 520px at 88% -12%, rgba(var(--blue-rgb),.09) 0%, transparent 40%), var(--bg)}
+body:has(#screen-login:not(.hide)){background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
+h1,h2,h3,h4{font-family:var(--mono);letter-spacing:.01em;margin:0}
+a{color:var(--blue);text-decoration:none}
+a:hover{text-decoration:underline}
+button{font-family:var(--mono);cursor:pointer;color:inherit}
+.hide{display:none!important}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px 80px}
+.ic{width:1em;height:1em;display:inline-block;vertical-align:-.13em;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.empty{padding:26px;border:1px dashed var(--line2);border-radius:14px;text-align:center;color:var(--text-dim);font-size:13px}
+.sum{font-size:13px;color:var(--text-dim)}
+
+/* топбар */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:20px 0 8px}
+.logo{display:flex;align-items:center;gap:11px}
+.logo .sq{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;color:#aac0d3;
+  border:1px solid rgba(var(--blue-rgb),.28);background:linear-gradient(145deg,rgba(var(--blue-rgb),.15),rgba(var(--gold-rgb),.07))}
+.logo h1{font-size:21px;line-height:1}
+.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.16em;text-transform:uppercase}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px;font-size:13px;color:var(--copy)}
+.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid rgba(201,108,105,.55);border-radius:6px;padding:2px 8px;letter-spacing:.1em}
+.who b{color:var(--text)}
+.abadge{font-size:10px;font-weight:700;color:var(--gold);letter-spacing:.1em}
+button.ghost{border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.025);padding:8px 13px;font-size:13px;color:var(--text)}
+button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9px;padding:9px 16px;font-weight:700;font-size:13px}
+
+/* герой профілю */
+.hero{position:relative;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:22px;align-items:center;
+  min-height:172px;padding:26px 28px;overflow:hidden;border:1px solid var(--line);border-radius:20px;margin-top:6px;
+  background:linear-gradient(115deg,rgba(var(--blue-rgb),.08),transparent 42%),var(--panel)}
+.hero.champ{border-color:rgba(var(--gold-rgb),.22);
+  background:radial-gradient(circle at 80% 10%,rgba(var(--gold-rgb),.13),transparent 34%),linear-gradient(115deg,rgba(var(--blue-rgb),.10),transparent 38%),var(--panel)}
+.hero.champ::before{content:"";position:absolute;left:-1px;top:20px;bottom:20px;width:4px;border-radius:0 5px 5px 0;
+  background:linear-gradient(180deg,var(--gold),var(--blue));box-shadow:0 0 18px rgba(var(--gold-rgb),.28)}
+.frame{position:relative;width:104px;height:104px;display:grid;place-items:center;border-radius:30px;flex:none}
+.frame .av{font-family:var(--mono);font-weight:700;font-size:34px;color:#e9e4d8;letter-spacing:.02em;line-height:1}
+.frame.plain{border:1px solid var(--line2);background:var(--panel2)}
+.frame.champ{border:1px solid rgba(var(--gold-rgb),.76);background:linear-gradient(145deg,rgba(var(--gold-rgb),.18),rgba(var(--blue-rgb),.12));
+  box-shadow:0 0 0 5px var(--panel),0 0 0 6px rgba(var(--gold-rgb),.28),0 14px 34px rgba(0,0,0,.30),inset 0 1px 0 rgba(255,255,255,.10)}
+.frame.champ.glow{box-shadow:0 0 0 5px var(--panel),0 0 0 6px rgba(var(--gold-rgb),.28),0 14px 34px rgba(0,0,0,.30),0 0 26px rgba(var(--gold-rgb),.13),inset 0 1px 0 rgba(255,255,255,.10)}
+.frame.champ::after{content:"";position:absolute;inset:7px;border:1px solid rgba(255,255,255,.06);border-radius:23px}
+.frame.psl{--gold-rgb:166,194,215}
+.frame.squad{--gold-rgb:125,184,232}
+.crown-seal{position:absolute;right:-9px;bottom:-8px;z-index:2;width:34px;height:34px;display:grid;place-items:center;
+  border:3px solid var(--panel);border-radius:50%;color:#1a1b1c;background:var(--gold);box-shadow:0 5px 14px rgba(0,0,0,.3)}
+.identity{min-width:0}
+.eyebrow{display:flex;align-items:center;gap:10px;margin-bottom:9px;flex-wrap:wrap}
+.champ-label .cl-seal{display:inline-grid;place-items:center;width:17px;height:17px;border-radius:50%;background:var(--gold);color:#1a1b1c;flex:none}
+.champ-label .cl-seal .ic{width:11px;height:11px;stroke-width:2}
+.champ-label{display:inline-flex;align-items:center;gap:6px;padding:4px 9px 4px 4px;border:1px solid rgba(var(--gold-rgb),.45);border-radius:20px;
+  color:var(--gold);background:rgba(var(--gold-rgb),.08);font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.14em}
+.champ-season{color:var(--text-dim);font-size:10px;letter-spacing:.1em;font-family:var(--mono);text-transform:uppercase}
+.identity h2{font-size:31px;line-height:1.05;letter-spacing:-.02em}
+.who-sub{margin:6px 0 14px;color:var(--copy);font-size:13px}
+.stats{display:flex;flex-wrap:wrap;gap:20px}
+.stat{display:flex;align-items:baseline;gap:5px}
+.stat b{font-size:17px;font-weight:700;font-family:var(--mono)}
+.stat span{color:var(--text-dim);font-size:11px}
+.edit{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1px solid var(--line);border-radius:11px;
+  background:rgba(255,255,255,.025);color:var(--copy);font-size:12px;font-weight:600;align-self:flex-start}
+.edit .ic{width:14px;height:14px}
+.hactions{display:flex;flex-direction:column;gap:8px;align-items:flex-end}
+
+/* вкладки */
+.tabs{display:flex;gap:3px;margin-top:17px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{position:relative;border:0;background:transparent;color:var(--text-dim);padding:13px 15px 14px;white-space:nowrap;font-size:14px;font-weight:600}
+.tab.on{color:var(--text)}
+.tab.on::after{content:"";position:absolute;left:14px;right:14px;bottom:-1px;height:2px;border-radius:2px;background:var(--gold);box-shadow:0 0 12px rgba(var(--gold-rgb),.18)}
+
+/* сітка Огляду */
+.ov{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(250px,.72fr);gap:16px;align-items:start;margin-top:19px}
+.col{display:grid;gap:14px;align-content:start}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:14px;margin:2px 2px 0}
+.sec-head h3{font-size:18px}
+.link{border:0;background:transparent;color:var(--blue);font-size:12px;font-weight:600;cursor:pointer}
+.link:hover{text-decoration:underline}
+
+/* трофейна вітрина */
+.showcase{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(180px,.75fr);gap:12px}
+.hero-tr{position:relative;min-height:250px;padding:22px;overflow:hidden;border:1px solid rgba(var(--gold-rgb),.26);border-radius:17px;
+  background:radial-gradient(circle at 80% 16%,rgba(var(--gold-rgb),.15),transparent 38%),linear-gradient(135deg,rgba(var(--gold-rgb),.08),transparent 48%),var(--panel)}
+.hero-tr::after{content:"";position:absolute;right:-42px;bottom:-68px;width:190px;height:190px;border:1px solid rgba(var(--gold-rgb),.11);border-radius:50%;
+  box-shadow:0 0 0 25px rgba(var(--gold-rgb),.025),0 0 0 50px rgba(var(--gold-rgb),.018)}
+.tr-top{display:flex;align-items:center;justify-content:space-between;color:var(--text-dim);font-size:10px;letter-spacing:.1em;font-family:var(--mono)}
+.tr-mark{width:70px;height:70px;display:grid;place-items:center;margin:26px 0 18px;border:1px solid rgba(var(--gold-rgb),.30);border-radius:22px;
+  color:var(--gold);background:rgba(var(--gold-rgb),.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.06);font-size:30px}
+.hero-tr h4{position:relative;z-index:1;max-width:84%;font-size:22px;letter-spacing:-.01em}
+.hero-tr p{position:relative;z-index:1;margin:8px 0 0;color:var(--copy);font-size:12px}
+.mini-col{display:grid;grid-template-rows:1fr 1fr;gap:12px}
+.mini-tr{display:flex;flex-direction:column;justify-content:space-between;padding:17px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.mini-ic{width:34px;height:34px;display:grid;place-items:center;border-radius:10px;color:#a9bfd2;background:rgba(var(--blue-rgb),.12);font-size:16px}
+.mini-tr strong{display:block;margin-top:15px;font-size:13px;font-weight:600}
+.mini-tr span{display:block;margin-top:5px;color:var(--text-dim);font-size:10px}
+
+/* картки-контейнери */
+.card{padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.card-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:15px}
+.collectible{position:relative;aspect-ratio:1024/1536;overflow:hidden;border-radius:12px;border:1px solid rgba(var(--blue-rgb),.19);background:#12161b;cursor:pointer}
+.collectible.gold{border-color:rgba(var(--gold-rgb),.27)}
+.collectible:hover{border-color:var(--blue)}
+.collectible img{width:100%;height:100%;object-fit:contain;display:block}
+.card-tag{position:absolute;left:8px;top:8px;z-index:2;font-family:var(--mono);font-size:8px;font-weight:700;letter-spacing:.13em;color:#9fc0da}
+.gold .card-tag{color:var(--gold)}
+.card-name{position:absolute;left:8px;right:8px;bottom:9px;z-index:2;font-size:9px;line-height:1.3;color:#dadddd;text-shadow:0 1px 3px rgba(0,0,0,.85)}
+
+/* «де грає» */
+.play-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.play-row:first-of-type{border-top:0}
+.lg{font-family:var(--mono);font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;padding:3px 8px;border-radius:6px}
+.lg.BoBet{background:rgba(var(--gold-rgb),.16);color:var(--gold);border:1px solid var(--gold-d)}
+.lg.PSL{background:rgba(var(--blue-rgb),.16);color:var(--blue);border:1px solid var(--blue-d)}
+.lg.Squad{background:rgba(125,184,232,.16);color:#8dc0ec;border:1px solid #3a5f8a}
+.play-row .pn{flex:1;min-width:0;font-size:13px}
+.play-row .pn small{color:var(--text-dim)}
+.play-row .pp{font-family:var(--mono);font-weight:700;font-size:16px}
+.play-row .pp small{font-size:11px;color:var(--text-dim);font-weight:500}
+
+/* rail-картки */
+.side{padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--panel)}
+.side-title{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.side-title>div{display:flex;align-items:center;gap:8px}
+.side-title .ic{width:16px;height:16px;color:var(--blue)}
+.side-title h4{font-size:15px}
+.rec-list{display:grid;margin-top:12px}
+.rec{padding:11px 0;border-top:1px solid var(--line)}
+.rec:first-child{border-top:0}
+.rec-h{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.rec span{color:var(--text-dim);font-size:11px}
+.rec strong{font-size:15px;font-weight:600;font-family:var(--mono)}
+.rec-n{color:var(--text-dim);font-size:11px;line-height:1.45;margin-top:5px}
+.portrait-box{margin-top:12px;padding:15px;border-radius:13px;background:linear-gradient(135deg,rgba(var(--blue-rgb),.10),transparent),var(--panel2)}
+.portrait-box strong{display:block;font-size:16px}
+.portrait-box p{margin:6px 0 12px;color:var(--text-dim);font-size:11px;line-height:1.5}
+.traits{display:flex;flex-wrap:wrap;gap:6px}
+.trait{padding:5px 8px;border:1px solid var(--line);border-radius:7px;color:#9da3a6;font-size:10px}
+.comm-list{display:grid;gap:9px;margin-top:12px}
+.comm{display:grid;grid-template-columns:36px minmax(0,1fr) auto;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.014)}
+.comm-ic{width:36px;height:36px;display:grid;place-items:center;border-radius:10px;background:rgba(var(--blue-rgb),.10);font-size:18px}
+.comm-copy strong{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}
+.comm-copy span{display:block;margin-top:3px;color:var(--text-dim);font-size:10px}
+.owner{padding:3px 7px;border:1px solid rgba(var(--gold-rgb),.30);border-radius:6px;color:var(--gold);font-family:var(--mono);font-size:9px;font-weight:700;letter-spacing:.06em}
+.founder{padding:3px 9px;border:1px solid var(--line);border-radius:20px;color:var(--text-dim);font-family:var(--mono);font-size:9px;font-weight:600;letter-spacing:.04em;white-space:nowrap}
+
+/* окремі панелі вкладок */
+.panel{padding:22px;border:1px solid var(--line);border-radius:17px;background:var(--panel)}
+.panel-title{display:flex;justify-content:space-between;align-items:end;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.panel-title h3{font-size:21px}
+.panel-title p{margin:5px 0 0;color:var(--text-dim);font-size:11px}
+.title-strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-bottom:16px}
+.title-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid rgba(var(--gold-rgb),.32);border-radius:14px;
+  background:radial-gradient(circle at 88% -10%,rgba(var(--gold-rgb),.14),transparent 60%),var(--panel2)}
+.title-card .tc-ic{width:38px;height:38px;flex:none;display:grid;place-items:center;border-radius:11px;font-size:20px;background:rgba(var(--gold-rgb),.14);border:1px solid rgba(var(--gold-rgb),.32)}
+.title-card strong{display:block;font-size:14px;color:var(--gold);letter-spacing:.01em}
+.title-card span{display:block;color:var(--text-dim);font-size:11px;margin-top:2px}
+.cup-h{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin:0 0 11px}
+.cup-h+.cup-h,.title-strip+.cup-h{margin-top:22px}
+/* ── Огляд-конструктор ── */
+.ovhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.ovhead h3{font-size:21px}
+.ovbtn{display:inline-flex;align-items:center;gap:7px;padding:9px 13px;border:1px solid var(--line2);border-radius:10px;background:rgba(255,255,255,.03);color:var(--text);font-weight:600;font-size:13px;cursor:pointer}
+.ovbtn:hover{border-color:var(--gold-d)}
+.ovbtn.gold{background:var(--gold);color:#1a1206;border-color:var(--gold)}
+.ovbtn.reset{margin-right:auto}
+.ovmod{margin-bottom:26px}
+.ovmod:last-child{margin-bottom:0}
+.ovmod-h{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.ovmod-h .t{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);display:flex;gap:7px;align-items:center}
+/* редактор */
+.ed-hint{color:var(--text-dim);font-size:12px;margin-bottom:16px}
+.ed-mod{border:1px solid var(--line);border-radius:14px;background:var(--panel2);margin-bottom:12px;overflow:hidden}
+.ed-mod.off{opacity:.55}
+.ed-row{display:flex;gap:12px;align-items:center;padding:14px 16px}
+.ed-name{flex:1;min-width:0;font-family:var(--mono);font-weight:700;font-size:15px;display:flex;gap:9px;align-items:center}
+.ed-name .badge{font-family:var(--body);font-size:10px;font-weight:600;color:var(--text-dim);border:1px solid var(--line);border-radius:20px;padding:2px 8px;white-space:nowrap}
+.sw{width:42px;height:24px;border-radius:20px;border:1px solid var(--line2);background:var(--panel3);position:relative;cursor:pointer;flex:none;transition:.15s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:var(--text-dim);transition:.15s}
+.sw.on{background:rgba(24,180,122,.25);border-color:var(--green)}
+.sw.on::after{left:20px;background:var(--green)}
+.arrows{display:flex;gap:5px}
+.colsw{display:flex;gap:0;margin-left:auto;margin-right:12px;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.cbtn{background:transparent;border:0;color:var(--copy);font-size:12px;padding:6px 12px;cursor:pointer}
+.cbtn.on{background:rgba(214,175,86,.18);color:#e7c979;font-weight:700}
+.colsw+.arrows{margin-left:0}
+.arw{width:30px;height:30px;border:1px solid var(--line2);border-radius:8px;background:rgba(255,255,255,.03);color:var(--copy);cursor:pointer;font-size:15px;line-height:1}
+.arw:hover{border-color:var(--gold-d);color:var(--gold)}
+.arw:disabled{opacity:.3;cursor:default}
+.picker{padding:0 16px 16px;border-top:1px solid var(--line)}
+.picker .pl{font-size:11px;color:var(--text-dim);margin:12px 0 10px;font-family:var(--mono);letter-spacing:.06em}
+.chips{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--copy);cursor:pointer;font-size:12px;user-select:none}
+.chip .cb{width:15px;height:15px;border:1px solid var(--line2);border-radius:4px;display:grid;place-items:center;font-size:11px;color:transparent;flex:none}
+.chip.sel{border-color:var(--gold-d);background:rgba(var(--gold-rgb),.10);color:var(--text)}
+.chip.sel .cb{background:var(--gold);border-color:var(--gold);color:#1a1206}
+.ed-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.ed-gh{font-family:var(--mono);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text-dim);margin:8px 0 10px}
+.ed-gh:not(:first-child){margin-top:22px}
+.palrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 12px}
+.sw-col{width:26px;height:26px;border-radius:8px;border:1px solid var(--line2);cursor:pointer;padding:0}
+.sw-col:hover{outline:2px solid rgba(var(--gold-rgb),.5)}
+.palrow input[type=color]{width:40px;height:28px;border:1px solid var(--line2);border-radius:8px;background:none;cursor:pointer}
+.chrow{display:flex;gap:11px;align-items:center;margin:2px 0 6px}
+.chrow span{color:var(--copy);font-size:12px;line-height:1.4}
+.tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.award{min-height:130px;padding:18px;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--panel2)}
+.award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}
+.award .aw-ic{font-size:22px}
+.award h4{margin:14px 0 6px;font-size:15px}
+.award p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.5}
+.nom-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
+.nom{display:flex;gap:12px;align-items:flex-start;padding:14px;border:1px solid var(--line);border-radius:13px;background:var(--panel2)}
+.nom .nv{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--gold);line-height:1;min-width:42px}
+.nom .nb strong{display:block;font-size:13px}
+.nom .nb span{display:block;margin-top:3px;color:var(--text-dim);font-size:10px;line-height:1.45}
+.rec-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.rec-tile{min-height:110px;padding:18px;border:1px solid var(--line);border-radius:15px;background:var(--panel2)}
+.rec-tile span{color:var(--text-dim);font-size:10px;letter-spacing:.05em;text-transform:uppercase;font-family:var(--mono)}
+.rec-tile strong{display:block;margin-top:24px;font-size:26px;font-weight:700;font-family:var(--mono)}
+.coll-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px}
+.portrait-full{display:grid;grid-template-columns:180px minmax(0,1fr);gap:24px;align-items:stretch}
+.portrait-sym{min-height:230px;display:grid;place-items:center;border:1px solid rgba(var(--blue-rgb),.20);border-radius:20px;color:#a6bdd0;
+  background:radial-gradient(circle,rgba(var(--blue-rgb),.14),transparent 60%),var(--panel2)}
+.portrait-sym .ic{width:54px;height:54px}
+.portrait-copy h3{margin:6px 0 8px;font-size:26px}
+.portrait-copy p{margin:0 0 20px;max-width:600px;color:var(--copy);font-size:13px;line-height:1.6}
+.bars{display:grid;gap:12px;max-width:520px}
+.bar-row{display:grid;grid-template-columns:150px 1fr auto;align-items:center;gap:12px;color:#9ca1a4;font-size:11px}
+.bar{height:5px;overflow:hidden;border-radius:5px;background:rgba(255,255,255,.05)}
+.bar b{display:block;height:100%;border-radius:inherit;background:var(--blue)}
+.comm-big-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.comm-big{min-height:130px;padding:18px;border:1px solid var(--line);border-radius:15px;background:var(--panel2)}
+.comm-big .comm-ic{margin-bottom:16px}
+.comm-big h4{font-size:15px}
+.comm-big p{margin:6px 0 0;color:var(--text-dim);font-size:10px}
+.launch{display:flex;gap:8px;flex-wrap:wrap}
+.launch a{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:9px 13px;font-size:12px;color:var(--copy);font-weight:600;display:inline-flex;align-items:center;gap:7px}
+.launch a:hover{border-color:var(--blue);text-decoration:none}
+
+/* повний DNA-портрет (перенесено з борди «Портрети гравців», акценти orbit) */
+.dna-head{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.dna-head .eyebrow2{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--text-dim)}
+.dna-head h3{font-family:var(--mono);font-size:27px;margin:4px 0 0}
+.dna-head .arch{color:var(--blue);font-size:14px;margin-top:4px}
+.dna-head .arch-note{color:var(--text-dim);font-size:12.5px;margin-top:4px;max-width:520px}
+.dna-warn{background:rgba(217,180,91,.08);border:1px solid rgba(217,180,91,.3);border-radius:10px;padding:10px 13px;color:var(--gold);font-size:12.5px;margin-bottom:16px}
+.dna-blocks{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.dna-block{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px 10px}
+.dna-block h4{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--blue);margin:0 0 10px}
+.dna-block h4 .sub{display:block;margin-top:3px;font-family:var(--body);font-size:11.5px;font-weight:400;letter-spacing:0;text-transform:none;color:var(--text-dim)}
+.dna-row{padding:7px 0;border-top:1px solid var(--line)}
+.dna-row:first-of-type{border-top:0;padding-top:0}
+.dna-row .l{display:block;font-size:12px;color:var(--text-dim)}
+.dna-row .v{display:block;font-family:var(--mono);font-size:17px;font-weight:600;color:var(--text);margin-top:1px}
+.dna-row .v i{font-style:normal;color:var(--text-dim);font-size:13px;font-weight:400}
+.dna-row .n{display:block;font-size:11.5px;color:var(--text-dim);margin-top:2px;line-height:1.5}
+
+/* модалка (аватар/перейменування) */
+.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
+.modal{background:var(--panel2);border:1px solid var(--line2);border-radius:16px;max-width:420px;width:100%;padding:0}
+.modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal .mhead h3{font-size:18px;flex:1}
+.modal .mx{width:34px;height:34px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
+.modal .mbody{padding:18px 20px}
+.modal label{display:block;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin:10px 0 4px}
+.modal input[type=text]{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:10px 12px;font-size:15px;font-family:inherit}
+.modal .emrow{display:flex;gap:10px;align-items:center}
+.modal .emrow input[type=text]{flex:1;text-align:center;font-size:24px}
+.modal input[type=color]{width:52px;height:44px;border:1px solid var(--line);border-radius:8px;background:var(--panel);padding:2px}
+.modal .prev{width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:32px;border:1px solid var(--line);margin:12px auto 0;color:#e9e4d8;font-family:var(--mono);font-weight:700}
+.modal .mfoot{display:flex;gap:8px;justify-content:flex-end;padding:0 20px 18px}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:10px}
+.msg.err{background:rgba(216,121,118,.14);color:#f2b0b3}
+
+/* showFullCard — арт на сцені (порт shop-stage; ефекти = КАНОН) */
+.sqfull{position:fixed;inset:0;z-index:120;background:rgba(5,8,6,.92);backdrop-filter:blur(10px);display:flex;align-items:center;justify-content:center}
+.sqfull .sqx{position:absolute;top:20px;right:24px;width:40px;height:40px;border:1px solid #3a4550;border-radius:50%;background:#161b21;color:var(--text);font-size:20px;cursor:pointer;z-index:130}
+.sqfull .stage{position:absolute;inset:0;width:100%;height:100%;overflow:hidden;background-size:cover;background-position:center;perspective:1500px}
+.sqfull .glow{position:absolute;left:50%;top:36%;width:50%;height:64%;transform:translate(-50%,-50%);z-index:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(255,255,255,.10),transparent 66%);animation:sqglow 4s ease-in-out infinite}
+@keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
+.sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
+  background:radial-gradient(ellipse at center,rgba(0,0,0,.4),transparent 72%);filter:blur(9px);z-index:1}
+.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;animation:sqsway 6s ease-in-out infinite}
+@keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
+.sqfull .podium-card img.rarepng{width:auto;height:62vh;display:block}
+.sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
+.sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
+  background:linear-gradient(105deg,transparent,rgba(255,255,255,.30),transparent);transform:skewX(-16deg);animation:sqglint 4.8s ease-in-out infinite}
+@keyframes sqglint{0%,12%{left:-70%}60%{left:130%}100%{left:130%}}
+.sqfull .stage.mega .tilt.fx::before{content:none}
+.sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
+.sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
+@keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
+.sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
+@keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+@media(prefers-reduced-motion:reduce){.frame.champ.glow,.sqfull .tilt,.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
+
+/* екран входу = BoBet/ЄвроСезон (спільна брама) */
+.login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
+.login h1{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--green);font-size:22px;letter-spacing:.04em}
+.login .stage-badge{font-family:'IBM Plex Mono',monospace;color:#e2585f;border-color:#e2585f}
+.login p{color:var(--text-dim);font-size:14px}
+.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
+.login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
+.login button.primary{width:100%;font-family:'Montserrat',sans-serif}
+#login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+
+@media(max-width:900px){ .ov{grid-template-columns:1fr} .coll-grid{grid-template-columns:repeat(4,1fr)} }
+@media(max-width:680px){
+  .hero{grid-template-columns:auto 1fr;padding:22px 18px}
+  .hactions{grid-column:1/-1;flex-direction:row;flex-wrap:wrap;align-items:stretch}
+  .edit{align-self:auto}
+  .showcase{grid-template-columns:1fr}.mini-col{grid-template-columns:repeat(2,1fr);grid-template-rows:none}
+  .tr-grid,.rec-grid,.comm-big-grid,.nom-grid{grid-template-columns:1fr}.portrait-full{grid-template-columns:1fr}
+  .card-row{grid-template-columns:repeat(2,1fr)}.coll-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+<!-- ІКОНКИ (Lucide-стиль, inline-спрайт) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<g id="i-user"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></g>
+<g id="i-crown"><path d="M2 18h20"/><path d="m3 8 4.5 4L12 5l4.5 7L21 8l-1.7 8H4.7z"/></g>
+<g id="i-trophy"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"/></g>
+<g id="i-chart"><path d="M3 3v18h18"/><path d="M7 15v3"/><path d="M12 9v9"/><path d="M17 5v13"/></g>
+<g id="i-print"><path d="M12 10a2 2 0 0 0-2 2c0 1.02-.1 2.5-.26 4"/><path d="M14 13.1c0 2.4 0 6.4-1 8.9"/><path d="M2 12a10 10 0 0 1 18-6"/><path d="M2 16h.01"/><path d="M5 19.5C5.5 18 6 15 6 12a6 6 0 0 1 .34-2"/><path d="M9 6.8a6 6 0 0 1 9 5.2v2"/></g>
+<g id="i-users"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.1a4 4 0 0 1 0 7.75"/></g>
+<g id="i-sliders"><path d="M4 6h9"/><circle cx="16" cy="6" r="2.2"/><path d="M18 6h2"/><path d="M4 12h4"/><circle cx="11" cy="12" r="2.2"/><path d="M13 12h7"/><path d="M4 18h9"/><circle cx="16" cy="18" r="2.2"/><path d="M18 18h2"/></g>
+<g id="i-layers"><path d="m12 2 9 5-9 5-9-5 9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></g>
+</defs></svg>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo"><div class="sq"><svg class="ic" style="width:22px;height:22px"><use href="#i-user"/></svg></div>
+      <div><h1>Профіль</h1><div class="sub">BoOrbit</div></div></div>
+    <div class="right"><span class="stage-badge">STAGE</span>
+      <span id="who" class="who hide"></span>
+      <button id="btn-login" class="ghost">Увійти</button>
+      <button id="btn-logout" class="ghost hide">Вийти</button></div>
+  </div>
+
+  <!-- ПРОФІЛЬ -->
+  <div id="screen-profile">
+    <div id="phead"></div>
+    <nav id="ptabs" class="tabs"></nav>
+    <div id="ptab"></div>
+  </div>
+
+  <!-- ЕКРАН ВХОДУ -->
+  <div id="screen-login" class="login hide">
+    <h1>BoOrbit <span class="stage-badge">STAGE</span></h1>
+    <div id="step-email">
+      <p>Увійди своєю поштою, щоб відкрити свій профіль.</p>
+      <input id="in-email" type="email" placeholder="твоя пошта" autocomplete="email">
+      <button id="btn-send" class="primary">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p>Введи код із листа.</p>
+      <input id="in-code" class="code" inputmode="numeric" placeholder="000000">
+      <button id="btn-verify" class="primary">Увійти</button>
+      <button id="btn-back" class="ghost" style="margin-top:8px">Назад</button>
+    </div>
+    <div id="login-msg"></div>
+    <p style="margin-top:18px"><a href="#" id="lnk-back">← назад</a></p>
+  </div>
+</div>
+
+<div id="mhost"></div>
+
+<script type="module">
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ic=(n,sz)=>`<svg class="ic"${sz?` style="width:${sz}px;height:${sz}px"`:''}><use href="#i-${n}"/></svg>`;
+const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
+
+const RAR={rare:'RARE',mega_rare:'MEGA RARE'};
+const SCENE={rare:'rare',mega_rare:'mega_rare'};
+const KIND_EMOJI={bar:'🍻',club:'🏟️',vip:'🎩',locker:'🚪'};
+const KIND_LABEL={bar:'Бар',club:'Клуб',vip:'VIP Ложа',locker:'Роздягальня'};
+const CHAMP_THEME={bobet:'',psl:'psl',squad:'squad'};
+const CHAMP_LEAGUE={bobet:'BOBET',psl:'PSL',squad:'Squad'};
+const STATUS_LABEL={active:'триває',finished:'завершено',draft:'чернетка'};
+// ⚠️ HIDE_CARDS: у БОЙОВІЙ версії (profile.html) картки/крамниця/колекція сховані — Squad Mode і
+// картки лишаються лише на STAGE. Одна константа: promote.py перемикає false → true при промоуті.
+const HIDE_CARDS=false;
+// ── Огляд-конструктор: реєстр модулів ──
+const OVMODS={
+  cups:{name:'Кубки',em:'🏆',pick:true,cap:null,link:'trophies'},        // без лімітів (рішення Богдана)
+  medals:{name:'Медалі',em:'🥇',pick:true,cap:null,link:'trophies'},
+  records:{name:'Рекорди ліги',em:'📊',pick:true,cap:null,link:'records'},
+  collection:{name:'Колекція',em:'🃏',pick:true,cap:null,link:'collection'},
+  portrait:{name:'Портрет гравця',em:'🧬',pick:false,link:'portrait'},
+  communities:{name:'Спільноти',em:'👥',pick:false,link:'communities'},
+  playing:{name:'Де грає зараз',em:'📍',pick:false,link:null},
+};
+if(HIDE_CARDS) delete OVMODS.collection;
+const OV_ORDER_DEF=['cups','medals','records','collection','portrait','communities','playing'].filter(k=>!(HIDE_CARDS&&k==='collection'));
+const OV_AUTO_N={medals:3,records:3,collection:4}; // порожній вибір → авто топ-N (кубки → всі)
+const OV_MAIN=['cups','medals','collection','playing'].filter(k=>!(HIDE_CARDS&&k==='collection'));   // головна колонка (повні рендери)
+const OV_SIDE=['records','portrait','communities'];        // бічна колонка праворуч (компактні)
+// ⚠️ ПЕРЕНОСИТИ між колонками можна ЛИШЕ ці три (рішення Богдана 30.09); решта — завжди в головній.
+// Значення 'main'|'side', за замовчуванням 'side' (як було до 476).
+const OV_MOVABLE=['records','portrait','communities'];
+const ovColOf=(k,cols)=>OV_MOVABLE.includes(k)?((cols&&cols[k]==='main')?'main':'side')
+  :(OV_MAIN.includes(k)?'main':'side');
+const cssColor=c=>(c && /^#[0-9a-fA-F]{6}$/.test(c)) ? c : 'var(--panel2)';
+const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
+const num=v=>(v==null?'—':v);
+const plural=(n,one,few,many)=>{const a=Math.abs(n)%100,b=a%10;if(a>10&&a<20)return many;if(b>1&&b<5)return few;if(b===1)return one;return many;};
+// єдине написання назв команд — дзеркало NAME_CANON борди (тільки на показ; без прапорця)
+const NAME_CANON={'турція':'Туреччина','туречина':'Туреччина','голландія':'Нідерланди','голандія':'Нідерланди','реал':'Реал Мадрид','реал м':'Реал Мадрид','сіті':'Манчестер Сіті','фейенорд':'Феєнорд','фейєнорд':'Феєнорд','монтерей':'Монтеррей','монтерррей':'Монтеррей','борусія д':'Боруссія Дортмунд','боруссія д':'Боруссія Дортмунд','борусія дортмунд':'Боруссія Дортмунд'};
+const canonName=v=>{const s=String(v==null?'':v);return NAME_CANON[s.toLowerCase().replace(/\s+/g,' ').trim()]||s;};
+
+const S={ me:null, name:null, isAdmin:false, view:null, isOwn:false,
+  ov:null, tours:[], cards:[], comms:[], trophies:[], records:null, portrait:null, noms:[],
+  layout:null, ovEdit:null, tab:'overview' };
+
+// ── boot ──
+async function boot(){
+  // ⚡ ШВИДКІСТЬ: дані чужого/запитаного профілю (?id=) тягнемо ПАРАЛЕЛЬНО з перевіркою сесії,
+  // а не після неї (раніше: сесія → профіль юзера → overview → 7 RPC → layout → fallback → DNA — усе послідовно)
+  const urlId0=new URLSearchParams(location.search).get('id');
+  let pre = urlId0 ? fetchProfileData(urlId0) : null;
+  const { data:{ session } } = await sb.auth.getSession();
+  S.me = session ? session.user.id : null;
+  if(S.me){
+    try{
+      const { data } = await sb.from('profiles').select('display_name,is_platform_admin').eq('id',S.me).maybeSingle();
+      if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
+    }catch(e){}
+    $('who').classList.remove('hide');
+    $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">АДМІН</span>':''}`;
+    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
+  }
+  const urlId=new URLSearchParams(location.search).get('id');
+  S.view = urlId || S.me;
+  S.isOwn = !!(S.view && S.view===S.me);
+
+  if(!S.view){
+    $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
+      <div class="identity"><h2>Твій профіль</h2><div class="who-sub">Увійди, щоб відкрити свій профіль, або відкрий чийсь за посиланням.</div>
+      <button class="primary" id="go-login">Увійти</button></div></section>`;
+    $('go-login').onclick=showLogin; $('ptabs').innerHTML=''; $('ptab').innerHTML='';
+    return;
+  }
+  // свій профіль без ?id= — S.view відомий лише після сесії, тож запит стартує тут
+  if(!pre || urlId0!==S.view) pre = fetchProfileData(S.view);
+  await loadProfile(pre);
+}
+
+// усі дані профілю ОДНИМ паралельним залпом (overview + 7 RPC + розкладка вітрини)
+function fetchProfileData(id){
+  const R=(fn,args)=>sb.rpc(fn,args).then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+  const loadLay=cols=>sb.from('profile_layout').select(cols).eq('profile_id',id).maybeSingle()
+    .then(r=>r.error?{fail:true}:{data:r.data}).catch(()=>({fail:true}));
+  const layP=(async()=>{   // module_col (476) може ще не існувати → пробуємо з ним, далі без нього
+    let lr=await loadLay('module_order,module_on,featured,module_col');
+    if(lr.fail) lr=await loadLay('module_order,module_on,featured');
+    return lr.data||null;
+  })();
+  return Promise.all([
+    sb.from('profile_overview')
+      .select('profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count,medals_count,title_count,is_champion,champion_league,honor_name,show_champion')
+      .eq('profile_id',id).maybeSingle().then(r=>r.data||null).catch(()=>null),
+    R('profile_tournaments',{ p_profile:id }),
+    sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id').eq('owner_profile_id',id).order('tier').order('card_key').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
+    R('profile_communities',{ p_profile:id }),
+    R('profile_trophies',{ p_profile:id }),
+    R('profile_records',{ p_profile:id }),
+    R('profile_portrait',{ p_profile:id }),
+    R('profile_nominations',{ p_profile:id }),
+    layP
+  ]);
+}
+
+async function loadProfile(pre){
+  const [ov,t,c,m,tr,rec,por,nm,lay]=await pre;
+  S.ov=ov;
+  if(!ov){
+    $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
+      <div class="identity"><h2>Профіль не знайдено</h2></div></section>`;
+    $('ptabs').innerHTML=''; $('ptab').innerHTML=''; return;
+  }
+  S.tours=t; S.cards=c; S.comms=m; S.trophies=tr; S.noms=nm;
+  S.records=rec[0]||null; S.portrait=por[0]||null;
+  // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
+  S.pending = S.isOwn ? await sb.rpc('my_community_pending',{}).then(r=>r.error?[]:(r.data||[])).catch(()=>[]) : [];
+  // розкладка вітрини «Огляд» (конструктор, 465); немає → дефолт
+  S.layout = lay ? { order:(lay.module_order||OV_ORDER_DEF.slice()),
+                     on:(lay.module_on||{}), feat:(lay.featured||{}), cols:(lay.module_col||{}) } : null;
+  S.dna=null; S.dnaLoaded=false;   // ⚡ DNA (11 запитів) — ліниво, при відкритті вкладки «Портрет»
+  renderHead(); renderTabs(); renderTab();
+}
+
+// повний DNA-портрет (ті самі вьюхи, що на борді у «Портретах гравців»), по одній людині
+async function loadDna(P){
+  const g=(tbl,q)=>{ let r=sb.from(tbl).select('*').eq('person',P); if(q) r=q(r); return r.then(x=>x.error?[]:(x.data||[])).catch(()=>[]); };
+  const [prof,arch,score,team,rhythm,bonus,pair,belief,shape,vs,skind]=await Promise.all([
+    g('dna_profile'), g('dna_archetype'), g('dna_score',r=>r.order('rn')),
+    g('dna_team',r=>r.gte('backed',4).order('weighted_pct',{ascending:false}).order('backed',{ascending:false})),
+    g('dna_rhythm'), g('dna_bonus'),
+    g('dna_pair',r=>r.order('same_pct',{ascending:false})),
+    g('dna_belief',r=>r.gte('played',4).order('belief_diff',{ascending:false}).order('played',{ascending:false})),
+    g('dna_shape'), g('dna_vs_league',r=>r.order('tournament_order')),
+    g('dna_score_kind',r=>r.order('kind').order('rn'))
+  ]);
+  S.dna={ profile:prof[0]||null, arch:arch[0]||null, score, team, rhythm:rhythm[0]||null,
+    bonus, pair, belief, shape:shape[0]||null, vs, scoreKind:skind };
+}
+
+// ── шапка ──
+function renderHead(){
+  const ov=S.ov, name=ov.display_name||'Гравець';
+  // чемпіонські відзнаки (корона+рамка+бейдж) — ОПЦІЯ: показуються лише якщо чемпіон І не вимкнув їх
+  const champ=!!ov.is_champion && ov.show_champion!==false, theme=CHAMP_THEME[ov.champion_league]||'';
+  const col = (ov.avatar_color && /^#[0-9a-fA-F]{6}$/.test(ov.avatar_color)) ? ov.avatar_color : null;
+  const avInner = esc(initials(name));                        // емодзі-аватар прибрано — лише ініціали
+  const avStyle = '';                                         // аватар БЕЗ кольору (колір лише на шапці)
+  const frame = champ
+    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${ic('crown',16)}</span></div>`
+    : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
+  const heroStyle = col ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
+
+  // чемпіонський бейдж + титули
+  let eyebrow='';
+  if(champ){
+    const titleTours=S.trophies.filter(t=>t.phase_kind==='general' && t.place===1).map(t=>t.tournament);
+    const cnt=ov.title_count||titleTours.length;
+    const seas=`${cnt>1?'×'+cnt+' · ':''}${titleTours.join(' · ')}`.toUpperCase();
+    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${ic('crown',11)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span>
+      <span class="champ-season">${esc(seas)}</span></div>`;
+  }
+  // підпис: архетип + найяскравіший рекорд
+  const arch=S.portrait?S.portrait.archetype:null;
+  const hl = champ && S.records && S.records.tournament_wins>0 ? `переможець ${S.records.tournament_wins} турнір${S.records.tournament_wins>1?'ів':'у'}`
+    : (S.records && S.records.top3_general===S.records.tournaments_played && S.records.tournaments_played>0 ? `топ-3 в усіх ${S.records.tournaments_played} турнірах` : 'учасник ліги');
+  const sub = arch ? `${esc(arch)} · ${hl}` : hl;
+
+  const stat=`<div class="stats">
+    <div class="stat"><b>${num(ov.medals_count)}</b><span>медал${ov.medals_count===1?'ь':(ov.medals_count>=2&&ov.medals_count<=4?'і':'ей')}</span></div>
+    <div class="stat"><b>${num(ov.tournaments_count)}</b><span>турнір${ov.tournaments_count===1?'':'и'}</span></div>
+    ${HIDE_CARDS?'':`<div class="stat"><b>${num(ov.cards_count)}</b><span>карток</span></div>`}
+    <div class="stat"><b>${num(ov.communities_count)}</b><span>спільнот${ov.communities_count===1?'а':''}</span></div>
+  </div>`;
+
+  let actions='';
+  if(S.isOwn){
+    actions=`<div class="hactions">
+      <button class="edit" id="a-edit">${ic('sliders')}Керувати профілем</button>
+      <div class="launch">${HIDE_CARDS?'':`<a href="shop-stage.html">${ic('layers',13)}Крамниця</a>`}<a href="community-stage.html">👥 Спільноти</a></div>
+    </div>`;
+  }
+  $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
+    <div class="identity">${eyebrow}<h2>${esc(name)}</h2><div class="who-sub">${esc(sub)}</div>${stat}</div>
+    ${actions}</section>`;
+  if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
+}
+
+// ── вкладки ──
+const TABS=[['overview','Огляд'],['trophies','Трофеї'],['collection','Колекція'],['records','Рекорди'],['portrait','Портрет гравця'],['communities','Спільноти']].filter(t=>!(HIDE_CARDS&&t[0]==='collection'));
+function renderTabs(){
+  $('ptabs').innerHTML=TABS.map(([k,l])=>`<button class="tab ${S.tab===k?'on':''}" role="tab" aria-selected="${S.tab===k}" data-tab="${k}">${l}</button>`).join('');
+  $('ptabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderTabs(); renderTab(); });
+}
+function goTab(k){ S.tab=k; renderTabs(); renderTab(); window.scrollTo({top:0,behavior:'smooth'}); }
+
+// ── головний трофей + міні ──
+function trophyMain(){                                  // головний трофей: general спершу, вища медаль, при рівності — за ОЧКАМИ
+  if(!S.trophies.length) return null;
+  return S.trophies.slice().sort((a,b)=>
+    (a.phase_kind==='general'?0:1)-(b.phase_kind==='general'?0:1) || a.place-b.place || b.points-a.points
+  )[0];
+}
+function trophyTitle(t){
+  const medalWord = t.place===1?'Чемпіон':t.place===2?'Віце-чемпіон':t.place===3?'Бронза':t.place+' місце';
+  return t.phase_kind==='general' ? `${medalWord} · ${t.tournament}` : `${t.medal} ${t.tournament} · ${t.phase}`;
+}
+// Титул (перемога загального заліку) = КУБОК 🏆, а не медаль; решта — медаль
+function isTitle(t){ return !!(t && t.phase_kind==='general' && t.place===1); }
+function trophyMark(t){ return isTitle(t) ? '🏆' : (t ? t.medal : ''); }
+
+function renderTab(){
+  const box=$('ptab');
+  if(S.tab!=='overview') S.ovEdit=null;   // редактор вітрини живе лише на Огляді
+  if(S.tab==='overview') return renderOverview(box);
+  if(S.tab==='trophies') return renderTrophies(box);
+  if(S.tab==='collection') return renderCollection(box);
+  if(S.tab==='records') return renderRecords(box);
+  if(S.tab==='portrait') return renderPortrait(box);
+  if(S.tab==='communities') return renderCommunities(box);
+}
+
+// ── ОГЛЯД (конструктор із модулів) ──
+function ovEffLayout(){                                   // ефективна розкладка (збережена або дефолт)
+  if(S.layout){
+    const order=(S.layout.order||[]).filter(k=>OVMODS[k]);
+    OV_ORDER_DEF.forEach(k=>{ if(!order.includes(k)) order.push(k); });  // нові модулі майбутнього
+    const on={}; OV_ORDER_DEF.forEach(k=>{ on[k]=(S.layout.on&&k in S.layout.on)?!!S.layout.on[k]:true; });
+    return { order, on, cols:Object.assign({},S.layout.cols||{}) };
+  }
+  return { order:OV_ORDER_DEF.slice(), on:Object.fromEntries(OV_ORDER_DEF.map(k=>[k,true])), cols:{} };
+}
+function ovItems(k){                                      // усі елементи модуля
+  if(k==='cups')       return S.trophies.filter(isTitle).slice().sort((a,b)=>a.tournament_order-b.tournament_order);
+  if(k==='medals')     return S.trophies.filter(t=>!isTitle(t)).slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
+  if(k==='records')    return S.noms;
+  if(k==='collection') return S.cards;
+  return [];
+}
+function ovId(k,it){                                      // стабільний id елемента
+  if(k==='cups'||k==='medals') return it.tournament_order+'|'+it.phase;
+  if(k==='records')            return String(it.sort_order);
+  if(k==='collection')         return it.card_key;
+  return '';
+}
+function ovPick(k){                                       // обрані елементи (порожньо → авто топ-N)
+  const items=ovItems(k); if(!OVMODS[k].pick) return items;
+  const f=(S.layout&&S.layout.feat&&S.layout.feat[k])||[];
+  if(f.length) return items.filter(it=>f.includes(ovId(k,it)));
+  const n=OV_AUTO_N[k]; return n?items.slice(0,n):items;
+}
+function ovChipLabel(k,it){
+  if(k==='cups')       return '🏆 '+esc(it.tournament);
+  if(k==='medals')     return esc(it.medal+' '+it.tournament+' · '+it.phase);
+  if(k==='records')    return esc(it.nomination+' · '+it.value);
+  if(k==='collection') return esc((RAR[it.tier]||it.tier)+' '+it.card_key.replace(/_/g,' '));
+  return '';
+}
+function cupCardHTML(t){                                   // кубок = 🏆 + назва турніру (без «Чемпіон BOBET»)
+  return `<div class="title-card"><span class="tc-ic">🏆</span>
+    <div><strong>${esc(t.tournament)}</strong><span>загальний залік</span></div></div>`;
+}
+function ovModContent(k){                                  // ГОЛОВНА колонка (повні рендери); '' → сховати
+  if(k==='cups'){ const it=ovPick('cups'); if(!it.length) return '';
+    return `<div class="title-strip">${it.map(cupCardHTML).join('')}</div>`; }
+  if(k==='medals'){ const it=ovPick('medals'); if(!it.length) return '';
+    const cls=t=>t.place===1?'':t.place===2?'silver':'bronze';
+    return `<div class="tr-grid">${it.map(t=>`<article class="award ${cls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
+      <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BOBET · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}</div>`; }
+  if(k==='collection'){ const it=ovPick('collection'); if(!it.length) return '';
+    return `<div class="card-row">${it.map(cardCell).join('')}</div>`; }
+  if(k==='playing'){ if(!S.tours.length) return '';
+    return S.tours.slice().sort(sortTours).map(playRow).join(''); }
+  // рухомі модулі (якщо учасник поставив їх у головну): ті самі рендери, що й у бічній
+  if(OV_MOVABLE.includes(k)) return ovSideContent(k);
+  return '';
+}
+const SIDE_IC={records:'chart',portrait:'print',communities:'users'};
+function ovSideContent(k){                                 // БІЧНА колонка (компактні рендери)
+  if(k==='records'){ const it=ovPick('records'); if(!it.length) return '';
+    return `<div class="rec-list">${it.map(n=>`<div class="rec"><div class="rec-h"><span>${esc(n.nomination)}</span><strong>${esc(n.value)}</strong></div>${n.note?`<div class="rec-n">${esc(n.note)}</div>`:''}</div>`).join('')}</div>`; }
+  if(k==='portrait')    return S.portrait?portraitBox():'';
+  if(k==='communities') return S.comms.length?commRail():'';
+  return '';
+}
+function renderOverview(box){
+  if(S.isOwn && S.ovEdit) return renderOvEdit(box);
+  const eff=ovEffLayout();
+  const main=eff.order.filter(k=>eff.on[k]&&ovColOf(k,eff.cols)==='main').map(k=>{
+    const b=ovModContent(k); if(!b) return ''; const M=OVMODS[k];
+    const link=M.link?`<button class="link" data-go="${M.link}">Усі →</button>`:'';
+    return `<section class="ovmod"><div class="ovmod-h"><div class="t">${M.em} ${M.name.toUpperCase()}</div>${link}</div>${b}</section>`;
+  }).join('');
+  const side=eff.order.filter(k=>eff.on[k]&&ovColOf(k,eff.cols)==='side').map(k=>{
+    const b=ovSideContent(k); if(!b) return ''; const M=OVMODS[k];
+    const link=M.link?`<button class="link" data-go="${M.link}">Усі</button>`:'';
+    return `<section class="side"><div class="side-title"><div>${ic(SIDE_IC[k]||'chart')}<h4>${M.name}</h4></div>${link}</div>${b}</section>`;
+  }).join('');
+  const btn=S.isOwn?`<button class="ovbtn" id="ov-edit">${ic('sliders',14)}Керувати вітриною</button>`:'';
+  const grid=(main||side)?`<div class="ov"${side?'':' style="grid-template-columns:1fr"'}><div class="col">${main}</div>${side?`<div class="col">${side}</div>`:''}</div>`
+    :`<div class="empty">Вітрина порожня${S.isOwn?' — увімкни модулі в «Керувати вітриною».':'.'}</div>`;
+  box.innerHTML=`<div class="ovhead"><h3>Огляд</h3>${btn}</div>${grid}`;
+  wireGo(box); wireCards(box);
+  const e=$('ov-edit'); if(e) e.onclick=ovStartEdit;
+}
+// ── редактор вітрини (↑↓ порядок; drag — запасна опція на майбутнє) ──
+function ovStartEdit(){
+  const eff=ovEffLayout();
+  S.ovEdit={ order:eff.order.slice(), on:Object.assign({},eff.on), cols:Object.assign({},eff.cols),
+    feat:JSON.parse(JSON.stringify((S.layout&&S.layout.feat)||{})) };
+  renderTab();
+}
+function ovCancelEdit(){ S.ovEdit=null; renderTab(); }
+function ovResetEdit(){ S.ovEdit={ order:OV_ORDER_DEF.slice(),
+  on:Object.fromEntries(OV_ORDER_DEF.map(k=>[k,true])), cols:{}, feat:{} }; renderTab(); }
+function ovSetCol(k,c){ S.ovEdit.cols[k]=c; renderTab(); }
+function ovToggle(k){ S.ovEdit.on[k]=!S.ovEdit.on[k]; renderTab(); }
+function ovMove(k,dir){                                     // рух ↑↓ у межах СВОЄЇ колонки
+  const o=S.ovEdit.order, myc=ovColOf(k,S.ovEdit.cols);
+  const col=o.filter(x=>ovColOf(x,S.ovEdit.cols)===myc);
+  const idxs=o.map((x,i)=>col.includes(x)?i:-1).filter(i=>i>=0);   // позиції цієї колонки в order
+  const pos=idxs.findIndex(i=>o[i]===k), j=pos+dir;
+  if(j<0||j>=idxs.length) return;
+  const a=idxs[pos], b=idxs[j]; [o[a],o[b]]=[o[b],o[a]]; renderTab();
+}
+function ovToggleFeat(k,id){ const f=S.ovEdit.feat[k]||(S.ovEdit.feat[k]=[]); const i=f.indexOf(id);
+  if(i>=0) f.splice(i,1);
+  else { const cap=OVMODS[k].cap; if(cap&&f.length>=cap){ alert('Максимум '+cap+' у модулі «'+OVMODS[k].name+'»'); return; } f.push(id); }
+  renderTab(); }
+async function ovSave(){
+  const d=S.ovEdit;
+  const cols={}; OV_MOVABLE.forEach(k=>{ cols[k]=ovColOf(k,d.cols); });
+  let { error }=await sb.rpc('set_profile_layout',{ p_order:d.order, p_on:d.on, p_featured:d.feat, p_cols:cols });
+  if(error && /p_cols|PGRST202|Could not find/i.test((error.code||'')+(error.message||''))){
+    // 476 ще не залитий — зберігаємо без колонок (вони не запамʼятаються)
+    ({ error }=await sb.rpc('set_profile_layout',{ p_order:d.order, p_on:d.on, p_featured:d.feat }));
+  }
+  if(error){ alert('Не вдалось зберегти вітрину: '+(error.message||'')); return; }
+  S.layout={ order:d.order.slice(), on:Object.assign({},d.on), feat:JSON.parse(JSON.stringify(d.feat)), cols };
+  S.ovEdit=null; renderTab();
+}
+function edModRow(k, colKeys){
+  const d=S.ovEdit, M=OVMODS[k], on=!!d.on[k], idx=colKeys.indexOf(k);
+  let picker='';
+  if(M.pick && on){
+    const items=ovItems(k), f=d.feat[k]||[];
+    const chips=items.map(it=>{ const id=ovId(k,it), sel=f.includes(id);
+      return `<span class="chip ${sel?'sel':''}" data-mod="${k}" data-id="${esc(id)}"><span class="cb">✓</span>${ovChipLabel(k,it)}</span>`; }).join('');
+    picker=`<div class="picker"><div class="pl">ЩО ПОКАЗАТИ (обрано ${f.length}${f.length===0?' → авто топ-N':''}) · ${M.cap?('макс '+M.cap):'без ліміту'}</div>
+      <div class="chips">${chips||'<span class="pl">Немає елементів для цього модуля</span>'}</div></div>`;
+  }
+  return `<div class="ed-mod ${on?'':'off'}"><div class="ed-row">
+    <div class="sw ${on?'on':''}" data-mod="${k}" role="switch" aria-checked="${on}"></div>
+    <div class="ed-name">${M.em} ${M.name}<span class="badge">${M.pick?'вибір елементів':'блок'}</span></div>
+    ${OV_MOVABLE.includes(k)?`<div class="colsw" title="Де показати">
+      <button class="cbtn ${ovColOf(k,d.cols)==='main'?'on':''}" data-colmod="${k}" data-col="main">Головна</button>
+      <button class="cbtn ${ovColOf(k,d.cols)==='side'?'on':''}" data-colmod="${k}" data-col="side">Бічна</button></div>`:''}
+    <div class="arrows"><button class="arw" data-mod="${k}" data-dir="-1" ${idx===0?'disabled':''}>↑</button>
+      <button class="arw" data-mod="${k}" data-dir="1" ${idx===colKeys.length-1?'disabled':''}>↓</button></div>
+  </div>${picker}</div>`;
+}
+function renderOvEdit(box){
+  const d=S.ovEdit;
+  const grp=(keys,title)=>`<div class="ed-gh">${title}</div>${keys.map(k=>edModRow(k,keys)).join('')}`;
+  const mainKeys=d.order.filter(k=>ovColOf(k,d.cols)==='main');
+  const sideKeys=d.order.filter(k=>ovColOf(k,d.cols)==='side');
+  box.innerHTML=`<div class="ovhead"><h3>Керування вітриною</h3></div>
+    <div class="ed-hint">Це те, що бачать гості твого профілю на «Огляді». Перемикай модулі, порядок ↑↓ у межах колонки, обирай елементи. Порожній модуль показує найкращі автоматично. Дефолт = автовигляд.</div>
+    ${grp(mainKeys,'ГОЛОВНА КОЛОНКА')}
+    ${sideKeys.length?grp(sideKeys,'БІЧНА КОЛОНКА (ПРАВОРУЧ)'):'<div class="ed-gh">БІЧНА КОЛОНКА (ПРАВОРУЧ)</div><div class="ed-hint">Порожньо — головна займе всю ширину. Перенести сюди можна «Рекорди», «Портрет» і «Спільноти».</div>'}
+    <div class="ed-actions"><button class="ovbtn reset" id="ov-reset">Скинути до авто</button>
+      <button class="ovbtn" id="ov-cancel">Скасувати</button>
+      <button class="ovbtn gold" id="ov-savebtn">Зберегти вітрину</button></div>`;
+  box.querySelectorAll('.sw[data-mod]').forEach(el=>el.onclick=()=>ovToggle(el.dataset.mod));
+  box.querySelectorAll('.cbtn[data-colmod]').forEach(el=>el.onclick=()=>ovSetCol(el.dataset.colmod, el.dataset.col));
+  box.querySelectorAll('.arw[data-mod]').forEach(el=>el.onclick=()=>ovMove(el.dataset.mod, +el.dataset.dir));
+  box.querySelectorAll('.chip[data-mod]').forEach(el=>el.onclick=()=>ovToggleFeat(el.dataset.mod, el.dataset.id));
+  $('ov-reset').onclick=ovResetEdit; $('ov-cancel').onclick=ovCancelEdit; $('ov-savebtn').onclick=ovSave;
+}
+function recordsRail(){
+  const r=S.records; if(!r) return `<div class="empty" style="margin-top:12px">Статистика зʼявиться після завершення турнірів.</div>`;
+  const rows = r.tournament_wins>0
+    ? [['Титули',r.tournament_wins],['Найкращий фініш',(r.best_general_place!=null?r.best_general_place+' місце':'—')],['Фініші у топ-3',r.top3_general]]
+    : [['Медалі всього',r.medals_total],['Найкращий фініш',(r.best_general_place!=null?r.best_general_place+' місце':'—')],['Фініші у топ-3',r.top3_general]];
+  return `<div class="rec-list">${rows.map(([k,v])=>`<div class="rec"><span>${k}</span><strong>${num(v)}</strong></div>`).join('')}</div>`;
+}
+function portraitBox(){
+  const p=S.portrait; if(!p) return `<div class="empty" style="margin-top:12px">Портрет зʼявиться, коли назбирається статистика прогнозів.</div>`;
+  const tr=portraitTraits(p).slice(0,3).map(t=>`<span class="trait">${esc(t)}</span>`).join('');
+  return `<div class="portrait-box"><strong>${esc(p.archetype||'—')}</strong><p>${esc(p.archetype_note||'')}</p><div class="traits">${tr}</div></div>`;
+}
+function portraitTraits(p){
+  const out=[];
+  if(p.result_pct!=null) out.push('Точність '+p.result_pct+'%');
+  if(p.draws_pct!=null) out.push('Нічиї '+p.draws_pct+'%');
+  if(p.streak_result!=null) out.push('Серія '+p.streak_result);
+  if(p.repertoire!=null) out.push('Репертуар '+p.repertoire);
+  return out;
+}
+function commRail(){
+  if(!S.comms.length) return `<div class="empty" style="margin-top:12px">Ще не в жодній спільноті.</div>`;
+  return `<div class="comm-list">${S.comms.slice(0,3).map(c=>{
+    const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Засновник':'учасник');
+    return `<a class="comm" href="community-stage.html?id=${esc(c.community_id)}">
+      <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
+      <div class="comm-copy"><strong>${esc(c.name)}</strong><span>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</span></div>
+      ${c.is_owner?'<span class="founder">Засновник</span>':'<span></span>'}</a>`;
+  }).join('')}</div>`;
+}
+
+// ── ТРОФЕЇ ──
+function renderTrophies(box){
+  if(!S.trophies.length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
+  const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
+  // КУБКИ — перемоги загального заліку (титули). Окрема вітрина: чемпіон бере кубок, не медаль.
+  const titles=S.trophies.filter(isTitle).sort((a,b)=>a.tournament_order-b.tournament_order);
+  const cupSec = titles.length ? `<h4 class="cup-h">🏆 Кубки</h4><div class="title-strip">${titles.map(cupCardHTML).join('')}</div>` : '';
+  // МЕДАЛІ — усе, крім титулів; від золота до бронзи (як посортовано на борді)
+  const medals=S.trophies.filter(t=>!isTitle(t)).sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
+  const awards=medals.map(t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
+    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BOBET · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
+  const medalSec = medals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${awards}</div>` : '';
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні нагороди за історію BoOrbit (архів завершених турнірів).</p></div></div>
+    ${cupSec}${medalSec}</section>`;
+}
+function trophyPlaceLabel(t){
+  const m=t.place===1?'золото':t.place===2?'2 місце':'3 місце';
+  return t.phase_kind==='general'?(t.place===1?'переможець загального заліку':m+' загального заліку'):m+' етапу';
+}
+
+// ── КОЛЕКЦІЯ ──
+function renderCollection(box){
+  if(!S.cards.length){ box.innerHTML=`<section class="panel"><div class="empty">Колекція порожня.</div></section>`; return; }
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Колекція</h3><p>Картки, здобуті у BOBET та повʼязаних лігах.</p></div><span class="champ-season">${S.cards.length} КАРТОК</span></div>
+    <div class="coll-grid">${S.cards.map(cardCell).join('')}</div></section>`;
+  wireCards(box);
+}
+function cardCell(c){
+  const gold=c.tier==='mega_rare'?' gold':'';
+  return `<div class="collectible${gold}" data-k="${esc(c.card_key)}"><span class="card-tag">${RAR[c.tier]||c.tier}</span>
+    <img src="${esc(cardThumb(c.png_path))}" alt="${esc(c.card_key.replace(/_/g,' '))}" loading="lazy" decoding="async"
+      onerror="this.onerror=null;this.src='${esc(c.png_path)}'">
+    <span class="card-name">${esc(c.card_key.replace(/_/g,' '))}</span></div>`;
+}
+function wireCards(root){ root.querySelectorAll('.collectible[data-k]').forEach(el=>el.onclick=()=>{ const c=S.cards.find(x=>x.card_key===el.dataset.k); if(c) showFullCard(c); }); }
+
+// ── РЕКОРДИ ──
+function renderRecords(box){
+  // Плитки-числа прибрано (дублювали номінації з іконками — рішення Богдана); лишаються самі номінації.
+  const noms = S.noms.length
+    ? `<div class="nom-grid">${S.noms.map(n=>`<div class="nom"><div class="nv">${esc(n.value)}</div><div class="nb"><strong>${esc(n.nomination)}</strong><span>${esc(n.note||'')}</span></div></div>`).join('')}</div>`
+    : `<div class="empty">Рекорди зʼявляться після завершення турнірів.</div>`;
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Рекорди ліги</h3><p>Номінації, де гравець — власник.</p></div></div>${noms}</section>`;
+}
+
+// ── ПОРТРЕТ (повний DNA, як на борді у «Портретах гравців»; без «Порівняти з») ──
+function renderPortrait(box){
+  if(!S.dnaLoaded){
+    const hn=S.ov&&S.ov.honor_name;
+    if(!hn){ S.dnaLoaded=true; }
+    else {
+      box.innerHTML=`<section class="panel"><div class="empty">Завантажую портрет…</div></section>`;
+      loadDna(hn).then(()=>{ S.dnaLoaded=true; if(S.tab==='portrait') renderPortrait(box); });
+      return;
+    }
+  }
+  const D=S.dna, p=D&&D.profile;
+  if(!p){ box.innerHTML=`<section class="panel"><div class="empty">Портрет формується з реальних прогнозів. Зʼявиться, коли назбирається статистика.</div></section>`; return; }
+  const a=D.arch||{}, r=D.rhythm||{}, sh=D.shape||{};
+  const scores=D.score||[], teams=D.team||[], bonus=D.bonus||[], pairs=D.pair||[], belief=D.belief||[], vsLg=D.vs||[], scoreKind=D.scoreKind||[];
+  const twin=pairs[0], anti=pairs[pairs.length-1];
+  const row=(l,v,n)=>`<div class="dna-row"><span class="l">${l}</span><span class="v">${v}</span>${n?`<span class="n">${n}</span>`:''}</div>`;
+  const block=(t,inner,sub)=>`<div class="dna-block"><h4>${t}${sub?`<span class="sub">${sub}</span>`:''}</h4>${inner}</div>`;
+  const teamsFor=(kind,kindTitle,tournaments,played)=>{
+    if(!played) return block(kindTitle,`<div class="dna-row"><span class="n">Не грав у цих турнірах</span></div>`,tournaments);
+    const t=teams.filter(x=>x.kind===kind), b=belief.filter(x=>x.kind===kind);
+    const tBest=t[0], tWorst=t[t.length-1], bMost=b[0], bLeast=b[b.length-1];
+    const rows=[
+      bMost?row('Вірить у',esc(canonName(bMost.team)),`ставив на перемогу в ${bMost.my_pct}% матчів, решта ліги — в ${bMost.league_pct}%`):'',
+      bLeast&&bLeast!==bMost?row('Не вірить у',esc(canonName(bLeast.team)),`${bLeast.my_pct}% проти ${bLeast.league_pct}% по лізі`):'',
+      tBest?row('Щастить із',esc(canonName(tBest.team)),`зіграло ${tBest.backed_hit} з ${tBest.backed} ставок на перемогу`):'',
+      tWorst&&tWorst!==tBest?row('Не щастить із',esc(canonName(tWorst.team)),`лише ${tWorst.backed_hit} з ${tWorst.backed}`):'',
+    ].join('');
+    return block(kindTitle, rows||'<div class="dna-row"><span class="n">Замало ставок на одну команду</span></div>', tournaments);
+  };
+  const blocks=[
+    block('Почерк',[
+      row('Улюблені рахунки', scores.map(x=>`${esc(x.score)} <i>×${x.used}</i>`).join(', '), 'три найчастіші з усіх його прогнозів'),
+      ...['clubs','nations'].map(k=>{ const s=scoreKind.filter(x=>x.kind===k); return s.length?row(k==='clubs'?'— у клубах':'— у збірних', s.map(x=>`${esc(x.score)} <i>×${x.used}</i>`).join(', ')):''; }),
+      row('Голів у прогнозі', p.goals_avg, `у цих же матчах насправді забивали ${p.goals_real}`),
+      p.person==='Женя'?row('🃏 Фірмовий жарт','11:11','колись поставив 11:11 на Аргентина–Іспанія — і таки вгадав нічию (0:0), +1 очко. Ці 22 голи в «голів у прогнозі» свідомо не рахуємо'):'',
+      row('Різних рахунків', p.repertoire, p.repertoire>=20?'широкий репертуар — рідко повторюється':'вузький набір — ходить тими самими рахунками'),
+      row('Нічиї', `${p.draws_pct}%`, `поставив ${p.draws_pred} нічиїх, вгадав ${p.draws_hit} (насправді нічиєю закінчується 26.7% матчів)`),
+      row('Ставить на господарів / гостей', `${p.home_pct}% / ${p.away_pct}%`, 'частка прогнозів на перемогу, решта — нічиї'),
+      row('Ставить розгроми', `${p.blowout_pct}%`, 'прогнозів із різницею 3+ голи'),
+    ].join(''), `усі ${p.matches} ${plural(p.matches,'прогноз','прогнози','прогнозів')}`),
+    block('Точність',[
+      row('Результат матчу', `${p.result_pct}%`, `${p.result_hits} із ${p.matches} — перемога, нічия чи поразка. По 1 очку за кожен`),
+      row('Точний рахунок', `${p.exact_pct}%`, `${p.exact_hits} ${plural(p.exact_hits,'раз','рази','разів')} — по 3 очки за кожен`),
+      row('Найдовша серія', `${p.streak_result}`, 'вгаданих результатів поспіль, наскрізь через усі чотири турніри'),
+      row('Точний рахунок наодинці', `${p.lone_exact}`, `${plural(p.lone_exact,'раз','рази','разів')} вгадав точний рахунок, якого в тому матчі не взяв більше ніхто`),
+      row('Проти більшості', `${p.against_crowd_pct}%`, `${p.against_crowd} прогнозів розійшлися з тим, що поставила більшість тих, хто грав той самий матч`),
+      sh.miss_goals!=null?row('Промах у голах', sh.miss_goals, 'у середньому стільки голів різниці з реальним рахунком (по обох командах разом)'):'',
+    ].join(''), 'скільки вгадано і скільки це очок'),
+    teamsFor('clubs','Клуби','ЛЧ 2025 + Клубний ЧС 2025', r.clubs_matches),
+    teamsFor('nations','Збірні','Євро 2024 + ЧС 2026', r.nations_matches),
+    block('Сильні й слабкі типи матчів',[
+      sh.rout_hit_pct!=null&&sh.calm_hit_pct!=null?row('Розгроми / в\'язкі матчі',`${sh.rout_hit_pct}% / ${sh.calm_hit_pct}%`,`вгадано в матчах із різницею 3+ голи (${sh.rout_matches} шт.) і в матчах, де на двох забили 0-1 (${sh.calm_matches} шт.)`):'',
+      sh.blind_gap!=null?row('Наскільки різниця велика',`${sh.blind_gap} пункти`,(sh.rout_matches<8||sh.calm_matches<8)?'замало таких матчів, щоб робити висновок':sh.blind_gap>=50?'сліпа зона — в\'язкі матчі майже не читає':sh.blind_gap>=30?'як у більшості: розгроми даються легше всім':'рідкість — читає обидва типи майже однаково'):'',
+      r.group_pct!=null&&r.playoff_pct!=null?row('Груповий етап → плей-оф',`${r.group_pct}% → ${r.playoff_pct}%`,(r.playoff_pct>r.group_pct?'оживає на вильоті. ':'на вильоті грає гірше. ')+'Плей-оф — це Knockout і Play-off у всіх чотирьох турнірах'):'',
+      r.nations_pct!=null&&r.clubs_pct!=null?row('Збірні / клуби',`${r.nations_pct}% / ${r.clubs_pct}%`,'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025'):'',
+      r.group_goals!=null&&r.playoff_goals!=null?row('Голів у прогнозі на вильоті',`${r.group_goals} → ${r.playoff_goals}`,r.playoff_goals<r.group_goals?'стає обережнішим':'не стримується'):'',
+    ].join('')||'<div class="dna-row"><span class="n">Грав лише в одному типі турнірів</span></div>'),
+    block('Відносно решти ліги', vsLg.length?vsLg.map(t=>row(esc(t.tournament),`${t.diff>0?'+':''}${t.diff} пункти`,`${t.my_pct}% проти ${t.league_pct}% у середньому по лізі`)).join('')+`<div class="dna-row"><span class="n">Голий відсоток порівнювати між турнірами не можна: у Клубному ЧС і ЧС було більше нерівних пар, і вгадувати стало легше всім (46% → 60%). Тут це вже враховано</span></div>`:'<div class="dna-row"><span class="n">Немає даних</span></div>'),
+    block('Бонусні питання', bonus.length?bonus.map(b=>row(esc(b.kind_title),`${b.hit_pct}%`,`${b.hits} із ${b.questions}`+(b.kind==='special'?' · чемпіон, бомбардир і подібне — ставилось до старту турніру':b.kind==='group'?' · місця команд у групах A-F, було тільки на Євро 2024':b.kind==='pair'?' · ставилось уже по ходу, коли пари були відомі':''))).join(''):'<div class="dna-row"><span class="n">Не відповідав на бонусні питання</span></div>'),
+    block('Люди',[
+      twin?row('Близнюк', esc(twin.other), `${twin.same_pct}% прогнозів збіглися рахунок-у-рахунок на ${twin.together} матчах, які прогнозували обидва`):'',
+      anti&&anti!==twin?row('Антипод', esc(anti.other), `лише ${anti.same_pct}% на ${anti.together} спільних матчах`):'',
+    ].join('')||'<div class="dna-row"><span class="n">Замало спільних матчів</span></div>'),
+  ].join('');
+  box.innerHTML=`<section class="panel">
+    <div class="dna-head"><div><span class="eyebrow2">Портрет гравця</span><h3>${esc(p.person)}</h3>
+      <div class="arch">${esc(a.archetype||'')}</div><div class="arch-note">${esc(a.archetype_note||'')}</div></div></div>
+    ${p.is_solid?'':`<div class="dna-warn">Лише ${p.matches} прогнозів — цифри хиткі, один матч тут важить більше, ніж має</div>`}
+    <div class="dna-blocks">${blocks}</div></section>`;
+}
+
+// ── СПІЛЬНОТИ ──
+// Відповісти на запрошення (invite → прийняти/відхилити) або заявку
+// (request → схвалити/відхилити), тоді освіжити pending + список спільнот.
+async function respondPending(id, kind, ok){
+  const fn  = kind==='invite' ? 'community_respond_invite' : 'community_respond_request';
+  const arg = kind==='invite' ? { p_invite:id, p_accept:ok } : { p_invite:id, p_approve:ok };
+  const { error }=await sb.rpc(fn, arg);
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return; }
+  const R=(f,a)=>sb.rpc(f,a).then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+  S.pending = await R('my_community_pending',{});
+  S.comms   = await R('profile_communities',{ p_profile:S.view });
+  renderTab();
+}
+function renderCommunities(box){
+  let html='';
+  // Блок запрошень/заявок — лише на СВОЄМУ профілі
+  if(S.isOwn && S.pending && S.pending.length){
+    html += `<section class="panel"><div class="panel-title"><div><h3>Запрошення в спільноти</h3>
+        <p>Тебе кличуть або чекають твого рішення.</p></div>
+        <span class="champ-season">${S.pending.length}</span></div>
+      <div style="display:flex;flex-direction:column;gap:8px">${S.pending.map(p=>{
+        const inv=p.kind==='invite';
+        const label=inv?`Запрошення в «${esc(p.community_name)}»`
+                       :`Заявка від ${esc(p.subject_name||'—')} у «${esc(p.community_name)}»`;
+        const yes=inv?'Прийняти':'Схвалити';
+        return `<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--panel)">
+          <span style="flex:1;min-width:180px">${label}</span>
+          <button class="pbtn" data-pend="${esc(p.invite_id)}" data-kind="${p.kind}" data-ok="1"
+            style="border:1px solid rgba(var(--gold-rgb),.4);color:var(--gold);background:transparent;border-radius:7px;padding:4px 12px;cursor:pointer;font-weight:600">${yes}</button>
+          <button class="pbtn" data-pend="${esc(p.invite_id)}" data-kind="${p.kind}" data-ok="0"
+            style="border:1px solid var(--line);color:var(--text-dim);background:transparent;border-radius:7px;padding:4px 12px;cursor:pointer">Відхилити</button>
+        </div>`;
+      }).join('')}</div></section>`;
+  }
+  if(!S.comms.length){
+    html += `<section class="panel"><div class="empty">Ще не в жодній спільноті. Приєднайся у розділі «Спільноти».</div></section>`;
+  } else {
+    html += `<section class="panel"><div class="panel-title"><div><h3>Спільноти</h3><p>Клуби та бари, у яких перебуває гравець.</p></div><span class="champ-season">${S.comms.length} СПІЛЬНОТ${S.comms.length===1?'А':''}</span></div>
+      <div class="comm-big-grid">${S.comms.map(c=>{
+        const roles=(c.roles&&c.roles.length)?c.roles.join(' · '):(c.is_owner?'Засновник':'учасник');
+        return `<a class="comm-big" href="community-stage.html?id=${esc(c.community_id)}" style="text-decoration:none;color:inherit;display:block">
+          <span class="comm-ic">${esc(c.emoji||KIND_EMOJI[c.kind]||'🍻')}</span>
+          <h4>${esc(c.name)}${c.is_owner?' <span class="founder">Засновник</span>':''}</h4><p>${esc(KIND_LABEL[c.kind]||c.kind)} · ${esc(roles)}</p></a>`;
+      }).join('')}</div></section>`;
+  }
+  box.innerHTML=html;
+  box.querySelectorAll('[data-pend]').forEach(b=>b.onclick=()=>respondPending(b.dataset.pend,b.dataset.kind,b.dataset.ok==='1'));
+}
+
+// ── «де грає» рядок ──
+const _ord={BoBet:0,PSL:1,Squad:2};
+function sortTours(a,b){ return (_ord[a.league]??9)-(_ord[b.league]??9); }
+function playRow(t){
+  return `<div class="play-row"><span class="lg ${esc(t.league)}">${esc(t.league)}</span>
+    <div class="pn">${esc(t.tournament_name)} <small>· ${esc(t.kind)} · ${STATUS_LABEL[t.status]||esc(t.status||'')}</small></div>
+    <div class="pp">${t.place!=null?t.place:'—'} <small>${t.place!=null?'місце':''}</small></div></div>`;
+}
+function wireGo(root){ root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go)); }
+
+// ── showFullCard (порт shop-stage) ──
+function showFullCard(c){
+  const scene=SCENE[c.tier]||'rare', mega=(c.tier==='mega_rare');
+  const el=document.createElement('div'); el.className='sqfull';
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
+    <div class="stage${mega?' mega':''}" style="background-image:url('scenes/${scene}.webp')">
+      <div class="glow"></div><div class="contact"></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt fx" style="--m:url('${esc(c.png_path)}')">
+        <img class="rarepng" src="${esc(c.png_path)}" alt="${esc(c.card_key.replace(/_/g,' '))}"></div></div>
+    </div>`;
+  el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
+  document.body.appendChild(el);
+  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
+  stage.addEventListener('pointermove',e=>{
+    const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
+    tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*14+3).toFixed(1)}deg) rotateY(${(dx*20).toFixed(1)}deg)`;
+  });
+  stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
+}
+
+// ── керування профілем (перейменування + аватар в одній модалці) ──
+function openEdit(){
+  const host=$('mhost');
+  const col=(S.ov.avatar_color&&/^#[0-9a-fA-F]{6}$/.test(S.ov.avatar_color))?S.ov.avatar_color:'#7e9dbb';
+  const isChamp=!!S.ov.is_champion;
+  let showChamp=S.ov.show_champion!==false;                  // локальний стан перемикача
+  const chBlock=isChamp?`
+      <label>Відзнаки чемпіона</label>
+      <div class="chrow"><div class="sw ${showChamp?'on':''}" id="ch-sw" role="switch"></div>
+        <span>Корона на аватарі + рамка + бейдж <b>BOBET CHAMPION</b>. Можна вимкнути, навіть будучи чемпіоном.</span></div>`:'';
+  host.innerHTML=`<div class="mhost"><div class="modal">
+    <div class="mhead"><h3>Керувати профілем</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <label>Імʼя</label>
+      <input type="text" id="rn-name" maxlength="24" value="${esc(S.ov.display_name||'')}">
+      <label>Колір шапки</label>
+      <input type="color" id="av-col" value="${esc(col)}" style="width:100%;height:44px;padding:4px;border:1px solid var(--line2);border-radius:10px;background:none;cursor:pointer">
+      ${chBlock}
+      <div class="msg" id="ed-msg" style="display:none"></div>
+    </div>
+    <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="ed-save">Зберегти</button></div>
+  </div></div>`;
+  wireModal(host);
+  if(isChamp){ $('ch-sw').onclick=()=>{ showChamp=!showChamp; $('ch-sw').classList.toggle('on',showChamp); }; }
+  $('ed-save').onclick=async()=>{
+    const m=$('ed-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
+    const newName=$('rn-name').value.trim();
+    if(newName && newName!==(S.ov.display_name||'')){
+      const { error }=await sb.rpc('rename_profile',{ p_new_name:newName });
+      if(error){ m.className='msg err'; m.textContent=error.message||'Не вдалось перейменувати'; return; }
+    }
+    const { error:e2 }=await sb.rpc('set_profile_avatar',{ p_emoji:null, p_color:$('av-col').value });
+    if(e2){ m.className='msg err'; m.textContent=e2.message||'Не вдалось зберегти колір'; return; }
+    if(isChamp){
+      const { error:e3 }=await sb.rpc('set_profile_show_champion',{ p_on:showChamp });
+      if(e3){ m.className='msg err'; m.textContent=e3.message||'Не вдалось зберегти відзнаки'; return; }
+    }
+    host.innerHTML=''; await boot();
+  };
+}
+function wireModal(host){
+  const close=()=>host.innerHTML='';
+  host.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) close(); };
+  host.querySelector('.mx').onclick=close;
+  const x=host.querySelector('[data-x]'); if(x) x.onclick=close;
+}
+
+// ── логін (OTP) ──
+function showLogin(){ $('screen-profile').classList.add('hide'); $('screen-login').classList.remove('hide'); }
+function showProfile(){ $('screen-login').classList.add('hide'); $('screen-profile').classList.remove('hide'); }
+$('btn-login').onclick=showLogin;
+$('lnk-back').onclick=e=>{ e.preventDefault(); showProfile(); };
+$('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.href='profile-stage.html'; };
+$('btn-send').onclick=async()=>{
+  const email=$('in-email').value.trim(); if(!email) return;
+  $('login-msg').textContent='Надсилаю…';
+  const { error }=await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error){ $('login-msg').textContent='Помилка: '+error.message; return; }
+  window.__email=email; $('step-email').classList.add('hide'); $('step-code').classList.remove('hide'); $('login-msg').textContent='';
+};
+$('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); };
+$('btn-verify').onclick=async()=>{
+  const token=$('in-code').value.trim(); if(!token) return;
+  $('login-msg').textContent='Перевіряю…';
+  let res=await sb.auth.verifyOtp({ email:window.__email, token, type:'email' });
+  if(res.error) res=await sb.auth.verifyOtp({ email:window.__email, token, type:'magiclink' });
+  if(res.error){ $('login-msg').textContent='Помилка: '+res.error.message; return; }
+  location.href='profile-stage.html';
+};
+
+boot().catch(e=>{ $('phead').innerHTML='<div class="empty" style="margin-top:20px">Помилка завантаження: '+esc(e.message)+'</div>'; });
+</script>
+</body>
+</html>
