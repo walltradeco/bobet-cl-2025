@@ -412,7 +412,7 @@ const CHAMP_LEAGUE={bobet:'BOBET',psl:'PSL',squad:'Squad'};
 const STATUS_LABEL={active:'триває',finished:'завершено',draft:'чернетка'};
 // ⚠️ HIDE_CARDS: у БОЙОВІЙ версії (profile.html) картки/крамниця/колекція сховані — Squad Mode і
 // картки лишаються лише на STAGE. Одна константа: promote.py перемикає false → true при промоуті.
-const HIDE_CARDS=false;
+const HIDE_CARDS=true;
 // суцільна корона для бейджів чемпіона (контурна ic('crown') на 11-16px зливалась у пляму)
 const crownIc=(sz)=>`<svg class="crown-fill" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" aria-hidden="true"><path d="M3 7.5l4.6 4.2L12 4.5l4.4 7.2L21 7.5l-1.6 9.5H4.6z"/><rect x="4.6" y="18.3" width="14.8" height="2.4" rx="1"/></svg>`;
 // ── Огляд-конструктор: реєстр модулів ──
@@ -491,9 +491,14 @@ function fetchProfileData(id){
     return lr.data||null;
   })();
   return Promise.all([
-    sb.from('profile_overview')
-      .select('profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count,medals_count,title_count,is_champion,champion_league,honor_name,show_champion')
-      .eq('profile_id',id).maybeSingle().then(r=>r.data||null).catch(()=>null),
+    (async()=>{   // bio (478) може ще не існувати → пробуємо з нею, далі без неї (профіль не ламається)
+      const base='profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count,medals_count,title_count,is_champion,champion_league,honor_name,show_champion';
+      const q=async cols=>{ try{ return await sb.from('profile_overview').select(cols).eq('profile_id',id).maybeSingle(); }
+        catch(e){ return { error:e }; } };
+      let r=await q(base+',bio');
+      if(r.error) r=await q(base);
+      return (r&&r.data)||null;
+    })(),
     R('profile_tournaments',{ p_profile:id }),
     sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id').eq('owner_profile_id',id).order('tier').order('card_key').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
     R('profile_communities',{ p_profile:id }),
@@ -558,11 +563,8 @@ function renderHead(){
   if(champ){
     eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span></div>`;
   }
-  // підпис: архетип + найяскравіший рекорд
-  const arch=S.portrait?S.portrait.archetype:null;
-  const hl = champ && S.records && S.records.tournament_wins>0 ? `переможець ${S.records.tournament_wins} турнір${S.records.tournament_wins>1?'ів':'у'}`
-    : (S.records && S.records.top3_general===S.records.tournaments_played && S.records.tournaments_played>0 ? `топ-3 в усіх ${S.records.tournaments_played} турнірах` : 'учасник ліги');
-  const sub = arch ? `${esc(arch)} · ${hl}` : hl;
+  // підзаголовок — лише ДЕВІЗ власника (478); архетип/«учасник ліги» прибрано (дублюють Портрет/Рекорди)
+  const bio=(ov.bio||'').trim();
 
   const stat=`<div class="stats">
     <div class="stat"><b>${num(ov.medals_count)}</b><span>медал${ov.medals_count===1?'ь':(ov.medals_count>=2&&ov.medals_count<=4?'і':'ей')}</span></div>
@@ -579,7 +581,7 @@ function renderHead(){
     </div>`;
   }
   $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
-    <div class="identity">${eyebrow}<h2>${esc(name)}</h2><div class="who-sub">${esc(sub)}</div>${stat}</div>
+    <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}</div>
     ${actions}</section>`;
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }
@@ -656,7 +658,7 @@ function ovChipLabel(k,it){
 }
 function cupCardHTML(t){                                   // кубок = 🏆 + назва турніру (без «Чемпіон BOBET»)
   return `<div class="title-card"><span class="tc-ic">🏆</span>
-    <div><strong>${esc(t.tournament)}</strong><span>General</span></div></div>`;
+    <div><strong>${esc(t.tournament)}</strong></div></div>`;
 }
 function ovModContent(k){                                  // ГОЛОВНА колонка (повні рендери); '' → сховати
   if(k==='cups'){ const it=ovPick('cups'); if(!it.length) return '';
@@ -1017,6 +1019,8 @@ function openEdit(){
     <div class="mbody">
       <label>Імʼя</label>
       <input type="text" id="rn-name" maxlength="24" value="${esc(S.ov.display_name||'')}">
+      <label>Девіз / про себе <span style="color:var(--text-dim);font-weight:400">· необовʼязково, до 80 символів</span></label>
+      <input type="text" id="ed-bio" maxlength="80" placeholder="Напр.: Грай на виграш, не на красу" value="${esc(S.ov.bio||'')}">
       <label>Колір шапки</label>
       <input type="color" id="av-col" value="${esc(col)}" style="width:100%;height:44px;padding:4px;border:1px solid var(--line2);border-radius:10px;background:none;cursor:pointer">
       ${chBlock}
@@ -1032,6 +1036,11 @@ function openEdit(){
     if(newName && newName!==(S.ov.display_name||'')){
       const { error }=await sb.rpc('rename_profile',{ p_new_name:newName });
       if(error){ m.className='msg err'; m.textContent=error.message||'Не вдалось перейменувати'; return; }
+    }
+    const newBio=$('ed-bio').value.trim();
+    if(newBio!==(S.ov.bio||'')){
+      const { error:eb }=await sb.rpc('set_profile_bio',{ p_bio:newBio });
+      if(eb){ m.className='msg err'; m.textContent=eb.message||'Не вдалось зберегти девіз'; return; }
     }
     const { error:e2 }=await sb.rpc('set_profile_avatar',{ p_emoji:null, p_color:$('av-col').value });
     if(e2){ m.className='msg err'; m.textContent=e2.message||'Не вдалось зберегти колір'; return; }
