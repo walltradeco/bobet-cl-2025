@@ -519,7 +519,16 @@ async function boot(){
 
 // усі дані профілю ОДНИМ паралельним залпом (overview + 7 RPC + розкладка вітрини)
 function fetchProfileData(id){
-  const R=(fn,args)=>sb.rpc(fn,args).then(r=>r.error?[]:(r.data||[])).catch(()=>[]);
+  // ⚠️ 01.10: під паралельним залпом (9 запитів) база інколи віддає 57014 «statement timeout» на важких функціях
+  // (profile_tournaments / nominations / portrait) — тоді блок «Зараз грає»/рекорди мовчки зникали. Повторюємо до 3 разів
+  // із наростаючою паузою; після невдач — [] (профіль не ламається).
+  const R=(fn,args)=>{
+    const run=n=>sb.rpc(fn,args).then(r=>{
+      if(r.error){ if(n<2) return new Promise(res=>setTimeout(res,400*(n+1))).then(()=>run(n+1)); return []; }
+      return r.data||[];
+    }).catch(()=>n<2?new Promise(res=>setTimeout(res,400*(n+1))).then(()=>run(n+1)):[]);
+    return run(0);
+  };
   const loadLay=cols=>sb.from('profile_layout').select(cols).eq('profile_id',id).maybeSingle()
     .then(r=>r.error?{fail:true}:{data:r.data}).catch(()=>({fail:true}));
   const layP=(async()=>{   // module_col (476) може ще не існувати → пробуємо з ним, далі без нього
