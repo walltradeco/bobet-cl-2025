@@ -254,6 +254,11 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .award{min-height:130px;padding:18px;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--panel2)}
 .award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}.award.goal{border-left-color:#7898B8}
+.lg-block{margin-top:26px}.lg-block:first-of-type{margin-top:4px}
+.lg-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px;padding:0 0 10px 12px;border-bottom:1px solid var(--line);border-left:3px solid var(--gold)}
+.lg-block.psl .lg-h{border-left-color:#7898B8}
+.lg-h span{font-size:18px;font-weight:700;letter-spacing:.04em}
+.lg-h em{font-style:normal;color:var(--text-dim);font-size:11px;font-family:var(--mono)}
 .award .aw-ic{font-size:22px}
 .award h4{margin:14px 0 6px;font-size:15px}
 .award p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.5}
@@ -438,6 +443,12 @@ const STATUS_LABEL={active:'триває',finished:'завершено',draft:'�
 // ⚠️ HIDE_CARDS: у БОЙОВІЙ версії (profile.html) картки/крамниця/колекція сховані — Squad Mode і
 // картки лишаються лише на STAGE. Одна константа: promote.py перемикає false → true при промоуті.
 const HIDE_CARDS=true;
+// ⚠️ HIDE_TEST_TOURS (рішення Богдана 01.10): у БОЙОВІЙ версії (profile.html) блок «Де грає зараз» не показує ТЕСТОВІ турніри —
+// Squad (не релізнутий) і PSL Season 4/5 (стейдж-тест). На STAGE = false: видно все, щоб тестувати. БД спільна для STAGE і PROD,
+// тому це лише фільтр показу, а не видалення. promote.py ставить true. Новий справжній PSL-сезон зʼявиться сам (не в списку).
+const HIDE_TEST_TOURS=false;
+const TEST_PSL_SEASONS=['Season 4','Season 5'];
+const isTestTour=x=>x.league==='Squad'||(x.league==='PSL'&&TEST_PSL_SEASONS.includes(x.tournament_name));
 // суцільна корона для бейджів чемпіона (контурна ic('crown') на 11-16px зливалась у пляму)
 const crownIc=(sz)=>`<svg class="crown-fill" viewBox="0 0 24 24" width="${sz}" height="${sz}" fill="currentColor" aria-hidden="true"><path d="M3 7.5l4.6 4.2L12 4.5l4.4 7.2L21 7.5l-1.6 9.5H4.6z"/><rect x="4.6" y="18.3" width="14.8" height="2.4" rx="1"/></svg>`;
 // ── Огляд-конструктор: реєстр модулів ──
@@ -543,7 +554,7 @@ async function loadProfile(pre){
       <div class="identity"><h2>Профіль не знайдено</h2></div></section>`;
     $('ptabs').innerHTML=''; $('ptab').innerHTML=''; return;
   }
-  S.tours=t; S.cards=c; S.comms=m; S.noms=nm;
+  S.tours=HIDE_TEST_TOURS?(t||[]).filter(x=>!isTestTour(x)):t; S.cards=c; S.comms=m; S.noms=nm;
   // 487: PSL-архів у трофеях. «Ціль» (phase_kind=psl_goal) — НЕ медаль: окремий список, у медалі/кубки не потрапляє
   S.trophies=(tr||[]).filter(x=>x.phase_kind!=='psl_goal'); S.goals=(tr||[]).filter(x=>x.phase_kind==='psl_goal');
   S.records=rec[0]||null; S.portrait=por[0]||null;
@@ -881,22 +892,32 @@ function commRail(){
 
 // ── ТРОФЕЇ ──
 function renderTrophies(box){
-  if(!S.trophies.length && !(S.goals||[]).length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
-  const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
-  // КУБКИ — перемоги загального заліку (титули). Окрема вітрина: чемпіон бере кубок, не медаль.
-  const titles=S.trophies.filter(isTitle).sort((a,b)=>a.tournament_order-b.tournament_order);
-  const cupSec = titles.length ? `<h4 class="cup-h">🏆 Кубки</h4><div class="title-strip">${titles.map(cupCardHTML).join('')}</div>` : '';
-  // МЕДАЛІ — усе, крім титулів; від золота до бронзи (як посортовано на борді)
-  const medals=S.trophies.slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
-  const awards=medals.map(t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
-    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
-  const medalSec = medals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${awards}</div>` : '';
-  // 487: «Ціль» PSL — окремою позначкою (це не медаль, у лічильник медалей не входить)
   const goals=(S.goals||[]).slice().sort((a,b)=>a.tournament_order-b.tournament_order);
-  const goalSec = goals.length ? `<h4 class="cup-h" style="margin-top:22px">🎯 Цілі</h4><div class="tr-grid">${goals.map(g=>`<article class="award goal"><span class="aw-ic">🎯</span>
+  if(!S.trophies.length && !goals.length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
+  const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
+  const awardCard=t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
+    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`;
+  const byPlace=(a,b)=>a.place-b.place||a.tournament_order-b.tournament_order;   // від золота до бронзи (як на борді)
+  const bo=S.trophies.filter(t=>t.league!=='PSL'), ps=S.trophies.filter(t=>t.league==='PSL');
+  // BOBET: КУБКИ — перемоги загального заліку (титули; чемпіон бере кубок, не медаль) + МЕДАЛІ
+  const titles=bo.filter(isTitle).sort((a,b)=>a.tournament_order-b.tournament_order);
+  const cupSec = titles.length ? `<h4 class="cup-h">🏆 Кубки</h4><div class="title-strip">${titles.map(cupCardHTML).join('')}</div>` : '';
+  const boMedals=bo.slice().sort(byPlace);
+  const boSec = boMedals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${boMedals.map(awardCard).join('')}</div>` : '';
+  // PSuper League (487): МЕДАЛІ + «Ціль» окремою позначкою (це не медаль, у лічильник медалей не входить)
+  const psMedals=ps.slice().sort(byPlace);
+  const psSec = psMedals.length ? `${goals.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${psMedals.map(awardCard).join('')}</div>` : '';
+  const goalSec = goals.length ? `<h4 class="cup-h"${psMedals.length?' style="margin-top:22px"':''}>🎯 Цілі</h4><div class="tr-grid">${goals.map(g=>`<article class="award goal"><span class="aw-ic">🎯</span>
     <h4>${esc(g.tournament)} · Ціль</h4><p>PSL · ціль досягнута</p></article>`).join('')}</div>` : '';
+  // є PSL → ділимо вітрину на два блоки-ліги; немає — як було (без зайвого заголовка)
+  const lgBlock=(cls,title,sub,html)=> html ? `<div class="lg-block ${cls}"><div class="lg-h"><span>${title}</span><em>${sub}</em></div>${html}</div>` : '';
+  const boSub = `${bo.length} ${plural(bo.length,'медаль','медалі','медалей')}`;
+  const psSub = [ps.length?`${ps.length} ${plural(ps.length,'медаль','медалі','медалей')}`:'', goals.length?`${goals.length} ${plural(goals.length,'ціль','цілі','цілей')}`:''].filter(Boolean).join(' · ');
+  const body = (ps.length||goals.length)
+    ? lgBlock('bobet','BOBET',boSub,cupSec+boSec) + lgBlock('psl','PSuper League',psSub,psSec+goalSec)
+    : cupSec+boSec;
   box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні нагороди за історію BoOrbit (архів завершених турнірів BoBet і PSL).</p></div></div>
-    ${cupSec}${medalSec}${goalSec}</section>`;
+    ${body}</section>`;
 }
 function trophyLeagueLabel(t){ return t.league==='PSL' ? 'PSL' : 'BOBET'; }   // 487: BoBet-архів + PSL-архів
 function trophyPlaceLabel(t){
