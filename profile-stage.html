@@ -253,7 +253,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .chrow span{color:var(--copy);font-size:12px;line-height:1.4}
 .tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .award{min-height:130px;padding:18px;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--panel2)}
-.award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}
+.award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}.award.goal{border-left-color:#7898B8}
 .award .aw-ic{font-size:22px}
 .award h4{margin:14px 0 6px;font-size:15px}
 .award p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.5}
@@ -543,7 +543,9 @@ async function loadProfile(pre){
       <div class="identity"><h2>Профіль не знайдено</h2></div></section>`;
     $('ptabs').innerHTML=''; $('ptab').innerHTML=''; return;
   }
-  S.tours=t; S.cards=c; S.comms=m; S.trophies=tr; S.noms=nm;
+  S.tours=t; S.cards=c; S.comms=m; S.noms=nm;
+  // 487: PSL-архів у трофеях. «Ціль» (phase_kind=psl_goal) — НЕ медаль: окремий список, у медалі/кубки не потрапляє
+  S.trophies=(tr||[]).filter(x=>x.phase_kind!=='psl_goal'); S.goals=(tr||[]).filter(x=>x.phase_kind==='psl_goal');
   S.records=rec[0]||null; S.portrait=por[0]||null;
   // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
   S.pending = S.isOwn ? await sb.rpc('my_community_pending',{}).then(r=>r.error?[]:(r.data||[])).catch(()=>[]) : [];
@@ -735,7 +737,7 @@ function ovModContent(k){                                  // ГОЛОВНА к�
   if(k==='medals'){ const it=ovPick('medals'); if(!it.length) return '';
     const cls=t=>t.place===1?'':t.place===2?'silver':'bronze';
     return `<div class="tr-grid">${it.map(t=>`<article class="award ${cls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
-      <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BOBET · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}</div>`; }
+      <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}</div>`; }
   if(k==='collection'){ const it=ovPick('collection'); if(!it.length) return '';
     return `<div class="card-row">${it.map(cardCell).join('')}</div>`; }
   if(k==='playing'){ if(!S.tours.length) return '';
@@ -879,7 +881,7 @@ function commRail(){
 
 // ── ТРОФЕЇ ──
 function renderTrophies(box){
-  if(!S.trophies.length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
+  if(!S.trophies.length && !(S.goals||[]).length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
   const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
   // КУБКИ — перемоги загального заліку (титули). Окрема вітрина: чемпіон бере кубок, не медаль.
   const titles=S.trophies.filter(isTitle).sort((a,b)=>a.tournament_order-b.tournament_order);
@@ -887,12 +889,18 @@ function renderTrophies(box){
   // МЕДАЛІ — усе, крім титулів; від золота до бронзи (як посортовано на борді)
   const medals=S.trophies.slice().sort((a,b)=>a.place-b.place||a.tournament_order-b.tournament_order);
   const awards=medals.map(t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
-    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>BOBET · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
+    <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('');
   const medalSec = medals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${awards}</div>` : '';
-  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні нагороди за історію BoOrbit (архів завершених турнірів).</p></div></div>
-    ${cupSec}${medalSec}</section>`;
+  // 487: «Ціль» PSL — окремою позначкою (це не медаль, у лічильник медалей не входить)
+  const goals=(S.goals||[]).slice().sort((a,b)=>a.tournament_order-b.tournament_order);
+  const goalSec = goals.length ? `<h4 class="cup-h" style="margin-top:22px">🎯 Цілі</h4><div class="tr-grid">${goals.map(g=>`<article class="award goal"><span class="aw-ic">🎯</span>
+    <h4>${esc(g.tournament)} · Ціль</h4><p>PSL · ціль досягнута</p></article>`).join('')}</div>` : '';
+  box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні нагороди за історію BoOrbit (архів завершених турнірів BoBet і PSL).</p></div></div>
+    ${cupSec}${medalSec}${goalSec}</section>`;
 }
+function trophyLeagueLabel(t){ return t.league==='PSL' ? 'PSL' : 'BOBET'; }   // 487: BoBet-архів + PSL-архів
 function trophyPlaceLabel(t){
+  if(t.league==='PSL') return t.place===1?'перемога':t.place+' місце';          // PSL: ліга/кубок/суперкубок — 1 місце = кубок
   const m=t.place===1?'золото':t.place===2?'2 місце':'3 місце';
   return t.phase_kind==='general'?m+' General':m+' етапу';   // термінологія як у Нагородах: General
 }
