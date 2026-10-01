@@ -425,9 +425,20 @@ async function boot(){
   if(openId){ try{ await openCommunity(openId); }catch(e){} }
 }
 
+// 01.10: престиж рахується на льоту; при розбігу навантаження база інколи віддає 57014 (statement timeout) — повторюємо
+// 1 раз із паузою (спільноти не лишаються порожніми через разовий збій; більше — підсилювало б навантаження)
+async function withRetry(fn, n=1){
+  let r;
+  for(let i=0;i<=n;i++){
+    try{ r=await fn(); }catch(e){ r={ error:e, data:null }; }
+    if(!r.error) return r;
+    if(i<n) await new Promise(res=>setTimeout(res,400*(i+1)));
+  }
+  return r;
+}
 async function loadList(){
-  const { data, error } = await sb.from('community_card')
-    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,rank_no,rank_name');
+  const { data, error } = await withRetry(()=>sb.from('community_card')
+    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,rank_no,rank_name'));
   S.list = error ? [] : (data||[]);
   renderGrid();
 }
@@ -534,17 +545,19 @@ async function respondRequest(id,ok){
 
 // ── СТОРІНКА СПІЛЬНОТИ ──
 async function openCommunity(id, keepTab){
-  const detail=(await sb.from('community_detail').select('*').eq('id',id).maybeSingle()).data;
-  const card=(await sb.from('community_card').select('*').eq('id',id).maybeSingle()).data;
-  if(!detail && !card){ alert('Спільноту не знайдено'); return; }
-  const [members,wall,log,roles,rels,prestige] = await Promise.all([
+  // ⚡ 01.10: усе одним паралельним залпом (раніше detail → card → решта йшли ПОСЛІДОВНО, а detail/card/prestige рахують престиж)
+  const [detailR,cardR,members,wall,log,roles,rels,prestige] = await Promise.all([
+    withRetry(()=>sb.from('community_detail').select('*').eq('id',id).maybeSingle()),
+    withRetry(()=>sb.from('community_card').select('*').eq('id',id).maybeSingle()),
     sb.from('community_member_list').select('*').eq('community_id',id),
     sb.from('community_wall').select('*').eq('community_id',id).order('is_pinned',{ascending:false}).order('created_at',{ascending:false}),
     sb.from('community_log_view').select('*').eq('community_id',id).order('created_at',{ascending:false}).limit(80),
     sb.from('community_roles_view').select('*').eq('community_id',id).order('sort_order'),
     sb.from('community_relations_view').select('*').eq('community_id',id),
-    sb.rpc('community_prestige_detail',{p_community:id})
+    withRetry(()=>sb.rpc('community_prestige_detail',{p_community:id}))
   ]);
+  const detail=(detailR&&detailR.data)||null, card=(cardR&&cardR.data)||null;
+  if(!detail && !card){ alert('Спільноту не знайдено'); return; }
   S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
     log:log.data||[], roles:roles.data||[], rels:rels.data||[],
     prestige:(prestige&&prestige.data)||null,
@@ -756,12 +769,11 @@ function renderPrestige(perms, member){
        Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
        Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.
        Одне пиво = <b>0.5 л</b>.`
-    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b>:
-       кубок <b>+5</b>, медалі (золото <b>+4</b>, срібло <b>+3</b>, бронза <b>+2</b>, участь <b>+1</b>),
-       досягнення в <b>PSL</b> (кубок <b>+5</b>, 2 місце <b>+3</b>, 3 місце <b>+2</b>, «Ціль» <b>+2</b>,
-       участь у сезоні без медалі <b>+1</b>)
-       та рекорди ліги (<b>+1</b> кожен). Пізніше, коли дограється Євросезон, додадуться
-       <b>рідкісні картки</b> (rare +2, mega +3) та <b>переможці Rivals/MVP</b> (по +3).
+    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b> у <b>BOBET</b> та <b>PSL</b>:
+       <b>кубок</b> (перемога в турнірі) <b>+5</b>, медалі — <b>золото етапу +4</b>, <b>срібло / 2 місце +3</b>,
+       <b>бронза / 3 місце +2</b>, <b>участь у турнірі без медалі +1</b>, «<b>Ціль</b>» (PSL) <b>+2</b>
+       та <b>рекорди ліги</b> (<b>+1</b> кожен). Пізніше додадуться: після завершення Євросезону —
+       <b>переможці Rivals/MVP</b> (по +3), з новим турніром — <b>рідкісні картки</b> (rare +2, mega +3).
        Клуб росте від <b>Дворової команди</b> до <b>Династії</b>.`;
   const beer=(c.kind==='bar')
     ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';

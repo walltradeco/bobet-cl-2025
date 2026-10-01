@@ -541,8 +541,15 @@ function fetchProfileData(id){
       const base='profile_id,display_name,avatar_emoji,avatar_color,tournaments_count,cards_count,communities_count,medals_count,title_count,is_champion,champion_league,honor_name,show_champion';
       const q=async cols=>{ try{ return await sb.from('profile_overview').select(cols).eq('profile_id',id).maybeSingle(); }
         catch(e){ return { error:e }; } };
-      let r=await q(base+',bio');
-      if(r.error) r=await q(base);
+      // ⚠️ 01.10: разовий 57014 (statement timeout) на overview малював «Профіль не знайдено» — тепер до 4 спроб:
+      // відсутня колонка bio → одразу без неї; будь-який інший збій (таймаут, мережа) → пауза 400/800/1200 мс і знову.
+      let cols=base+',bio', r={ error:true };
+      for(let n=0;n<4;n++){
+        r=await q(cols);
+        if(!r.error) break;
+        if(cols!==base && /bio|column/i.test((r.error&&r.error.message)||'')){ cols=base; continue; }
+        await new Promise(res=>setTimeout(res,400*(n+1)));
+      }
       return (r&&r.data)||null;
     })(),
     R('profile_tournaments',{ p_profile:id }),
