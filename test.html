@@ -935,6 +935,33 @@
      замість auto-fill: ряд збирається по центру, а не притискається
      ліворуч із діркою праворуч. margin-bottom обов'язковий — без
      нього картки впритул налазили на першу полицю з медалями. */
+
+  /* ===== Вікно «Показати кубок» (сцена+трофей від ChatGPT, картинки в trophies/) ===== */
+  #trophy-lb{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;
+    background:rgba(5,8,7,.9);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);padding:3vh 3vw}
+  #trophy-lb.open{display:flex}
+  #trophy-lb .tl-stage{perspective:1500px;display:flex;align-items:center;justify-content:center}
+  #trophy-lb .tl-frame{position:relative;display:inline-block;border-radius:18px;
+    box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(214,175,86,.38),0 0 90px rgba(214,175,86,.16);
+    transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .14s ease-out;will-change:transform}
+  #trophy-lb img{display:block;max-width:94vw;max-height:92vh;width:auto;height:auto;border-radius:18px}
+  /* текст на табличках: назва й ім'я підставляються з даних (rename-safe), розмір від ширини картинки (--fw) */
+  #trophy-lb .tl-plate{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#2c1f07;
+    text-shadow:0 1px 0 rgba(255,236,170,.65),0 -1px 0 rgba(60,38,6,.25);pointer-events:none}
+  #trophy-lb .tl-plate b{display:block;font-weight:700;line-height:1.12;white-space:nowrap;letter-spacing:.02em;font-size:calc(var(--fw,600px)*var(--k2,.056))}
+  #trophy-lb .tl-plate i{display:block;font-style:normal;font-weight:600;line-height:1.2;white-space:nowrap;letter-spacing:.12em;text-transform:uppercase;font-size:calc(var(--fw,600px)*var(--k1,.030))}
+  #trophy-lb.gal .tl-plate i{letter-spacing:.05em}
+  #trophy-lb.gal .tl-plate{--k1:.0078;--k2:.0138}
+  #trophy-lb .tl-close{position:absolute;top:16px;right:18px;background:rgba(20,28,24,.85);color:#e9eadf;
+    border:1px solid rgba(214,175,86,.4);border-radius:10px;font:600 14px/1 'IBM Plex Mono',monospace;
+    padding:10px 14px;cursor:pointer}
+  #trophy-lb .tl-close:hover{border-color:#e7c979;color:#e7c979}
+  @media (prefers-reduced-motion:reduce){#trophy-lb .tl-frame{transition:none;transform:none!important}}
+  .hn-showrow{display:flex;justify-content:center;margin:2px 0 18px}
+  .hn-showbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);border-radius:10px;
+    padding:10px 20px;font:600 13px 'IBM Plex Mono',monospace;cursor:pointer}
+  .hn-showbtn:hover{border-color:var(--gold);color:var(--gold)}
   .hn-facts{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(240px,280px));
@@ -4657,7 +4684,9 @@ function honorsCase(d){
 
   return honorsWrap('Трофейна вітрина',
     'Усе, що виграно за історію ліги — з точністю до етапу',
-    `<div class="hn-facts">${cards}</div>` + cases + euro);
+    `<div class="hn-facts">${cards}</div>` +
+    `<div class="hn-showrow"><button class="hn-showbtn" type="button" data-trophy="gallery">⤢ Показати кубки</button></div>` +
+    cases + euro);
 }
 
 /* --- 3. Рекорди ліги --- */
@@ -5518,6 +5547,50 @@ document.getElementById('comm-btn').addEventListener('click',
     if(root) new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
   });
 })();
+
+
+/* ===== Вікно «Показати кубок» ===== */
+/* (на борді мапа не потрібна — кнопка одна, на галерею) */
+const TROPHY_WIN={ 'Євро 2024':{k:'euro2024',winner:'Антон'}, 'ЛЧ 2025':{k:'ucl2025',winner:'Денис'},
+  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'} };
+const TROPHY_PLATE={ euro2024:['Євро 2024','Євро 2024','Антон'], ucl2025:['ЛЧ 2025','ЛЧ 2025','Денис'],
+  cwc2025:['Клубний ЧС 2025','Клубний ЧС 2025','Антон'], wc2026:['ЧС 2026','ЧС 2026','Саня'],
+  euroseason2026:['сезон 2026 триває','2026','ЄвроСезон'] };
+const TROPHY_GAL=['euro2024','ucl2025','cwc2025','wc2026','euroseason2026'];
+const TROPHY_GAL_X=[[11.4,20.9],[27.9,37.3],[44.9,54.4],[61.3,70.5],[77.3,87.8]];   // положення табличок на gallery.webp, % ширини
+function openTrophy(key,name){
+  let lb=document.getElementById('trophy-lb');
+  if(!lb){
+    lb=document.createElement('div'); lb.id='trophy-lb';
+    lb.innerHTML='<button class="tl-close" type="button">Закрити ✕</button><div class="tl-stage"><div class="tl-frame"><img alt="Кубок"></div></div>';
+    document.body.appendChild(lb);
+    const img=lb.querySelector('img'), fr=lb.querySelector('.tl-frame');
+    const close=()=>{ lb.classList.remove('open'); img.removeAttribute('src'); fr.querySelectorAll('.tl-plate').forEach(n=>n.remove()); };
+    const fit=()=>fr.style.setProperty('--fw',img.clientWidth+'px');
+    img.addEventListener('load',fit); window.addEventListener('resize',fit);
+    lb.addEventListener('click',e=>{ if(e.target===lb||e.target.closest('.tl-close')) close(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&lb.classList.contains('open')){ e.stopPropagation(); close(); } },true);
+    lb.addEventListener('mousemove',e=>{            // легкий нахил за курсором
+      const r=fr.getBoundingClientRect(), dx=(e.clientX-(r.left+r.width/2))/(r.width/2), dy=(e.clientY-(r.top+r.height/2))/(r.height/2);
+      fr.style.setProperty('--ry',(Math.max(-1,Math.min(1,dx))*6)+'deg'); fr.style.setProperty('--rx',(Math.max(-1,Math.min(1,dy))*-4)+'deg'); });
+    lb.addEventListener('mouseleave',()=>{ fr.style.setProperty('--ry','0deg'); fr.style.setProperty('--rx','0deg'); });
+  }
+  const fr=lb.querySelector('.tl-frame'), gal=key==='gallery';
+  fr.querySelectorAll('.tl-plate').forEach(n=>n.remove());
+  const plate=(k,x0,w,y0,h)=>{ const p=TROPHY_PLATE[k]; if(!p) return;
+    const d=document.createElement('div'); d.className='tl-plate';
+    d.style.cssText=`left:${x0}%;width:${w}%;top:${y0}%;height:${h}%`;
+    const who=(k==='euroseason2026'||!name)?p[2]:name;                 // у профілі — актуальне ім'я власника (не міняється з rename)
+    d.innerHTML='<b></b><i></i>'; d.firstChild.textContent=who; d.lastChild.textContent=gal?p[1]:p[0];
+    if(gal&&p[1].length>12) d.style.setProperty('--k1','.0064');
+    fr.appendChild(d); };
+  if(gal) TROPHY_GAL.forEach((k,i)=>plate(k,TROPHY_GAL_X[i][0],TROPHY_GAL_X[i][1]-TROPHY_GAL_X[i][0],68.4,8.4));
+  else plate(key,26.2,48.2,70.4,9.4);
+  lb.classList.toggle('gal',gal);
+  lb.querySelector('img').src='trophies/'+key+'.webp';
+  lb.classList.add('open');
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-trophy]'); if(b){ e.preventDefault(); e.stopPropagation(); openTrophy(b.dataset.trophy); } });
 
 /* ======== INIT ======== */
 /* ⚠️ ВБУДОВАНИЙ БОРД: `test.html?board=aug2026` — та сама сторінка, але
