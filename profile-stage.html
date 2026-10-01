@@ -254,6 +254,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .tr-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .award{min-height:130px;padding:18px;border:1px solid var(--line);border-left:2px solid var(--gold);border-radius:14px;background:var(--panel2)}
 .award.silver{border-left-color:#b7c0c8}.award.bronze{border-left-color:#b98a5e}.award.goal{border-left-color:#7898B8}
+.hist-grp+.cup-h{margin-top:20px}
 .lg-block{margin-top:26px}.lg-block:first-of-type{margin-top:4px}
 .lg-h{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin:0 0 14px;padding:0 0 10px 12px;border-bottom:1px solid var(--line);border-left:3px solid var(--gold)}
 .lg-block.psl .lg-h{border-left-color:#7898B8}
@@ -443,7 +444,7 @@ const STATUS_LABEL={active:'триває',finished:'завершено',draft:'�
 // ⚠️ HIDE_CARDS: у БОЙОВІЙ версії (profile.html) картки/крамниця/колекція сховані — Squad Mode і
 // картки лишаються лише на STAGE. Одна константа: promote.py перемикає false → true при промоуті.
 const HIDE_CARDS=true;
-// ⚠️ HIDE_TEST_TOURS (рішення Богдана 01.10): у БОЙОВІЙ версії (profile.html) блок «Де грає зараз» не показує ТЕСТОВІ турніри —
+// ⚠️ HIDE_TEST_TOURS (рішення Богдана 01.10): у БОЙОВІЙ версії (profile.html) блок «Історія турнірів» (розділ «Зараз грає») не показує ТЕСТОВІ турніри —
 // Squad (не релізнутий) і PSL Season 4/5 (стейдж-тест). На STAGE = false: видно все, щоб тестувати. БД спільна для STAGE і PROD,
 // тому це лише фільтр показу, а не видалення. promote.py ставить true. Новий справжній PSL-сезон зʼявиться сам (не в списку).
 const HIDE_TEST_TOURS=false;
@@ -459,7 +460,7 @@ const OVMODS={
   collection:{name:'Колекція',em:'🃏',pick:true,cap:null,link:'collection'},
   portrait:{name:'Портрет гравця',em:'🧬',pick:false,link:'portrait'},
   communities:{name:'Спільноти',em:'👥',pick:false,link:'communities'},
-  playing:{name:'Де грає зараз',em:'📍',pick:false,link:null},
+  playing:{name:'Історія турнірів',em:'📍',pick:false,link:null,count:()=>(S.ov&&S.ov.tournaments_count!=null)?S.ov.tournaments_count:null},   // 489: «Зараз грає» + «Де грав»; число = шапка
 };
 if(HIDE_CARDS) delete OVMODS.collection;
 const OV_ORDER_DEF=['cups','medals','records','collection','portrait','communities','playing'].filter(k=>!(HIDE_CARDS&&k==='collection'));
@@ -542,12 +543,13 @@ function fetchProfileData(id){
     R('profile_records',{ p_profile:id }),
     R('profile_portrait',{ p_profile:id }),
     R('profile_nominations',{ p_profile:id }),
-    layP
+    layP,
+    R('profile_history',{ p_profile:id })     // 489: «Де грав» (відсутня функція → [] → лише «Зараз грає»)
   ]);
 }
 
 async function loadProfile(pre){
-  const [ov,t,c,m,tr,rec,por,nm,lay]=await pre;
+  const [ov,t,c,m,tr,rec,por,nm,lay,hist]=await pre;
   S.ov=ov;
   if(!ov){
     $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
@@ -557,6 +559,7 @@ async function loadProfile(pre){
   S.tours=HIDE_TEST_TOURS?(t||[]).filter(x=>!isTestTour(x)):t; S.cards=c; S.comms=m; S.noms=nm;
   // 487: PSL-архів у трофеях. «Ціль» (phase_kind=psl_goal) — НЕ медаль: окремий список, у медалі/кубки не потрапляє
   S.trophies=(tr||[]).filter(x=>x.phase_kind!=='psl_goal'); S.goals=(tr||[]).filter(x=>x.phase_kind==='psl_goal');
+  S.hist=hist||[];
   S.records=rec[0]||null; S.portrait=por[0]||null;
   // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
   S.pending = S.isOwn ? await sb.rpc('my_community_pending',{}).then(r=>r.error?[]:(r.data||[])).catch(()=>[]) : [];
@@ -751,8 +754,7 @@ function ovModContent(k){                                  // ГОЛОВНА к�
       <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}</div>`; }
   if(k==='collection'){ const it=ovPick('collection'); if(!it.length) return '';
     return `<div class="card-row">${it.map(cardCell).join('')}</div>`; }
-  if(k==='playing'){ if(!S.tours.length) return '';
-    return S.tours.slice().sort(sortTours).map(playRow).join(''); }
+  if(k==='playing') return historyBlock();
   // рухомі модулі (якщо учасник поставив їх у головну): ті самі рендери, що й у бічній
   if(OV_MOVABLE.includes(k)) return ovSideContent(k);
   return '';
@@ -771,7 +773,7 @@ function renderOverview(box){
   const main=eff.order.filter(k=>eff.on[k]&&ovColOf(k,eff.cols)==='main').map(k=>{
     const b=ovModContent(k); if(!b) return ''; const M=OVMODS[k];
     const link=M.link?`<button class="link" data-go="${M.link}">Усі →</button>`:'';
-    return `<section class="ovmod"><div class="ovmod-h"><div class="t">${M.em} ${M.name.toUpperCase()}</div>${link}</div>${b}</section>`;
+    return `<section class="ovmod"><div class="ovmod-h"><div class="t">${M.em} ${M.name.toUpperCase()}${(M.count&&M.count()!=null)?` · ${M.count()}`:''}</div>${link}</div>${b}</section>`;
   }).join('');
   const side=eff.order.filter(k=>eff.on[k]&&ovColOf(k,eff.cols)==='side').map(k=>{
     const b=ovSideContent(k); if(!b) return ''; const M=OVMODS[k];
@@ -1075,10 +1077,23 @@ function renderCommunities(box){
 // ── «де грає» рядок ──
 const _ord={BoBet:0,PSL:1,Squad:2};
 function sortTours(a,b){ return (_ord[a.league]??9)-(_ord[b.league]??9); }
-function playRow(t){
-  return `<div class="play-row"><span class="lg ${esc(t.league)}">${esc(t.league)}</span>
-    <div class="pn">${esc(t.tournament_name)} <small>· ${esc(t.kind==='загальний залік'?'General':t.kind)} · ${STATUS_LABEL[t.status]||esc(t.status||'')}</small></div>
-    <div class="pp">${t.place!=null?t.place:'—'} <small>${t.place!=null?'місце':''}</small></div></div>`;
+// ── «Історія турнірів» (489): «Зараз грає» (profile_tournaments, не завершені) + «Де грав» (profile_history + завершені живі) ──
+// Рішення Богдана 01.10: ПРОСТИЙ ПЕРЕЛІК назв, без місць і без нагород. Число в заголовку = «Турніри» в шапці.
+function histRow(lg,name,note){
+  return `<div class="play-row"><span class="lg ${esc(lg)}">${esc(lg)}</span>
+    <div class="pn">${esc(name)}${note?` <small>· ${note}</small>`:''}</div></div>`;
+}
+function historyBlock(){
+  const tours=S.tours||[];
+  const cur=tours.filter(x=>x.status!=='finished').sort(sortTours);
+  const seen=new Set(), past=[];
+  const addPast=(lg,name)=>{ const key=lg+'|'+name; if(!seen.has(key)){ seen.add(key); past.push({lg,name}); } };
+  (S.hist||[]).forEach(h=>addPast(h.league,h.tournament));                           // архів: BoBet за часом, потім PSL (порядок із сервера)
+  tours.filter(x=>x.status==='finished').sort(sortTours).forEach(x=>addPast(x.league,x.tournament_name));   // завершені живі (без дублю з архівом)
+  if(!cur.length && !past.length) return '';
+  const grp=(title,n,rows)=> n ? `<h4 class="cup-h">${title} <span style="opacity:.7">· ${n}</span></h4><div class="hist-grp">${rows}</div>` : '';
+  return grp('Зараз грає',cur.length,cur.map(x=>histRow(x.league,x.tournament_name,STATUS_LABEL[x.status]||esc(x.status||''))).join(''))
+       + grp('Де грав',past.length,past.map(x=>histRow(x.lg,x.name,'')).join(''));
 }
 function wireGo(root){ root.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>goTab(b.dataset.go)); }
 
