@@ -617,23 +617,34 @@ function renderHead(){
   const col = (ov.avatar_color && /^#[0-9a-fA-F]{6}$/.test(ov.avatar_color)) ? ov.avatar_color : null;
   const avInner = esc(initials(name));                        // емодзі-аватар прибрано — лише ініціали
   const avStyle = '';                                         // аватар БЕЗ кольору (колір лише на шапці)
-  const frame = champ
-    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${crownIc(19)}</span></div>`
-    : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
-  // 492: власне оформлення (рамка/ефект). Чемпіонські відзнаки мають ПРІОРИТЕТ (рішення 01.10): вимкнув перемикач — видно своє.
-  const cz = (BC && !champ && S.cos) ? S.cos : null;
-  const framed = !!(cz && (cz.frame!=='default' || cz.skin!=='default'));   // власна рамка/скін замінює градієнт кольору шапки
-  // 492 фаза 3: серверні чемпіонські шари (лише ліга BoBet): 1 титул → supreme+victory_radiance, 2+ → dynasty + середовище champion_hall.
-  // Не вибираються й не зберігаються; показуються, лише коли показуються чемпіонські відзнаки (champ) — вимкнув перемикач → видно своє.
+  // 492 фаза 3 + 493: серверні чемпіонські шари (лише ліга BoBet): 1 титул → supreme, 2+ → dynasty. Показуються, коли людина чемпіон
+  // і НЕ вимкнула відзнаки (champ). КОЖЕН елемент (badge/caption/crown/frame/rays/hall) чемпіон вмикає окремо (cfg.parts, SQL 493):
+  // вимкнений → власний стиль у власному кольорі; «золота рамка» разом з власною формою/скіном = ця форма у золоті.
   const bobetChamp = !!(BC && champ && (!ov.champion_league || ov.champion_league==='bobet'));
   const nTitles = Math.max(1, ov.title_count||0);
   const tier = bobetChamp ? (bcSafe('champTier',nTitles)||null) : null;
+  const legacyChamp = champ && !tier;                          // чемпіон без нових шарів (нема cosmetics-файла / не BoBet) — старий вигляд
+  const own = (BC && S.cos) ? S.cos : null;                    // власний вибір: рамка/скін, ефект, тема, елементи
+  const parts = tier ? ((own && own.parts) || (BC.PARTS_ALL||['badge','caption','crown','frame','hall','rays'])) : [];
+  const has = k => parts.indexOf(k)>=0;
+  const GOLD = (BC && BC.CHAMP_GOLD) || '#d9b45b';
+  const hdrCfg = tier ? own : (champ ? null : own);            // що малювати на шапці (champ без tier → як раніше, нічого)
+  const goldFrame = !!(tier && has('frame'));
+  const chosenShape = !!(hdrCfg && (hdrCfg.frame!=='default' || hdrCfg.skin!=='default'));
+  const classicGold = !!(goldFrame && !chosenShape);           // стандартна золота чемпіонська рамка (supreme/dynasty)
+  const framed = chosenShape;                                  // власна рамка/скін замінює градієнт кольору шапки
+  const crownInFrame = legacyChamp || (classicGold && has('crown'));
+  const frame = (legacyChamp || classicGold)
+    ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span>${crownInFrame?`<span class="crown-seal">${crownIc(19)}</span>`:''}</div>`
+    : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
+  // корона для решти випадків — окремо на шапці (рамка аватара з clip-path обрізала б її всередині)
+  const heroSeal = (tier && has('crown') && !classicGold) ? `<span class="crown-seal hero-seal">${crownIc(19)}</span>` : '';
   const heroStyle = (col && !framed) ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
 
   // чемпіонський бейдж + титули
   let eyebrow='';
-  if(champ){
-    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span>${tier?`<span class="champ-trophy" title="Титулів: ${nTitles}">🏆${nTitles>1?' × '+nTitles:''}</span>`:''}</div>`;
+  if(legacyChamp || (tier && has('badge'))){
+    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span></div>`;
   }
   // підзаголовок — лише ДЕВІЗ власника (478); архетип/«учасник ліги» прибрано (дублюють Портрет/Рекорди)
   const bio=(ov.bio||'').trim();
@@ -645,9 +656,9 @@ function renderHead(){
     <div class="stat"><b>${num(ov.communities_count)}</b><span>спільнот${ov.communities_count===1?'а':''}</span></div>
   </div>`;
 
-  // 492 фаза 3: підпис «переможець …» — лише для чемпіона ліги BoBet; імена титулів — із трофеїв (isTitle = перемога загального заліку)
+  // підпис «переможець …» — лише чемпіон ліги BoBet з увімкненим елементом «Підпис»; імена титулів — із трофеїв (isTitle = перемога загального заліку)
   let titleLine='';
-  if(tier){
+  if(tier && has('caption')){
     const names=[...new Set((S.trophies||[]).filter(isTitle).map(t=>t.tournament))].slice(0,3);
     titleLine=`<div class="title-list"><b>${nTitles>1?`Переможець ${nTitles} турнірів`:'Переможець турніру'}</b>${names.length?' · '+names.map(esc).join(' · '):''}</div>`;
   }
@@ -659,16 +670,24 @@ function renderHead(){
       <div class="launch">${HIDE_CARDS?'':`<a href="shop-stage.html">${ic('layers',13)}Крамниця</a>`}<a href="community-stage.html">👥 Спільноти</a></div>
     </div>`;
   }
-  $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
+  $('phead').innerHTML=`<section class="hero${(legacyChamp||classicGold)?' champ':''}"${heroStyle}>${frame}
     <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}${titleLine}</div>
-    ${actions}</section>`;
-  if(cz) bcSafe('apply',$('phead').querySelector('.hero'),cz,{avatar:'.frame',identity:'.identity',accent:col||'#7e9dbb'});
+    ${actions}${heroSeal}</section>`;
+  const hero=$('phead').querySelector('.hero');
+  // золота рамка → власна форма/скін/ефект у ЗОЛОТІ; інакше — у власному кольорі. Dynasty із золотом: більший аватар (124px)
+  const hdrAccent = goldFrame ? GOLD : (col||'#7e9dbb');
+  const avSize = (tier==='dynasty' && goldFrame) ? 124 : 104;
+  if(hdrCfg) bcSafe('apply',hero,hdrCfg,{avatar:'.frame',identity:'.identity',accent:hdrAccent,size:avSize,pad:28});
   if(BC){
-    // 492 фаза 3: чемпіонські шари шапки (supreme+victory_radiance / dynasty) — з серверних даних
-    bcSafe('applyChamp',$('phead').querySelector('.hero'),tier,{size:104,pad:28});
-    // 492 фаза 2/3: сторінка — champion_hall для чемпіона (золото), інакше тема + Full Sync (колір+рамка+ефект+тема)
-    if(tier) bcSafe('applyChampEnv',$('screen-profile'),{content:'#ptab'});
-    else bcSafe('applyEnv',$('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
+    bcSafe('applyChamp',hero,tier,{size:avSize,pad:28,gold:goldFrame,rays:has('rays')});
+    // сторінка: «Зал чемпіона» (золото) → champion_hall або власна тема у золоті; без залу — власна тема у власному кольорі
+    if(tier){
+      const c=own||BC.none();
+      if(has('hall')){
+        if(c.theme==='default') bcSafe('applyChampEnv',$('screen-profile'),{content:'#ptab',effect:c.effect});
+        else bcSafe('applyEnv',$('screen-profile'),c,{accent:GOLD,content:'#ptab'});
+      } else bcSafe('applyEnv',$('screen-profile'),c,{accent:col||'#7e9dbb',content:'#ptab'});
+    } else bcSafe('applyEnv',$('screen-profile'),hdrCfg||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
   }
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }
@@ -1169,10 +1188,12 @@ function openEdit(){
   const col=(S.ov.avatar_color&&/^#[0-9a-fA-F]{6}$/.test(S.ov.avatar_color))?S.ov.avatar_color:'#7e9dbb';
   const isChamp=!!S.ov.is_champion;
   let showChamp=S.ov.show_champion!==false;                  // локальний стан перемикача
+  // 493: чемпіон ліги BoBet обирає окремі чемпіонські елементи (потрібен оновлений cosmetics-файл → feature-detect)
+  const champEd=!!(isChamp && BC && BC.PARTS_ALL && (!S.ov.champion_league || S.ov.champion_league==='bobet'));
   const chBlock=isChamp?`
       <label>Відзнаки чемпіона</label>
       <div class="chrow"><div class="sw ${showChamp?'on':''}" id="ch-sw" role="switch"></div>
-        <span>Корона на аватарі + рамка + бейдж <b>BOBET CHAMPION</b>. Можна вимкнути, навіть будучи чемпіоном.</span></div>`:'';
+        <span>${champEd?'Головний перемикач. Вимкни, і не буде жодного чемпіонського елемента (бейдж, підпис, корона, золото) — лише твій стиль. Окремі елементи обираєш вище.':'Золота рамка й корона на аватарі, бейдж <b>BOBET CHAMPION</b>, підпис про перемоги, золоті промені й «Зал чемпіона» на сторінці — усе разом. Вимкни, і побачиш своє оформлення (рамка або скін, ефект, тема).'}</span></div>`:'';
   host.innerHTML=`<div class="mhost"><div class="modal">
     <div class="mhead"><h3>Керувати профілем</h3><button class="mx">✕</button></div>
     <div class="mbody">
@@ -1183,15 +1204,16 @@ function openEdit(){
       <label>Колір шапки</label>
       <input type="color" id="av-col" value="${esc(col)}" style="width:100%;height:44px;padding:4px;border:1px solid var(--line2);border-radius:10px;background:none;cursor:pointer">
       ${BC?BC.editorHtml({cfg:S.cos||BC.none(),name:S.ov.display_name||'',initials:initials(S.ov.display_name),sub:(S.ov.bio||'').trim()||'Так виглядатиме шапка',
-        note:isChamp?'Ти чемпіон: коли «Відзнаки чемпіона» ввімкнені, вони мають пріоритет над оформленням. Вимкни їх нижче, щоб бачити своє.':''}):''}
+        champ:champEd,
+        note:isChamp?(champEd?'Ти чемпіон: обирай, які чемпіонські елементи показувати. Вимкнений елемент замінюється твоїм стилем у твоєму кольорі.':'Ти чемпіон: коли «Відзнаки чемпіона» ввімкнені, вони мають пріоритет над оформленням. Вимкни їх нижче, щоб бачити своє.'):''}):''}
       ${chBlock}
       <div class="msg" id="ed-msg" style="display:none"></div>
     </div>
     <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="ed-save">Зберегти</button></div>
   </div></div>`;
   wireModal(host);
-  const bcEd=BC?BC.wireEditor(host.querySelector('#bc-ed'),{cfg:S.cos||BC.none(),getAccent:()=>$('av-col').value,colorInput:$('av-col'),size:64,pad:22}):null;
-  if(isChamp){ $('ch-sw').onclick=()=>{ showChamp=!showChamp; $('ch-sw').classList.toggle('on',showChamp); }; }
+  const bcEd=BC?BC.wireEditor(host.querySelector('#bc-ed'),{cfg:S.cos||BC.none(),getAccent:()=>$('av-col').value,colorInput:$('av-col'),size:64,pad:22,champ:champEd,masterOn:()=>showChamp}):null;
+  if(isChamp){ $('ch-sw').onclick=()=>{ showChamp=!showChamp; $('ch-sw').classList.toggle('on',showChamp); $('av-col').dispatchEvent(new Event('input')); }; }   // перемальовує превʼю (золото ↔ власний колір)
   $('ed-save').onclick=async()=>{
     const m=$('ed-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
     const newName=$('rn-name').value.trim();
