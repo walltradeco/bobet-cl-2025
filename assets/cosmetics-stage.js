@@ -8,6 +8,8 @@
  *  • У БД лише стабільні ID зі whitelist (дзеркало SQL _cosmetic_id_ok). Невідомий ID → дефолт (нічого не ламаємо).
  *  • Чемпіонські шари (supreme/victory_radiance/dynasty/champion_hall) тут НЕ кодуються як вибір — їх виводить
  *    сторінка з серверних даних (profile_overview.title_count/is_champion/show_champion). Фаза 3.
+ *  • ФАЗА 2: тема сторінки (studio_frame/collector_vault + преміум aegis_citadel/prism_forge/stadium_cathedral) і
+ *    Full Sync — applyEnv() обчислює фон сторінки з кольору + рамки + ефекту + теми; НІЧОГО окремо не зберігається.
  *  • Відсутня таблиця (SQL ще не залитий) або мережева помилка → дефолтний вигляд, без помилок для людини.
  *  • Колір НЕ змінюємо в БД: для відмальовки підтягуємо яскравість, щоб рамки/світіння читались на темному фоні.
  */
@@ -33,7 +35,16 @@
     ['crystal_shards','Crystal Shards','Кристалічні грані']
   ];
   const SKINS=['default','titanium_wing','signature_rift'];
-  const THEMES=['default','studio_frame','collector_vault','aegis_citadel','prism_forge','stadium_cathedral'];
+  const PREMIUM=['aegis_citadel','prism_forge','stadium_cathedral'];   // преміум-середовища сторінки
+  // Теми сторінки (фаза 2). Перші три — базові, останні три — преміум-середовища (відкриті всім, рішення 01.10).
+  const THEMES=[
+    ['default','Стандартна','Без оформлення сторінки'],
+    ['studio_frame','Studio Frame','Спокійний великий контейнер'],
+    ['collector_vault','Collector Vault','Колекційна вітрина'],
+    ['aegis_citadel','Aegis Citadel','Преміум · броня навколо сторінки'],
+    ['prism_forge','Prism Forge','Преміум · заломлені площини'],
+    ['stadium_cathedral','Stadium Cathedral','Преміум · арка й тунель поля']
+  ];
   const ok=(list,id)=>list.some(x=>(Array.isArray(x)?x[0]:x)===id);
 
   const none=()=>({frame:'default',effect:'none',skin:'default',theme:'default'});
@@ -105,6 +116,33 @@
     }
   }
 
+  // ── ФАЗА 2: оточення сторінки (тема + Full Sync) ──
+  // host — контейнер шапки+вкладок+вмісту (профіль #screen-profile, спільнота #cenv); opts.content — селектор області
+  // вмісту під вкладками (для studio_frame); opts.accent — #rrggbb. Усе обчислюється з cfg (колір+рамка+ефект+тема);
+  // окремого поля для Full Sync НЕМАЄ (рішення Богдана). Усе вимкнено (рамка/ефект/тема дефолтні) → сторінка не змінюється.
+  function applyEnv(host,cfg,opts){
+    if(!host) return;
+    opts=opts||{}; cfg=sanitize(cfg);
+    host.querySelectorAll(':scope > .bc-env-layer').forEach(n=>n.remove());
+    const content=opts.content?host.querySelector(opts.content):null;
+    if(cfg.frame==='default'&&cfg.effect==='none'&&cfg.theme==='default'){
+      host.classList.remove('bc-env');
+      ['data-bc-theme','data-bc-pframe','data-bc-pfx','data-bc-prem'].forEach(a=>host.removeAttribute(a));
+      host.style.removeProperty('--bc-a'); host.style.removeProperty('--bc-a-rgb');
+      if(content) content.classList.remove('bc-content');
+      return;
+    }
+    const a=accent(opts.accent);
+    host.classList.add('bc-env');
+    host.setAttribute('data-bc-theme',cfg.theme); host.setAttribute('data-bc-pframe',cfg.frame); host.setAttribute('data-bc-pfx',cfg.effect);
+    // у преміум-середовищі Frame Echo вимкнено (воно має власну геометрію) — CSS стежить за цим атрибутом
+    if(PREMIUM.indexOf(cfg.theme)>=0) host.setAttribute('data-bc-prem','1'); else host.removeAttribute('data-bc-prem');
+    host.style.setProperty('--bc-a',a.hex); host.style.setProperty('--bc-a-rgb',a.rgb);
+    if(opts.out!=null) host.style.setProperty('--bc-out',opts.out+'px');
+    if(content) content.classList.add('bc-content');
+    ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-env-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
+  }
+
   // ── дані ──
   const T={ profile:['profile_cosmetics','profile_id'], community:['community_cosmetics','community_id'] };
   async function load(sb,kind,id){
@@ -141,16 +179,27 @@
       ${o.note?`<div class="bc-note">${esc(o.note)}</div>`:''}
       ${group('Рамка','frame',FRAMES,c.frame)}
       ${group('Внутрішній ефект','effect',EFFECTS,c.effect)}
+      ${group('Тема сторінки','theme',THEMES,c.theme)}
+      <div class="bc-tprev" id="bc-tprev" aria-hidden="true">
+        <div class="bc-tp-hero"><span class="bc-tp-av"></span><span class="bc-tp-l"><i></i><i></i></span></div>
+        <div class="bc-tp-tabs"><u></u><u></u><u></u><u></u></div>
+        <div class="bc-tp-grid"><span class="bc-tp-c"></span><span class="bc-tp-c"></span><span class="bc-tp-c"></span></div>
+      </div>
+      <div class="bc-note">Колір, рамка й ефект шапки автоматично віддзеркалюються у фоні сторінки (Full Sync).</div>
     </div>`;
   }
 
   // o: { cfg, getAccent:()=>'#rrggbb', colorInput?:HTMLInputElement, size, pad } → { get() }
   function wireEditor(root,o){
     const st={cfg:sanitize(o.cfg)};
-    const prev=root.querySelector('#bc-prev'), adj=root.querySelector('#bc-adj');
+    const prev=root.querySelector('#bc-prev'), adj=root.querySelector('#bc-adj'), tprev=root.querySelector('#bc-tprev');
     const paint=()=>{
       const a=accent(o.getAccent());
       apply(prev,st.cfg,{avatar:'.bc-pav',accent:o.getAccent(),size:o.size||64,pad:o.pad||22});
+      if(tprev){
+        apply(tprev.querySelector('.bc-tp-hero'),st.cfg,{avatar:'.bc-tp-av',accent:o.getAccent(),size:34,pad:14});
+        applyEnv(tprev,st.cfg,{accent:o.getAccent(),content:'.bc-tp-grid',out:8});
+      }
       // превʼю завжди показує ВИБРАНЕ (навіть дефолт): акцент для UI-стану кнопок
       root.style.setProperty('--bc-ui',a.hex);
       if(adj) adj.hidden=!a.changed;
@@ -164,5 +213,5 @@
     return { get:()=>sanitize(st.cfg) };
   }
 
-  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,none,sanitize,same,accent,apply,load,save,editorHtml,wireEditor };
+  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,none,sanitize,same,accent,apply,applyEnv,load,save,editorHtml,wireEditor };
 })(window);

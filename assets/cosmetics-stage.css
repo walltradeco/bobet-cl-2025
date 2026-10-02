@@ -208,4 +208,224 @@
 .bc-ed .bc-opt[aria-pressed="true"]{border-color:var(--bc-ui,var(--blue,#7e9dbb));background:color-mix(in srgb,var(--bc-ui,#7e9dbb) 12%,var(--panel,#15191e))}
 .bc-ed .bc-note{font-size:12px;color:var(--text-dim,#767c82);margin-top:8px;line-height:1.4}
 
+/* ═════════ ФАЗА 2: ОТОЧЕННЯ СТОРІНКИ (теми + Full Sync) ═════════
+ * host = .bc-env (профіль #screen-profile · спільнота #cenv: шапка + вкладки + вміст; топбар НЕ входить).
+ * Атрибути хоста: data-bc-theme (studio_frame|collector_vault|aegis_citadel|prism_forge|stadium_cathedral) ·
+ * data-bc-pframe / data-bc-pfx (рамка й ефект ШАПКИ — з них Full Sync обчислює фон) · data-bc-prem (преміум-тема) ·
+ * --bc-a / --bc-a-rgb (акцент). JS вставляє першими дітьми 3 шари: .a = атмосфера кольору, .b = відлуння рамки
+ * (у преміум-темі — структура середовища), .c = розлив ефекту. Область вмісту під вкладками — .bc-content.
+ * ПРАВИЛА: усе — лише ФОН/РАМКА/МАТЕРІАЛ; текст, медалі, статуси й кнопки НЕ перефарбовуємо; layout (ширина, порядок
+ * вкладок) не змінюємо — усе малюється ЗОВНІ через відʼємні inset; без WebGL/відео/фото; рух зупиняє reduced-motion
+ * (рух тут відсутній узагалі). Хост без рамки/ефекту/теми цього не отримує — сторінка не змінюється. */
+.bc-env{position:relative;isolation:isolate;--bc-out:12px;margin-top:calc(var(--bc-out) * .8)}   /* зверху — щоб зовнішня рамка не налізала на топбар (ширину не міняє) */
+@media(min-width:1240px){.bc-env{--bc-out:26px}}
+/* страховка: відʼємні inset не дають горизонтального скролу (де нема :has — спрацьовують розумні відступи вище) */
+body:has(.bc-env){overflow-x:clip}
+
+.bc-env > .bc-env-layer{position:absolute;z-index:-2;pointer-events:none;inset:calc(-1 * var(--bc-out))}
+/* шари a/c розчиняються до країв (без жорсткої межі); шар b (рамки) — чіткий */
+.bc-env > .bc-env-layer.a,.bc-env > .bc-env-layer.c{
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 5%,#000 94%,transparent);
+  -webkit-mask-composite:source-in;
+  mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent),linear-gradient(180deg,transparent,#000 5%,#000 94%,transparent);
+  mask-composite:intersect}
+
+/* ── Full Sync · 1) Color Atmosphere — великі світлові поля кольору ── */
+.bc-env > .bc-env-layer.a{inset:-50px calc(-1 * var(--bc-out)) -20px;opacity:.6;
+  background:
+    radial-gradient(ellipse at 17% 4%,rgba(var(--bc-a-rgb),.34),transparent 38%),
+    radial-gradient(circle at 91% 24%,rgba(var(--bc-a-rgb),.16),transparent 32%),
+    linear-gradient(180deg,rgba(var(--bc-a-rgb),.06),transparent 48%)}
+
+/* ── Full Sync · 2) Frame Echo — геометрія активної рамки шапки у фоні (вимкнено в преміум-темі) ── */
+.bc-env:not([data-bc-prem])[data-bc-pframe="fortress"] > .bc-env-layer.b{
+  opacity:.6;border:8px solid rgba(var(--bc-a-rgb),.16);
+  box-shadow:inset 0 0 0 2px rgba(var(--bc-a-rgb),.38),inset 0 0 0 11px rgba(7,11,15,.8),inset 0 0 0 12px rgba(var(--bc-a-rgb),.12),inset 0 0 90px rgba(var(--bc-a-rgb),.06);
+  clip-path:polygon(28px 0,calc(100% - 28px) 0,100% 28px,100% calc(100% - 28px),calc(100% - 28px) 100%,28px 100%,0 calc(100% - 28px),0 28px)}
+.bc-env:not([data-bc-prem])[data-bc-pframe="split_rail"] > .bc-env-layer.b{
+  opacity:.65;
+  background:
+    linear-gradient(180deg,transparent,rgba(var(--bc-a-rgb),.55) 12%,rgba(var(--bc-a-rgb),.55) 88%,transparent) left top/9px 100% no-repeat,
+    linear-gradient(90deg,transparent,rgba(var(--bc-a-rgb),.5)) right top/42% 4px no-repeat,
+    linear-gradient(270deg,transparent,rgba(var(--bc-a-rgb),.38)) left bottom/34% 4px no-repeat,
+    linear-gradient(90deg,rgba(var(--bc-a-rgb),.08),transparent 30%)}
+.bc-env:not([data-bc-prem])[data-bc-pframe="obsidian_cut"] > .bc-env-layer.b{
+  opacity:.6;border:2px solid rgba(var(--bc-a-rgb),.45);
+  clip-path:polygon(5% 0,71% 0,76% 5%,96% 5%,100% 11%,100% 88%,95% 100%,24% 100%,18% 94%,3% 94%,0 87%,0 9%);
+  background:linear-gradient(132deg,rgba(var(--bc-a-rgb),.12),transparent 28%),linear-gradient(313deg,rgba(var(--bc-a-rgb),.09),transparent 24%);
+  box-shadow:inset 0 0 80px rgba(var(--bc-a-rgb),.05)}
+.bc-env:not([data-bc-prem])[data-bc-pframe="glass_tunnel"] > .bc-env-layer.b{
+  inset:-3% -2%;opacity:.7;transform:rotate(-2.5deg);
+  background:
+    linear-gradient(112deg,transparent 0 22%,rgba(var(--bc-a-rgb),.18) 22.2% 23%,rgba(255,255,255,.035) 23.2% 35%,transparent 35.3%),
+    linear-gradient(68deg,transparent 0 61%,rgba(var(--bc-a-rgb),.13) 61.2% 62%,rgba(255,255,255,.025) 62.2% 72%,transparent 72.4%);
+  border:1px solid rgba(var(--bc-a-rgb),.18);box-shadow:inset 0 0 90px rgba(var(--bc-a-rgb),.07)}
+.bc-env:not([data-bc-prem])[data-bc-pframe="pulse_core"] > .bc-env-layer.b{
+  inset:-140px auto auto -6%;width:min(78%,860px);aspect-ratio:1/.82;opacity:.7;border-radius:50%;
+  border:1px solid rgba(var(--bc-a-rgb),.22);
+  background:radial-gradient(circle,transparent 0 42%,rgba(var(--bc-a-rgb),.05) 42.3% 42.8%,transparent 43% 55%,rgba(var(--bc-a-rgb),.11) 55.2% 55.6%,transparent 56%);
+  box-shadow:0 0 65px rgba(var(--bc-a-rgb),.14),inset 0 0 110px rgba(var(--bc-a-rgb),.07)}
+
+/* ── Full Sync · 3) Effect Spill — ефект шапки, ослаблений, за вмістом ── */
+.bc-env[data-bc-pfx="topography"] > .bc-env-layer.c{opacity:.55;
+  background:
+    repeating-radial-gradient(ellipse at 14% 12%,transparent 0 27px,rgba(var(--bc-a-rgb),.12) 28px 29px,transparent 30px 51px),
+    repeating-radial-gradient(ellipse at 88% 62%,transparent 0 42px,rgba(var(--bc-a-rgb),.055) 43px 44px,transparent 45px 75px)}
+.bc-env[data-bc-pfx="velocity"] > .bc-env-layer.c{opacity:.5;
+  background:repeating-linear-gradient(118deg,transparent 0 72px,rgba(var(--bc-a-rgb),.04) 73px 75px,transparent 76px 112px,rgba(var(--bc-a-rgb),.11) 113px 114px,transparent 115px 148px)}
+.bc-env[data-bc-pfx="aurora_mist"] > .bc-env-layer.c{opacity:.5;filter:blur(30px);
+  background:
+    radial-gradient(ellipse at 20% 14%,rgba(var(--bc-a-rgb),.32),transparent 28%),
+    radial-gradient(ellipse at 77% 40%,rgba(var(--bc-a-rgb),.22),transparent 27%),
+    radial-gradient(ellipse at 42% 87%,rgba(var(--bc-a-rgb),.15),transparent 30%)}
+.bc-env[data-bc-pfx="particle_drift"] > .bc-env-layer.c{opacity:.6;filter:drop-shadow(0 0 7px rgba(var(--bc-a-rgb),.7));
+  background:
+    radial-gradient(circle at 9% 8%,rgba(var(--bc-a-rgb),.85) 0 2px,transparent 3px),
+    radial-gradient(circle at 21% 37%,rgba(var(--bc-a-rgb),.58) 0 1px,transparent 2px),
+    radial-gradient(circle at 37% 21%,rgba(var(--bc-a-rgb),.7) 0 2px,transparent 3px),
+    radial-gradient(circle at 54% 61%,rgba(var(--bc-a-rgb),.5) 0 2px,transparent 3px),
+    radial-gradient(circle at 69% 12%,rgba(var(--bc-a-rgb),.75) 0 1px,transparent 2px),
+    radial-gradient(circle at 84% 49%,rgba(var(--bc-a-rgb),.66) 0 2px,transparent 3px),
+    radial-gradient(circle at 94% 77%,rgba(var(--bc-a-rgb),.42) 0 1px,transparent 2px);
+  background-size:520px 460px}
+.bc-env[data-bc-pfx="scan_pulse"] > .bc-env-layer.c{opacity:.5;
+  background:repeating-linear-gradient(0deg,transparent 0 7px,rgba(var(--bc-a-rgb),.07) 8px 9px)}
+.bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c{opacity:.7}
+.bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::before,
+.bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::after{content:"";position:absolute}
+.bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::before{
+  inset:0 auto 0 0;width:26%;clip-path:polygon(0 0,70% 0,100% 100%,0 100%);
+  background:linear-gradient(120deg,rgba(var(--bc-a-rgb),.12),transparent)}
+.bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::after{
+  inset:0 0 0 auto;width:34%;clip-path:polygon(30% 0,100% 0,100% 100%,0 100%);
+  background:linear-gradient(240deg,rgba(var(--bc-a-rgb),.09),rgba(255,255,255,.02),transparent)}
+
+/* ── Матеріал карток (4–12% акценту): лише тонований край і легкий шар; текст/медалі/статуси не чіпаємо ── */
+.bc-env :is(.card,.panel,.rec-tile,.nom,.award,.comm-big,.dna-block,.side,.post,.evrow,.mrow,.rules-box,.how,.bc-tp-c){
+  background-image:linear-gradient(rgba(var(--bc-a-rgb),.045),rgba(var(--bc-a-rgb),.045));
+  border-top-color:color-mix(in srgb,var(--bc-a) 16%,var(--line));
+  border-right-color:color-mix(in srgb,var(--bc-a) 16%,var(--line));
+  border-bottom-color:color-mix(in srgb,var(--bc-a) 16%,var(--line))}
+
+/* ───────── ТЕМА studio_frame — один великий напівпрозорий контейнер під вкладками ───────── */
+.bc-env .bc-content{position:relative}
+.bc-env[data-bc-theme="studio_frame"] .bc-content::before{
+  content:"";position:absolute;z-index:-1;inset:-14px -10px -16px;pointer-events:none;
+  border:1px solid rgba(255,255,255,.09);border-radius:22px;background:rgba(13,18,22,.72);
+  box-shadow:inset 0 1px rgba(255,255,255,.025)}
+
+/* ───────── ТЕМА collector_vault — колекційна вітрина: подвійна рамка, діагональна сітка, рельєф карток ───────── */
+.bc-env[data-bc-theme="collector_vault"]::before{
+  content:"";position:absolute;z-index:-1;inset:calc(-1 * var(--bc-out) - 4px) calc(-1 * var(--bc-out));pointer-events:none;
+  border:5px double rgba(var(--bc-a-rgb),.28);border-radius:28px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.035),inset 0 0 80px rgba(var(--bc-a-rgb),.05)}
+.bc-env[data-bc-theme="collector_vault"] > .bc-env-layer.a{
+  background-size:38px 38px,38px 38px,auto,auto,auto;
+  background-image:
+    linear-gradient(135deg,rgba(var(--bc-a-rgb),.07) 0 1px,transparent 1px 38px),
+    linear-gradient(45deg,rgba(var(--bc-a-rgb),.045) 0 1px,transparent 1px 38px),
+    radial-gradient(ellipse at 17% 4%,rgba(var(--bc-a-rgb),.34),transparent 38%),
+    radial-gradient(circle at 91% 24%,rgba(var(--bc-a-rgb),.16),transparent 32%),
+    linear-gradient(180deg,rgba(var(--bc-a-rgb),.06),transparent 48%)}
+.bc-env[data-bc-theme="collector_vault"] :is(.card,.panel,.rec-tile,.nom,.award,.comm-big,.dna-block,.side,.post,.evrow,.mrow,.rules-box,.how,.bc-tp-c){
+  background-image:linear-gradient(145deg,rgba(255,255,255,.04),rgba(0,0,0,.14)),linear-gradient(rgba(var(--bc-a-rgb),.04),rgba(var(--bc-a-rgb),.04));
+  box-shadow:inset 0 1px rgba(255,255,255,.045),0 12px 22px rgba(0,0,0,.18)}
+
+/* ───────── ПРЕМІУМ aegis_citadel — важкий екзоскелет: зрізані кути, світлові напрямні, глибокий контейнер ───────── */
+.bc-env[data-bc-theme="aegis_citadel"] > .bc-env-layer.b{
+  inset:calc(-1 * var(--bc-out) - 4px);
+  clip-path:polygon(32px 0,calc(100% - 32px) 0,100% 32px,100% calc(100% - 32px),calc(100% - 32px) 100%,32px 100%,0 calc(100% - 32px),0 32px);
+  border:9px solid rgba(var(--bc-a-rgb),.19);
+  background:linear-gradient(90deg,rgba(255,255,255,.045),transparent 5% 95%,rgba(255,255,255,.03));
+  box-shadow:inset 0 0 0 2px rgba(var(--bc-a-rgb),.38),inset 0 0 90px rgba(var(--bc-a-rgb),.055)}
+.bc-env[data-bc-theme="aegis_citadel"]::before{
+  content:"";position:absolute;z-index:-1;inset:-10px -8px -12px;pointer-events:none;
+  clip-path:polygon(24px 0,calc(100% - 24px) 0,100% 24px,100% calc(100% - 24px),calc(100% - 24px) 100%,24px 100%,0 calc(100% - 24px),0 24px);
+  border:1px solid rgba(var(--bc-a-rgb),.2);background:rgba(8,13,17,.78);box-shadow:inset 0 0 50px rgba(0,0,0,.34)}
+.bc-env[data-bc-theme="aegis_citadel"]::after{
+  content:"";position:absolute;z-index:-1;left:0;right:0;top:-16px;height:5px;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent,var(--bc-a)) 46px 0/80px 5px no-repeat,
+    linear-gradient(270deg,transparent,var(--bc-a)) calc(100% - 46px) 0/80px 5px no-repeat;
+  filter:drop-shadow(0 0 9px rgba(var(--bc-a-rgb),.52))}
+
+/* ───────── ПРЕМІУМ prism_forge — заломлені площини, світлові ребра, скляні матеріали ───────── */
+.bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b{
+  overflow:hidden;-webkit-mask-image:linear-gradient(180deg,#000 78%,transparent);mask-image:linear-gradient(180deg,#000 78%,transparent);
+  background:linear-gradient(118deg,transparent 0 11%,rgba(var(--bc-a-rgb),.16) 11.2% 11.7%,transparent 12% 34%,rgba(255,255,255,.045) 34.3% 34.6%,transparent 35% 68%,rgba(var(--bc-a-rgb),.09) 68.2% 69%,transparent 69.2%)}
+.bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b::before,
+.bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b::after{content:"";position:absolute}
+.bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b::before{
+  width:52%;height:min(86%,760px);right:-6%;top:-10%;transform:rotate(6deg);
+  clip-path:polygon(22% 0,100% 22%,71% 100%,0 72%);border:1px solid rgba(var(--bc-a-rgb),.3);
+  background:linear-gradient(145deg,rgba(var(--bc-a-rgb),.15),rgba(255,255,255,.025) 48%,rgba(var(--bc-a-rgb),.03));
+  box-shadow:inset 0 0 80px rgba(var(--bc-a-rgb),.07)}
+.bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b::after{
+  width:44%;height:min(60%,520px);left:-10%;bottom:-14%;transform:rotate(-10deg);
+  clip-path:polygon(0 18%,76% 0,100% 72%,26% 100%);border:1px solid rgba(var(--bc-a-rgb),.24);
+  background:linear-gradient(130deg,rgba(var(--bc-a-rgb),.11),transparent 54%)}
+.bc-env[data-bc-theme="prism_forge"]::before{
+  content:"";position:absolute;z-index:-1;inset:-12px -10px -14px;pointer-events:none;
+  border:1px solid rgba(var(--bc-a-rgb),.24);border-radius:28px;
+  background:linear-gradient(145deg,rgba(18,25,31,.7),rgba(7,11,14,.55));
+  box-shadow:inset 0 1px rgba(255,255,255,.08),0 24px 70px rgba(0,0,0,.28);
+  -webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}
+.bc-env[data-bc-theme="prism_forge"] :is(.card,.panel,.rec-tile,.nom,.award,.comm-big,.dna-block,.side,.post,.evrow,.mrow,.rules-box,.how,.bc-tp-c){
+  background-image:linear-gradient(145deg,rgba(255,255,255,.035),rgba(0,0,0,.1)),linear-gradient(rgba(var(--bc-a-rgb),.05),rgba(var(--bc-a-rgb),.05))}
+
+/* ───────── ПРЕМІУМ stadium_cathedral — монументальна арка, світловий тунель, перспектива поля ───────── */
+.bc-env[data-bc-theme="stadium_cathedral"] > .bc-env-layer.a{
+  background:
+    radial-gradient(ellipse at 50% -2%,rgba(var(--bc-a-rgb),.28),transparent 33%),
+    linear-gradient(90deg,rgba(var(--bc-a-rgb),.055),transparent 18% 82%,rgba(var(--bc-a-rgb),.055)),
+    radial-gradient(circle at 91% 34%,rgba(var(--bc-a-rgb),.1),transparent 30%)}
+.bc-env[data-bc-theme="stadium_cathedral"] > .bc-env-layer.b{
+  inset:calc(-1 * var(--bc-out)) 6% auto;height:min(88%,880px);
+  border:2px solid rgba(var(--bc-a-rgb),.3);border-bottom:0;border-radius:48% 48% 0 0/22% 22% 0 0;
+  box-shadow:0 0 0 14px rgba(var(--bc-a-rgb),.035),0 0 0 15px rgba(var(--bc-a-rgb),.12),0 0 0 32px rgba(var(--bc-a-rgb),.02),0 0 0 33px rgba(var(--bc-a-rgb),.07),inset 0 0 90px rgba(var(--bc-a-rgb),.05)}
+.bc-env[data-bc-theme="stadium_cathedral"]::after{
+  content:"";position:absolute;z-index:-3;left:-2%;right:-2%;bottom:-40px;height:min(56%,520px);pointer-events:none;opacity:.55;
+  background:
+    linear-gradient(90deg,transparent 49.85%,rgba(var(--bc-a-rgb),.27) 50%,transparent 50.15%),
+    repeating-linear-gradient(0deg,transparent 0 45px,rgba(var(--bc-a-rgb),.13) 46px 47px),
+    repeating-linear-gradient(90deg,transparent 0 90px,rgba(var(--bc-a-rgb),.075) 91px 92px);
+  transform:perspective(540px) rotateX(64deg) scale(1.2);transform-origin:bottom;
+  -webkit-mask-image:linear-gradient(180deg,transparent,#000 40%,#000 78%,transparent);mask-image:linear-gradient(180deg,transparent,#000 40%,#000 78%,transparent)}
+.bc-env[data-bc-theme="stadium_cathedral"] :is(.card,.panel,.rec-tile,.nom,.award,.comm-big,.dna-block,.side,.post,.evrow,.mrow,.rules-box,.how,.bc-tp-c){
+  box-shadow:0 16px 34px rgba(0,0,0,.26)}
+
+/* ───────── мобільний: прибрати другорядні площини, лишити впізнаваний характер ───────── */
+@media(max-width:680px){
+  .bc-env{--bc-out:6px}
+  .bc-env > .bc-env-layer.a{opacity:.5}
+  .bc-env[data-bc-pframe="pulse_core"]:not([data-bc-prem]) > .bc-env-layer.b{display:none}
+  .bc-env[data-bc-pframe="glass_tunnel"]:not([data-bc-prem]) > .bc-env-layer.b{display:none}
+  .bc-env[data-bc-theme="aegis_citadel"] > .bc-env-layer.b{border-width:6px;
+    clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)}
+  .bc-env[data-bc-theme="aegis_citadel"]::before{inset:-6px -4px -8px}
+  .bc-env[data-bc-theme="aegis_citadel"]::after{background-size:48px 4px,48px 4px;background-position:22px 0,calc(100% - 22px) 0}
+  .bc-env[data-bc-theme="prism_forge"] > .bc-env-layer.b::after{display:none}
+  .bc-env[data-bc-theme="prism_forge"]::before{inset:-8px -6px -10px;border-radius:20px}
+  .bc-env[data-bc-theme="stadium_cathedral"]::after{display:none}
+  .bc-env[data-bc-theme="stadium_cathedral"] > .bc-env-layer.b{inset:-6px 2% auto;box-shadow:0 0 0 10px rgba(var(--bc-a-rgb),.035),0 0 0 11px rgba(var(--bc-a-rgb),.1)}
+  .bc-env[data-bc-theme="collector_vault"]::before{border-width:4px;border-radius:20px}
+  .bc-env[data-bc-theme="studio_frame"] .bc-content::before{inset:-10px -6px -12px;border-radius:16px}
+}
+
+/* ───────── превʼю теми в редакторі (міні-сторінка тією ж CSS-системою) ───────── */
+:where(.bc-ed .bc-tprev){position:relative;margin-top:12px;padding:24px 26px 26px;overflow:hidden;
+  border:1px solid var(--line,rgba(255,255,255,.085));border-radius:14px;background:var(--bg,#0d1014)}
+.bc-ed .bc-tp-hero{position:relative;display:flex;align-items:center;gap:12px;padding:14px 16px;min-height:62px;overflow:hidden;
+  border:1px solid var(--line,rgba(255,255,255,.085));border-radius:12px;background:var(--panel,#15191e);--bc-av:34px;--bc-pad:16px}
+.bc-ed .bc-tp-av{position:relative;flex:none;width:34px;height:34px;border-radius:10px;border:1px solid var(--line2,rgba(255,255,255,.14));background:var(--panel2,#1a1f25)}
+.bc-ed .bc-tp-l{display:grid;gap:6px}
+.bc-ed .bc-tp-l i{display:block;height:6px;width:96px;border-radius:3px;background:rgba(255,255,255,.2)}
+.bc-ed .bc-tp-l i+i{width:62px;background:rgba(255,255,255,.1)}
+.bc-ed .bc-tp-tabs{display:flex;gap:14px;margin:12px 2px 12px;height:16px;border-bottom:1px solid var(--line,rgba(255,255,255,.085))}
+.bc-ed .bc-tp-tabs u{display:block;width:34px;height:6px;margin-top:4px;border-radius:3px;background:rgba(255,255,255,.12)}
+.bc-ed .bc-tp-tabs u:first-child{background:rgba(255,255,255,.3)}
+.bc-ed .bc-tp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative}
+.bc-ed .bc-tp-c{display:block;height:42px;border:1px solid var(--line,rgba(255,255,255,.085));border-radius:9px;background:var(--panel,#15191e)}
+
+
 }
