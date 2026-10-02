@@ -29,7 +29,7 @@
 
 /* ───────── шари ефекту ───────── */
 .bc-head > .bc-fx-layer{position:absolute;inset:0;z-index:-1;pointer-events:none}
-.bc-head[data-bc-fx="none"] > .bc-fx-layer{display:none}
+.bc-head[data-bc-fx="none"]:not([data-bc-skin]) > .bc-fx-layer{display:none}
 
 /* ───────── РАМКИ ───────── */
 /* 01 fortress — товста матова броня */
@@ -426,6 +426,141 @@ body:has(.bc-env){overflow-x:clip}
 .bc-ed .bc-tp-tabs u:first-child{background:rgba(255,255,255,.3)}
 .bc-ed .bc-tp-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;position:relative}
 .bc-ed .bc-tp-c{display:block;height:42px;border:1px solid var(--line,rgba(255,255,255,.085));border-radius:9px;background:var(--panel,#15191e)}
+
+/* ═════════ ФАЗА 3: ПРЕМІУМ-СКІНИ ШАПКИ + СЕРВЕРНІ ЧЕМПІОНСЬКІ ШАРИ ═════════
+ * СКІНИ (вибираються гравцем; data-bc-skin на .bc-head): цілісна композиція шапки, ЗАМІНЮЄ рамку й ефект шапки
+ * (apply() ставить frame=default/fx=none, тож їхній CSS інертний). Шари скіна — ті самі .bc-fx-layer a|b|c.
+ * ЧЕМПІОНСЬКІ ШАРИ (НЕ вибираються, НЕ зберігаються; лише Профіль; data-bc-champ="supreme|dynasty" на .hero.champ +
+ * .bc-champ-layer a|b|c; та сторінка-середовище data-bc-theme="champion_hall"). Золото = статусний колір, не палітра
+ * гравця. Усе статичне, крім повільного обертання променів (вимикає reduced-motion). */
+
+/* ───────── СКІН titanium_wing — механічні крила від рамки аватара ───────── */
+.bc-head[data-bc-skin="titanium_wing"]{
+  clip-path:polygon(0 18px,18px 0,calc(100% - 54px) 0,100% 42px,100% calc(100% - 16px),calc(100% - 16px) 100%,58px 100%,0 calc(100% - 45px));
+  border:0;border-radius:0;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 13%,transparent),transparent 48%),#14181d;
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--bc-a) 35%,transparent)}
+.bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.a{
+  inset:0 auto 0 0;width:55%;
+  background:
+    linear-gradient(155deg,transparent 0 20%,color-mix(in srgb,var(--bc-a) 18%,transparent) 20.5% 21.5%,transparent 22% 37%,color-mix(in srgb,var(--bc-a) 10%,transparent) 37.5% 38.5%,transparent 39%),
+    linear-gradient(25deg,transparent 0 52%,color-mix(in srgb,var(--bc-a) 14%,transparent) 52.5% 54%,transparent 54.5%)}
+.bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.b{
+  inset:18% auto 18% calc(var(--bc-pad) + var(--bc-av) + 10px);width:min(34%,320px);
+  clip-path:polygon(0 35%,100% 0,76% 45%,100% 100%,0 65%);
+  border-left:4px solid var(--bc-a);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 15%,transparent),transparent)}
+.bc-head[data-bc-skin="titanium_wing"] .bc-av{
+  clip-path:polygon(21% 0,79% 0,100% 21%,100% 79%,79% 100%,21% 100%,0 79%,0 21%);border:0;border-radius:0;
+  background:linear-gradient(135deg,color-mix(in srgb,var(--bc-a) 72%,#676b70),#101318 34%,color-mix(in srgb,var(--bc-a) 42%,#25292e));
+  box-shadow:inset 0 0 0 5px #101318,inset -18px -18px 30px rgba(0,0,0,.3)}
+
+/* ───────── СКІН signature_rift — центральний світловий розлом + підписна панель імені ───────── */
+.bc-head[data-bc-skin="signature_rift"]{
+  border:1px solid color-mix(in srgb,var(--bc-a) 35%,transparent);border-radius:24px 7px 24px 7px;
+  background:#14181d;box-shadow:inset 0 0 35px rgba(0,0,0,.24)}
+.bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.a{
+  inset:0 auto 0 31%;width:34%;opacity:.68;
+  clip-path:polygon(42% 0,58% 0,47% 29%,67% 31%,42% 60%,55% 63%,29% 100%,8% 100%,36% 65%,22% 61%,46% 35%,31% 30%);
+  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 25%,transparent),var(--bc-a),color-mix(in srgb,var(--bc-a) 18%,transparent));
+  filter:drop-shadow(0 0 15px color-mix(in srgb,var(--bc-a) 40%,transparent))}
+.bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.b{
+  background:linear-gradient(105deg,color-mix(in srgb,var(--bc-a) 9%,transparent) 0 34%,transparent 34% 67%,color-mix(in srgb,var(--bc-a) 5%,transparent) 67%)}
+.bc-head[data-bc-skin="signature_rift"] .bc-av{
+  border:4px solid color-mix(in srgb,var(--bc-a) 66%,#34383d);border-radius:24px 8px 24px 8px;background:#101318;
+  box-shadow:10px 10px 0 color-mix(in srgb,var(--bc-a) 12%,#0d1014),0 0 28px color-mix(in srgb,var(--bc-a) 15%,transparent)}
+.bc-head[data-bc-skin="signature_rift"] .bc-id{
+  padding:14px 20px;border-left:1px solid color-mix(in srgb,var(--bc-a) 26%,transparent);
+  background:linear-gradient(90deg,rgba(8,10,13,.58),transparent)}
+
+/* ───────── ЧЕМПІОН (шапка): supreme (1 титул) + victory_radiance · dynasty (2+ титули) ───────── */
+.hero[data-bc-champ]{isolation:isolate}
+.hero.champ[data-bc-champ]{
+  border:3px solid var(--gold,#d9b45b);border-radius:28px;
+  background:radial-gradient(circle at calc(var(--bc-pad) + var(--bc-av) / 2) 50%,rgba(var(--gold-rgb,217,180,91),.2),transparent 20%),
+    linear-gradient(90deg,rgba(var(--blue-rgb,126,157,187),.07),transparent 48%),var(--panel,#15191e);
+  box-shadow:inset 0 0 0 4px #121419,inset 0 0 0 6px rgba(var(--gold-rgb,217,180,91),.5),inset 0 0 0 11px #181b20,inset 0 0 0 12px rgba(var(--gold-rgb,217,180,91),.17),0 0 35px rgba(var(--gold-rgb,217,180,91),.17)}
+/* бічні золоті рейки (перекривають старий лівий маркер .hero.champ::before) */
+.hero.champ[data-bc-champ]::before,.hero.champ[data-bc-champ]::after{
+  content:"";position:absolute;z-index:2;top:16px;bottom:16px;width:5px;border-radius:5px;pointer-events:none;
+  background:linear-gradient(transparent,var(--gold,#d9b45b),transparent);box-shadow:0 0 14px rgba(var(--gold-rgb,217,180,91),.38)}
+.hero.champ[data-bc-champ]::before{left:15px;right:auto}
+.hero.champ[data-bc-champ]::after{right:15px}
+/* золота рамка аватара (рамка на аватарі, не ВСЕРЕДИНІ нього) */
+.hero.champ[data-bc-champ] .frame.champ{
+  border:5px solid var(--gold,#d9b45b);border-radius:31px;
+  box-shadow:0 0 0 5px #111419,0 0 0 7px rgba(var(--gold-rgb,217,180,91),.52),0 0 0 11px #181b20,0 0 34px rgba(var(--gold-rgb,217,180,91),.27),inset 0 0 24px rgba(var(--gold-rgb,217,180,91),.12)}
+.hero.champ[data-bc-champ] .frame.champ::after{display:none}
+/* шари victory_radiance: промені з центру аватара (обертаються повільно), золоте світло, косі лінії */
+.hero > .bc-champ-layer{position:absolute;z-index:-1;pointer-events:none}
+.hero[data-bc-champ] > .bc-champ-layer.a{
+  left:calc(var(--bc-pad) + var(--bc-av) / 2 - 280px);top:50%;width:560px;height:560px;margin-top:-280px;border-radius:50%;
+  background:repeating-conic-gradient(from 254deg at 50% 50%,rgba(var(--gold-rgb,217,180,91),.10) 0 5deg,transparent 5deg 14deg);
+  -webkit-mask-image:radial-gradient(circle,#000 0,transparent 68%);mask-image:radial-gradient(circle,#000 0,transparent 68%);
+  animation:bc-champ-spin 18s linear infinite}
+.hero[data-bc-champ] > .bc-champ-layer.b{
+  inset:0;background:radial-gradient(circle at calc(var(--bc-pad) + var(--bc-av) / 2) 50%,rgba(var(--gold-rgb,217,180,91),.21),transparent 24%),
+    linear-gradient(90deg,rgba(var(--blue-rgb,126,157,187),.07),transparent 60%)}
+.hero[data-bc-champ] > .bc-champ-layer.c{
+  inset:18% 6% 18% auto;width:38%;border-top:1px solid rgba(var(--gold-rgb,217,180,91),.22);border-bottom:1px solid rgba(var(--gold-rgb,217,180,91),.12);transform:skewX(-20deg)}
+/* dynasty — максимальна нагородна шапка: потрійне кільце, щільніші промені, сильніше світло */
+.hero.champ[data-bc-champ="dynasty"]{
+  min-height:188px;border-radius:31px;
+  box-shadow:inset 0 0 0 5px #101318,inset 0 0 0 7px rgba(var(--gold-rgb,217,180,91),.48),inset 0 0 0 13px #171b20,inset 0 0 0 14px rgba(var(--gold-rgb,217,180,91),.17),0 0 40px rgba(var(--gold-rgb,217,180,91),.2)}
+.hero.champ[data-bc-champ="dynasty"]::before,.hero.champ[data-bc-champ="dynasty"]::after{width:5px;top:18px;bottom:18px;filter:drop-shadow(0 0 8px rgba(var(--gold-rgb,217,180,91),.34))}
+.hero.champ[data-bc-champ="dynasty"] .frame.champ{
+  box-shadow:0 0 0 5px #15191e,0 0 0 7px rgba(var(--gold-rgb,217,180,91),.52),0 0 0 12px #101318,0 0 40px rgba(var(--gold-rgb,217,180,91),.28),inset 0 0 25px rgba(var(--gold-rgb,217,180,91),.1)}
+.hero[data-bc-champ="dynasty"] > .bc-champ-layer.a{
+  width:700px;height:700px;margin-top:-350px;left:calc(var(--bc-pad) + var(--bc-av) / 2 - 350px);
+  background:repeating-conic-gradient(from 258deg at 50% 50%,rgba(var(--gold-rgb,217,180,91),.12) 0 5deg,transparent 5deg 12deg);animation-duration:24s}
+.hero[data-bc-champ="dynasty"] > .bc-champ-layer.b{
+  background:radial-gradient(circle at calc(var(--bc-pad) + var(--bc-av) / 2) 50%,rgba(var(--gold-rgb,217,180,91),.28),transparent 28%),
+    linear-gradient(90deg,rgba(var(--gold-rgb,217,180,91),.06),transparent 55%)}
+.hero[data-bc-champ="dynasty"] > .bc-champ-layer.c{
+  inset:20% 8% 20% auto;width:44%;transform:skewX(-18deg);background:linear-gradient(90deg,rgba(var(--gold-rgb,217,180,91),.035),transparent)}
+/* кубок + кількість титулів і підпис виграних турнірів (DOM, не псевдоелементи) */
+.champ-trophy{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid rgba(var(--gold-rgb,217,180,91),.4);border-radius:20px;
+  color:var(--gold,#d9b45b);font-family:var(--mono,inherit);font-size:11px;font-weight:700;letter-spacing:.08em;background:rgba(var(--gold-rgb,217,180,91),.07)}
+.title-list{margin:10px 0 0;color:var(--text-dim,#767c82);font-family:var(--mono,inherit);font-size:11px;letter-spacing:.06em;text-transform:uppercase;line-height:1.5}
+.title-list b{color:var(--gold,#d9b45b);font-weight:700}
+@keyframes bc-champ-spin{to{transform:rotate(360deg)}}
+
+/* ───────── СЕРЕДОВИЩЕ champion_hall — лише чемпіонам (серверний статус; золото, не колір гравця) ───────── */
+.bc-env[data-bc-theme="champion_hall"] > .bc-env-layer.a{opacity:.9;
+  background:
+    radial-gradient(ellipse at 50% 0,rgba(var(--bc-a-rgb),.24),transparent 38%),
+    linear-gradient(114deg,transparent 0 18%,rgba(var(--bc-a-rgb),.085) 18.2% 18.7%,transparent 19% 80%,rgba(var(--bc-a-rgb),.07) 80.2% 80.7%,transparent 81%)}
+.bc-env[data-bc-theme="champion_hall"] > .bc-env-layer.b{
+  inset:calc(-1 * var(--bc-out) - 2px);border:2px solid rgba(var(--bc-a-rgb),.48);border-radius:30px;
+  box-shadow:inset 0 0 0 7px rgba(var(--bc-a-rgb),.035),inset 0 0 0 8px rgba(var(--bc-a-rgb),.16),inset 0 0 100px rgba(var(--bc-a-rgb),.045)}
+.bc-env[data-bc-theme="champion_hall"]::before{
+  content:"";position:absolute;z-index:-1;inset:-10px -8px -12px;pointer-events:none;
+  border:1px solid rgba(var(--bc-a-rgb),.3);border-radius:26px;
+  background:linear-gradient(145deg,rgba(36,31,18,.3),rgba(8,10,9,.82) 34%)}
+.bc-env[data-bc-theme="champion_hall"]::after{
+  content:"";position:absolute;z-index:-1;left:0;right:0;top:-14px;height:2px;pointer-events:none;
+  background:
+    linear-gradient(90deg,transparent,#f0d778) 8% 0/34% 2px no-repeat,
+    linear-gradient(270deg,transparent,#f0d778) 92% 0/34% 2px no-repeat;
+  filter:drop-shadow(0 0 12px rgba(var(--bc-a-rgb),.5))}
+.bc-env[data-bc-theme="champion_hall"] :is(.card,.panel,.rec-tile,.nom,.award,.comm-big,.dna-block,.side,.post,.evrow,.mrow,.rules-box,.how,.bc-tp-c){
+  background-image:linear-gradient(145deg,rgba(255,224,130,.04),rgba(0,0,0,.14)),linear-gradient(rgba(var(--bc-a-rgb),.04),rgba(var(--bc-a-rgb),.04))}
+
+/* ───────── мобільний + рух (фаза 3) ───────── */
+@media(max-width:680px){
+  .hero[data-bc-champ] > .bc-champ-layer.c{display:none}
+  .hero[data-bc-champ] > .bc-champ-layer.a{width:380px;height:380px;margin-top:-190px;left:calc(var(--bc-pad) + var(--bc-av) / 2 - 190px)}
+  .hero.champ[data-bc-champ]{border-radius:22px;border-width:2px}
+  .hero.champ[data-bc-champ]::before{left:11px}.hero.champ[data-bc-champ]::after{right:11px}
+  .bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.b{display:none}
+  .bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.a{inset:0 auto 0 40%;width:40%;opacity:.45}
+  .bc-head[data-bc-skin="signature_rift"] .bc-av{box-shadow:6px 6px 0 color-mix(in srgb,var(--bc-a) 12%,#0d1014)}
+  .bc-env[data-bc-theme="champion_hall"] > .bc-env-layer.b{border-radius:22px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero > .bc-champ-layer{animation:none!important}
+}
+.bc-ed.bc-skin-on .bc-grp-fe{opacity:.5}
 
 
 }

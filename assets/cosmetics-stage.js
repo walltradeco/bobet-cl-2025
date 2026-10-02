@@ -8,6 +8,10 @@
  *  • У БД лише стабільні ID зі whitelist (дзеркало SQL _cosmetic_id_ok). Невідомий ID → дефолт (нічого не ламаємо).
  *  • Чемпіонські шари (supreme/victory_radiance/dynasty/champion_hall) тут НЕ кодуються як вибір — їх виводить
  *    сторінка з серверних даних (profile_overview.title_count/is_champion/show_champion). Фаза 3.
+ *  • ФАЗА 3: преміум-скіни шапки (titanium_wing, signature_rift — ЗАМІНЮЮТЬ рамку й ефект ШАПКИ; рамка/ефект і далі керують
+ *    фоном сторінки через Full Sync) + серверні чемпіонські шари: applyChamp() (supreme+victory_radiance / dynasty на шапці)
+ *    і applyChampEnv() (champion_hall на сторінці). Чемпіонські шари НЕ вибираються, НЕ зберігаються й НЕ входять у
+ *    whitelist (sanitize їх відкине) — сторінка виводить їх із profile_overview.title_count/is_champion/show_champion.
  *  • ФАЗА 2: тема сторінки (studio_frame/collector_vault + преміум aegis_citadel/prism_forge/stadium_cathedral) і
  *    Full Sync — applyEnv() обчислює фон сторінки з кольору + рамки + ефекту + теми; НІЧОГО окремо не зберігається.
  *  • Відсутня таблиця (SQL ще не залитий) або мережева помилка → дефолтний вигляд, без помилок для людини.
@@ -34,7 +38,12 @@
     ['scan_pulse','Scan Pulse','Сітка й сканування'],
     ['crystal_shards','Crystal Shards','Кристалічні грані']
   ];
-  const SKINS=['default','titanium_wing','signature_rift'];
+  // Преміум-скіни шапки (фаза 3). Скін = ЦІЛІСНА композиція шапки → замінює рамку й ефект шапки (рішення за референсом).
+  const SKINS=[
+    ['default','Без скіна','Рамка й ефект на вибір'],
+    ['titanium_wing','Titanium Wing','Преміум · механічні крила'],
+    ['signature_rift','Signature Rift','Преміум · світловий розлом і підпис']
+  ];
   const PREMIUM=['aegis_citadel','prism_forge','stadium_cathedral'];   // преміум-середовища сторінки
   // Теми сторінки (фаза 2). Перші три — базові, останні три — преміум-середовища (відкриті всім, рішення 01.10).
   const THEMES=[
@@ -93,54 +102,87 @@
   }
 
   // ── застосування до шапки ──
-  // host — елемент шапки (.hero / .chead); opts.avatar — селектор аватара всередині; opts.accent — #rrggbb
+  // host — елемент шапки (.hero / .chead); opts.avatar — селектор аватара всередині; opts.identity — селектор блоку імені
+  // (для скіна signature_rift: підписна панель); opts.accent — #rrggbb
   function apply(host,cfg,opts){
     if(!host) return;
     opts=opts||{}; cfg=sanitize(cfg);
     host.querySelectorAll(':scope > .bc-fx-layer').forEach(n=>n.remove());
     const av=opts.avatar?host.querySelector(opts.avatar):null;
-    if(cfg.frame==='default'&&cfg.effect==='none'){
-      host.classList.remove('bc-head'); host.removeAttribute('data-bc-frame'); host.removeAttribute('data-bc-fx');
+    const idn=opts.identity?host.querySelector(opts.identity):null;
+    const skin=cfg.skin!=='default';
+    if(idn) idn.classList.toggle('bc-id',skin);
+    if(cfg.frame==='default'&&cfg.effect==='none'&&!skin){
+      host.classList.remove('bc-head'); host.removeAttribute('data-bc-frame'); host.removeAttribute('data-bc-fx'); host.removeAttribute('data-bc-skin');
       host.style.removeProperty('--bc-a'); host.style.removeProperty('--bc-a-rgb');
       if(av) av.classList.remove('bc-av');
       return;
     }
     const a=accent(opts.accent);
     host.classList.add('bc-head'); if(av) av.classList.add('bc-av');
-    host.setAttribute('data-bc-frame',cfg.frame); host.setAttribute('data-bc-fx',cfg.effect);
+    // скін замінює рамку й ефект шапки: їхні CSS стають інертними (frame=default, fx=none), малює лише [data-bc-skin]
+    host.setAttribute('data-bc-frame',skin?'default':cfg.frame); host.setAttribute('data-bc-fx',skin?'none':cfg.effect);
+    if(skin) host.setAttribute('data-bc-skin',cfg.skin); else host.removeAttribute('data-bc-skin');
     host.style.setProperty('--bc-a',a.hex); host.style.setProperty('--bc-a-rgb',a.rgb);
     if(opts.size) host.style.setProperty('--bc-av',opts.size+'px');
     if(opts.pad)  host.style.setProperty('--bc-pad',opts.pad+'px');
-    if(cfg.effect!=='none'){
+    if(cfg.effect!=='none'||skin){
       ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-fx-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
     }
+  }
+
+  // ── ФАЗА 3: серверні чемпіонські шари ШАПКИ (лише Профіль; Спільнотам не потрібні) ──
+  // tier: 'supreme' (перший титул + victory_radiance) | 'dynasty' (2+ титули) | null (зняти). НЕ вибирається гравцем і НЕ
+  // зберігається — сторінка передає tier, виведений із серверних даних. host — .hero; opts.size/pad — геометрія аватара.
+  const champTier=n=>(n>=2?'dynasty':'supreme');
+  function applyChamp(host,tier,opts){
+    if(!host) return;
+    opts=opts||{};
+    host.querySelectorAll(':scope > .bc-champ-layer').forEach(n=>n.remove());
+    if(tier!=='supreme'&&tier!=='dynasty'){
+      host.removeAttribute('data-bc-champ'); host.style.removeProperty('--bc-pad'); host.style.removeProperty('--bc-av'); return;
+    }
+    host.setAttribute('data-bc-champ',tier);
+    host.style.setProperty('--bc-av',(opts.size||104)+'px'); host.style.setProperty('--bc-pad',(opts.pad||28)+'px');
+    ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-champ-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
   }
 
   // ── ФАЗА 2: оточення сторінки (тема + Full Sync) ──
   // host — контейнер шапки+вкладок+вмісту (профіль #screen-profile, спільнота #cenv); opts.content — селектор області
   // вмісту під вкладками (для studio_frame); opts.accent — #rrggbb. Усе обчислюється з cfg (колір+рамка+ефект+тема);
   // окремого поля для Full Sync НЕМАЄ (рішення Богдана). Усе вимкнено (рамка/ефект/тема дефолтні) → сторінка не змінюється.
+  function mountEnv(host,theme,frame,fx,a,content,out){
+    host.classList.add('bc-env');
+    host.setAttribute('data-bc-theme',theme); host.setAttribute('data-bc-pframe',frame); host.setAttribute('data-bc-pfx',fx);
+    // у преміум-середовищі Frame Echo вимкнено (воно має власну геометрію) — CSS стежить за цим атрибутом
+    if(PREMIUM.indexOf(theme)>=0||theme==='champion_hall') host.setAttribute('data-bc-prem','1'); else host.removeAttribute('data-bc-prem');
+    host.style.setProperty('--bc-a',a.hex); host.style.setProperty('--bc-a-rgb',a.rgb);
+    if(out!=null) host.style.setProperty('--bc-out',out+'px');
+    if(content) content.classList.add('bc-content');
+    ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-env-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
+  }
+  function clearEnv(host,content){
+    host.querySelectorAll(':scope > .bc-env-layer').forEach(n=>n.remove());
+    host.classList.remove('bc-env');
+    ['data-bc-theme','data-bc-pframe','data-bc-pfx','data-bc-prem'].forEach(a=>host.removeAttribute(a));
+    host.style.removeProperty('--bc-a'); host.style.removeProperty('--bc-a-rgb');
+    if(content) content.classList.remove('bc-content');
+  }
   function applyEnv(host,cfg,opts){
     if(!host) return;
     opts=opts||{}; cfg=sanitize(cfg);
-    host.querySelectorAll(':scope > .bc-env-layer').forEach(n=>n.remove());
     const content=opts.content?host.querySelector(opts.content):null;
-    if(cfg.frame==='default'&&cfg.effect==='none'&&cfg.theme==='default'){
-      host.classList.remove('bc-env');
-      ['data-bc-theme','data-bc-pframe','data-bc-pfx','data-bc-prem'].forEach(a=>host.removeAttribute(a));
-      host.style.removeProperty('--bc-a'); host.style.removeProperty('--bc-a-rgb');
-      if(content) content.classList.remove('bc-content');
-      return;
-    }
-    const a=accent(opts.accent);
-    host.classList.add('bc-env');
-    host.setAttribute('data-bc-theme',cfg.theme); host.setAttribute('data-bc-pframe',cfg.frame); host.setAttribute('data-bc-pfx',cfg.effect);
-    // у преміум-середовищі Frame Echo вимкнено (воно має власну геометрію) — CSS стежить за цим атрибутом
-    if(PREMIUM.indexOf(cfg.theme)>=0) host.setAttribute('data-bc-prem','1'); else host.removeAttribute('data-bc-prem');
-    host.style.setProperty('--bc-a',a.hex); host.style.setProperty('--bc-a-rgb',a.rgb);
-    if(opts.out!=null) host.style.setProperty('--bc-out',opts.out+'px');
-    if(content) content.classList.add('bc-content');
-    ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-env-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
+    clearEnv(host,content);
+    if(cfg.frame==='default'&&cfg.effect==='none'&&cfg.theme==='default') return;
+    mountEnv(host,cfg.theme,cfg.frame,cfg.effect,accent(opts.accent),content,opts.out);
+  }
+  // ФАЗА 3: champion_hall — середовище сторінки лише для чемпіонів (серверний статус, золото = статусний колір, не палітра гравця)
+  function applyChampEnv(host,opts){
+    if(!host) return;
+    opts=opts||{};
+    const content=opts.content?host.querySelector(opts.content):null;
+    clearEnv(host,content);
+    mountEnv(host,'champion_hall','default','none',accent('#d9b45b'),content,opts.out);
   }
 
   // ── дані ──
@@ -177,8 +219,12 @@
         <div class="bc-pt"><b>${esc(o.name||'')}</b><span>${esc(o.sub||'Так виглядатиме шапка')}</span></div></div>
       <div class="bc-note" id="bc-adj" hidden>Колір трохи підсвітлено для читабельності на темному фоні — збережений колір не змінюється.</div>
       ${o.note?`<div class="bc-note">${esc(o.note)}</div>`:''}
-      ${group('Рамка','frame',FRAMES,c.frame)}
-      ${group('Внутрішній ефект','effect',EFFECTS,c.effect)}
+      <div class="bc-grp-fe">
+        ${group('Рамка','frame',FRAMES,c.frame)}
+        ${group('Внутрішній ефект','effect',EFFECTS,c.effect)}
+      </div>
+      ${group('Преміум-скін шапки','skin',SKINS,c.skin)}
+      <div class="bc-note" id="bc-skin-note" hidden>Скін замінює рамку й ефект шапки. Вони й далі керують фоном сторінки (Full Sync).</div>
       ${group('Тема сторінки','theme',THEMES,c.theme)}
       <div class="bc-tprev" id="bc-tprev" aria-hidden="true">
         <div class="bc-tp-hero"><span class="bc-tp-av"></span><span class="bc-tp-l"><i></i><i></i></span></div>
@@ -195,9 +241,12 @@
     const prev=root.querySelector('#bc-prev'), adj=root.querySelector('#bc-adj'), tprev=root.querySelector('#bc-tprev');
     const paint=()=>{
       const a=accent(o.getAccent());
-      apply(prev,st.cfg,{avatar:'.bc-pav',accent:o.getAccent(),size:o.size||64,pad:o.pad||22});
+      apply(prev,st.cfg,{avatar:'.bc-pav',identity:'.bc-pt',accent:o.getAccent(),size:o.size||64,pad:o.pad||22});
+      const skinOn=st.cfg.skin!=='default';
+      root.classList.toggle('bc-skin-on',skinOn);
+      const sn=root.querySelector('#bc-skin-note'); if(sn) sn.hidden=!skinOn;
       if(tprev){
-        apply(tprev.querySelector('.bc-tp-hero'),st.cfg,{avatar:'.bc-tp-av',accent:o.getAccent(),size:34,pad:14});
+        apply(tprev.querySelector('.bc-tp-hero'),st.cfg,{avatar:'.bc-tp-av',identity:'.bc-tp-l',accent:o.getAccent(),size:34,pad:14});
         applyEnv(tprev,st.cfg,{accent:o.getAccent(),content:'.bc-tp-grid',out:8});
       }
       // превʼю завжди показує ВИБРАНЕ (навіть дефолт): акцент для UI-стану кнопок
@@ -213,5 +262,5 @@
     return { get:()=>sanitize(st.cfg) };
   }
 
-  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,none,sanitize,same,accent,apply,applyEnv,load,save,editorHtml,wireEditor };
+  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,none,sanitize,same,accent,apply,applyChamp,champTier,applyEnv,applyChampEnv,load,save,editorHtml,wireEditor };
 })(window);
