@@ -1,0 +1,211 @@
+/* BoOrbit · кастомізація шапок Профілю й Спільнот (STAGE) — assets/cosmetics-stage.css
+ *
+ * ОДНА система для двох сторінок (рішення Богдана 01.10.2026). Дизайн-джерело: ChatGPT
+ * CLAUDE-FINAL-DESIGN-SPEC.md (рамки header-frames.html, ефекти header-interior-effects.html).
+ * Логіка (колір/контраст/шари/редактор) — assets/cosmetics-stage.js. Дані — SQL 492.
+ *
+ * КОНТРАКТ ХОСТА (сторінка лише розставляє це):
+ *   .bc-head            шапка (position:relative, overflow:hidden — вже є в .hero / .chead)
+ *   .bc-av              аватар/герб усередині шапки
+ *   data-bc-frame       default | fortress | split_rail | obsidian_cut | glass_tunnel | pulse_core
+ *   data-bc-fx          none | aurora_mist | velocity | topography | particle_drift | scan_pulse | crystal_shards
+ *   --bc-a / --bc-a-rgb нормалізований акцент (JS підтягує яскравість, щоб був видно на темному)
+ *   --bc-av / --bc-pad  розмір аватара й лівий відступ шапки (для геометрії, що залежить від аватара)
+ *   <span class="bc-fx-layer a|b|c"> ×3 — шари ефекту, JS вставляє першими дітьми шапки
+ *
+ * ПРАВИЛА (спек): усередині аватара лише ініціали/фото/герб — декор тільки ЗОВНІ (рамка); колір, рамка й
+ * ефект — незалежні; чемпіонські шари (Supreme/Victory/Dynasty/Hall) тут НЕ живуть; усе чистий CSS, без
+ * WebGL/відео; prefers-reduced-motion зупиняє весь рух. Вилучені дизайном ID (halo, resonance, …) НЕ повертати.
+ * ⚠️ Усе загорнуто в @supports(color-mix): де його нема — шапка просто лишається звичайною.
+ */
+@supports (color: color-mix(in srgb, red 50%, blue)) {
+
+.bc-head{
+  --bc-surface:var(--panel,#15191e);
+  --bc-gap:#101318;           /* темний зазор між шарами рамки */
+  --bc-av:104px; --bc-pad:28px;
+  isolation:isolate;
+}
+
+/* ───────── шари ефекту ───────── */
+.bc-head > .bc-fx-layer{position:absolute;inset:0;z-index:-1;pointer-events:none}
+.bc-head[data-bc-fx="none"] > .bc-fx-layer{display:none}
+
+/* ───────── РАМКИ ───────── */
+/* 01 fortress — товста матова броня */
+.bc-head[data-bc-frame="fortress"]{
+  border:6px solid color-mix(in srgb,var(--bc-a) 64%,#222 36%);border-radius:24px;
+  box-shadow:inset 0 0 0 3px #0d1014,inset 0 0 0 5px color-mix(in srgb,var(--bc-a) 24%,transparent),0 0 25px color-mix(in srgb,var(--bc-a) 10%,transparent);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--bc-a) 10%,transparent),transparent 44%),var(--bc-surface)}
+.bc-head[data-bc-frame="fortress"] .bc-av{
+  border:5px solid color-mix(in srgb,var(--bc-a) 72%,#25282c);border-radius:27px;
+  background:color-mix(in srgb,var(--bc-a) 9%,var(--panel2,#1a1f25));
+  box-shadow:0 0 0 4px var(--bc-gap),0 0 0 6px color-mix(in srgb,var(--bc-a) 27%,transparent),inset 0 0 18px rgba(0,0,0,.28)}
+.bc-head[data-bc-frame="fortress"]::after{content:"";position:absolute;inset:13px;z-index:2;pointer-events:none;
+  border:1px solid color-mix(in srgb,var(--bc-a) 18%,transparent);border-radius:12px}
+
+/* 02 split_rail — асиметричні рейки */
+.bc-head[data-bc-frame="split_rail"]{
+  border:1px solid var(--line,rgba(255,255,255,.085));border-left:13px solid var(--bc-a);border-radius:4px 28px 28px 4px;
+  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 15%,transparent),transparent 34%),
+    linear-gradient(135deg,transparent 74%,color-mix(in srgb,var(--bc-a) 8%,transparent) 74%),var(--bc-surface)}
+.bc-head[data-bc-frame="split_rail"]::before,.bc-head[data-bc-frame="split_rail"]::after{
+  content:"";position:absolute;z-index:2;right:4%;width:34%;height:4px;pointer-events:none;background:linear-gradient(90deg,transparent,var(--bc-a))}
+.bc-head[data-bc-frame="split_rail"]::before{top:0}
+.bc-head[data-bc-frame="split_rail"]::after{bottom:0;transform:scaleX(-1);opacity:.65}
+.bc-head[data-bc-frame="split_rail"] .bc-av{
+  border:2px solid color-mix(in srgb,var(--bc-a) 54%,transparent);border-radius:16px 16px 34px 16px;
+  background:color-mix(in srgb,var(--bc-a) 9%,var(--panel2,#1a1f25));
+  box-shadow:8px 8px 0 color-mix(in srgb,var(--bc-a) 18%,#11151a)}
+
+/* 03 obsidian_cut — жорстка гранена форма */
+.bc-head[data-bc-frame="obsidian_cut"]{
+  clip-path:polygon(20px 0,calc(100% - 54px) 0,100% 34px,100% calc(100% - 20px),calc(100% - 20px) 100%,54px 100%,0 calc(100% - 34px),0 20px);
+  border:0;border-radius:0;
+  background:
+    linear-gradient(90deg,var(--bc-a),color-mix(in srgb,var(--bc-a) 36%,transparent) 33%,transparent 66%) top/100% 5px no-repeat,
+    linear-gradient(90deg,transparent 28%,color-mix(in srgb,var(--bc-a) 42%,transparent),var(--bc-a)) bottom/100% 5px no-repeat,
+    linear-gradient(135deg,color-mix(in srgb,var(--bc-a) 12%,transparent),transparent 42%),var(--bc-surface);
+  box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--bc-a) 28%,transparent)}
+.bc-head[data-bc-frame="obsidian_cut"]::before{content:"";position:absolute;z-index:2;inset:10px;pointer-events:none;
+  clip-path:polygon(14px 0,calc(100% - 44px) 0,100% 26px,100% calc(100% - 14px),calc(100% - 14px) 100%,44px 100%,0 calc(100% - 26px),0 14px);
+  border:1px solid color-mix(in srgb,var(--bc-a) 24%,transparent)}
+.bc-head[data-bc-frame="obsidian_cut"] .bc-av{
+  clip-path:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%);border:0;border-radius:0;
+  background:linear-gradient(145deg,color-mix(in srgb,var(--bc-a) 20%,#20242a),#161a1f);
+  box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--bc-a) 52%,transparent)}
+
+/* 04 glass_tunnel — прозора багатошарова глибина */
+.bc-head[data-bc-frame="glass_tunnel"]{
+  border:2px solid color-mix(in srgb,var(--bc-a) 72%,white 8%);border-radius:26px;
+  box-shadow:inset 0 0 0 5px var(--bc-gap),inset 0 0 0 7px color-mix(in srgb,var(--bc-a) 32%,transparent),
+    inset 0 0 0 13px #15191e,inset 0 0 0 14px color-mix(in srgb,var(--bc-a) 15%,transparent),0 0 24px color-mix(in srgb,var(--bc-a) 13%,transparent);
+  background:linear-gradient(112deg,transparent 18%,color-mix(in srgb,var(--bc-a) 9%,transparent) 18% 39%,transparent 39% 62%,color-mix(in srgb,var(--bc-a) 6%,transparent) 62% 79%,transparent 79%),var(--bc-surface)}
+.bc-head[data-bc-frame="glass_tunnel"] .bc-av{
+  border:3px solid color-mix(in srgb,var(--bc-a) 68%,white 10%);border-radius:22px;
+  background:color-mix(in srgb,var(--bc-a) 9%,var(--panel2,#1a1f25));
+  box-shadow:inset 0 0 0 5px #14181d,inset 0 0 0 7px color-mix(in srgb,var(--bc-a) 25%,transparent),0 0 28px color-mix(in srgb,var(--bc-a) 17%,transparent)}
+.bc-head[data-bc-frame="glass_tunnel"]::before{content:"";position:absolute;z-index:2;inset:-50% -15%;pointer-events:none;transform:rotate(12deg);
+  background:linear-gradient(90deg,transparent 42%,rgba(255,255,255,.07) 49%,transparent 56%);animation:bc-glass 6s ease-in-out infinite}
+
+/* 05 pulse_core — кругле енергетичне ядро (кільця центровані на аватарі) */
+.bc-head[data-bc-frame="pulse_core"]{
+  --bc-cx:calc(var(--bc-pad) + var(--bc-av) / 2);
+  border:4px solid color-mix(in srgb,var(--bc-a) 44%,#22262b);border-radius:20px;
+  background:
+    radial-gradient(circle at var(--bc-cx) 50%,transparent 0 calc(var(--bc-av) / 2 + 10px),color-mix(in srgb,var(--bc-a) 24%,transparent) calc(var(--bc-av) / 2 + 11px) calc(var(--bc-av) / 2 + 12px),transparent calc(var(--bc-av) / 2 + 13px) calc(var(--bc-av) / 2 + 29px),color-mix(in srgb,var(--bc-a) 12%,transparent) calc(var(--bc-av) / 2 + 30px) calc(var(--bc-av) / 2 + 31px),transparent calc(var(--bc-av) / 2 + 32px)),
+    linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 11%,transparent),transparent 40%),var(--bc-surface);
+  box-shadow:0 0 32px color-mix(in srgb,var(--bc-a) 12%,transparent),inset 0 0 28px rgba(0,0,0,.20)}
+.bc-head[data-bc-frame="pulse_core"]::before,.bc-head[data-bc-frame="pulse_core"]::after{
+  content:"";position:absolute;z-index:3;width:8px;height:8px;border-radius:50%;pointer-events:none;
+  left:calc(var(--bc-cx) - 4px);background:var(--bc-a);box-shadow:0 0 13px var(--bc-a)}
+.bc-head[data-bc-frame="pulse_core"]::before{top:7px}
+.bc-head[data-bc-frame="pulse_core"]::after{bottom:7px;opacity:.65}
+.bc-head[data-bc-frame="pulse_core"] .bc-av{
+  border:5px solid color-mix(in srgb,var(--bc-a) 70%,#25292e);border-radius:50%;
+  background:color-mix(in srgb,var(--bc-a) 9%,var(--panel2,#1a1f25));
+  box-shadow:0 0 0 5px var(--bc-gap),0 0 0 7px color-mix(in srgb,var(--bc-a) 38%,transparent),0 0 35px color-mix(in srgb,var(--bc-a) 20%,transparent)}
+
+/* ───────── ВНУТРІШНІ ЕФЕКТИ ───────── */
+/* aurora_mist — м'які кольорові хмари */
+.bc-head[data-bc-fx="aurora_mist"] > .bc-fx-layer.a{
+  inset:-35%;filter:blur(22px);animation:bc-aurora 9s ease-in-out infinite alternate;
+  background:
+    radial-gradient(ellipse at 30% 54%,color-mix(in srgb,var(--bc-a) 25%,transparent),transparent 30%),
+    radial-gradient(ellipse at 72% 35%,color-mix(in srgb,var(--bc-a) 14%,white 2%),transparent 28%),
+    radial-gradient(ellipse at 60% 88%,color-mix(in srgb,var(--bc-a) 12%,transparent),transparent 30%)}
+.bc-head[data-bc-fx="aurora_mist"] > .bc-fx-layer.b{background:linear-gradient(108deg,transparent 18%,rgba(255,255,255,.035) 45%,transparent 68%)}
+
+/* velocity — тонкі рухомі швидкі лінії */
+.bc-head[data-bc-fx="velocity"] > .bc-fx-layer.a{
+  inset:-40% -10%;transform:skewX(-20deg);animation:bc-velocity 5s linear infinite;
+  background:repeating-linear-gradient(90deg,transparent 0 65px,color-mix(in srgb,var(--bc-a) 10%,transparent) 66px 70px,transparent 71px 112px)}
+.bc-head[data-bc-fx="velocity"] > .bc-fx-layer.b{
+  background:
+    linear-gradient(105deg,transparent 5% 28%,color-mix(in srgb,var(--bc-a) 19%,transparent) 28.5% 29%,transparent 29.5% 56%,color-mix(in srgb,var(--bc-a) 11%,transparent) 56.5% 57%,transparent 57.5%),
+    linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 9%,transparent),transparent 42%)}
+
+/* topography — контурні кільця */
+.bc-head[data-bc-fx="topography"] > .bc-fx-layer.a{
+  inset:auto;left:-4%;top:-65%;width:76%;height:230%;border-radius:50%;transform:rotate(-9deg);opacity:.85;
+  background:repeating-radial-gradient(ellipse at center,transparent 0 18px,color-mix(in srgb,var(--bc-a) 12%,transparent) 19px 20px,transparent 21px 35px)}
+.bc-head[data-bc-fx="topography"] > .bc-fx-layer.b{background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 9%,transparent),transparent 60%)}
+
+/* particle_drift — рідкі світлові частинки */
+.bc-head[data-bc-fx="particle_drift"] > .bc-fx-layer.a{
+  animation:bc-particles 7s ease-in-out infinite alternate;
+  background:
+    radial-gradient(circle at 13% 22%,var(--bc-a) 0 2px,transparent 3px),
+    radial-gradient(circle at 26% 71%,color-mix(in srgb,var(--bc-a) 70%,transparent) 0 1px,transparent 2px),
+    radial-gradient(circle at 42% 34%,color-mix(in srgb,var(--bc-a) 55%,transparent) 0 2px,transparent 3px),
+    radial-gradient(circle at 57% 78%,color-mix(in srgb,var(--bc-a) 40%,transparent) 0 1px,transparent 2px),
+    radial-gradient(circle at 69% 27%,color-mix(in srgb,var(--bc-a) 60%,transparent) 0 2px,transparent 3px),
+    radial-gradient(circle at 83% 61%,color-mix(in srgb,var(--bc-a) 42%,transparent) 0 1px,transparent 2px),
+    radial-gradient(circle at 94% 19%,color-mix(in srgb,var(--bc-a) 70%,transparent) 0 2px,transparent 3px)}
+.bc-head[data-bc-fx="particle_drift"] > .bc-fx-layer.b{filter:blur(12px);
+  background:radial-gradient(ellipse at 72% 55%,color-mix(in srgb,var(--bc-a) 10%,transparent),transparent 30%)}
+
+/* scan_pulse — горизонтальна сітка та сканування */
+.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.a{opacity:.75;
+  background:repeating-linear-gradient(0deg,transparent 0 7px,color-mix(in srgb,var(--bc-a) 6%,transparent) 8px 9px)}
+.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.b{
+  inset:auto;left:0;right:0;height:34%;top:-34%;filter:blur(4px);animation:bc-scan 5s ease-in-out infinite;
+  background:linear-gradient(transparent,color-mix(in srgb,var(--bc-a) 13%,transparent),color-mix(in srgb,var(--bc-a) 30%,transparent),transparent)}
+.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.c{background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 8%,transparent),transparent 45%)}
+
+/* crystal_shards — великі напівпрозорі грані */
+.bc-head[data-bc-fx="crystal_shards"] > .bc-fx-layer.a{
+  clip-path:polygon(0 0,20% 0,35% 100%,0 100%);
+  background:linear-gradient(120deg,color-mix(in srgb,var(--bc-a) 18%,transparent),transparent)}
+.bc-head[data-bc-fx="crystal_shards"] > .bc-fx-layer.b{
+  inset:0 auto 0 22%;width:46%;clip-path:polygon(26% 0,100% 0,70% 100%,0 100%);
+  background:linear-gradient(135deg,color-mix(in srgb,var(--bc-a) 9%,transparent),rgba(255,255,255,.035),transparent);
+  border-left:1px solid color-mix(in srgb,var(--bc-a) 12%,transparent);border-right:1px solid color-mix(in srgb,var(--bc-a) 8%,transparent)}
+.bc-head[data-bc-fx="crystal_shards"] > .bc-fx-layer.c{
+  inset:0 -6% 0 auto;width:42%;clip-path:polygon(25% 0,100% 0,100% 100%,0 100%);
+  background:color-mix(in srgb,var(--bc-a) 7%,transparent)}
+
+@keyframes bc-glass{0%,18%{transform:translateX(-48%) rotate(12deg)}75%,100%{transform:translateX(55%) rotate(12deg)}}
+@keyframes bc-aurora{from{transform:translate(-2%,-3%) scale(1)}to{transform:translate(5%,4%) scale(1.08)}}
+@keyframes bc-velocity{from{transform:translateX(-12%) skewX(-20deg)}to{transform:translateX(12%) skewX(-20deg)}}
+@keyframes bc-particles{from{transform:translateY(3px);opacity:.65}to{transform:translateY(-5px);opacity:1}}
+@keyframes bc-scan{0%,16%{top:-34%}78%,100%{top:100%}}
+
+/* ───────── МОБІЛЬНИЙ ───────── */
+@media(max-width:680px){
+  .bc-head{--bc-pad:18px}
+  /* кільця/вузли pulse_core залежать від положення аватара — на вузькому екрані лишаємо лише рамку аватара */
+  .bc-head[data-bc-frame="pulse_core"]{background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 11%,transparent),transparent 60%),var(--bc-surface)}
+  .bc-head[data-bc-frame="pulse_core"]::before,.bc-head[data-bc-frame="pulse_core"]::after{display:none}
+  .bc-head[data-bc-frame="split_rail"]{border-left-width:9px}
+  .bc-head[data-bc-frame="fortress"]{border-width:4px}
+  .bc-head[data-bc-fx="velocity"] > .bc-fx-layer.a{animation-duration:8s}
+}
+
+/* ───────── prefers-reduced-motion: повна зупинка декоративного руху ───────── */
+@media(prefers-reduced-motion:reduce){
+  .bc-head > .bc-fx-layer,.bc-head::before,.bc-head::after{animation:none!important}
+}
+
+/* ───────── РЕДАКТОР «Оформлення шапки» ───────── */
+.bc-ed{margin-top:6px}
+.bc-ed .bc-ed-h{font-family:var(--mono,inherit);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim,#767c82);margin:14px 0 8px}
+/* ⚠️ :where() — нульова специфічність, щоб рамка/фон вибраної рамки (data-bc-frame) перемагали базу превʼю */
+:where(.bc-ed .bc-prev){position:relative;display:flex;align-items:center;gap:16px;padding:20px 22px;min-height:112px;overflow:hidden;
+  border:1px solid var(--line,rgba(255,255,255,.085));border-radius:18px;background:var(--panel,#15191e);--bc-av:64px;--bc-pad:22px}
+:where(.bc-ed .bc-prev .bc-pav){position:relative;width:64px;height:64px;flex:none;display:grid;place-items:center;border-radius:18px;
+  border:1px solid var(--line2,rgba(255,255,255,.14));background:var(--panel2,#1a1f25);font-family:var(--mono,inherit);font-weight:700;font-size:22px;color:#e9e4d8}
+.bc-ed .bc-prev .bc-pt{min-width:0}
+.bc-ed .bc-prev .bc-pt b{display:block;font-family:var(--mono,inherit);font-size:20px;line-height:1.1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bc-ed .bc-prev .bc-pt span{display:block;font-size:12px;color:var(--text-dim,#767c82);margin-top:3px}
+.bc-ed .bc-opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:8px}
+.bc-ed .bc-opt{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:9px 11px;border-radius:11px;cursor:pointer;
+  border:1px solid var(--line,rgba(255,255,255,.085));background:var(--panel,#15191e);color:var(--text,#f2efe7);font-family:var(--mono,inherit)}
+.bc-ed .bc-opt b{font-size:13px;font-weight:700}
+.bc-ed .bc-opt small{font-size:11px;font-weight:500;color:var(--text-dim,#767c82);font-family:var(--body,inherit);line-height:1.25}
+.bc-ed .bc-opt:hover{border-color:var(--line2,rgba(255,255,255,.14))}
+.bc-ed .bc-opt:focus-visible{outline:2px solid var(--bc-ui,var(--blue,#7e9dbb));outline-offset:2px}
+.bc-ed .bc-opt[aria-pressed="true"]{border-color:var(--bc-ui,var(--blue,#7e9dbb));background:color-mix(in srgb,var(--bc-ui,#7e9dbb) 12%,var(--panel,#15191e))}
+.bc-ed .bc-note{font-size:12px;color:var(--text-dim,#767c82);margin-top:8px;line-height:1.4}
+
+}
