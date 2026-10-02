@@ -434,6 +434,8 @@
         <b id="my-name">—</b>
         <span id="my-email"></span>
         <div style="margin-top:5px">
+          <a href="profile.html" target="_blank" class="win-open" data-title="👤 Профіль" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">👤 Мій профіль</a>
+          <a id="btn-communities" href="community.html" target="_blank" class="win-open" data-title="👥 Спільноти" style="display:inline-block;background:transparent;border:1px solid var(--line);color:var(--text-dim);border-radius:8px;padding:3px 8px;font-size:13px;text-decoration:none">👥 Спільноти</a>
           <button class="ghost" id="btn-log" style="padding:3px 8px;font-size:13px">📋 Журнал</button>
           <button class="ghost" id="btn-logout" style="padding:3px 8px;font-size:13px">вийти</button>
         </div>
@@ -1200,10 +1202,13 @@ async function viewMatches(){
   const left = countdown(S.gw.deadline_at);
   const open = S.gw.is_open;        // підтвердили всі — видно чужі прогнози
   const locked = open || S.iConfirmed;  // мої відповіді більше не редагуються
-  // Rivals 2.0: жорсткий дедлайн вікенда — абсолютна межа для зміни
-  // суперника (окремо від ліміту «1 зміна після відкриття», який
-  // рахується всередині renderRivalBox з rival_board.post_open_used).
-  const deadlinePassed = Date.now() >= new Date(S.gw.deadline_at).getTime();
+  // Rivals 2.0: прогнози/бусти/стиль/бонус замикаються о deadline_at (21:59).
+  // Зміна суперника (та сама «1 зміна після відкриття», post_open_used)
+  // лишається ще 2 год — до 23:59. Сервер тримає це в rival_pick
+  // (deadline_at + 2 год, файл 452); тут дзеркалимо межу для екрана.
+  const RIVALS_WINDOW_MS = 2 * 60 * 60 * 1000;
+  const rivalsCloseMs = new Date(S.gw.deadline_at).getTime() + RIVALS_WINDOW_MS;
+  const deadlinePassed = Date.now() >= rivalsCloseMs;
 
   // Заголовок вікенда в базі — «Вікенд 1 · 15-16 серпня». Ріжемо по
   // роздільнику, щоб номер стояв назвою, а дати — дрібним рядком під
@@ -1236,7 +1241,8 @@ async function viewMatches(){
       <div>
         <div class="cap">${open ? 'прогнози відкрито' : 'до дедлайну'}</div>
         <div class="t">${open ? 'вікенд закрито' : (left || 'закрито')}</div>
-        ${open ? '' : `<div class="when">приймаємо до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
+        ${open ? '' : `<div class="when">прогнози · бусти · стиль — до ${esc(fmtDeadline(S.gw.deadline_at))}</div>`}
+        ${open ? '' : `<div class="when" style="opacity:.75">⚔️ суперника можна змінити ще 2 год — до ${esc(fmtDeadline(new Date(rivalsCloseMs).toISOString()))}</div>`}
       </div>
       <div style="text-align:right">
         <div class="cap">прогнози</div>
@@ -2780,11 +2786,12 @@ function legendBoxHtml(L, locked, state){
     </div>
     <div class="dim" style="margin:6px 0 8px;font-size:13px">
       Обери <b>2 пасивки</b> на весь етап — кожна це <b>клуб + роль</b>. Бали йдуть
-      у загальний залік (впливають на місця й гроші), але <b>НЕ рахуються
-      для Rivals і MVP тижня</b> — це окрема, суто етапна механіка. Стеля —
-      <b>${cap} балів Legend за етап</b> (сума обох слотів): 8 клубів грають по
-      4 матчі (макс 8 за роль × 2 слоти = ${cap}), лише Мілан і Ювентус — по 5.
-      Незмінне до кінця етапу, як бусти.
+      у загальний залік, <b>те саме що і Бонусні Питання</b> (впливають на місця
+      й гроші), але <b>НЕ рахуються для Rivals і MVP тижня</b> — це окрема, суто
+      етапна механіка. Стеля — <b>8 балів за роль</b> (${cap} разом за 2 слоти):
+      клубу досить 4 матчів для максимуму; у Мілана та Ювентуса 5 матчів —
+      <b>більше шансів</b> набрати ці 8 балів за роль. Незмінне до кінця етапу,
+      як бусти.
     </div>`;
 
   // Вибір: 2 слоти, кожен = селект клубу + чіпи ролей. Щойно клуб обрано,
@@ -2909,6 +2916,10 @@ async function viewDraft(){
     const pct = Math.min(100, sp / budget * 100);
 
     $('view').innerHTML = `
+      ${closed ? '' : `<div class="deadline">
+        <div><span>До дедлайну</span>
+          <div class="when">приймаємо до ${esc(fmtDeadline(t.draft_deadline))}</div></div>
+        <span class="t">${esc(countdown(t.draft_deadline) || 'закрито')}</span></div>`}
       <div class="budget">
         <div style="display:flex;justify-content:space-between;align-items:baseline">
           <span class="dim">Витрачено</span>
@@ -3095,7 +3106,7 @@ async function viewStock(){
     const poolCodes  = poolRes.data.map(p => p.role_code);
     const roleList   = (rolesRes.data || []).filter(r => poolCodes.includes(r.code));
     html += `<div class="card tight" style="margin-bottom:10px">
-      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>${legendCapV} балів Legend за етап</b> (сума обох слотів). 8 наших клубів грають по 4 матчі (максимум 8 за роль × 2 слоти = ${legendCapV}); лише <b>Мілан і Ювентус</b> — по 5 матчів, тож там роль може дати трохи більше.</div>
+      <div class="dim" style="font-size:13px;margin-bottom:6px">Стеля — <b>8 балів за роль</b> (${legendCapV} разом за 2 слоти): клубу досить 4 матчів для максимуму; у <b>Мілана та Ювентуса</b> 5 матчів — <b>більше шансів</b> набрати ці 8 балів за роль. Незмінне до кінця етапу, як бусти.</div>
       <details class="bex"><summary>Як це рахується — приклади</summary><div>${esc(
         roleList.map(r => (r.icon || '🐐') + ' ' + r.title + '\n' + (r.examples || r.description)).join('\n\n'))}</div></details>
     </div>`;
@@ -3642,7 +3653,9 @@ async function viewBonus(){
     html += `<div class="deadline closed"><span>Час вийшов</span>
              <span class="t">дедлайн минув</span></div>`;
   } else {
-    html += `<div class="deadline"><span>До дедлайну</span>
+    html += `<div class="deadline">
+             <div><span>До дедлайну</span>
+               <div class="when">приймаємо до ${esc(fmtDeadline(dl))}</div></div>
              <span class="t">${esc(left)}</span></div>`;
   }
 
@@ -5500,5 +5513,47 @@ function closeModal(){ $('modal-host').innerHTML = ''; }
 // =====================================================================
 boot();
 </script>
+<!-- Профіль/Спільноти → вікном на борді, а не новою вкладкою. Класичний
+     (не module) скрипт: делегує клік по `.win-open` і, коли кабінет живе
+     в iframe борда, постить `boorbit:openwin` у parent. Standalone (не в
+     iframe) — лишається старий target="_blank". -->
+<script>
+document.addEventListener('click', function(e){
+  var a = e.target.closest && e.target.closest('.win-open');
+  if(!a) return;
+  if(window.parent && window.parent !== window){
+    e.preventDefault();
+    window.parent.postMessage({
+      type:'boorbit:openwin',
+      href:a.getAttribute('href'),
+      title:a.getAttribute('data-title') || a.textContent.trim()
+    }, '*');
+  }
+});
+</script>
+<!-- Бейдж лічильника запрошень/заявок на кнопці «👥 Спільноти» (self-contained:
+     читає сесію з localStorage supabase-js, опитує my_community_pending). -->
+<script>
+(function(){
+  var A=document.getElementById('btn-communities'); if(!A) return;
+  var REF='wsdamzcezumjmgxmvakw', KEY='sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo', badge=null;
+  function tok(){ try{ var r=localStorage.getItem('sb-'+REF+'-auth-token'); return r?(JSON.parse(r)||{}).access_token:null; }catch(e){ return null; } }
+  function upd(n){
+    if(!n){ if(badge){ badge.remove(); badge=null; } return; }
+    if(!badge){ badge=document.createElement('span');
+      badge.style.cssText='display:inline-block;margin-left:5px;min-width:16px;height:16px;line-height:16px;text-align:center;font-size:11px;font-weight:700;background:#F4C430;color:#1a1206;border-radius:9px;padding:0 4px;vertical-align:middle';
+      A.appendChild(badge); }
+    badge.textContent=n; A.title=n+' запрошень/заявок чекають на відповідь';
+  }
+  function poll(){ var t=tok(); if(!t) return;
+    fetch('https://'+REF+'.supabase.co/rest/v1/rpc/my_community_pending',{method:'POST',
+      headers:{apikey:KEY,Authorization:'Bearer '+t,'Content-Type':'application/json'},body:'{}'})
+      .then(function(r){ return r.ok?r.json():null; })
+      .then(function(rows){ if(rows) upd(rows.length); }).catch(function(){});
+  }
+  poll(); setInterval(poll, 20000);
+})();
+</script>
+
 </body>
 </html>

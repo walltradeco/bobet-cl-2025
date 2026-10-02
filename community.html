@@ -1,0 +1,1199 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Спільноти · BoOrbit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Barlow:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<!-- шрифти BoBet — лише для екрана входу (вхід спільний для всіх ліг) -->
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0D1014; --panel:#15191E; --panel2:#1A1F25;
+  --line:rgba(255,255,255,.08); --line2:rgba(255,255,255,.14);
+  --text:#F2EFE7; --text-dim:#8b9299;
+  --gold:#D9B45B; --gold-d:#8a7228;
+  --blue:#7898B8; --blue-d:#3a597e;
+  --teal:#6f93b0; --purple:#a98fdb; --red:#D96B6B;
+  --green:#18b47a; --green-soft:rgba(24,180,122,0.14); /* лишається ЛИШЕ для екрана входу */
+  --accent:#7898B8; --accent-d:#3a597e; --dim:#5f7469;
+  --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 520px at 85% -12%, #18222f 0%, transparent 58%),
+    radial-gradient(820px 380px at 2% 2%, #141820 0%, transparent 52%),
+    var(--bg)}
+h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
+.wrap{max-width:1120px;margin:0 auto;padding:0 16px 60px}
+a{color:var(--accent)}
+button{font-family:var(--mono);cursor:pointer}
+.hide{display:none!important}
+.st{font-size:11px;color:var(--text-dim);font-family:var(--mono);text-transform:uppercase;letter-spacing:.06em}
+
+/* шапка */
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:18px 0 10px}
+.logo{display:flex;align-items:center;gap:10px}
+.logo .sq{position:relative;width:44px;height:44px;border-radius:12px;border:1px solid var(--line2);
+  background:linear-gradient(150deg,#1e2632,#141922);color:#c7d4e2;
+  display:flex;align-items:center;justify-content:center}
+.logo .sq .dot{position:absolute;top:-3px;right:-3px;width:11px;height:11px;border-radius:50%;
+  background:var(--gold);border:2px solid var(--bg)}
+.logo h1{font-size:20px;margin:0;line-height:1}
+.logo .sub{font-size:11px;color:var(--text-dim);letter-spacing:.14em;text-transform:uppercase}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.stage-badge{font-family:var(--mono);font-size:11px;font-weight:700;color:var(--red);border:1px solid var(--red);
+  border-radius:6px;padding:2px 8px;letter-spacing:.08em}
+.who{font-size:13px;color:var(--text-dim)}
+.who b{color:var(--text)}
+.abadge{font-size:10px;font-weight:700;color:var(--gold);border:1px solid var(--gold);border-radius:5px;padding:1px 6px;letter-spacing:.08em}
+button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:13px}
+button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
+button.act{background:rgba(120,152,184,.14);color:var(--blue);border:1px solid var(--blue-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
+button.act.warn{background:transparent;color:var(--red);border-color:var(--red)}
+button.sm{padding:5px 10px;font-size:12px}
+button:disabled{opacity:.45;cursor:not-allowed}
+
+/* фільтри */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 16px;align-items:center}
+.filters input,.filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:8px 10px;font-size:13px;font-family:inherit}
+.filters input{flex:1;min-width:180px}
+.filters .grow{margin-left:auto}
+
+/* сітка карток спільнот */
+.sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.ccard{background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;
+  display:flex;flex-direction:column;transition:border-color .15s}
+.ccard:hover{border-color:var(--accent)}
+.ccard .band{height:8px}
+.ccard .cbody{padding:14px}
+.ccard .em{font-size:30px;line-height:1}
+.ccard .nm{font-family:var(--mono);font-size:18px;font-weight:700;margin:6px 0 2px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ccard .tags{display:flex;gap:6px;flex-wrap:wrap;margin:4px 0 8px}
+.tag{font-size:10px;font-family:var(--mono);text-transform:uppercase;letter-spacing:.05em;font-weight:700;
+  padding:2px 7px;border-radius:5px;border:1px solid var(--line);color:var(--text-dim)}
+.tag.priv{color:var(--purple);border-color:#5b4a86}
+.tag.open{color:var(--blue);border-color:var(--blue-d)}
+.ccard .mot{color:var(--text-dim);font-size:13px;font-style:italic;min-height:20px;margin-bottom:8px}
+.ccard .foot{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--text-dim);margin-top:auto}
+.ccard .foot .cnt{font-family:var(--mono);font-weight:700;color:var(--text)}
+.ccard .cta{margin-top:10px}
+
+/* секції */
+.sec{margin:26px 0 8px}
+.sec h2{font-size:17px;margin:0 0 8px}
+.reqrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
+  border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
+.reqrow .info{flex:1;min-width:220px;font-size:14px}
+.kindb{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+  padding:2px 7px;border-radius:5px;margin-right:6px}
+.kindb.invite{background:rgba(127,188,255,.16);color:var(--blue);border:1px solid #3a597e}
+.kindb.request{background:var(--green-soft);color:var(--green);border:1px solid var(--accent-d)}
+.mini{display:flex;gap:10px;flex-wrap:wrap}
+.chip{font-size:11px;font-family:var(--mono);font-weight:600;padding:3px 9px;border-radius:20px;
+  border:1px solid var(--line);color:var(--text-dim)}
+.chip.role{color:var(--teal);border-color:#3d6d7e}
+.chip.own{color:var(--gold);border-color:#8a7228}
+
+/* сторінка спільноти */
+.chead{position:relative;border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:14px 0 4px}
+.chead .accent-bar{position:absolute;left:0;top:0;bottom:0;width:5px;z-index:1}
+.chead .cover{position:relative;z-index:2;display:flex;gap:20px;align-items:center;padding:24px 26px 24px 30px}
+.chead .crest{position:relative;width:92px;height:92px;border-radius:22px;flex:none;
+  display:flex;align-items:center;justify-content:center;font-size:42px;line-height:1}
+.chead .htext{flex:1;min-width:0}
+.chead h2{margin:0;font-size:28px;line-height:1.1}
+.chead .mot{font-style:italic;color:var(--text-dim);margin:4px 0 0;font-size:15px}
+.chead .meta{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;margin-top:12px;color:var(--text-dim)}
+.chead .meta b{color:var(--text)}
+.chead .acts{display:flex;gap:8px;align-items:flex-start}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:14px}
+.tabs button{background:transparent;border:none;color:var(--text-dim);padding:9px 14px;font-size:14px;font-weight:600;
+  border-bottom:2px solid transparent}
+.tabs button.on{color:var(--text);border-bottom-color:var(--gold)}
+.tabpane{min-height:80px}
+
+/* стіна */
+.postbox{display:flex;gap:8px;margin-bottom:14px}
+.postbox textarea{flex:1;background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:10px;
+  padding:10px 12px;font-family:inherit;font-size:14px;resize:vertical;min-height:44px}
+.post{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:8px}
+.post.pin{border-color:#8a7228;background:rgba(230,193,75,.06)}
+.post .ph{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);margin-bottom:6px}
+.post .ph b{color:var(--text);font-size:13px}
+.post .pbody{white-space:pre-wrap;font-size:14px}
+.post .pacts{margin-top:8px;display:flex;gap:6px}
+
+/* ростер / історія / правила */
+.mrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);
+  border-radius:10px;padding:10px 12px;margin-bottom:6px;cursor:pointer}
+.mrow .nm{font-weight:600;min-width:120px}
+.mrow .rroles{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.logrow{font-size:13px;padding:7px 0;border-bottom:1px solid var(--line);color:var(--text-dim)}
+.logrow:last-child{border:none}
+.logrow b{color:var(--text)}
+/* історія може бути довгою (кожне пиво пишеться) — робимо її прокручуваною */
+.histscroll{max-height:62vh;overflow-y:auto;padding-right:6px}
+.rules-box{white-space:pre-wrap;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;font-size:14px}
+.relrow{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-bottom:6px}
+.rel-ally{color:var(--gold)} .rel-enemy{color:var(--red)}
+.rel-mut{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;padding:1px 6px;border-radius:5px;border:1px solid}
+
+/* модалки / форми */
+.mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);
+  display:flex;align-items:center;justify-content:center;padding:20px;overflow:auto}
+.modal{background:var(--panel2);border:1px solid var(--line);border-radius:16px;max-width:640px;width:100%;
+  max-height:92vh;overflow:auto}
+.modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
+.modal .mhead h3{margin:0;font-size:18px;flex:1}
+.modal .mx{width:34px;height:34px;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
+.modal .mbody{padding:16px 20px}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-bottom:4px}
+.field input,.field select,.field textarea{width:100%;background:var(--panel);border:1px solid var(--line);color:var(--text);
+  border-radius:8px;padding:9px 11px;font-family:inherit;font-size:14px}
+.field textarea{resize:vertical;min-height:60px}
+.field.row{display:flex;gap:10px}.field.row>div{flex:1}
+.permgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.permgrid label{display:flex;align-items:center;gap:7px;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text)}
+.msg{font-size:13px;padding:8px 10px;border-radius:8px;margin-top:8px}
+.msg.err{background:rgba(226,88,95,.14);color:#f2b0b3}
+.msg.ok{background:var(--green-soft);color:var(--green)}
+.rolerow{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.rolerow:last-child{border:none}
+.rolerow .rl{font-weight:600;flex:1;min-width:120px}
+.perm-list{font-size:11px;color:var(--text-dim)}
+@media(max-width:640px){.chead .cover{flex-wrap:wrap}.chead .acts{margin-left:0;width:100%}.permgrid{grid-template-columns:1fr}}
+
+/* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама всіх ліг) ── */
+.login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
+.login h1{font-family:'IBM Plex Mono',monospace;text-transform:uppercase;color:var(--green);font-size:22px;letter-spacing:.04em}
+.login .stage-badge{font-family:'IBM Plex Mono',monospace}
+.login p{color:var(--text-dim);font-size:14px}
+.login input{width:100%;background:#1B251D;border:1px solid #2A362B;color:#EDEFE8;border-radius:8px;
+  padding:11px 12px;font-size:15px;margin:8px 0;font-family:'Onest',system-ui,sans-serif;text-align:center}
+.login input.code{font-family:'IBM Plex Mono',monospace;font-size:22px;letter-spacing:.2em}
+.login button.primary{width:100%;font-family:'Montserrat',sans-serif}
+#login-msg{font-size:13px;color:var(--text-dim);margin-top:8px;min-height:18px}
+
+/* ── Герб спільноти (колір=акцент). 469: рівень показуємо НАЗВОЮ РАНГУ
+   (9-рангова драбина), а не Rare/Mega-фінішем — rare/mega лишаються для карток. */
+.crest-sm{width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;
+  font-size:26px;line-height:1;margin-bottom:10px}
+/* пілюля рангу на картці сітки (замість Rare/Mega-бейджа) */
+.rankpill{display:inline-flex;align-items:center;font-family:var(--mono);font-size:10px;font-weight:700;
+  letter-spacing:.04em;padding:2px 8px;border-radius:999px;border:1px solid var(--line2);color:var(--text-dim)}
+/* драбина рангів (вкладка Престиж) */
+.ladder{margin-top:16px;display:grid;gap:2px}
+.lrank{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;font-size:13px;color:var(--text-dim)}
+.lrank .lno{width:18px;font-family:var(--mono);font-size:11px;text-align:center;opacity:.7}
+.lrank .lnm{flex:1}
+.lrank .lmin{font-family:var(--mono);font-size:11px;opacity:.6}
+.lrank.on{background:var(--panel2);color:var(--text);font-weight:600}
+.lrank.on .lno,.lrank.on .lmin{opacity:1}
+
+/* ── ВКЛАДКА «ОГЛЯД» ── */
+.ov{display:grid;grid-template-columns:1fr 340px;gap:22px;align-items:start}
+.sec-h{display:flex;align-items:center;justify-content:space-between;margin:0 0 12px;gap:10px;flex-wrap:wrap}
+.sec-h h3{font-size:18px;margin:0}
+.sec-links{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:13px}
+.sec-links .lnk-sep{color:var(--text-dim)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px 18px}
+.card+.card{margin-top:16px}
+.card.side h4{font-size:15px;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card.side h4 .n{font-size:12px;color:var(--text-dim);font-weight:500}
+.post .pfoot{margin-top:12px;font-size:12px;color:var(--text-dim)}
+.post .ph .pinbadge{color:var(--gold)}
+.post .ph .time{text-transform:none;letter-spacing:0}
+.evrow{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+  border-radius:12px;padding:12px 14px;margin-bottom:10px}
+.evrow .evic{width:34px;height:34px;border-radius:9px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:var(--panel2);border:1px solid var(--line);color:var(--blue);font-size:15px}
+.evrow .evic.gold{color:var(--gold)}
+.evrow .evtx{flex:1;min-width:0}
+.evrow .evtx b{font-size:14px;font-weight:600}
+.evrow .evtx .sub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.evrow .evt{font-size:12px;color:var(--text-dim);white-space:nowrap}
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.duo .card h4{font-size:14px;display:flex;justify-content:space-between;align-items:center;margin:0 0 10px;gap:8px}
+.duo .about-tx{font-size:13.5px;color:#cfd5d0}
+.rules-n{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;margin:8px 0}
+.rules-n .num{font-family:var(--mono);color:var(--gold);font-weight:700;font-size:12px;min-width:22px}
+.ovm{display:flex;align-items:center;gap:11px;padding:9px 0;border-bottom:1px solid var(--line)}
+.ovm:last-of-type{border:none}
+.ava{width:38px;height:38px;border-radius:10px;flex:none;display:flex;align-items:center;justify-content:center;
+  background:linear-gradient(150deg,#20293a,#161b26);border:1px solid var(--line2);color:#a9c0da;
+  font-family:var(--mono);font-weight:700;font-size:13px}
+.ovm .mi,.ovrel .ri{flex:1;min-width:0}
+.ovm .mn,.ovrel .rn{font-weight:600;font-size:14px}
+.ovm .mr,.ovrel .rt{font-size:12px;color:var(--text-dim)}
+.wbtn{width:100%;margin-top:14px;background:var(--panel2);border:1px solid var(--line2);color:var(--text);
+  border-radius:10px;padding:10px;font-size:13px;font-weight:600}
+.diplo-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.dstat{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px}
+.dstat .num{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1}
+.dstat .lbl{font-size:11px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.ovrel{display:flex;align-items:center;gap:11px;padding:10px 0;border-bottom:1px solid var(--line)}
+.ovrel:last-of-type{border:none}
+@media(max-width:820px){
+  .ov{display:flex;flex-direction:column;gap:16px}
+  .ovmain,.ovside{display:contents}
+  #ov-stream{order:1}#ov-prestige{order:2}#ov-members{order:3}#ov-diplo{order:4}#ov-duo{order:5;margin-top:0}
+  .duo{grid-template-columns:1fr}
+}
+
+/* ── пресети кольору у формі ── */
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.preset{cursor:pointer;border:1px solid var(--line2);border-radius:9px;padding:6px 9px;display:flex;align-items:center;
+  gap:7px;font-size:12px;background:var(--panel);color:var(--text)}
+.preset:hover{border-color:var(--blue)}
+.preset .dotc{width:16px;height:16px;border-radius:5px;flex:none}
+.preset .lab{color:var(--text-dim)}
+.preset .lab .tg{font-family:var(--mono);font-size:9px;letter-spacing:.05em;margin-left:5px}
+
+/* ── престиж (чіп у шапці + блок Огляду + вкладка) ── */
+.plevel{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px;font-weight:700;
+  letter-spacing:.08em;padding:3px 9px;border-radius:999px;border:1px solid var(--line2);color:var(--text-dim)}
+.pbig{font-family:var(--mono);font-size:30px;font-weight:700;line-height:1;margin:8px 0 2px}
+.pbig small{font-size:12px;color:var(--text-dim);font-weight:500;font-family:inherit;margin-left:6px}
+.pbar{height:8px;border-radius:999px;background:var(--panel2);overflow:hidden;margin:12px 0 6px}
+.pbar > i{display:block;height:100%;border-radius:999px}
+.pnext{font-size:12px;color:var(--text-dim)}
+.beerbtn{width:100%;margin-top:12px;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:700;
+  background:var(--gold);color:#1a1206;cursor:pointer}
+.beerbtn:disabled{opacity:.45;cursor:default}
+.beerhint{font-size:12px;color:var(--text-dim);margin-top:8px;text-align:center}
+.how{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;font-size:13px;
+  line-height:1.55;color:var(--text-dim)}
+.how b{color:var(--text)}.how h5{margin:0 0 8px;font-size:13px;color:var(--text)}
+.donor{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line)}
+.donor:last-child{border:none}
+.donor .drank{width:20px;color:var(--text-dim);font-family:var(--mono);font-size:13px}
+.donor .dn{flex:1;font-size:14px}.donor .dp{font-family:var(--mono);font-weight:700}
+/* Інвестиція в престиж — ЛИШЕ опис можливості (купівля окремо, за реальні кошти, як картки) */
+.invest{margin-top:16px}
+.invest h4{font-size:15px;margin:0 0 6px}
+.invest .il{font-size:13.5px;color:#cfd5d0;margin:0 0 14px;line-height:1.5}
+.invest .il b{color:var(--text)}
+.investgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.invtier{background:var(--panel2);border:1px solid var(--line2);border-radius:12px;padding:16px 10px;text-align:center}
+.invtier .invn{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold);line-height:1}
+.invtier .invu{font-size:11px;color:var(--text-dim);margin-top:6px}
+@media(max-width:560px){.investgrid{grid-template-columns:repeat(2,1fr)}}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:22px;align-items:start}
+@media(max-width:820px){.pgrid{grid-template-columns:1fr}}
+
+/* ── екран входу лишається BoBet-зеленим (спільна брама ліг) ── */
+body:has(#screen-login:not(.hide)){
+  background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
+</style>
+<link rel="stylesheet" href="assets/cosmetics.css">
+<script src="assets/cosmetics.js"></script>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="topbar">
+    <div class="logo">
+      <div class="sq" aria-hidden="true"><span class="dot"></span>
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="8" r="4"/><path d="M18 21a6 6 0 0 0-12 0"/>
+          <path d="M22 21a5 5 0 0 0-6.4-4.8"/><path d="M2 21a5 5 0 0 1 6.4-4.8"/></svg></div>
+      <div><h1>Спільноти</h1><div class="sub">BoOrbit</div></div>
+    </div>
+    <div class="right">
+      
+      <span id="who" class="who hide"></span>
+      <button id="btn-login" class="ghost">Увійти</button>
+      <button id="btn-logout" class="ghost hide">Вийти</button>
+    </div>
+  </div>
+
+  <!-- ОГЛЯД (публічний) -->
+  <div id="screen-list">
+    <div class="filters">
+      <input id="f-q" placeholder="Пошук спільноти…">
+      <select id="f-kind"><option value="">Тип: усі</option><option value="club">🏟️ Клуб</option><option value="bar">🍻 Бар</option></select>
+      <select id="f-join"><option value="">Вступ: будь-який</option><option value="open">🔓 Відкритий</option><option value="request">🔒 За заявкою</option></select>
+      <select id="f-sort"><option value="active">Сорт: найактивніші</option><option value="prestige">За престижем</option><option value="big">Найбільші</option><option value="new">Найновіші</option></select>
+      <button id="btn-create" class="primary grow">+ Створити</button>
+    </div>
+    <div id="sum" class="sum"></div>
+    <div id="grid" class="grid"></div>
+
+    <div id="pending-sec" class="sec hide"><h2>Мої запрошення</h2><div id="pending-list"></div></div>
+    <div id="mine-sec" class="sec hide"><h2>Мої спільноти</h2><div id="mine-list" class="grid"></div></div>
+  </div>
+
+  <!-- СТОРІНКА СПІЛЬНОТИ -->
+  <div id="screen-community" class="hide">
+    <button class="ghost sm" id="btn-back-list">← до Огляду</button>
+    <div id="cenv">   <!-- 492 фаза 2: хост оточення сторінки (тема + Full Sync); топбар і «← до Огляду» поза ним -->
+      <div id="chead"></div>
+      <div id="ctabs" class="tabs"></div>
+      <div id="ctab" class="tabpane"></div>
+    </div>
+  </div>
+
+  <!-- ЕКРАН ВХОДУ -->
+  <div id="screen-login" class="login hide">
+    <h1>BoOrbit </h1>
+    <div id="step-email">
+      <p>Увійди своєю поштою — щоб вступати у спільноти й керувати ними.</p>
+      <input id="in-email" type="email" placeholder="твоя пошта" autocomplete="email">
+      <button id="btn-send" class="primary">Надіслати код</button>
+    </div>
+    <div id="step-code" class="hide">
+      <p>Введи код із листа.</p>
+      <input id="in-code" class="code" inputmode="numeric" placeholder="000000">
+      <button id="btn-verify" class="primary">Увійти</button>
+      <button id="btn-back" class="ghost" style="margin-top:8px">Назад</button>
+    </div>
+    <div id="login-msg"></div>
+    <p style="margin-top:18px"><a href="#" id="lnk-back">← до Огляду</a></p>
+  </div>
+</div>
+
+<div id="mhost"></div>
+
+<script type="module">
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+const $=id=>document.getElementById(id);
+// 492: кастомізація шапки (assets/cosmetics-stage.*). Немає файла/SQL → BC=null, шапка як раніше.
+const BC=window.BoCosmetics||null;
+// 492: виклик косметики НІКОЛИ не ламає сторінку (старий/недозалитий assets/cosmetics-*.js → метод відсутній → тихо пропускаємо)
+const bcSafe=(fn,...a)=>{ try{ if(BC && typeof BC[fn]==='function') return BC[fn](...a); }catch(e){ console.warn('cosmetics:',fn,e); } return undefined; };
+const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const KIND={club:'🏟️ Клуб',bar:'🍻 Бар'};
+const KINDEM={club:'🏟️',bar:'🍻'};
+const KIND_LEGACY={vip:'🎩 VIP Ложа',locker:'🚪 Роздягальня'};   // старі типи — лише щоб не ламати показ наявних
+const kindLabel=k=>KIND[k]||KIND_LEGACY[k]||k;
+const kindEmoji=c=>c.emoji||KINDEM[c.kind]||({vip:'🎩',locker:'🚪'})[c.kind]||'🍻';
+const HEX_RE=/^#[0-9a-fA-F]{3,8}$/;
+const safeCol=v=>HEX_RE.test(v||'')?v:'#7898B8';
+// Пресети кольору. Рівень Rare/Mega відкриється спільноті за Престиж — окреме поле, поки не пишеться.
+const COLOR_PRESETS=[
+  {name:'Winter Derby',hex:'#7d9fc4',tier:'rare'},
+  {name:'Autumn Cup',hex:'#9a5a4a',tier:'rare'},
+  {name:'Amber House',hex:'#b5804a',tier:'rare'},
+  {name:'Anniversary',hex:'#d9b45b',tier:'mega'},
+  {name:'Neon Night',hex:'#8a6fae',tier:'mega'},
+];
+const EV_IC={joined:'＋',left:'↩',kicked:'⊘',role_added:'★',role_removed:'☆',invited:'✉',invite_accepted:'✔',
+  request_approved:'✔',founder_transferred:'👑',relation_ally:'↔',relation_enemy:'⚔',relation_cleared:'✕',created:'🏳',beer:'🍺'};
+// 469: спільноти мають 9-РАНГОВУ ДРАБИНУ престижу (назва рангу + прогрес), а НЕ
+// Rare/Mega — ті лишаються для КАРТ. Рівень показуємо назвою рангу.
+const hasPrestige=c=>!!c&&(c.kind==='bar'||c.kind==='club');
+const rankName=c=>(c&&c.rank_name)||'';
+const crestStyle=col=>`--cc-a:${col}2e;background:linear-gradient(150deg,${col}2e,${col}10);border:1px solid ${col}55`;
+const initials=n=>String(n||'?').trim().slice(0,2).toUpperCase();
+const trunc=(s,n)=>{ s=String(s||''); return s.length>n?s.slice(0,n-1)+'…':s; };
+function ago(iso){ const s=(Date.now()-new Date(iso))/1000;
+  if(s<3600) return Math.max(1,Math.round(s/60))+' хв';
+  if(s<86400) return Math.round(s/3600)+' год';
+  if(s<7*86400) return Math.round(s/86400)+' дн';
+  return new Date(iso).toLocaleDateString('uk'); }
+let formEmoji=null;   // збережений емодзі спільноти (поля у формі нема; на редагуванні не затираємо)
+const PERMKEYS=['perm_manage_info','perm_manage_roles','perm_manage_members','perm_moderate_wall','perm_manage_relations','perm_delete'];
+const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'Керувати ролями',perm_manage_members:'Керувати учасниками',perm_moderate_wall:'Модерувати стіну',perm_manage_relations:'Дипломатія',perm_delete:'Видаляти спільноту'};
+const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключено',
+  role_added:'отримав роль',role_removed:'втратив роль',invited:'запрошено',invite_accepted:'прийняв запрошення',
+  request_approved:'заявку схвалено',founder_transferred:'передав засновництво',
+  relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок',
+  beer:'випив пиво'};
+
+const S={ me:null, name:null, isAdmin:false, list:[], mine:[], pending:[],
+  f:{q:'',kind:'',join:'',sort:'active'}, cur:null, tab:'wall' };
+
+// ── boot ──
+async function boot(){
+  const { data:{ session } } = await sb.auth.getSession();
+  S.me = session ? session.user.id : null;
+  if(S.me){
+    try{
+      const { data } = await sb.from('profiles').select('display_name,is_platform_admin').eq('id',S.me).maybeSingle();
+      if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
+    }catch(e){}
+    $('who').classList.remove('hide'); $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">адмін</span>':''}`;
+    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
+  }
+  await loadList();
+  if(S.me){ await loadMineAndPending(); }
+  const openId=new URLSearchParams(location.search).get('id');   // профіль→спільнота
+  if(openId){ try{ await openCommunity(openId); }catch(e){} }
+}
+
+// 01.10: престиж рахується на льоту; при розбігу навантаження база інколи віддає 57014 (statement timeout) — повторюємо
+// 1 раз із паузою (спільноти не лишаються порожніми через разовий збій; більше — підсилювало б навантаження)
+async function withRetry(fn, n=1){
+  let r;
+  for(let i=0;i<=n;i++){
+    try{ r=await fn(); }catch(e){ r={ error:e, data:null }; }
+    if(!r.error) return r;
+    if(i<n) await new Promise(res=>setTimeout(res,400*(i+1)));
+  }
+  return r;
+}
+async function loadList(){
+  const { data, error } = await withRetry(()=>sb.from('community_card')
+    .select('id,name,kind,emoji,accent_color,motto,join_mode,visibility,founder_name,owner_name,created_at,member_count,last_post_at,prestige_total,rank_no,rank_name'));
+  S.list = error ? [] : (data||[]);
+  renderGrid();
+}
+async function loadMineAndPending(){
+  try{ S.mine = (await sb.rpc('my_communities')).data || []; }catch(e){ S.mine=[]; }
+  try{ S.pending = (await sb.rpc('my_community_pending')).data || []; }catch(e){ S.pending=[]; }
+  renderMine(); renderPending();
+  if(S.list.length) renderGrid();   // CTA огляду має знати про членство (S.mine вантажиться ПІСЛЯ loadList)
+}
+
+function listFiltered(){
+  const f=S.f; let l=S.list.slice();
+  if(f.q){ const q=f.q.toLowerCase(); l=l.filter(c=>c.name.toLowerCase().includes(q)||(c.motto||'').toLowerCase().includes(q)); }
+  if(f.kind) l=l.filter(c=>c.kind===f.kind);
+  if(f.join) l=l.filter(c=>c.join_mode===f.join);
+  if(f.sort==='prestige') l.sort((a,b)=>(b.prestige_total||0)-(a.prestige_total||0));
+  else if(f.sort==='big') l.sort((a,b)=>b.member_count-a.member_count);
+  else if(f.sort==='new') l.sort((a,b)=>new Date(b.created_at)-new Date(a.created_at));
+  else l.sort((a,b)=>new Date(b.last_post_at||0)-new Date(a.last_post_at||0)||b.member_count-a.member_count);
+  return l;
+}
+function ccardHTML(c){
+  const col=safeCol(c.accent_color);
+  const iAmMember=S.mine.some(m=>m.community_id===c.id);
+  let cta;
+  if(iAmMember) cta=`<button class="act sm" data-open="${c.id}">Відкрити →</button>`;
+  else if(!S.me) cta=`<button class="ghost sm" data-open="${c.id}">Переглянути</button>`;
+  else if(c.join_mode==='open') cta=`<button class="act sm" data-join="${c.id}">Вступити</button>`;
+  else cta=`<button class="act sm" data-join="${c.id}">Подати заявку</button>`;
+  const rank=(hasPrestige(c)&&rankName(c))?`<span class="rankpill">${esc(rankName(c))}</span>`:'';
+  return `<div class="ccard" data-open="${c.id}">
+    <div class="band" style="background:${esc(col)}"></div>
+    <div class="cbody">
+      <div class="crest-sm" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
+      <div class="nm">${esc(c.name)}</div>
+      <div class="tags"><span class="tag">${esc(kindLabel(c.kind))}</span>
+        <span class="tag ${c.join_mode==='open'?'open':''}">${c.join_mode==='open'?'🔓 відкритий':'🔒 за заявкою'}</span>
+        ${c.visibility==='private'?'<span class="tag priv">приватна</span>':''}</div>
+      <div class="mot">${esc(c.motto||'')}</div>
+      <div class="foot"><span class="cnt">👥 ${c.member_count}</span>${hasPrestige(c)?`<span class="cnt">⚡ ${c.prestige_total||0}</span>${rank}`:''}<span>Засновано: ${esc(c.founder_name||'—')}</span></div>
+      <div class="cta">${cta}</div>
+    </div>
+  </div>`;
+}
+function renderGrid(){
+  const l=listFiltered();
+  $('sum').textContent=`спільнот · ${S.list.length}${l.length!==S.list.length?` · показано ${l.length}`:''}`;
+  $('grid').innerHTML = l.map(ccardHTML).join('') || '<div class="sum">Спільнот поки немає. Створи першу!</div>';
+  bindCards($('grid'));
+}
+function renderMine(){
+  if(!S.mine.length){ $('mine-sec').classList.add('hide'); return; }
+  $('mine-sec').classList.remove('hide');
+  $('mine-list').innerHTML=S.mine.map(m=>{
+    const c=S.list.find(x=>x.id===m.community_id)||{id:m.community_id,name:m.name,kind:m.kind,emoji:m.emoji,accent_color:m.accent_color,motto:'',join_mode:'open',visibility:'public',member_count:m.member_count,founder_name:'',prestige_total:0,rank_no:null,rank_name:''};
+    return ccardHTML(c);
+  }).join('');
+  bindCards($('mine-list'));
+}
+function renderPending(){
+  if(!S.pending.length){ $('pending-sec').classList.add('hide'); return; }
+  $('pending-sec').classList.remove('hide');
+  $('pending-list').innerHTML=S.pending.map(p=>{
+    const isInvite=p.kind==='invite';
+    const txt=isInvite
+      ? `Тебе запросили до <b>${esc(p.community_name)}</b>`
+      : `<b>${esc(p.subject_name||'хтось')}</b> просить вступити до <b>${esc(p.community_name)}</b>`;
+    const btns=isInvite
+      ? `<button class="act sm" data-inv-yes="${p.invite_id}">Прийняти</button><button class="ghost sm" data-inv-no="${p.invite_id}">Відхилити</button>`
+      : `<button class="act sm" data-req-yes="${p.invite_id}">Схвалити</button><button class="ghost sm" data-req-no="${p.invite_id}">Відхилити</button>`;
+    return `<div class="reqrow"><span class="kindb ${p.kind}">${isInvite?'Запрошення':'Заявка'}</span>
+      <div class="info">${txt}</div>${btns}</div>`;
+  }).join('');
+  const P=$('pending-list');
+  P.querySelectorAll('[data-inv-yes]').forEach(b=>b.onclick=()=>respondInvite(b.dataset.invYes,true));
+  P.querySelectorAll('[data-inv-no]').forEach(b=>b.onclick=()=>respondInvite(b.dataset.invNo,false));
+  P.querySelectorAll('[data-req-yes]').forEach(b=>b.onclick=()=>respondRequest(b.dataset.reqYes,true));
+  P.querySelectorAll('[data-req-no]').forEach(b=>b.onclick=()=>respondRequest(b.dataset.reqNo,false));
+}
+function bindCards(root){
+  root.querySelectorAll('[data-open]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); openCommunity(el.dataset.open); });
+  root.querySelectorAll('[data-join]').forEach(el=>el.onclick=e=>{ e.stopPropagation(); joinCommunity(el.dataset.join); });
+}
+
+// ── дії списку ──
+async function joinCommunity(id){
+  if(!S.me){ showLogin(); return; }
+  const { data, error } = await sb.rpc('community_join', { p_community:id });
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return; }
+  await loadList(); await loadMineAndPending();
+  if(data==='joined') openCommunity(id);
+  else alert('Заявку подано — менеджери розглянуть.');
+}
+async function respondInvite(id,ok){
+  const { error } = await sb.rpc('community_respond_invite', { p_invite:id, p_accept:ok });
+  if(error){ alert('Спільноти: '+error.message); return; }
+  await loadList(); await loadMineAndPending();
+}
+async function respondRequest(id,ok){
+  const { error } = await sb.rpc('community_respond_request', { p_invite:id, p_approve:ok });
+  if(error){ alert('Спільноти: '+error.message); return; }
+  await loadMineAndPending(); if(S.cur) await openCommunity(S.cur.id,true);
+}
+
+// ── СТОРІНКА СПІЛЬНОТИ ──
+async function openCommunity(id, keepTab){
+  // ⚡ 01.10: усе одним паралельним залпом (раніше detail → card → решта йшли ПОСЛІДОВНО, а detail/card/prestige рахують престиж)
+  const [detailR,cardR,members,wall,log,roles,rels,prestige,cos] = await Promise.all([
+    withRetry(()=>sb.from('community_detail').select('*').eq('id',id).maybeSingle()),
+    withRetry(()=>sb.from('community_card').select('*').eq('id',id).maybeSingle()),
+    sb.from('community_member_list').select('*').eq('community_id',id),
+    sb.from('community_wall').select('*').eq('community_id',id).order('is_pinned',{ascending:false}).order('created_at',{ascending:false}),
+    sb.from('community_log_view').select('*').eq('community_id',id).order('created_at',{ascending:false}).limit(80),
+    sb.from('community_roles_view').select('*').eq('community_id',id).order('sort_order'),
+    sb.from('community_relations_view').select('*').eq('community_id',id),
+    withRetry(()=>sb.rpc('community_prestige_detail',{p_community:id})),
+    BC?BC.load(sb,'community',id):Promise.resolve(null)   // 492: рамка/ефект/скін/тема (немає таблиці → дефолт)
+  ]);
+  const detail=(detailR&&detailR.data)||null, card=(cardR&&cardR.data)||null;
+  if(!detail && !card){ alert('Спільноту не знайдено'); return; }
+  S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
+    log:log.data||[], roles:roles.data||[], rels:rels.data||[],
+    prestige:(prestige&&prestige.data)||null, cos:cos||null,
+    visible: !!detail };
+  if(!keepTab) S.tab = S.cur.visible ? 'overview' : 'about';
+  $('screen-list').classList.add('hide'); $('screen-login').classList.add('hide');
+  $('screen-community').classList.remove('hide');
+  renderCommunity();
+}
+function myPerms(){
+  const P={}; PERMKEYS.forEach(k=>P[k]=false);
+  if(!S.me) return P;
+  if(S.isAdmin){ PERMKEYS.forEach(k=>P[k]=true); return P; }
+  const me=(S.cur.members||[]).find(m=>m.profile_id===S.me);
+  if(!me) return P;
+  if(me.is_owner){ PERMKEYS.forEach(k=>P[k]=true); return P; }
+  (me.roles||[]).forEach(lbl=>{ const r=S.cur.roles.find(x=>x.label===lbl); if(r) PERMKEYS.forEach(k=>{ if(r[k]) P[k]=true; }); });
+  return P;
+}
+function iAmMember(){ return !!(S.cur.members||[]).find(m=>m.profile_id===S.me); }
+function iAmFounder(){ const c=S.cur.card||S.cur.detail; return S.me && c && c.founder_id===S.me; }
+
+function renderCommunity(){
+  const c=S.cur.card||S.cur.detail; const col=safeCol(c.accent_color);
+  const perms=myPerms(), member=iAmMember();
+  // шапка
+  let stateBtn='';
+  if(!S.me) stateBtn=`<button class="ghost sm" id="c-login">Увійти</button>`;
+  else if(member && !iAmFounder()) stateBtn=`<button class="ghost sm" id="c-leave">Вийти</button>`;
+  else if(!member) stateBtn=(c.join_mode==='open')
+    ? `<button class="act sm" id="c-join">Вступити</button>`
+    : `<button class="act sm" id="c-join">Подати заявку</button>`;
+  // 492: власна рамка замінює градієнт кольору шапки й вбудований стиль герба (інакше inline-стиль перебив би рамку)
+  const cz=(BC&&S.cur.cos)?S.cur.cos:null, framed=!!(cz&&(cz.frame!=='default'||cz.skin!=='default'));
+  const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
+  const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
+  $('chead').innerHTML=`<div class="chead">
+    <div class="cover"${framed?'':` style="background:linear-gradient(110deg,${esc(col)}59,${esc(col)}2e 55%,${esc(col)}17)"`}>
+      <div class="crest"${framed?'':` style="${crestStyle(col)}"`}>${esc(kindEmoji(c))}</div>
+      <div class="htext">
+        <h2>${esc(c.name)}</h2>
+        ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
+        <div class="meta"><span>${esc(kindLabel(c.kind))}</span>
+          <span>${c.join_mode==='open'?'🔓 відкритий вступ':'🔒 за заявкою'}</span>
+          ${c.visibility==='private'?'<span style="color:var(--purple)">🔒 приватна</span>':''}
+          <span><b>${c.member_count}</b> учасників</span>
+          ${hasPrestige(c)?`<span>⚡ <b>${c.prestige_total||0}</b> престижу${rankName(c)?` · <b>${esc(rankName(c))}</b>`:''}</span>`:''}
+          <span>Засновано: <b>${esc(c.founder_name||'—')}</b></span></div>
+      </div>
+      <div class="acts">${stateBtn}${manageBtn}</div>
+    </div>
+  </div>`;
+  if(cz) bcSafe('apply',$('chead').firstElementChild,cz,{avatar:'.crest',identity:'.htext',accent:col,size:92,pad:30});
+  // 492 фаза 2: тема сторінки + Full Sync
+  if(BC) bcSafe('applyEnv',$('cenv'),cz||BC.none(),{accent:col,content:'#ctab'});
+  const lg=$('c-login'); if(lg) lg.onclick=showLogin;
+  const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
+  const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
+  const mg=$('c-manage');if(mg) mg.onclick=()=>openManage();
+
+  // вкладки
+  const tabs = S.cur.visible
+    ? [['overview','Огляд'],['prestige','Престиж'],['wall','Стіна'],['members','Учасники'],['history','Історія'],['rules','Правила'],['about','Про нас'],['rel','Дипломатія']]
+    : [['about','Про нас']];
+  $('ctabs').innerHTML=tabs.map(([k,l])=>`<button data-tab="${k}" class="${S.tab===k?'on':''}">${l}</button>`).join('');
+  $('ctabs').querySelectorAll('[data-tab]').forEach(b=>b.onclick=()=>{ S.tab=b.dataset.tab; renderCommunity(); });
+  renderTab(perms, member);
+}
+
+function renderTab(perms, member){
+  const box=$('ctab');
+  if(!S.cur.visible){
+    box.innerHTML=`<div class="rules-box">🔒 Приватна спільнота. Вступи, щоб бачити стіну, учасників та історію.</div>`;
+    return;
+  }
+  if(S.tab==='overview') return renderOverview(perms, member);
+  if(S.tab==='prestige') return renderPrestige(perms, member);
+  if(S.tab==='wall') return renderWall(perms, member);
+  if(S.tab==='members') return renderMembers(perms);
+  if(S.tab==='history') return renderHistory();
+  if(S.tab==='rules') return renderRules();
+  if(S.tab==='about') return renderAbout();
+  if(S.tab==='rel') return renderRel(perms);
+}
+function renderOverview(perms, member){
+  const box=$('ctab'); const c=S.cur.card||S.cur.detail;
+  const wall=S.cur.wall||[], log=S.cur.log||[];
+  const pinned=wall.find(p=>p.is_pinned);
+  const items=[];
+  wall.filter(p=>!p.is_pinned).forEach(p=>items.push({t:new Date(p.created_at),k:'post',d:p}));
+  log.forEach(l=>items.push({t:new Date(l.created_at),k:'log',d:l}));
+  items.sort((a,b)=>b.t-a.t);
+  const recent=items.slice(0,5);   // дайджест зі Стіни + Історії разом
+  const evRow=it=>{
+    if(it.k==='post'){ const p=it.d;
+      return `<div class="evrow"><div class="evic">📝</div><div class="evtx"><b>${esc(trunc(p.body,58))}</b>
+        <div class="sub">Пост · ${esc(p.author_name||'—')}</div></div><div class="evt">${ago(p.created_at)}</div></div>`; }
+    const l=it.d; const gold=(l.event==='role_added'||l.event==='created'||l.event==='founder_transferred')?' gold':'';
+    const tgt=l.target_name?` ${esc(l.target_name)}`:''; const rl=l.role_label?` «${esc(l.role_label)}»`:'';
+    return `<div class="evrow"><div class="evic${gold}">${EV_IC[l.event]||'•'}</div>
+      <div class="evtx"><b>${esc(l.actor_name||'—')} ${esc(EVLBL[l.event]||l.event)}${tgt}${rl}</b>
+      <div class="sub">Історія</div></div><div class="evt">${ago(l.created_at)}</div></div>`;
+  };
+  const pinHTML = pinned ? `<div class="post pin">
+      <div class="ph"><span class="pinbadge">📌 Закріплено</span><span class="time" style="margin-left:auto">${ago(pinned.created_at)}</span></div>
+      <div class="pbody">${esc(pinned.body)}</div>
+      <div class="pfoot"><span>${esc(pinned.author_name||'—')}</span></div></div>` : '';
+  const streamBody = pinHTML + (recent.map(evRow).join('') || (pinned?'':'<div class="sum">Тут поки тихо.</div>'));
+  const about=((S.cur.detail||{}).description||'').trim();
+  const rulesArr=(((S.cur.detail||{}).rules)||'').split('\n').map(s=>s.trim()).filter(Boolean).slice(0,3);
+  const rulesHTML=rulesArr.length
+    ? rulesArr.map((r,i)=>`<div class="rules-n"><span class="num">${String(i+1).padStart(2,'0')}</span><span>${esc(r)}</span></div>`).join('')
+    : '<div class="sum">Правил ще немає.</div>';
+  const mem=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).slice(0,3);
+  const memRow=m=>{
+    const sub=(m.roles||[]).join(' · ')||'Учасник';
+    const badge=m.is_founder?'<span class="chip">Засновник</span>':'';   // факт (не роль, без іконки)
+    return `<div class="ovm"><div class="ava">${esc(initials(m.display_name))}</div>
+      <div class="mi"><div class="mn">${esc(m.display_name||'—')}</div><div class="mr">${esc(sub)}</div></div>${badge}</div>`;
+  };
+  const outs=S.cur.rels.filter(r=>r.direction==='out');
+  const allies=outs.filter(r=>r.type==='ally').length, enemies=outs.filter(r=>r.type==='enemy').length;
+  const relRow=r=>{
+    const mut=r.mutual?`<span class="rel-mut ${r.type==='ally'?'rel-ally':'rel-enemy'}" style="border-color:currentColor">${r.type==='ally'?'Союз':'Дербі'}</span>`:'';
+    const sub=r.type==='ally'?(r.mutual?'Взаємне партнерство':'Партнер'):(r.mutual?'Взаємне суперництво':'Суперник');
+    return `<div class="ovrel"><div class="ava">${esc(initials(r.other_name))}</div>
+      <div class="ri"><div class="rn">${esc(r.other_name)}</div><div class="rt">${sub}</div></div>${mut}</div>`;
+  };
+  const relHTML=outs.length?outs.slice(0,2).map(relRow).join(''):'<div class="sum">Звʼязків ще немає.</div>';
+  box.innerHTML=`<div class="ov">
+    <div class="ovmain">
+      <div id="ov-stream">
+        <div class="sec-h"><h3>Зі стіни та історії</h3>
+          <div class="sec-links"><a href="#" data-goto="wall">Відкрити стіну →</a><span class="lnk-sep">·</span><a href="#" data-goto="history">Відкрити історію →</a></div></div>
+        ${streamBody}
+      </div>
+      <div class="duo" id="ov-duo">
+        <div class="card"><h4>Про нас <a href="#" data-goto="about" style="font-size:12px;font-weight:500">Докладніше</a></h4>
+          <div class="about-tx">${about?esc(trunc(about,180)):'<span class="st">Опису ще немає.</span>'}</div></div>
+        <div class="card"><h4>Головні правила <a href="#" data-goto="rules" style="font-size:12px;font-weight:500">Усі правила</a></h4>${rulesHTML}</div>
+      </div>
+    </div>
+    <div class="ovside">
+      ${prestigeCardHTML(c, member)}
+      <div class="card side" id="ov-members"><h4>Учасники <span class="n">${c.member_count} учасників</span></h4>
+        ${mem.map(memRow).join('')}<button class="wbtn" data-goto="members">Усі учасники</button></div>
+      <div class="card side" id="ov-diplo"><h4>Дипломатія ${outs.length?`<a href="#" data-goto="rel" style="font-size:12px;font-weight:500">Відкрити все</a>`:''}</h4>
+        <div class="diplo-stats"><div class="dstat"><div class="num">${allies}</div><div class="lbl">Партнери</div></div>
+          <div class="dstat"><div class="num">${enemies}</div><div class="lbl">Суперники</div></div></div>
+        ${relHTML}
+        ${perms.perm_manage_relations?`<button class="wbtn" id="ov-rel-add">Оголосити звʼязок</button>`:''}</div>
+    </div>
+  </div>`;
+  box.querySelectorAll('[data-goto]').forEach(a=>a.onclick=e=>{ e.preventDefault(); S.tab=a.dataset.goto; renderCommunity(); });
+  const ra=$('ov-rel-add'); if(ra) ra.onclick=openRelAdd;
+  const ob=$('p-beer'); if(ob) ob.onclick=drinkBeer;
+}
+
+// ── ПРЕСТИЖ (468→469: 9-рангова драбина) ──
+function curRankMin(pr){ const r=(pr.ranks||[]).find(x=>x.rank_no===pr.rank_no); return r?r.min:0; }
+const LITERS_PER_BEER=0.5;                                  // 1 пиво = 0.5 л
+const litres=n=>{ const l=(n||0)*LITERS_PER_BEER; return (l%1===0?l:l.toFixed(1)); };
+// правильний відмінок: 1 пиво · 2/3/4 пива · 5+ пив
+const beerWord=n=>{ n=Math.abs(n||0)%100; const d=n%10; if(n>10&&n<20)return'пив'; if(d===1)return'пиво'; if(d>=2&&d<=4)return'пива'; return'пив'; };
+function prestigeBar(pr,col){
+  if(!pr) return '';
+  if(pr.next_min!=null){
+    const from=curRankMin(pr);
+    const pct=Math.max(4,Math.min(100,Math.round((pr.total-from)/Math.max(1,pr.next_min-from)*100)));
+    const need=Math.max(0,pr.next_min-pr.total);
+    const barL=pr.kind==='bar'?` · <b>${litres(need)} л</b>`:'';
+    return `<div class="pbar"><i style="width:${pct}%;background:${esc(col)}"></i></div>
+      <div class="pnext">До <b>${esc(pr.next_rank_name||'')}</b> — ще <b>${need}</b>${pr.kind==='bar'?' пива':''}${barL} (${pr.total}/${pr.next_min})</div>`;
+  }
+  return `<div class="pnext">Найвищий ранг 🏆</div>`;
+}
+function ladderHTML(pr){
+  if(!(pr.ranks&&pr.ranks.length)) return '';
+  return `<div class="ladder">${pr.ranks.map(r=>`<div class="lrank${r.rank_no===pr.rank_no?' on':''}">
+    <span class="lno">${r.rank_no}</span><span class="lnm">${esc(r.name)}</span><span class="lmin">${r.min}</span></div>`).join('')}</div>`;
+}
+function beerBtnHTML(){
+  const me=(S.cur.prestige||{}).me; if(!me) return '';
+  const hint = me.can_drink ? `Сьогодні ${me.today}/${me.daily_cap}`
+    : (me.today>=me.daily_cap ? `Сьогодні вже ${me.daily_cap} 🍺`
+       : `Ще рано${me.next_at?` · ${new Date(me.next_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}`:''}`);
+  return `<button class="beerbtn" id="p-beer" ${me.can_drink?'':'disabled'}>🍺 Випити пиво</button>
+    <div class="beerhint">${hint}</div>`;
+}
+function prestigeCardHTML(c, member){
+  if(!hasPrestige(c)) return '';
+  const pr=S.cur.prestige; if(!pr) return '';
+  const col=safeCol(c.accent_color);
+  const beer=(c.kind==='bar'&&member)?beerBtnHTML():'';
+  return `<div class="card side" id="ov-prestige"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
+    <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${litres(pr.total)} л`:'за досягнення'}</small></div>
+    ${prestigeBar(pr,col)}${beer}
+    <button class="wbtn" data-goto="prestige">Детальніше</button></div>`;
+}
+async function drinkBeer(){
+  const b=$('p-beer'); if(b) b.disabled=true;
+  const c=S.cur.card||S.cur.detail;
+  const { error } = await sb.rpc('community_drink_beer',{p_community:c.id});
+  if(error){ alert(error.message||'Не вдалося випити'); if(b) b.disabled=false; return; }
+  await openCommunity(c.id, true);   // reload — оновить престиж у шапці/сітці/вкладці
+}
+function renderPrestige(perms, member){
+  const box=$('ctab'); const c=S.cur.card||S.cur.detail; const pr=S.cur.prestige;
+  if(!hasPrestige(c)){ box.innerHTML=`<div class="how">Престиж мають бари й клуби.</div>`; return; }
+  if(!pr){ box.innerHTML=`<div class="sum">Дані престижу недоступні.</div>`; return; }
+  const col=safeCol(c.accent_color);
+  const how = c.kind==='bar'
+    ? `<h5>🍻 Як росте престиж бару</h5>Престиж бару росте, коли учасники <b>заходять випити пиво</b>.
+       Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
+       Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.
+       Одне пиво = <b>0.5 л</b>.`
+    : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b> у <b>BOBET</b> та <b>PSL</b>:
+       <b>кубок</b> (перемога в турнірі) <b>+5</b>, медалі — <b>золото етапу +4</b>, <b>срібло / 2 місце +3</b>,
+       <b>бронза / 3 місце +2</b>, <b>участь у турнірі без медалі +1</b>, «<b>Ціль</b>» (PSL) <b>+2</b>
+       та <b>рекорди ліги</b> (<b>+1</b> кожен). Пізніше додадуться: після завершення Євросезону —
+       <b>переможці Rivals/MVP</b> (по +3), з новим турніром — <b>рідкісні картки</b> (rare +2, mega +3).
+       Клуб росте від <b>Дворової команди</b> до <b>Династії</b>.`;
+  const beer=(c.kind==='bar')
+    ? (member?beerBtnHTML():`<div class="beerhint">Вступи в бар, щоб пити пиво.</div>`) : '';
+  const donors=(pr.donors||[]).map((d,i)=>`<div class="donor"><span class="drank">${i+1}</span>
+    <span class="dn">${esc(d.name)}</span><span class="dp">${d.pts||0}${c.kind==='bar'?` ${beerWord(d.pts)} · ${litres(d.pts)} л`:''}</span></div>`).join('')
+    || '<div class="sum">Поки без внесків.</div>';
+  box.innerHTML=`<div class="pgrid">
+    <div>
+      <div class="card"><h4>Престиж <span class="plevel">${esc(pr.rank_name||'—')}</span></h4>
+        <div class="pbig">${pr.total}<small>${c.kind==='bar'?`за пиво · ${litres(pr.total)} л`:'за досягнення'}</small></div>
+        ${prestigeBar(pr,col)}${beer}</div>
+      <div class="how" style="margin-top:16px">${how}</div>
+      ${ladderHTML(pr)}
+    </div>
+    <div class="card"><h4>${c.kind==='bar'?'Скільки випив':'Внесок учасників'}</h4>${donors}</div>
+  </div>
+  ${investHTML(c)}`;
+  const bb=$('p-beer'); if(bb) bb.onclick=drinkBeer;
+  // «Цікавить» — підказка «звернись до Адміна Бо» (купівля окремо, без БД).
+  // ⚠️ Завжди Адмін (Богдан=Бо), НЕ засновник спільноти: інвестицію за реальні
+  // кошти обробляє адмін платформи, а засновником може бути хтось інший.
+  const ib=$('inv-interest');
+  if(ib) ib.onclick=()=>{ const m=$('inv-msg');
+    m.style.display='block';
+    m.innerHTML=`Щоб інвестувати — напиши <b>Адміну Бо</b>. Купівля відбувається окремо від сайту.`;
+    ib.disabled=true; };
+}
+// Інвестиція в престиж — лише опис можливості. Купівля відбувається окремо
+// (за реальні кошти, як колекційні картки); тут ні RPC, ні платежу — суть у тому,
+// щоб опція була видима й пояснена. Тіри: бар 10/20/50/100 пива, клуб 10/20/50/100 престижу.
+function investHTML(c){
+  const bar=c.kind==='bar';
+  const tiers=[10,20,50,100].map(n=>`<div class="invtier">
+      <div class="invn">+${n}</div>
+      <div class="invu">${bar?`пива · ${litres(n)} л`:'престижу'}</div>
+    </div>`).join('');
+  return `<div class="card invest">
+    <h4>💎 Інвестиція в престиж</h4>
+    <div class="il">Хочеш прискорити ріст <b>${bar?'бару':'клубу'}</b>? Престиж можна
+      <b>докупити</b>. За інвестицію твоє <b>ім'я лишиться в спільноті назавжди</b>.</div>
+    <div class="investgrid">${tiers}</div>
+    <button class="act" id="inv-interest" style="margin-top:14px">Цікавить</button>
+    <div id="inv-msg" class="il" style="margin-top:10px;display:none"></div>
+  </div>`;
+}
+function renderWall(perms, member){
+  const box=$('ctab');
+  const composer = member ? `<div class="postbox"><textarea id="p-body" placeholder="Написати у спільноту…"></textarea><button class="act" id="p-send">Опублікувати</button></div>` : '';
+  const posts=S.cur.wall.map(p=>{
+    const canDel = (p.author_id===S.me) || perms.perm_moderate_wall;
+    const canPin = perms.perm_moderate_wall;
+    return `<div class="post ${p.is_pinned?'pin':''}">
+      <div class="ph">${p.is_pinned?'📌 ':''}<b>${esc(p.author_name||'—')}</b><span>${new Date(p.created_at).toLocaleString('uk')}</span></div>
+      <div class="pbody">${esc(p.body)}</div>
+      ${(canDel||canPin)?`<div class="pacts">
+        ${canPin?`<button class="ghost sm" data-pin="${p.id}" data-on="${p.is_pinned?0:1}">${p.is_pinned?'Відкріпити':'Закріпити'}</button>`:''}
+        ${canDel?`<button class="ghost sm warn" data-del="${p.id}">Видалити</button>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('') || '<div class="sum">Постів ще немає.</div>';
+  box.innerHTML=composer+posts;
+  const send=$('p-send'); if(send) send.onclick=postToWall;
+  box.querySelectorAll('[data-pin]').forEach(b=>b.onclick=()=>pinPost(b.dataset.pin, b.dataset.on==='1'));
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=()=>delPost(b.dataset.del));
+}
+function renderMembers(perms){
+  const c=S.cur.card||S.cur.detail;
+  $('ctab').innerHTML=S.cur.members.slice().sort((a,b)=>(b.is_owner-a.is_owner)||(b.is_founder-a.is_founder)).map(m=>{
+    const roles=(m.roles||[]).map(r=>`<span class="chip role">${esc(r)}</span>`).join('');
+    const founder=m.is_founder?'<span class="chip">Засновник</span>':'';   // факт (не роль, без іконки)
+    const plays=[m.plays_bobet?'BoBet':null,m.plays_psl?'PSL':null].filter(Boolean).join(' · ');
+    const canKick=perms.perm_manage_members && m.profile_id!==c.founder_id && m.profile_id!==S.me;
+    const canRoles=perms.perm_manage_roles;
+    return `<div class="mrow" ${canRoles?`data-mroles="${m.profile_id}"`:''}>
+      <a class="nm" href="profile.html?id=${esc(m.profile_id)}" target="_blank" style="color:inherit;text-decoration:none" title="Відкрити профіль" data-prof>${esc(m.display_name||'—')}</a>
+      <span class="rroles">${founder}${roles||'<span class="st">без ролей</span>'}</span>
+      ${plays?`<span class="st">${plays}</span>`:''}
+      ${canKick?`<button class="ghost sm warn" data-kick="${m.profile_id}">Виключити</button>`:''}
+    </div>`;
+  }).join('');
+  $('ctab').querySelectorAll('a[data-prof]').forEach(a=>a.onclick=e=>e.stopPropagation());
+  $('ctab').querySelectorAll('[data-kick]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); kickMember(b.dataset.kick); });
+  if(perms.perm_manage_roles) $('ctab').querySelectorAll('[data-mroles]').forEach(el=>el.onclick=()=>openAssignRoles(el.dataset.mroles));
+}
+function renderHistory(){
+  const rows=S.cur.log.map(l=>{
+    const who=`<b>${esc(l.actor_name||'—')}</b>`;
+    const tgt=l.target_name?` <b>${esc(l.target_name)}</b>`:'';
+    const rl=l.role_label?` «${esc(l.role_label)}»`:'';
+    const dt=l.detail?` (${esc(l.detail)})`:'';   // причина/прощальне слово (left/kicked)
+    return `<div class="logrow">${who} ${EVLBL[l.event]||l.event}${tgt}${rl}${dt}
+      <span class="st" style="float:right">${new Date(l.created_at).toLocaleDateString('uk')}</span></div>`;
+  }).join('');
+  $('ctab').innerHTML = rows ? `<div class="histscroll">${rows}</div>` : '<div class="sum">Історія порожня.</div>';
+}
+function renderRules(){
+  const r=(S.cur.detail||{}).rules;
+  $('ctab').innerHTML=r?`<div class="rules-box">${esc(r)}</div>`:'<div class="sum">Правил ще немає.</div>';
+}
+function renderAbout(){
+  const d=S.cur.detail||S.cur.card||{};
+  $('ctab').innerHTML=d.description?`<div class="rules-box">${esc(d.description)}</div>`:'<div class="sum">Опису ще немає.</div>';
+}
+function renderRel(perms){
+  const out=S.cur.rels.filter(r=>r.direction==='out'), inc=S.cur.rels.filter(r=>r.direction==='in');
+  const relLine=(r)=>{
+    const em=r.type==='ally'?'🤝':'⚔️';
+    const mut=r.mutual?`<span class="rel-mut ${r.type==='ally'?'rel-ally':'rel-enemy'}" style="border-color:currentColor">${r.type==='ally'?'СОЮЗ':'ДЕРБІ'}</span>`:'';
+    return `<div class="relrow"><span>${em} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
+      <span class="${r.type==='ally'?'rel-ally':'rel-enemy'}">${r.type==='ally'?'партнер':'ворог'}</span>${mut}
+      ${perms.perm_manage_relations?`<button class="ghost sm warn" data-relclear="${r.other_id}" style="margin-left:auto">Скасувати</button>`:''}</div>`;
+  };
+  const incLine=(r)=>`<div class="relrow"><span>${r.type==='ally'?'🤝':'⚔️'} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
+    <span class="st">${r.type==='ally'?'вважає партнером':'вважає ворогом'}</span>
+    ${(perms.perm_manage_relations&&!r.mutual)?`<button class="act sm" data-relconfirm="${r.other_id}" data-reltype="${r.type}" style="margin-left:auto">Підтвердити ${r.type==='ally'?'союз':'дербі'}</button>`:''}</div>`;
+  $('ctab').innerHTML=
+    `${perms.perm_manage_relations?`<button class="act sm" id="rel-add" style="margin-bottom:10px">+ Оголосити звʼязок</button>`:''}
+     <h3 style="font-size:15px;margin:6px 0">Наші звʼязки</h3>${out.map(relLine).join('')||'<div class="sum">Ще нікого не оголосили.</div>'}
+     <h3 style="font-size:15px;margin:14px 0 6px">Нас вважають</h3>${inc.map(incLine).join('')||'<div class="sum">Поки нікого.</div>'}`;
+  const add=$('rel-add'); if(add) add.onclick=openRelAdd;
+  $('ctab').querySelectorAll('[data-relclear]').forEach(b=>b.onclick=()=>clearRel(b.dataset.relclear));
+  $('ctab').querySelectorAll('[data-relconfirm]').forEach(b=>b.onclick=()=>confirmRel(b.dataset.relconfirm,b.dataset.reltype));
+}
+
+// ── дії спільноти ──
+async function act(fn, args, after){
+  const { error } = await sb.rpc(fn, args);
+  if(error){ alert('Спільноти: '+(error.message||'не вдалось')); return false; }
+  if(after) await after();
+  return true;
+}
+const reopen=async()=>{ await openCommunity(S.cur.id,true); };
+// Вихід із спільноти — вікно з НЕОБОВ'ЯЗКОВИМ прощальним словом (іде в історію).
+function leaveCommunity(id){
+  modal(`<div class="mhead"><h3>Вийти зі спільноти</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label>Прощальне слово (необов'язково)</label>
+        <textarea id="lv-reason" maxlength="500" placeholder="Чому йдеш? Можна лишити порожнім."></textarea></div>
+      <button class="act warn" id="lv-go">Вийти</button><div id="lv-msg"></div>
+    </div>`);
+  $('lv-go').onclick=async()=>{
+    const r=$('lv-reason').value.trim()||null;
+    if(await act('community_leave',{p_community:id,p_reason:r})){ closeModal(); await loadMineAndPending(); backToList(); }
+  };
+}
+// Виключення — вікно з НЕОБОВ'ЯЗКОВОЮ причиною (її пише той, хто виключає; іде в історію).
+function kickMember(pid){
+  const m=(S.cur.members||[]).find(x=>x.profile_id===pid);
+  const nm=(m&&m.display_name)||'учасника';
+  modal(`<div class="mhead"><h3>Виключити ${esc(nm)}</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <div class="field"><label>Причина (необов'язково)</label>
+        <textarea id="kk-reason" maxlength="500" placeholder="За що виключаєш? Можна лишити порожнім."></textarea></div>
+      <button class="act warn" id="kk-go">Виключити</button><div id="kk-msg"></div>
+    </div>`);
+  $('kk-go').onclick=async()=>{
+    const r=$('kk-reason').value.trim()||null;
+    if(await act('community_kick',{p_community:S.cur.id,p_target:pid,p_reason:r},reopen)) closeModal();
+  };
+}
+async function postToWall(){ const b=$('p-body').value.trim(); if(!b) return; if(await act('community_post',{p_community:S.cur.id,p_body:b},reopen)){} }
+async function pinPost(id,on){ await act('community_post_pin',{p_post:id,p_pinned:on},reopen); }
+async function delPost(id){ if(confirm('Видалити пост?')) await act('community_post_delete',{p_post:id},reopen); }
+async function clearRel(toId){ await act('community_clear_relation',{p_from:S.cur.id,p_to:toId},reopen); }
+async function confirmRel(toId,type){ await act('community_set_relation',{p_from:S.cur.id,p_to:toId,p_type:type},reopen); }
+
+// ── модалка: створити ──
+function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal">${html}</div></div>`;
+  const h=$('mhost'); h.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) h.innerHTML=''; };
+  const x=h.querySelector('.mx'); if(x) x.onclick=()=>h.innerHTML=''; return h; }
+function closeModal(){ $('mhost').innerHTML=''; }
+
+function formFields(v){ v=v||{};
+  return `<div class="field"><label>Назва</label><input id="cf-name" maxlength="80" value="${esc(v.name||'')}"></div>
+    <div class="field row">
+      <div><label>Тип</label><select id="cf-kind">${Object.keys(KIND).map(k=>`<option value="${k}"${v.kind===k?' selected':''}>${KIND[k]}</option>`).join('')}</select></div>
+      <div><label>Колір шапки</label><input id="cf-color" type="color" value="${esc(safeCol(v.accent_color||'#7898B8'))}" style="height:42px;padding:4px"></div>
+    </div>
+    <div class="field"><label>Девіз / кричалка (до 200)</label><input id="cf-motto" maxlength="200" value="${esc(v.motto||'')}"></div>
+    <div class="field"><label>Опис (Про нас)</label><textarea id="cf-desc">${esc(v.description||'')}</textarea></div>
+    <div class="field"><label>Правила</label><textarea id="cf-rules">${esc(v.rules||'')}</textarea></div>
+    <div class="field row">
+      <div><label>Вступ</label><select id="cf-join"><option value="open"${v.join_mode==='open'?' selected':''}>🔓 Відкритий</option><option value="request"${v.join_mode==='request'?' selected':''}>🔒 За заявкою</option></select></div>
+      <div><label>Видимість</label><select id="cf-vis"><option value="public"${v.visibility==='public'?' selected':''}>Публічна</option><option value="private"${v.visibility==='private'?' selected':''}>Приватна</option></select></div>
+    </div>`;
+}
+function wirePresets(){ document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{ const el=$('cf-color'); if(el) el.value=b.dataset.preset; }); }
+function formVals(){
+  return { p_name:$('cf-name').value.trim(), p_kind:$('cf-kind').value,
+    p_motto:$('cf-motto').value.trim()||null, p_description:$('cf-desc').value.trim()||null,
+    p_rules:$('cf-rules').value.trim()||null, p_emoji:formEmoji,
+    p_accent_color:$('cf-color').value, p_join_mode:$('cf-join').value, p_visibility:$('cf-vis').value };
+}
+function openCreate(){
+  if(!S.me){ showLogin(); return; }
+  formEmoji=null;
+  modal(`<div class="mhead"><h3>Нова спільнота</h3><button class="mx">✕</button></div>
+    <div class="mbody">${formFields()}<button class="act" id="cf-save">Створити</button><div id="cf-msg"></div></div>`);
+  wirePresets();
+  $('cf-save').onclick=async()=>{
+    const v=formVals(); if(v.p_name.length<2){ $('cf-msg').className='msg err'; $('cf-msg').textContent='Назва: від 2 символів'; return; }
+    const { data, error }=await sb.rpc('community_create',v);
+    if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
+    closeModal(); await loadList(); await loadMineAndPending(); openCommunity(data);
+  };
+}
+function openEdit(){
+  const d=S.cur.detail;
+  formEmoji=(d&&d.emoji)||null;
+  modal(`<div class="mhead"><h3>Редагувати спільноту</h3><button class="mx">✕</button></div>
+    <div class="mbody">${formFields(d)}
+      ${BC?BC.editorHtml({cfg:S.cur.cos||BC.none(),name:(d&&d.name)||'',initials:Array.from(kindEmoji(d||{})).slice(0,2).join(''),sub:(d&&d.motto)?('«'+d.motto+'»'):kindLabel(d&&d.kind)}):''}
+      <div class="st" style="margin:4px 0 10px">Тип змінити не можна після створення.</div>
+      <button class="act" id="cf-save">Зберегти</button><div id="cf-msg"></div></div>`);
+  wirePresets();
+  $('cf-kind').disabled=true;
+  const bcEd=BC?BC.wireEditor($('mhost').querySelector('#bc-ed'),{cfg:S.cur.cos||BC.none(),getAccent:()=>$('cf-color').value,colorInput:$('cf-color'),size:64,pad:22}):null;
+  $('cf-save').onclick=async()=>{
+    const v=formVals(); delete v.p_kind;
+    const { error }=await sb.rpc('community_update',{ p_community:S.cur.id, ...v });
+    if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
+    if(bcEd && !BC.same(bcEd.get(),S.cur.cos||BC.none())){   // 492: рамка/ефект/тема (лише якщо змінились)
+      const { error:e2 }=await BC.save(sb,'community',S.cur.id,bcEd.get());
+      if(e2){ $('cf-msg').className='msg err'; $('cf-msg').textContent=e2.message||'Не вдалось зберегти оформлення'; return; }
+    }
+    // ⚠️ reopen() освіжає лише сторінку спільноти (S.cur.card). Сітка Огляду
+    // читає окремий кеш S.list — без loadList() картка там лишалась би зі старим
+    // кольором/назвою до перезавантаження. Тож перечитуємо список теж.
+    closeModal(); await reopen(); await loadList(); renderMine();
+  };
+}
+
+// ── модалка: керування ──
+function openManage(){
+  const p=myPerms();
+  const rows=[
+    p.perm_manage_info   && `<button class="act" data-m="edit">✎ Редагувати інфо</button>`,
+    p.perm_manage_roles  && `<button class="act" data-m="roles">🏷 Ролі й дозволи</button>`,
+    p.perm_manage_members&& `<button class="act" data-m="invite">✉ Запросити людину</button>`,
+    p.perm_manage_relations&& `<button class="act" data-m="rel">🤝 Дипломатія</button>`,
+    iAmFounder()         && `<button class="act" data-m="transfer">👑 Передати засновництво</button>`,
+    p.perm_delete        && `<button class="act warn" data-m="delete">🗑 Знести спільноту</button>`,
+  ].filter(Boolean);
+  modal(`<div class="mhead"><h3>⚙ Керування</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div style="display:flex;flex-direction:column;gap:8px">${rows.join('')}</div></div>`);
+  $('mhost').querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{ closeModal();
+    ({edit:openEdit,roles:openRoles,invite:openInvite,rel:openRelAdd,transfer:openTransfer,delete:doDelete})[b.dataset.m](); });
+}
+async function doDelete(){
+  if(!confirm('Знести спільноту НАЗАВЖДИ? Усі пости, ролі й історія зникнуть.')) return;
+  if(await act('community_delete',{p_community:S.cur.id})){ await loadList(); await loadMineAndPending(); backToList(); }
+}
+function openTransfer(){
+  const others=S.cur.members.filter(m=>m.profile_id!==S.me);
+  modal(`<div class="mhead"><h3>Передати засновництво</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Новий власник (з учасників)</label>
+      <select id="tf-who">${others.map(m=>`<option value="${m.profile_id}">${esc(m.display_name)}</option>`).join('')}</select></div>
+      <div class="st" style="margin-bottom:10px">«Засновано: ${esc((S.cur.card||{}).founder_name||'')}» лишиться незмінним.</div>
+      <button class="act warn" id="tf-go">Передати</button><div id="tf-msg"></div></div>`);
+  $('tf-go').onclick=async()=>{ const who=$('tf-who').value; if(!who) return;
+    if(!confirm('Передати засновництво? Ти втратиш ексклюзивні права власника.')) return;
+    if(await act('community_transfer_founder',{p_community:S.cur.id,p_new:who},reopen)) closeModal(); };
+}
+async function openInvite(){
+  // Пікер зі списку профілів системи (довідник profile_directory, 473) —
+  // тих, хто ще НЕ у складі цієї спільноти. Замість вставляння UUID.
+  const memberIds=new Set((S.cur.members||[]).map(m=>m.profile_id));
+  modal(`<div class="mhead"><h3>Запросити людину</h3><button class="mx">✕</button></div>
+    <div class="mbody">
+      <div class="st" style="margin-bottom:8px">Обери людину зі списку профілів системи.</div>
+      <div class="field"><input id="iv-q" placeholder="Пошук за іменем…" autocomplete="off"></div>
+      <div id="iv-list" class="histscroll" style="margin-top:4px">Завантаження…</div>
+      <div id="iv-msg" class="msg"></div>
+    </div>`);
+  const { data, error }=await sb.from('profile_directory').select('id,display_name,avatar_emoji').order('display_name');
+  if(error){ $('iv-list').innerHTML=`<div class="st">Не вдалось завантажити список: ${esc(error.message)}</div>`; return; }
+  const people=(data||[]).filter(p=>!memberIds.has(p.id));
+  const invited=new Set();
+  const render=(q)=>{
+    q=(q||'').trim().toLowerCase();
+    const rows=people.filter(p=>!q || (p.display_name||'').toLowerCase().includes(q));
+    if(!rows.length){ $('iv-list').innerHTML='<div class="st">Нікого не знайдено (усі вже у складі?).</div>'; return; }
+    $('iv-list').innerHTML=rows.map(p=>{
+      const done=invited.has(p.id);
+      return `<div class="mrow"><span class="nm">${esc(p.avatar_emoji||'👤')} ${esc(p.display_name||'—')}</span>
+        <span class="rroles"></span>
+        ${done?'<span class="chip">✓ запрошено</span>'
+             :`<button class="ghost sm" data-inv="${esc(p.id)}">Запросити</button>`}</div>`;
+    }).join('');
+  };
+  render('');
+  $('iv-q').oninput=e=>render(e.target.value);
+  $('iv-list').onclick=async e=>{
+    const b=e.target.closest('[data-inv]'); if(!b) return;
+    const id=b.dataset.inv; b.disabled=true; b.textContent='…';
+    const { error }=await sb.rpc('community_invite',{p_community:S.cur.id,p_target:id});
+    const msg=$('iv-msg');
+    if(error){ b.disabled=false; b.textContent='Запросити'; msg.className='msg err'; msg.textContent=error.message; return; }
+    invited.add(id); msg.className='msg ok'; msg.textContent='Запрошення надіслано.';
+    render($('iv-q').value);
+  };
+}
+function openRelAdd(){
+  const targets=S.list.filter(c=>c.id!==S.cur.id);
+  modal(`<div class="mhead"><h3>Оголосити звʼязок</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Спільнота</label>
+      <select id="rl-to">${targets.map(c=>`<option value="${c.id}">${esc(c.emoji||'')} ${esc(c.name)}</option>`).join('')}</select></div>
+      <div class="field"><label>Тип</label><select id="rl-type"><option value="ally">🤝 Партнер</option><option value="enemy">⚔️ Ворог</option></select></div>
+      <button class="act" id="rl-go">Оголосити</button><div id="rl-msg"></div></div>`);
+  $('rl-go').onclick=async()=>{ const to=$('rl-to').value, type=$('rl-type').value; if(!to) return;
+    if(await act('community_set_relation',{p_from:S.cur.id,p_to:to,p_type:type},reopen)) closeModal(); };
+}
+
+// ── ролі: список + create/edit/remove ──
+function permCheckboxes(pre, v){ v=v||{};
+  return `<div class="permgrid">${PERMKEYS.map(k=>`<label><input type="checkbox" id="${pre}-${k}"${v[k]?' checked':''}> ${PERMLBL[k]}</label>`).join('')}</div>`;
+}
+function readPerms(pre){ const o={}; PERMKEYS.forEach(k=>o[k]=$(`${pre}-${k}`).checked); return o; }
+function openRoles(){
+  const rolesHtml=S.cur.roles.map(r=>{
+    const perms=PERMKEYS.filter(k=>r[k]).map(k=>PERMLBL[k]).join(', ')||'без прав';
+    return `<div class="rolerow"><span class="rl">${esc(r.label)}${r.is_owner_preset?' 👑':''}</span>
+      <span class="perm-list">${esc(perms)} · ${r.holders} носіїв</span>
+      <button class="ghost sm" data-redit="${r.id}">✎</button>
+      <button class="ghost sm warn" data-rrem="${r.id}">✕</button></div>`;
+  }).join('');
+  modal(`<div class="mhead"><h3>🏷 Ролі й дозволи</h3><button class="mx">✕</button></div>
+    <div class="mbody">${rolesHtml}
+      <h3 style="font-size:15px;margin:14px 0 8px">+ Нова роль</h3>
+      <div class="field"><label>Назва ролі</label><input id="nr-label" maxlength="60"></div>
+      ${permCheckboxes('nr')}
+      <button class="act" id="nr-add" style="margin-top:8px">Створити роль</button><div id="nr-msg"></div></div>`);
+  $('nr-add').onclick=async()=>{ const label=$('nr-label').value.trim(); if(!label) return;
+    const args={p_community:S.cur.id,p_label:label};
+    const pm=readPerms('nr'); args.p_info=pm.perm_manage_info; args.p_roles=pm.perm_manage_roles; args.p_members=pm.perm_manage_members;
+    args.p_wall=pm.perm_moderate_wall; args.p_relations=pm.perm_manage_relations; args.p_delete=pm.perm_delete;
+    const { error }=await sb.rpc('community_role_add',args);
+    if(error){ $('nr-msg').className='msg err'; $('nr-msg').textContent=error.message; return; }
+    await reopen(); openRoles(); };
+  $('mhost').querySelectorAll('[data-redit]').forEach(b=>b.onclick=()=>openRoleEdit(b.dataset.redit));
+  $('mhost').querySelectorAll('[data-rrem]').forEach(b=>b.onclick=async()=>{ if(confirm('Видалити роль? Вона знімається з усіх.'))
+    if(await act('community_role_remove',{p_role:b.dataset.rrem},reopen)) openRoles(); });
+}
+function openRoleEdit(id){
+  const r=S.cur.roles.find(x=>x.id===id); if(!r) return;
+  modal(`<div class="mhead"><h3>Роль «${esc(r.label)}»</h3><button class="mx">✕</button></div>
+    <div class="mbody"><div class="field"><label>Назва</label><input id="er-label" maxlength="60" value="${esc(r.label)}"></div>
+      ${permCheckboxes('er',r)}
+      <button class="act" id="er-save" style="margin-top:8px">Зберегти</button><div id="er-msg"></div></div>`);
+  $('er-save').onclick=async()=>{ const pm=readPerms('er');
+    const { error }=await sb.rpc('community_role_update',{p_role:id,p_label:$('er-label').value.trim(),
+      p_info:pm.perm_manage_info,p_roles:pm.perm_manage_roles,p_members:pm.perm_manage_members,
+      p_wall:pm.perm_moderate_wall,p_relations:pm.perm_manage_relations,p_delete:pm.perm_delete});
+    if(error){ $('er-msg').className='msg err'; $('er-msg').textContent=error.message; return; }
+    await reopen(); openRoles(); };
+}
+function openAssignRoles(pid){
+  const m=S.cur.members.find(x=>x.profile_id===pid); if(!m) return;
+  const has=new Set(m.roles||[]);
+  const list=S.cur.roles.map(r=>`<label style="display:flex;align-items:center;gap:8px;padding:6px 0">
+    <input type="checkbox" data-role="${r.id}" data-label="${esc(r.label)}" ${has.has(r.label)?'checked':''}> ${esc(r.label)}</label>`).join('');
+  modal(`<div class="mhead"><h3>Ролі: ${esc(m.display_name)}</h3><button class="mx">✕</button></div>
+    <div class="mbody">${list}<div id="ar-msg" class="st" style="margin-top:8px">Клік = миттєво призначити/зняти.</div></div>`);
+  $('mhost').querySelectorAll('[data-role]').forEach(cb=>cb.onchange=async()=>{
+    const fn=cb.checked?'community_assign_role':'community_unassign_role';
+    const { error }=await sb.rpc(fn,{p_community:S.cur.id,p_target:pid,p_role:cb.dataset.role});
+    if(error){ $('ar-msg').className='msg err'; $('ar-msg').textContent=error.message; cb.checked=!cb.checked; return; }
+    await reopen();
+  });
+}
+
+// ── навігація ──
+function backToList(){ $('screen-community').classList.add('hide'); $('screen-list').classList.remove('hide'); S.cur=null; renderGrid(); renderMine(); renderPending(); }
+
+// ── фільтри ──
+$('f-q').oninput=e=>{ S.f.q=e.target.value; renderGrid(); };
+$('f-kind').onchange=e=>{ S.f.kind=e.target.value; renderGrid(); };
+$('f-join').onchange=e=>{ S.f.join=e.target.value; renderGrid(); };
+$('f-sort').onchange=e=>{ S.f.sort=e.target.value; renderGrid(); };
+$('btn-create').onclick=openCreate;
+$('btn-back-list').onclick=backToList;
+
+// ── логін (OTP) ──
+function showLogin(){ $('screen-list').classList.add('hide'); $('screen-community').classList.add('hide'); $('screen-login').classList.remove('hide'); }
+function showList(){ $('screen-login').classList.add('hide'); $('screen-list').classList.remove('hide'); }
+$('btn-login').onclick=showLogin;
+$('lnk-back').onclick=e=>{ e.preventDefault(); showList(); };
+$('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+$('btn-send').onclick=async()=>{
+  const email=$('in-email').value.trim(); if(!email) return;
+  $('login-msg').textContent='Надсилаю…';
+  const { error } = await sb.auth.signInWithOtp({ email, options:{ shouldCreateUser:true } });
+  if(error){ $('login-msg').textContent='Помилка: '+error.message; return; }
+  window.__email=email; $('step-email').classList.add('hide'); $('step-code').classList.remove('hide'); $('login-msg').textContent='';
+};
+$('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); };
+$('btn-verify').onclick=async()=>{
+  const token=$('in-code').value.trim(); if(!token) return;
+  $('login-msg').textContent='Перевіряю…';
+  let res=await sb.auth.verifyOtp({ email:window.__email, token, type:'email' });
+  if(res.error) res=await sb.auth.verifyOtp({ email:window.__email, token, type:'magiclink' });
+  if(res.error){ $('login-msg').textContent='Помилка: '+res.error.message; return; }
+  location.reload();
+};
+
+boot().catch(e=>{ $('sum').textContent='Помилка завантаження: '+e.message; });
+</script>
+</body>
+</html>

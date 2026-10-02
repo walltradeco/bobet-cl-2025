@@ -934,6 +934,33 @@
      замість auto-fill: ряд збирається по центру, а не притискається
      ліворуч із діркою праворуч. margin-bottom обов'язковий — без
      нього картки впритул налазили на першу полицю з медалями. */
+
+  /* ===== Вікно «Показати кубок» (сцена+трофей від ChatGPT, картинки в trophies/) ===== */
+  #trophy-lb{position:fixed;inset:0;z-index:3000;display:none;align-items:center;justify-content:center;
+    background:rgba(5,8,7,.9);-webkit-backdrop-filter:blur(7px);backdrop-filter:blur(7px);padding:3vh 3vw}
+  #trophy-lb.open{display:flex}
+  #trophy-lb .tl-stage{perspective:1500px;display:flex;align-items:center;justify-content:center}
+  #trophy-lb .tl-frame{position:relative;display:inline-block;border-radius:18px;
+    box-shadow:0 30px 90px rgba(0,0,0,.65),0 0 0 1px rgba(214,175,86,.38),0 0 90px rgba(214,175,86,.16);
+    transform:rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transition:transform .14s ease-out;will-change:transform}
+  #trophy-lb img{display:block;max-width:94vw;max-height:92vh;width:auto;height:auto;border-radius:18px}
+  /* текст на табличках: назва й ім'я підставляються з даних (rename-safe), розмір від ширини картинки (--fw) */
+  #trophy-lb .tl-plate{position:absolute;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    text-align:center;overflow:hidden;font-family:Georgia,'Times New Roman',serif;color:#2c1f07;
+    text-shadow:0 1px 0 rgba(255,236,170,.65),0 -1px 0 rgba(60,38,6,.25);pointer-events:none}
+  #trophy-lb .tl-plate b{display:block;font-weight:700;line-height:1.12;white-space:nowrap;letter-spacing:.02em;font-size:calc(var(--fw,600px)*var(--k2,.056))}
+  #trophy-lb .tl-plate i{display:block;font-style:normal;font-weight:600;line-height:1.2;white-space:nowrap;letter-spacing:.12em;text-transform:uppercase;font-size:calc(var(--fw,600px)*var(--k1,.030))}
+  #trophy-lb.gal .tl-plate i{letter-spacing:.05em}
+  #trophy-lb.gal .tl-plate{--k1:.0078;--k2:.0138}
+  #trophy-lb .tl-close{position:absolute;top:16px;right:18px;background:rgba(20,28,24,.85);color:#e9eadf;
+    border:1px solid rgba(214,175,86,.4);border-radius:10px;font:600 14px/1 'IBM Plex Mono',monospace;
+    padding:10px 14px;cursor:pointer}
+  #trophy-lb .tl-close:hover{border-color:#e7c979;color:#e7c979}
+  @media (prefers-reduced-motion:reduce){#trophy-lb .tl-frame{transition:none;transform:none!important}}
+  .hn-showrow{display:flex;justify-content:center;margin:2px 0 18px}
+  .hn-showbtn{background:rgba(255,255,255,.04);border:1px solid var(--line);color:var(--text);border-radius:10px;
+    padding:10px 20px;font:600 13px 'IBM Plex Mono',monospace;cursor:pointer}
+  .hn-showbtn:hover{border-color:var(--gold);color:var(--gold)}
   .hn-facts{
     display:grid;
     grid-template-columns:repeat(auto-fit,minmax(240px,280px));
@@ -1656,6 +1683,19 @@
     transition:background .15s;
   }
   #cabinet-btn:hover{background:var(--gold-soft);}
+  /* Профіль / Спільноти — вікна-модалки (openWin), кнопки поруч із кабінетом */
+  .hdr-btn2{
+    background:transparent; border:1px solid var(--line); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:13px; padding:9px 14px;
+    border-radius:6px; cursor:pointer; margin-top:8px; margin-left:8px;
+    transition:border-color .15s,color .15s;
+  }
+  .hdr-btn2:hover{border-color:var(--gold); color:var(--gold);}
+  .hdr-btn2:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
+  /* 👤 біля імені гравця → профіль (окрема іконка, клік по тексту не чіпаємо) */
+  .pf-ic{display:inline-block; margin-left:5px; font-size:.85em; opacity:.55; cursor:pointer;
+    text-decoration:none; vertical-align:baseline; filter:grayscale(.3);}
+  .pf-ic:hover{opacity:1;}
   #cabinet-btn:focus-visible{outline:2px solid var(--gold); outline-offset:2px;}
 
   #cabinet-overlay{
@@ -1665,9 +1705,10 @@
     display:none;
     padding:16px;
   }
-  #cabinet-overlay.open{display:block;}
+  #cabinet-overlay.open{display:flex; flex-direction:column;}
   #cabinet-shell{
     position:relative;
+    align-self:center; width:100%;
     /* ⚠️ 1200 → 1440 (14.08.2026). ЦЕ ПЕРША З ДВОХ СТЕЛЬ, і без неї
        розширення кабінету не видно взагалі: коли він відкритий модалкою
        звідси, ширину ріже саме це вікно, ще до власних `.wrap` у
@@ -1681,6 +1722,19 @@
     box-shadow:0 20px 60px rgba(0,0,0,0.55);
     display:flex; flex-direction:column;
   }
+  /* Згорнуте «в себе» — той самий жест, що у вікні Профіль/Спільноти/Крамниця
+     (рішення Богдана 29.09): фон прозорий (борд під кабінетом клікабельний),
+     лишається лише вузький заголовок, докнутий донизу; клік по ньому розгортає. */
+  #cabinet-overlay.min{
+    background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none;
+    padding:14px; pointer-events:none;
+  }
+  #cabinet-overlay.min #cabinet-shell{
+    height:auto; max-width:560px; margin-top:auto; pointer-events:auto;
+    cursor:pointer;
+  }
+  #cabinet-overlay.min #cabinet-frame{display:none;}
+  #cabinet-overlay.min #cabinet-bar{border-bottom:0;}
   #cabinet-bar{
     flex:0 0 auto;
     display:flex; align-items:center; justify-content:space-between;
@@ -1693,11 +1747,13 @@
     letter-spacing:0.1em; text-transform:uppercase;
     color:var(--green);
   }
-  #cabinet-close{
+  #cabinet-bar .acts{display:flex; gap:8px; flex:0 0 auto;}
+  #cabinet-min, #cabinet-close{
     background:var(--panel-2); border:1px solid var(--line); color:var(--text);
     font-family:'IBM Plex Mono',monospace; font-size:13px;
     padding:7px 14px; border-radius:6px; cursor:pointer;
   }
+  #cabinet-min:hover{border-color:var(--gold); color:var(--gold);}
   #cabinet-close:hover{border-color:var(--red); color:var(--red);}
   #cabinet-frame{
     flex:1 1 auto; width:100%; border:0; display:block; background:var(--bg);
@@ -1706,8 +1762,79 @@
 
   @media (max-width:720px){
     #cabinet-overlay{padding:0;}
-    #cabinet-shell{border-radius:0; border:0; max-width:none;}
+    #cabinet-overlay.open #cabinet-shell{border-radius:0; border:0; max-width:none;}
+    #cabinet-overlay.min{padding:10px;}
     #cabinet-btn{margin-left:0;}
+  }
+
+  /* ================= ВІКНО (Профіль / Спільноти / Крамниця) =================
+     Переиспользуване вікно-модалка, за тим самим патерном, що #cabinet-shell,
+     але z-index ВИЩИЙ (9500 проти 9000) — відкривається ПОВЕРХ кабінету, з
+     якого й кличеться (кнопки кабінету постять сюди `boorbit:openwin`).
+     «Згорнути» = стиснути «в себе» до вузького заголовка внизу (рішення
+     Богдана 29.09): фон зникає, кабінет під ним знову клікабельний, клік по
+     заголовку розгортає назад. STAGE-only: цей шелл живе лише в test.html. */
+  #winmodal-overlay{
+    position:fixed; inset:0; z-index:9500;
+    background:rgba(6,10,7,0.86);
+    -webkit-backdrop-filter:blur(3px); backdrop-filter:blur(3px);
+    display:none; padding:16px;
+  }
+  #winmodal-overlay.open{display:flex; flex-direction:column;}
+  #winmodal-shell{
+    align-self:center; width:100%; max-width:1440px; height:100%;
+    background:var(--bg); border:1px solid var(--line); border-radius:14px;
+    overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.55);
+    display:flex; flex-direction:column;
+  }
+  /* Згорнуте «в себе»: фон прозорий (кабінет під ним клікабельний), лишається
+     лише заголовок, докнутий донизу. */
+  #winmodal-overlay.min{
+    background:transparent; -webkit-backdrop-filter:none; backdrop-filter:none;
+    padding:14px; pointer-events:none;
+  }
+  #winmodal-overlay.min #winmodal-shell{
+    height:auto; max-width:560px; margin-top:auto; pointer-events:auto;
+    cursor:pointer;
+  }
+  #winmodal-overlay.min #winmodal-frame{display:none;}
+  #winmodal-overlay.min #winmodal-bar{border-bottom:0;}
+  /* Коли згорнуто РІВНО одне (кабінет АБО вікно) — воно лишається по центру внизу.
+     Коли згорнуті ОБИДВА — розводимо їх у протилежні кути, щоб бари 560px не
+     наклались один на одного (`:has` бачить стан сусіднього оверлея). */
+  body:has(#winmodal-overlay.min) #cabinet-overlay.min #cabinet-shell{
+    margin-left:0; margin-right:auto;   /* кабінет → низ-ліворуч */
+  }
+  body:has(#cabinet-overlay.min) #winmodal-overlay.min #winmodal-shell{
+    margin-left:auto; margin-right:0;   /* вікно → низ-праворуч */
+  }
+  #winmodal-bar{
+    flex:0 0 auto; display:flex; align-items:center; justify-content:space-between;
+    gap:12px; padding:10px 14px; border-bottom:1px solid var(--line);
+    background:var(--panel);
+  }
+  #winmodal-bar .t{
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:14px;
+    letter-spacing:0.08em; color:var(--green);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  #winmodal-bar .acts{display:flex; gap:8px; flex:0 0 auto;}
+  #winmodal-bar button{
+    background:var(--panel-2); border:1px solid var(--line); color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:13px;
+    padding:7px 12px; border-radius:6px; cursor:pointer;
+  }
+  #winmodal-min:hover{border-color:var(--gold); color:var(--gold);}
+  #winmodal-close:hover{border-color:var(--red); color:var(--red);}
+  #winmodal-frame{
+    flex:1 1 auto; width:100%; border:0; display:block; background:var(--bg);
+  }
+  body.winmodal-lock{overflow:hidden;}
+
+  @media (max-width:720px){
+    #winmodal-overlay{padding:0;}
+    #winmodal-overlay.open #winmodal-shell{border-radius:0; border:0; max-width:none;}
+    #winmodal-overlay.min{padding:10px;}
   }
 
 
@@ -1865,6 +1992,8 @@
         <div id="updated-at">Завантаження...</div>
         <button id="refresh-btn">⟳ Оновити дані</button>
         <button id="cabinet-btn">⚽ Кабінет</button>
+        <button id="profile-btn" class="hdr-btn2" type="button">👤 Профіль</button>
+        <button id="comm-btn" class="hdr-btn2" type="button">👥 Спільноти</button>
       </div>
     </div>
     <!-- Підписи над навігацією: у медалей уже стоїть пара
@@ -1886,9 +2015,26 @@
   <div id="cabinet-shell">
     <div id="cabinet-bar">
       <div class="t">Bo<span>Bet</span> · Кабінет</div>
-      <button id="cabinet-close" type="button">Закрити ✕</button>
+      <div class="acts">
+        <button id="cabinet-min" type="button" title="Згорнути">▁ Згорнути</button>
+        <button id="cabinet-close" type="button">Закрити ✕</button>
+      </div>
     </div>
     <iframe id="cabinet-frame" title="Кабінет учасника" allow="clipboard-write"></iframe>
+  </div>
+</div>
+
+<!-- ============ ВІКНО (Профіль / Спільноти / Крамниця) ============ -->
+<div id="winmodal-overlay" role="dialog" aria-modal="true" aria-label="Вікно">
+  <div id="winmodal-shell">
+    <div id="winmodal-bar">
+      <div class="t" id="winmodal-title">Вікно</div>
+      <div class="acts">
+        <button id="winmodal-min" type="button" title="Згорнути">▁ Згорнути</button>
+        <button id="winmodal-close" type="button">Закрити ✕</button>
+      </div>
+    </div>
+    <iframe id="winmodal-frame" title="Вікно" allow="clipboard-write"></iframe>
   </div>
 </div>
 
@@ -2218,6 +2364,40 @@ async function buildMonthRows(tournamentKey){
     'manager_style_config?select=weekend_cap&tournament_id=eq.' + tid);
   LIVE_STYLE_CAP = capRows[0] ? capRows[0].weekend_cap : null;
 
+  // Club Legend (334/385) — для бейджа 🐐 біля імені. legend_board уже
+  // фільтрує через RLS (свій вибір видно завжди, чужий — після відкриття
+  // першого вікенда етапу), тож тут просто беремо все, що повернулось.
+  // Порожньо — і в етапу без Legend-пулу (нема учасників взагалі), і в
+  // того, хто ще не обрав слоти.
+  const legendRows = await sbGet(
+    'legend_board?select=display_name,team_id,team_name,role_code,role_icon,role_title,legend_name,points,' +
+    'club_matches_played,club_matches_total&tournament_id=eq.' + tid);
+  // Журнал по матчах (386) — для розбивки "Вікенд N: +X" у підказці.
+  // Один рядок на матч; вікенди, де клуб НЕ грав, просто відсутні в
+  // журналі (рішення Богдана 28.09.2026 — пропускати, а не «—»).
+  const legendMatchRows = legendRows.length ? await sbGet(
+    'legend_match_board?select=display_name,team_id,role_code,gameweek_number,points' +
+    '&tournament_id=eq.' + tid) : [];
+  // Стеля Legend/етап із конфігу (club_legend_config, 389) — для «X/cap»,
+  // як LIVE_STYLE_CAP вище. Читає anon (RLS дозволяє), fallback 12.
+  if (legendRows.length) {
+    const legendCfg = await sbGet('club_legend_config?select=cap');
+    LIVE_LEGEND_CAP = legendCfg[0] ? legendCfg[0].cap : 12;
+  }
+  const legendByName = {};
+  legendRows.forEach(r => {
+    const matches = legendMatchRows
+      .filter(m => m.display_name === r.display_name && m.team_id === r.team_id && m.role_code === r.role_code)
+      .sort((a, b) => a.gameweek_number - b.gameweek_number)
+      .map(m => ({ gw: m.gameweek_number, points: m.points }));
+    (legendByName[r.display_name] = legendByName[r.display_name] || []).push({
+      club: r.team_name, icon: r.role_icon, title: r.role_title, legendName: r.legend_name,
+      points: r.points, played: r.club_matches_played, total: r.club_matches_total,
+      matches
+    });
+  });
+  LIVE_LEGEND = legendRows.length ? legendByName : null;
+
   const names = [...new Set(people.map(p => p.display_name))];
   registerPlayers(names);
   // Матчі — відкрита інформація: показуємо розклад завжди. Прогнози
@@ -2397,6 +2577,7 @@ async function fetchSupabaseTab(tab){
   LIVE_MVP = null;                // бейдж MVP лише в місячній таблиці
   LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   LIVE_STYLE_CAP = null;
+  LIVE_LEGEND = null;             // бейдж 🐐 лише в місячній таблиці
   if(tab.source === 'leaderboard'){
     const prizeBoard = await sbGet('season_prize_board?select=person_key,display_name,mvp_count,rival_wins');
     // Зміна рангу для MVP/Rivals season-бордів (файл 184) — той самий
@@ -2519,7 +2700,7 @@ function renderEuroRulesExtras(){
         незалежно від того, за які клуби вболіваєш і що прогнозував. Нарахування
         дивиться на фінальний рахунок матчів, а не на твій прогноз.
         Кожен стиль можна взяти лише один раз за етап. Стеля очок за стиль на
-        вікенд у August — 3.
+        вікенд: серпень — 3, вересень — 4, <b>жовтень — 5</b>.
       </p>
       ${miniRulesTable('Condition', 'Points', styleRows)}
       <details class="rules-details">
@@ -3044,6 +3225,7 @@ async function fetchSheet(sheetId, sheetName, gid){
   LIVE_MVP = null;                 // в архіві MVP немає
   LIVE_STYLES = null;              // в архіві стилів немає
   LIVE_STYLE_CAP = null;
+  LIVE_LEGEND = null;              // в архіві Club Legend немає
   // заморожений архів: віддаємо вшиті дані, мережа не потрібна
   if(typeof FROZEN !== 'undefined' && FROZEN[sheetId]){
     const rows = FROZEN[sheetId][gid] || FROZEN[sheetId][gid || ''];
@@ -3358,7 +3540,7 @@ function renderPointsSummary(players, totals){
         const v = val(p, i);
         return `
         <div class="gp-summary-cell">
-          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}</span>
+          <span class="rv-badges">${mvpBadge(p.name)}${rivalBadge(p.name)}${styleBadge(p.name)}${legendBadge(p.name)}</span>
           <span class="gp-summary-name">${escapeHtml(canonPerson(p.name))}</span>
           <span class="gp-summary-pts">${escapeHtml(v === undefined || v === null || v === '' ? '0' : String(v))}</span>
         </div>`;
@@ -3395,13 +3577,15 @@ function styleBadge(name){
   if(!LIVE_STYLES) return '';
   const picks = LIVE_STYLES[name];
   if(!picks || !picks.length) return '';
+  // «Без стелі» (жовтень: weekend_cap 999) → не показуємо «/N» і «(зі M, стеля)».
+  const noCap = !(LIVE_STYLE_CAP && LIVE_STYLE_CAP < 99);
   const rows = picks
     .slice()
     .sort((a, b) => a.gw - b.gw)
     .map(s => {
-      const capTxt = LIVE_STYLE_CAP ? '/' + LIVE_STYLE_CAP : '';
+      const capTxt = noCap ? '' : '/' + LIVE_STYLE_CAP;
       const pts = s.scored
-        ? `<span class="win">+${s.points}${capTxt}</span>${s.capped ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
+        ? `<span class="win">+${s.points}${capTxt}</span>${(!noCap && s.capped) ? ` <span class="cap">(зі ${s.raw}, стеля)</span>` : ''}`
         : '<span class="pending">очікує</span>';
       return `<div class="rv-tip-row">Вікенд ${s.gw}: ${escapeHtml(s.title)} · ${pts}</div>`;
     })
@@ -3424,6 +3608,42 @@ function mvpBadge(name){
     .join('');
   const count = wins.length > 1 ? `<span class="rv-count">${wins.length}</span>` : '';
   return `<span class="rv-badge" style="color:var(--gold);font-weight:700;font-size:11px;letter-spacing:0.03em">MVP${count}<span class="rv-tip">${rows}</span></span>`;
+}
+
+/* Бейдж 🐐 з Club Legend (334/385) поруч із ⚔️/👔/MVP. Показуємо лише
+   в місячній таблиці (LIVE_LEGEND != null) і лише коли етап реально має
+   Legend-пул (людина без вибору просто не потрапляє в мапу — пусто).
+   Число — сума балів обох слотів зі стелею LIVE_LEGEND_CAP (стеля лише
+   НА СУМУ ЕТАПУ — за вікенд стелі немає, файл 386, рішення Богдана
+   28.09.2026). У підказці — по рядку на кожен обраний слот, а під ним
+   розбивка по вікендах (386: legend_match_board), як у Rivals/Style.
+   Вікенд, у якому клуб не грав, просто відсутній у розбивці. */
+function legendBadge(name){
+  if(!LIVE_LEGEND) return '';
+  const picks = LIVE_LEGEND[name];
+  if(!picks || !picks.length) return '';
+  const total = Math.min(LIVE_LEGEND_CAP, picks.reduce((s, p) => s + (p.points || 0), 0));
+  const rows = picks
+    .map(p => {
+      // Підпис легенди: ім'я/прізвище легенди клубу (Баварія·Канонада →
+      // Lewandowski), fallback на назву ролі, якщо ім'я не задане (459/460).
+      const label = p.legendName || p.title || p.role;
+      // Стеля 8 на роль (462): журнал по матчах сирий, points — зрізаний.
+      // Якщо сира сума більша — показуємо «(зі N, стеля)», як 👔 Style.
+      const rawSum = (p.matches || []).reduce((s, m) => s + (m.points || 0), 0);
+      const capped = rawSum > (p.points || 0);
+      const pts = p.played > 0
+        ? `<span class="win">+${p.points || 0}</span>${capped ? ` <span class="cap">(зі ${rawSum}, стеля)</span>` : ''}`
+        : '<span class="pending">очікує</span>';
+      const breakdown = (p.matches || [])
+        .map(m => `Вікенд ${m.gw}: ${m.points > 0 ? '+' + m.points : '0'}`)
+        .join(' · ');
+      return `<div class="rv-tip-row">${escapeHtml(p.club)} — ${p.icon || ''} ${escapeHtml(label)}
+        · ${p.played}/${p.total} матчів · ${pts}</div>`
+        + (breakdown ? `<div class="rv-tip-row" style="opacity:0.75">${breakdown}</div>` : '');
+    })
+    .join('');
+  return `<span class="rv-badge">🐐 ${total}/${LIVE_LEGEND_CAP}<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
@@ -3631,6 +3851,17 @@ let LIVE_STYLES = null;
 /* Стеля Manager Style за вікенд (3 у серпні, 4 далі) — тільки для
    тексту підказки бейджа 👔, «+1/3» замість голого «+1». */
 let LIVE_STYLE_CAP = null;
+
+/* Club Legend (334/385) для бейджа 🐐 біля імені — агрегат, як у
+   кабінеті (без матч-за-матчем журналу, рішення Богдана 28.09.2026).
+   Формат: { 'Ім'я': [{club, icon, title, points, played, total}, ...
+   до 2 слотів], ... }. null — бейдж не показуємо (архів, інші вкладки,
+   або етап без Legend-пулу взагалі). */
+let LIVE_LEGEND = null;
+
+/* Стеля балів Legend за етап — та сама, що в кабінеті (335: агрегація
+   least(sum,10)). Фіксована константа проєкту, не таблиця конфігу. */
+let LIVE_LEGEND_CAP = 12;   // дефолт; фактичну стелю етапу тягнемо з club_legend_config (389)
 
 /* Тип буста за підписом.
    Архів дає людський підпис із Google Sheets, EuroSeason — назву
@@ -4440,7 +4671,9 @@ function honorsCase(d){
 
   return honorsWrap('Трофейна вітрина',
     'Усе, що виграно за історію ліги — з точністю до етапу',
-    `<div class="hn-facts">${cards}</div>` + cases + euro);
+    `<div class="hn-facts">${cards}</div>` +
+    `<div class="hn-showrow"><button class="hn-showbtn" type="button" data-trophy="gallery">⤢ Показати кубки</button></div>` +
+    cases + euro);
 }
 
 /* --- 3. Рекорди ліги --- */
@@ -4897,6 +5130,12 @@ function syncStickyOffset(){
 async function loadActiveTab(){
   const content = document.getElementById('content');
 
+  // ЕТАПИ-ряд оболонки: за замовчуванням показаний (решта турнірів). Squad має
+  // ВЛАСНУ ЕТАПИ-навігацію всередині iframe → ховаємо порожній ряд оболонки.
+  const etapiLbl = document.querySelector('.nav-lbl-sub');
+  if(etapiLbl) etapiLbl.style.display = '';
+  document.getElementById('tabs').style.display = '';
+
   // HONORS живе за іншими правилами: не таблиця, а власна сторінка,
   // зібрана з чотирьох в'юх бази. Тому виходимо з загального шляху
   // до того, як він полізе по activeTournament.tabs.
@@ -5058,6 +5297,8 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   const frame   = document.getElementById('cabinet-frame');
   const btn     = document.getElementById('cabinet-btn');
   const closeBtn= document.getElementById('cabinet-close');
+  const minBtn  = document.getElementById('cabinet-min');
+  const bar     = document.getElementById('cabinet-bar');
 
   // Чи є жива сесія Supabase — щоб підписати кнопку
   function signedIn(){
@@ -5074,45 +5315,250 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
   }
   labelBtn();
 
+  // Який кабінет вантажити: Squad-турнір → власний Squad-кабінет (той
+  // самий, що робили для Squad), решта — BoBet-кабінет. Та сама кнопка.
+  async function desiredCabinetSrc(){
+    const stage = /(^|\/)test\.html$/.test(location.pathname);
+    let appSrc = 'app.html';
+    // На test.html пробуємо тестовий кабінет; якщо його не залито —
+    // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
+    if (stage){
+      try {
+        const r = await fetch('app-test.html', { method: 'HEAD' });
+        if (r.ok) appSrc = 'app-test.html';
+      } catch(e) {}
+    }
+    return appSrc;
+  }
+
   async function open(){
-    // Модалку показуємо одразу
+    // Модалку показуємо одразу (і розгортаємо, якщо була згорнута)
+    overlay.classList.remove('min');
     overlay.classList.add('open');
     document.body.classList.add('cabinet-lock');
-    // iframe вантажиться лише при першому відкритті
-    if (!frame.getAttribute('src')){
-      let appSrc = 'app.html';
-      // На test.html пробуємо тестовий кабінет; якщо його не залито —
-      // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
-      if (/(^|\/)test\.html$/.test(location.pathname)){
-        try {
-          const r = await fetch('app-test.html', { method: 'HEAD' });
-          if (r.ok) appSrc = 'app-test.html';
-        } catch(e) {}
-      }
-      frame.setAttribute('src', appSrc);
+    minBtn.textContent = '▁ Згорнути';
+    // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
+    // щоразу, бо між відкриттями турнір міг змінитись.
+    const want = await desiredCabinetSrc();
+    if (frame.getAttribute('src') !== want){
+      frame.setAttribute('src', want);
     }
   }
-  function close(){
-    overlay.classList.remove('open');
+  // «Згорнути в себе» (як у вікні Профіль/Спільноти/Крамниця): кабінет стискається
+  // до заголовка внизу, борд під ним знову клікабельний. iframe лишається живим —
+  // src не скидаємо, сесія й вкладка кабінету зберігаються.
+  function minimize(){
+    if(!overlay.classList.contains('open')) return;
+    overlay.classList.add('min');
     document.body.classList.remove('cabinet-lock');
+    minBtn.textContent = '▢ Розгорнути';
+  }
+  function restore(){
+    overlay.classList.remove('min');
+    document.body.classList.add('cabinet-lock');
+    minBtn.textContent = '▁ Згорнути';
+  }
+  function close(){
+    overlay.classList.remove('open','min');
+    document.body.classList.remove('cabinet-lock');
+    minBtn.textContent = '▁ Згорнути';
     labelBtn();
   }
 
   btn.addEventListener('click', open);
-  closeBtn.addEventListener('click', close);
-  overlay.addEventListener('mousedown', e => { if (e.target === overlay) close(); });
+  minBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    overlay.classList.contains('min') ? restore() : minimize();
+  });
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); close(); });
+  // Клік по згорнутому заголовку (не по кнопках) — розгорнути назад
+  bar.addEventListener('click', () => { if(overlay.classList.contains('min')) restore(); });
+  // Клік по темному фону повного кабінету — згорнути (стан не втрачається)
+  overlay.addEventListener('mousedown', e => {
+    if (e.target === overlay && overlay.classList.contains('open')
+        && !overlay.classList.contains('min')) minimize();
+  });
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && overlay.classList.contains('open')) close();
+    if (e.key !== 'Escape' || !overlay.classList.contains('open')) return;
+    overlay.classList.contains('min') ? close() : minimize();
   });
 
   // app.html може попросити закритись: parent.postMessage('bobet:close','*')
   window.addEventListener('message', e => {
+    if (e.origin !== location.origin) return;   // лише свій кабінет (той самий домен)
     if (e.data === 'bobet:close') close();
   });
 
   // #cabinet у посиланні одразу відкриває кабінет
   if (location.hash === '#cabinet') open();
 })();
+
+/* ======== ВІКНО (Профіль / Спільноти / Крамниця) ========
+   Відкривається з кнопок кабінету (ті постять сюди `boorbit:openwin`),
+   а в майбутньому — з кнопок борда (крок 4). z-index вищий за кабінет,
+   тож лягає поверх нього. `href` приходить від кабінету як є — кабінет і
+   борд у одній теці (`site/`), тож відносний шлях резолвиться однаково. */
+(function(){
+  const overlay = document.getElementById('winmodal-overlay');
+  if(!overlay) return;
+  const frame   = document.getElementById('winmodal-frame');
+  const titleEl = document.getElementById('winmodal-title');
+  const minBtn  = document.getElementById('winmodal-min');
+  const closeBtn= document.getElementById('winmodal-close');
+  const bar     = document.getElementById('winmodal-bar');
+
+  function openWin(href, title){
+    if(!href) return;
+    overlay.classList.remove('min');
+    titleEl.textContent = title || 'Вікно';
+    frame.title = title || 'Вікно';
+    if(frame.getAttribute('src') !== href) frame.setAttribute('src', href);
+    overlay.classList.add('open');
+    document.body.classList.add('winmodal-lock');
+    minBtn.textContent = '▁ Згорнути';
+  }
+  function minimize(){
+    if(!overlay.classList.contains('open')) return;
+    overlay.classList.add('min');
+    document.body.classList.remove('winmodal-lock');
+    minBtn.textContent = '▢ Розгорнути';
+  }
+  function restore(){
+    overlay.classList.remove('min');
+    document.body.classList.add('winmodal-lock');
+    minBtn.textContent = '▁ Згорнути';
+  }
+  function closeWin(){
+    overlay.classList.remove('open','min');
+    document.body.classList.remove('winmodal-lock');
+    frame.removeAttribute('src');   // наступне відкриття — свіже
+  }
+
+  minBtn.addEventListener('click', e => {
+    e.stopPropagation();
+    overlay.classList.contains('min') ? restore() : minimize();
+  });
+  closeBtn.addEventListener('click', e => { e.stopPropagation(); closeWin(); });
+  // Клік по згорнутому заголовку (не по кнопках) — розгорнути назад
+  bar.addEventListener('click', () => { if(overlay.classList.contains('min')) restore(); });
+  // Клік по темному фону повного вікна — згорнути (стан не втрачається)
+  overlay.addEventListener('mousedown', e => {
+    if(e.target === overlay && overlay.classList.contains('open')
+       && !overlay.classList.contains('min')) minimize();
+  });
+  // Esc: повне → згорнути; згорнуте → закрити. Ковтаємо подію (capture),
+  // щоб Esc не закрив заодно кабінет під вікном.
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Escape' || !overlay.classList.contains('open')) return;
+    e.stopImmediatePropagation();
+    overlay.classList.contains('min') ? closeWin() : minimize();
+  }, true);
+
+  window.addEventListener('message', e => {
+    if (e.origin !== location.origin) return;   // лише свій кабінет (той самий домен)
+    const d = e.data;
+    if(d && typeof d === 'object' && d.type === 'boorbit:openwin') openWin(d.href, d.title);
+  });
+})();
+
+/* ======== ПРОФІЛЬ / СПІЛЬНОТИ: кнопки + 👤 біля імені ========
+   Вікна відкриває той самий openWin (winmodal), що й для кабінету: шлемо собі
+   повідомлення 'boorbit:openwin'. ⚠️ Адреси зібрані в ДВОХ константах — це
+   єдине місце, яке promote.py міняє при промоуті (profile-stage → profile). */
+const PROFILE_URL   = 'profile.html';
+const COMMUNITY_URL = 'community.html';
+function openBoorbitWin(href, title){
+  window.postMessage({ type:'boorbit:openwin', href, title }, location.origin);
+}
+document.getElementById('profile-btn').addEventListener('click',
+  () => openBoorbitWin(PROFILE_URL, '👤 Профіль'));
+document.getElementById('comm-btn').addEventListener('click',
+  () => openBoorbitWin(COMMUNITY_URL, '👥 Спільноти'));
+
+/* 👤 біля імені: ім'я → profile_id з публічної вьюхи profile_overview (лише
+   ті, хто має профіль; архівні гравці без профілю іконки не мають). Іконка —
+   ОКРЕМИЙ елемент, клік по самому імені (сортування, розгортання) не чіпаємо.
+   Борд перемальовується цілком, тому стежимо MutationObserver-ом. */
+(function(){
+  let byName = null;
+  const norm = t => (t || '').replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, '').trim();
+  async function loadNames(){
+    try{
+      const rows = await sbGet('profile_overview?select=profile_id,display_name&display_name=not.is.null');
+      byName = {};
+      rows.forEach(r => { byName[norm(r.display_name)] = r.profile_id; });
+    }catch(e){ byName = {}; }
+  }
+  function decorate(){
+    if(!byName || document.body.classList.contains('embed')) return;
+    const root = document.getElementById('content');
+    if(!root) return;
+    root.querySelectorAll('th, td, .lb-name, .gp-name').forEach(el => {
+      if(el.querySelector('.pf-ic') || el.children.length > 2) return;
+      const pid = byName[norm(el.textContent)];
+      if(!pid) return;
+      const a = document.createElement('a');
+      a.className = 'pf-ic'; a.textContent = '👤'; a.title = 'Відкрити профіль';
+      a.href = PROFILE_URL + '?id=' + pid;
+      a.addEventListener('click', e => {
+        e.preventDefault(); e.stopPropagation();
+        openBoorbitWin(a.getAttribute('href'), '👤 Профіль');
+      });
+      el.appendChild(a);
+    });
+  }
+  let t = null;
+  function schedule(){ clearTimeout(t); t = setTimeout(decorate, 120); }
+  loadNames().then(() => {
+    decorate();
+    const root = document.getElementById('content');
+    if(root) new MutationObserver(schedule).observe(root, { childList:true, subtree:true });
+  });
+})();
+
+
+/* ===== Вікно «Показати кубок» ===== */
+/* (на борді мапа не потрібна — кнопка одна, на галерею) */
+const TROPHY_WIN={ 'Євро 2024':{k:'euro2024',winner:'Антон'}, 'ЛЧ 2025':{k:'ucl2025',winner:'Денис'},
+  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'} };
+const TROPHY_PLATE={ euro2024:['Євро 2024','Євро 2024','Антон'], ucl2025:['ЛЧ 2025','ЛЧ 2025','Денис'],
+  cwc2025:['Клубний ЧС 2025','Клубний ЧС 2025','Антон'], wc2026:['ЧС 2026','ЧС 2026','Саня'],
+  euroseason2026:['сезон 2026 триває','2026','ЄвроСезон'] };
+const TROPHY_GAL=['euro2024','ucl2025','cwc2025','wc2026','euroseason2026'];
+const TROPHY_GAL_X=[[11.4,20.9],[27.9,37.3],[44.9,54.4],[61.3,70.5],[77.3,87.8]];   // положення табличок на gallery.webp, % ширини
+function openTrophy(key,name){
+  let lb=document.getElementById('trophy-lb');
+  if(!lb){
+    lb=document.createElement('div'); lb.id='trophy-lb';
+    lb.innerHTML='<button class="tl-close" type="button">Закрити ✕</button><div class="tl-stage"><div class="tl-frame"><img alt="Кубок"></div></div>';
+    document.body.appendChild(lb);
+    const img=lb.querySelector('img'), fr=lb.querySelector('.tl-frame');
+    const close=()=>{ lb.classList.remove('open'); img.removeAttribute('src'); fr.querySelectorAll('.tl-plate').forEach(n=>n.remove()); };
+    const fit=()=>fr.style.setProperty('--fw',img.clientWidth+'px');
+    img.addEventListener('load',fit); window.addEventListener('resize',fit);
+    lb.addEventListener('click',e=>{ if(e.target===lb||e.target.closest('.tl-close')) close(); });
+    document.addEventListener('keydown',e=>{ if(e.key==='Escape'&&lb.classList.contains('open')){ e.stopPropagation(); close(); } },true);
+    lb.addEventListener('mousemove',e=>{            // легкий нахил за курсором
+      const r=fr.getBoundingClientRect(), dx=(e.clientX-(r.left+r.width/2))/(r.width/2), dy=(e.clientY-(r.top+r.height/2))/(r.height/2);
+      fr.style.setProperty('--ry',(Math.max(-1,Math.min(1,dx))*6)+'deg'); fr.style.setProperty('--rx',(Math.max(-1,Math.min(1,dy))*-4)+'deg'); });
+    lb.addEventListener('mouseleave',()=>{ fr.style.setProperty('--ry','0deg'); fr.style.setProperty('--rx','0deg'); });
+  }
+  const fr=lb.querySelector('.tl-frame'), gal=key==='gallery';
+  fr.querySelectorAll('.tl-plate').forEach(n=>n.remove());
+  const plate=(k,x0,w,y0,h)=>{ const p=TROPHY_PLATE[k]; if(!p) return;
+    const d=document.createElement('div'); d.className='tl-plate';
+    d.style.cssText=`left:${x0}%;width:${w}%;top:${y0}%;height:${h}%`;
+    const who=(k==='euroseason2026'||!name)?p[2]:name;                 // у профілі — актуальне ім'я власника (не міняється з rename)
+    d.innerHTML='<b></b><i></i>'; d.firstChild.textContent=who; d.lastChild.textContent=gal?p[1]:p[0];
+    if(gal&&p[1].length>12) d.style.setProperty('--k1','.0064');
+    fr.appendChild(d); };
+  if(gal) TROPHY_GAL.forEach((k,i)=>plate(k,TROPHY_GAL_X[i][0],TROPHY_GAL_X[i][1]-TROPHY_GAL_X[i][0],68.4,8.4));
+  else plate(key,26.2,48.2,70.4,9.4);
+  lb.classList.toggle('gal',gal);
+  lb.querySelector('img').src='trophies/'+key+'.webp';
+  lb.classList.add('open');
+}
+document.addEventListener('click',e=>{ const b=e.target.closest('[data-trophy]'); if(b){ e.preventDefault(); e.stopPropagation(); openTrophy(b.dataset.trophy); } });
 
 /* ======== INIT ======== */
 /* ⚠️ ВБУДОВАНИЙ БОРД: `test.html?board=aug2026` — та сама сторінка, але
