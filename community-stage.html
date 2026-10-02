@@ -598,7 +598,7 @@ function renderCommunity(){
     ? `<button class="act sm" id="c-join">Вступити</button>`
     : `<button class="act sm" id="c-join">Подати заявку</button>`;
   // 492: власна рамка замінює градієнт кольору шапки й вбудований стиль герба (інакше inline-стиль перебив би рамку)
-  const cz=(BC&&S.cur.cos)?S.cur.cos:null, framed=!!(cz&&cz.frame!=='default');
+  const cz=(BC&&S.cur.cos)?S.cur.cos:null, framed=!!(cz&&(cz.frame!=='default'||cz.skin!=='default'));
   const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
   const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
   $('chead').innerHTML=`<div class="chead">
@@ -617,7 +617,7 @@ function renderCommunity(){
       <div class="acts">${stateBtn}${manageBtn}</div>
     </div>
   </div>`;
-  if(cz) BC.apply($('chead').firstElementChild,cz,{avatar:'.crest',accent:col,size:92,pad:30});
+  if(cz) BC.apply($('chead').firstElementChild,cz,{avatar:'.crest',identity:'.htext',accent:col,size:92,pad:30});
   // 492 фаза 2: тема сторінки + Full Sync
   if(BC) BC.applyEnv($('cenv'),cz||BC.none(),{accent:col,content:'#ctab'});
   const lg=$('c-login'); if(lg) lg.onclick=showLogin;

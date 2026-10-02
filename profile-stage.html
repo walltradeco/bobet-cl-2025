@@ -620,13 +620,18 @@ function renderHead(){
     : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
   // 492: власне оформлення (рамка/ефект). Чемпіонські відзнаки мають ПРІОРИТЕТ (рішення 01.10): вимкнув перемикач — видно своє.
   const cz = (BC && !champ && S.cos) ? S.cos : null;
-  const framed = !!(cz && cz.frame!=='default');            // власна рамка замінює градієнт кольору шапки
+  const framed = !!(cz && (cz.frame!=='default' || cz.skin!=='default'));   // власна рамка/скін замінює градієнт кольору шапки
+  // 492 фаза 3: серверні чемпіонські шари (лише ліга BoBet): 1 титул → supreme+victory_radiance, 2+ → dynasty + середовище champion_hall.
+  // Не вибираються й не зберігаються; показуються, лише коли показуються чемпіонські відзнаки (champ) — вимкнув перемикач → видно своє.
+  const bobetChamp = !!(BC && champ && (!ov.champion_league || ov.champion_league==='bobet'));
+  const nTitles = Math.max(1, ov.title_count||0);
+  const tier = bobetChamp ? BC.champTier(nTitles) : null;
   const heroStyle = (col && !framed) ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
 
   // чемпіонський бейдж + титули
   let eyebrow='';
   if(champ){
-    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span></div>`;
+    eyebrow=`<div class="eyebrow"><span class="champ-label"><span class="cl-seal">${crownIc(13)}</span>${CHAMP_LEAGUE[ov.champion_league]||'BOBET'} CHAMPION</span>${tier?`<span class="champ-trophy" title="Титулів: ${nTitles}">🏆${nTitles>1?' × '+nTitles:''}</span>`:''}</div>`;
   }
   // підзаголовок — лише ДЕВІЗ власника (478); архетип/«учасник ліги» прибрано (дублюють Портрет/Рекорди)
   const bio=(ov.bio||'').trim();
@@ -638,6 +643,13 @@ function renderHead(){
     <div class="stat"><b>${num(ov.communities_count)}</b><span>спільнот${ov.communities_count===1?'а':''}</span></div>
   </div>`;
 
+  // 492 фаза 3: підпис «переможець …» — лише для чемпіона ліги BoBet; імена титулів — із трофеїв (isTitle = перемога загального заліку)
+  let titleLine='';
+  if(tier){
+    const names=[...new Set((S.trophies||[]).filter(isTitle).map(t=>t.tournament))].slice(0,3);
+    titleLine=`<div class="title-list"><b>${nTitles>1?`Переможець ${nTitles} турнірів`:'Переможець турніру'}</b>${names.length?' · '+names.map(esc).join(' · '):''}</div>`;
+  }
+
   let actions='';
   if(S.isOwn){
     actions=`<div class="hactions">
@@ -646,11 +658,16 @@ function renderHead(){
     </div>`;
   }
   $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
-    <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}</div>
+    <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}${titleLine}</div>
     ${actions}</section>`;
-  if(cz) BC.apply($('phead').querySelector('.hero'),cz,{avatar:'.frame',accent:col||'#7e9dbb'});
-  // 492 фаза 2: тема сторінки + Full Sync (фон обчислюється з кольору+рамки+ефекту+теми; чемпіон → cz=null → сторінка без змін)
-  if(BC) BC.applyEnv($('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
+  if(cz) BC.apply($('phead').querySelector('.hero'),cz,{avatar:'.frame',identity:'.identity',accent:col||'#7e9dbb'});
+  if(BC){
+    // 492 фаза 3: чемпіонські шари шапки (supreme+victory_radiance / dynasty) — з серверних даних
+    BC.applyChamp($('phead').querySelector('.hero'),tier,{size:104,pad:28});
+    // 492 фаза 2/3: сторінка — champion_hall для чемпіона (золото), інакше тема + Full Sync (колір+рамка+ефект+тема)
+    if(tier) BC.applyChampEnv($('screen-profile'),{content:'#ptab'});
+    else BC.applyEnv($('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
+  }
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }
 
