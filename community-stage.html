@@ -956,7 +956,11 @@ async function confirmRel(toId,type){ await act('community_set_relation',{p_from
 
 // ── модалка: створити ──
 function modal(html){ $('mhost').innerHTML=`<div class="mhost"><div class="modal">${html}</div></div>`;
-  const h=$('mhost'); h.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) h.innerHTML=''; };
+  // 02.10: закриваємо по підкладці, ЛИШЕ якщо і натискання почалось на ній. Інакше виділення тексту мишею
+  // з поля за межі форми (down у полі, up на підкладці) шле click на підкладку й вбиває форму з усім введеним
+  const h=$('mhost'), bd=h.querySelector('.mhost'); let down=false;
+  bd.onpointerdown=e=>{ down=(e.target===bd); };
+  bd.onclick=e=>{ const ok=down&&e.target===bd; down=false; if(ok) h.innerHTML=''; };
   const x=h.querySelector('.mx'); if(x) x.onclick=()=>h.innerHTML=''; return h; }
 function closeModal(){ $('mhost').innerHTML=''; }
 

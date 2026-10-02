@@ -1241,7 +1241,10 @@ function openEdit(){
 }
 function wireModal(host){
   const close=()=>host.innerHTML='';
-  host.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')) close(); };
+  // 02.10: закриття по підкладці лише коли і натискання почалось на ній (виділення тексту з поля за межі форми не вбиває форму)
+  const bd=host.querySelector('.mhost'); let down=false;
+  bd.onpointerdown=e=>{ down=(e.target===bd); };
+  bd.onclick=e=>{ const ok=down&&e.target===bd; down=false; if(ok) close(); };
   host.querySelector('.mx').onclick=close;
   const x=host.querySelector('[data-x]'); if(x) x.onclick=close;
 }
