@@ -294,6 +294,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
 body:has(#screen-login:not(.hide)){
   background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
 </style>
+<link rel="stylesheet" href="assets/cosmetics-stage.css">
+<script src="assets/cosmetics-stage.js"></script>
 </head>
 <body>
 
@@ -365,6 +367,8 @@ const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
+// 492: кастомізація шапки (assets/cosmetics-stage.*). Немає файла/SQL → BC=null, шапка як раніше.
+const BC=window.BoCosmetics||null;
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KIND={club:'🏟️ Клуб',bar:'🍻 Бар'};
 const KINDEM={club:'🏟️',bar:'🍻'};
@@ -546,7 +550,7 @@ async function respondRequest(id,ok){
 // ── СТОРІНКА СПІЛЬНОТИ ──
 async function openCommunity(id, keepTab){
   // ⚡ 01.10: усе одним паралельним залпом (раніше detail → card → решта йшли ПОСЛІДОВНО, а detail/card/prestige рахують престиж)
-  const [detailR,cardR,members,wall,log,roles,rels,prestige] = await Promise.all([
+  const [detailR,cardR,members,wall,log,roles,rels,prestige,cos] = await Promise.all([
     withRetry(()=>sb.from('community_detail').select('*').eq('id',id).maybeSingle()),
     withRetry(()=>sb.from('community_card').select('*').eq('id',id).maybeSingle()),
     sb.from('community_member_list').select('*').eq('community_id',id),
@@ -554,13 +558,14 @@ async function openCommunity(id, keepTab){
     sb.from('community_log_view').select('*').eq('community_id',id).order('created_at',{ascending:false}).limit(80),
     sb.from('community_roles_view').select('*').eq('community_id',id).order('sort_order'),
     sb.from('community_relations_view').select('*').eq('community_id',id),
-    withRetry(()=>sb.rpc('community_prestige_detail',{p_community:id}))
+    withRetry(()=>sb.rpc('community_prestige_detail',{p_community:id})),
+    BC?BC.load(sb,'community',id):Promise.resolve(null)   // 492: рамка/ефект/скін/тема (немає таблиці → дефолт)
   ]);
   const detail=(detailR&&detailR.data)||null, card=(cardR&&cardR.data)||null;
   if(!detail && !card){ alert('Спільноту не знайдено'); return; }
   S.cur={ id, detail, card, members:members.data||[], wall:wall.data||[],
     log:log.data||[], roles:roles.data||[], rels:rels.data||[],
-    prestige:(prestige&&prestige.data)||null,
+    prestige:(prestige&&prestige.data)||null, cos:cos||null,
     visible: !!detail };
   if(!keepTab) S.tab = S.cur.visible ? 'overview' : 'about';
   $('screen-list').classList.add('hide'); $('screen-login').classList.add('hide');
@@ -590,11 +595,13 @@ function renderCommunity(){
   else if(!member) stateBtn=(c.join_mode==='open')
     ? `<button class="act sm" id="c-join">Вступити</button>`
     : `<button class="act sm" id="c-join">Подати заявку</button>`;
+  // 492: власна рамка замінює градієнт кольору шапки й вбудований стиль герба (інакше inline-стиль перебив би рамку)
+  const cz=(BC&&S.cur.cos)?S.cur.cos:null, framed=!!(cz&&cz.frame!=='default');
   const canManage = perms.perm_manage_info||perms.perm_manage_roles||perms.perm_manage_members||perms.perm_manage_relations||perms.perm_delete;
   const manageBtn = canManage ? `<button class="ghost sm" id="c-manage">⚙ Керувати</button>` : '';
   $('chead').innerHTML=`<div class="chead">
-    <div class="cover" style="background:linear-gradient(110deg,${esc(col)}59,${esc(col)}2e 55%,${esc(col)}17)">
-      <div class="crest" style="${crestStyle(col)}">${esc(kindEmoji(c))}</div>
+    <div class="cover"${framed?'':` style="background:linear-gradient(110deg,${esc(col)}59,${esc(col)}2e 55%,${esc(col)}17)"`}>
+      <div class="crest"${framed?'':` style="${crestStyle(col)}"`}>${esc(kindEmoji(c))}</div>
       <div class="htext">
         <h2>${esc(c.name)}</h2>
         ${c.motto?`<div class="mot">«${esc(c.motto)}»</div>`:''}
@@ -608,6 +615,7 @@ function renderCommunity(){
       <div class="acts">${stateBtn}${manageBtn}</div>
     </div>
   </div>`;
+  if(cz) BC.apply($('chead').firstElementChild,cz,{avatar:'.crest',accent:col,size:92,pad:30});
   const lg=$('c-login'); if(lg) lg.onclick=showLogin;
   const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
   const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
@@ -984,14 +992,21 @@ function openEdit(){
   const d=S.cur.detail;
   formEmoji=(d&&d.emoji)||null;
   modal(`<div class="mhead"><h3>Редагувати спільноту</h3><button class="mx">✕</button></div>
-    <div class="mbody">${formFields(d)}<div class="st" style="margin:4px 0 10px">Тип змінити не можна після створення.</div>
+    <div class="mbody">${formFields(d)}
+      ${BC?BC.editorHtml({cfg:S.cur.cos||BC.none(),name:(d&&d.name)||'',initials:Array.from(kindEmoji(d||{})).slice(0,2).join(''),sub:(d&&d.motto)?('«'+d.motto+'»'):kindLabel(d&&d.kind)}):''}
+      <div class="st" style="margin:4px 0 10px">Тип змінити не можна після створення.</div>
       <button class="act" id="cf-save">Зберегти</button><div id="cf-msg"></div></div>`);
   wirePresets();
   $('cf-kind').disabled=true;
+  const bcEd=BC?BC.wireEditor($('mhost').querySelector('#bc-ed'),{cfg:S.cur.cos||BC.none(),getAccent:()=>$('cf-color').value,colorInput:$('cf-color'),size:64,pad:22}):null;
   $('cf-save').onclick=async()=>{
     const v=formVals(); delete v.p_kind;
     const { error }=await sb.rpc('community_update',{ p_community:S.cur.id, ...v });
     if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
+    if(bcEd && !BC.same(bcEd.get(),S.cur.cos||BC.none())){   // 492: рамка/ефект (лише якщо змінились)
+      const { error:e2 }=await BC.save(sb,'community',S.cur.id,bcEd.get());
+      if(e2){ $('cf-msg').className='msg err'; $('cf-msg').textContent=e2.message||'Не вдалось зберегти оформлення'; return; }
+    }
     // ⚠️ reopen() освіжає лише сторінку спільноти (S.cur.card). Сітка Огляду
     // читає окремий кеш S.list — без loadList() картка там лишалась би зі старим
     // кольором/назвою до перезавантаження. Тож перечитуємо список теж.

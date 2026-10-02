@@ -312,7 +312,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 
 /* модалка (аватар/перейменування) */
 .mhost{position:fixed;inset:0;z-index:100;background:rgba(5,8,6,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px}
-.modal{background:var(--panel2);border:1px solid var(--line2);border-radius:16px;max-width:420px;width:100%;padding:0}
+.modal{background:var(--panel2);border:1px solid var(--line2);border-radius:16px;max-width:520px;width:100%;padding:0;max-height:calc(100vh - 40px);overflow-y:auto}
 .modal .mhead{display:flex;align-items:center;gap:12px;padding:16px 20px;border-bottom:1px solid var(--line)}
 .modal .mhead h3{font-size:18px;flex:1}
 .modal .mx{width:34px;height:34px;border:1px solid var(--line2);border-radius:8px;background:transparent;color:var(--text);font-size:16px}
@@ -372,6 +372,8 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
   .card-row{grid-template-columns:repeat(2,1fr)}.coll-grid{grid-template-columns:repeat(2,1fr)}
 }
 </style>
+<link rel="stylesheet" href="assets/cosmetics-stage.css">
+<script src="assets/cosmetics-stage.js"></script>
 </head>
 <body>
 <!-- ІКОНКИ (Lucide-стиль, inline-спрайт) -->
@@ -448,6 +450,8 @@ const HIDE_CARDS=true;
 // Squad (не релізнутий) і PSL Season 4/5 (стейдж-тест). На STAGE = false: видно все, щоб тестувати. БД спільна для STAGE і PROD,
 // тому це лише фільтр показу, а не видалення. promote.py ставить true. Новий справжній PSL-сезон зʼявиться сам (не в списку).
 const HIDE_TEST_TOURS=false;
+// 492: кастомізація шапки (assets/cosmetics-stage.*). Немає файла/SQL → BC=null і профіль виглядає як раніше.
+const BC=window.BoCosmetics||null;
 const TEST_PSL_SEASONS=['Season 4','Season 5'];
 const isTestTour=x=>x.league==='Squad'||(x.league==='PSL'&&TEST_PSL_SEASONS.includes(x.tournament_name));
 // суцільна корона для бейджів чемпіона (контурна ic('crown') на 11-16px зливалась у пляму)
@@ -560,13 +564,14 @@ function fetchProfileData(id){
     R('profile_portrait',{ p_profile:id }),
     R('profile_nominations',{ p_profile:id }),
     layP,
-    R('profile_history',{ p_profile:id })     // 489: «Де грав» (відсутня функція → [] → лише «Зараз грає»)
+    R('profile_history',{ p_profile:id }),    // 489: «Де грав» (відсутня функція → [] → лише «Зараз грає»)
+    BC?BC.load(sb,'profile',id):Promise.resolve(null)   // 492: рамка/ефект/скін/тема (немає таблиці → дефолт)
   ]);
 }
 
 async function loadProfile(pre){
-  const [ov,t,c,m,tr,rec,por,nm,lay,hist]=await pre;
-  S.ov=ov;
+  const [ov,t,c,m,tr,rec,por,nm,lay,hist,cos]=await pre;
+  S.ov=ov; S.cos=cos||null;
   if(!ov){
     $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
       <div class="identity"><h2>Профіль не знайдено</h2></div></section>`;
@@ -613,7 +618,10 @@ function renderHead(){
   const frame = champ
     ? `<div class="frame champ glow ${theme}"><span class="av"${avStyle}>${avInner}</span><span class="crown-seal">${crownIc(19)}</span></div>`
     : `<div class="frame plain"><span class="av"${avStyle}>${avInner}</span></div>`;
-  const heroStyle = col ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
+  // 492: власне оформлення (рамка/ефект). Чемпіонські відзнаки мають ПРІОРИТЕТ (рішення 01.10): вимкнув перемикач — видно своє.
+  const cz = (BC && !champ && S.cos) ? S.cos : null;
+  const framed = !!(cz && cz.frame!=='default');            // власна рамка замінює градієнт кольору шапки
+  const heroStyle = (col && !framed) ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
 
   // чемпіонський бейдж + титули
   let eyebrow='';
@@ -640,6 +648,7 @@ function renderHead(){
   $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
     <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}</div>
     ${actions}</section>`;
+  if(cz) BC.apply($('phead').querySelector('.hero'),cz,{avatar:'.frame',accent:col||'#7e9dbb'});
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }
 
@@ -1152,12 +1161,15 @@ function openEdit(){
       <input type="text" id="ed-bio" maxlength="80" placeholder="Напр.: Грай на виграш, не на красу" value="${esc(S.ov.bio||'')}">
       <label>Колір шапки</label>
       <input type="color" id="av-col" value="${esc(col)}" style="width:100%;height:44px;padding:4px;border:1px solid var(--line2);border-radius:10px;background:none;cursor:pointer">
+      ${BC?BC.editorHtml({cfg:S.cos||BC.none(),name:S.ov.display_name||'',initials:initials(S.ov.display_name),sub:(S.ov.bio||'').trim()||'Так виглядатиме шапка',
+        note:isChamp?'Ти чемпіон: коли «Відзнаки чемпіона» ввімкнені, вони мають пріоритет над оформленням. Вимкни їх нижче, щоб бачити своє.':''}):''}
       ${chBlock}
       <div class="msg" id="ed-msg" style="display:none"></div>
     </div>
     <div class="mfoot"><button class="ghost" data-x>Скасувати</button><button class="primary" id="ed-save">Зберегти</button></div>
   </div></div>`;
   wireModal(host);
+  const bcEd=BC?BC.wireEditor(host.querySelector('#bc-ed'),{cfg:S.cos||BC.none(),getAccent:()=>$('av-col').value,colorInput:$('av-col'),size:64,pad:22}):null;
   if(isChamp){ $('ch-sw').onclick=()=>{ showChamp=!showChamp; $('ch-sw').classList.toggle('on',showChamp); }; }
   $('ed-save').onclick=async()=>{
     const m=$('ed-msg'); m.style.display='block'; m.className='msg'; m.textContent='…';
@@ -1173,6 +1185,10 @@ function openEdit(){
     }
     const { error:e2 }=await sb.rpc('set_profile_avatar',{ p_emoji:null, p_color:$('av-col').value });
     if(e2){ m.className='msg err'; m.textContent=e2.message||'Не вдалось зберегти колір'; return; }
+    if(bcEd && !BC.same(bcEd.get(),S.cos||BC.none())){   // 492: рамка/ефект (лише якщо змінились)
+      const { error:e4 }=await BC.save(sb,'profile',S.me,bcEd.get());
+      if(e4){ m.className='msg err'; m.textContent=e4.message||'Не вдалось зберегти оформлення'; return; }
+    }
     if(isChamp){
       const { error:e3 }=await sb.rpc('set_profile_show_champion',{ p_on:showChamp });
       if(e3){ m.className='msg err'; m.textContent=e3.message||'Не вдалось зберегти відзнаки'; return; }
