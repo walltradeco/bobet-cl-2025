@@ -7,8 +7,8 @@
  * КОНТРАКТ ХОСТА (сторінка лише розставляє це):
  *   .bc-head            шапка (position:relative, overflow:hidden — вже є в .hero / .chead)
  *   .bc-av              аватар/герб усередині шапки
- *   data-bc-frame       default | fortress | split_rail | obsidian_cut | glass_tunnel | pulse_core
- *   data-bc-fx          none | aurora_mist | velocity | topography | particle_drift | scan_pulse | crystal_shards
+ *   data-bc-frame       default | fortress | split_rail | obsidian_cut | pulse_core   (+ data-bc-skin: titanium_wing | signature_rift)
+ *   data-bc-fx          none | aurora_mist | topography | particle_drift | crystal_shards
  *   --bc-a / --bc-a-rgb нормалізований акцент (JS підтягує яскравість, щоб був видно на темному)
  *   --bc-av / --bc-pad  розмір аватара й лівий відступ шапки (для геометрії, що залежить від аватара)
  *   <span class="bc-fx-layer a|b|c"> ×3 — шари ефекту, JS вставляє першими дітьми шапки
@@ -29,7 +29,7 @@
 
 /* ───────── шари ефекту ───────── */
 .bc-head > .bc-fx-layer{position:absolute;inset:0;z-index:-1;pointer-events:none}
-.bc-head[data-bc-fx="none"]:not([data-bc-skin]) > .bc-fx-layer{display:none}
+.bc-head[data-bc-fx="none"] > .bc-fx-layer{display:none}
 
 /* ───────── РАМКИ ───────── */
 /* 01 fortress — товста матова броня */
@@ -75,19 +75,6 @@
   background:linear-gradient(145deg,color-mix(in srgb,var(--bc-a) 20%,#20242a),#161a1f);
   box-shadow:inset 0 0 0 4px color-mix(in srgb,var(--bc-a) 52%,transparent)}
 
-/* 04 glass_tunnel — прозора багатошарова глибина */
-.bc-head[data-bc-frame="glass_tunnel"]{
-  border:2px solid color-mix(in srgb,var(--bc-a) 72%,white 8%);border-radius:26px;
-  box-shadow:inset 0 0 0 5px var(--bc-gap),inset 0 0 0 7px color-mix(in srgb,var(--bc-a) 32%,transparent),
-    inset 0 0 0 13px #15191e,inset 0 0 0 14px color-mix(in srgb,var(--bc-a) 15%,transparent),0 0 24px color-mix(in srgb,var(--bc-a) 13%,transparent);
-  background:linear-gradient(112deg,transparent 18%,color-mix(in srgb,var(--bc-a) 9%,transparent) 18% 39%,transparent 39% 62%,color-mix(in srgb,var(--bc-a) 6%,transparent) 62% 79%,transparent 79%),var(--bc-surface)}
-.bc-head[data-bc-frame="glass_tunnel"] .bc-av{
-  border:3px solid color-mix(in srgb,var(--bc-a) 68%,white 10%);border-radius:22px;
-  background:color-mix(in srgb,var(--bc-a) 9%,var(--panel2,#1a1f25));
-  box-shadow:inset 0 0 0 5px #14181d,inset 0 0 0 7px color-mix(in srgb,var(--bc-a) 25%,transparent),0 0 28px color-mix(in srgb,var(--bc-a) 17%,transparent)}
-.bc-head[data-bc-frame="glass_tunnel"]::before{content:"";position:absolute;z-index:2;inset:-50% -15%;pointer-events:none;transform:rotate(12deg);
-  background:linear-gradient(90deg,transparent 42%,rgba(255,255,255,.07) 49%,transparent 56%);animation:bc-glass 6s ease-in-out infinite}
-
 /* 05 pulse_core — кругле енергетичне ядро (кільця центровані на аватарі) */
 .bc-head[data-bc-frame="pulse_core"]{
   --bc-cx:calc(var(--bc-pad) + var(--bc-av) / 2);
@@ -116,15 +103,6 @@
     radial-gradient(ellipse at 60% 88%,color-mix(in srgb,var(--bc-a) 12%,transparent),transparent 30%)}
 .bc-head[data-bc-fx="aurora_mist"] > .bc-fx-layer.b{background:linear-gradient(108deg,transparent 18%,rgba(255,255,255,.035) 45%,transparent 68%)}
 
-/* velocity — тонкі рухомі швидкі лінії */
-.bc-head[data-bc-fx="velocity"] > .bc-fx-layer.a{
-  inset:-40% -10%;transform:skewX(-20deg);animation:bc-velocity 5s linear infinite;
-  background:repeating-linear-gradient(90deg,transparent 0 65px,color-mix(in srgb,var(--bc-a) 10%,transparent) 66px 70px,transparent 71px 112px)}
-.bc-head[data-bc-fx="velocity"] > .bc-fx-layer.b{
-  background:
-    linear-gradient(105deg,transparent 5% 28%,color-mix(in srgb,var(--bc-a) 19%,transparent) 28.5% 29%,transparent 29.5% 56%,color-mix(in srgb,var(--bc-a) 11%,transparent) 56.5% 57%,transparent 57.5%),
-    linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 9%,transparent),transparent 42%)}
-
 /* topography — контурні кільця */
 .bc-head[data-bc-fx="topography"] > .bc-fx-layer.a{
   inset:auto;left:-4%;top:-65%;width:76%;height:230%;border-radius:50%;transform:rotate(-9deg);opacity:.85;
@@ -145,14 +123,6 @@
 .bc-head[data-bc-fx="particle_drift"] > .bc-fx-layer.b{filter:blur(12px);
   background:radial-gradient(ellipse at 72% 55%,color-mix(in srgb,var(--bc-a) 10%,transparent),transparent 30%)}
 
-/* scan_pulse — горизонтальна сітка та сканування */
-.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.a{opacity:.75;
-  background:repeating-linear-gradient(0deg,transparent 0 7px,color-mix(in srgb,var(--bc-a) 6%,transparent) 8px 9px)}
-.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.b{
-  inset:auto;left:0;right:0;height:34%;top:-34%;filter:blur(4px);animation:bc-scan 5s ease-in-out infinite;
-  background:linear-gradient(transparent,color-mix(in srgb,var(--bc-a) 13%,transparent),color-mix(in srgb,var(--bc-a) 30%,transparent),transparent)}
-.bc-head[data-bc-fx="scan_pulse"] > .bc-fx-layer.c{background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 8%,transparent),transparent 45%)}
-
 /* crystal_shards — великі напівпрозорі грані */
 .bc-head[data-bc-fx="crystal_shards"] > .bc-fx-layer.a{
   clip-path:polygon(0 0,20% 0,35% 100%,0 100%);
@@ -165,11 +135,8 @@
   inset:0 -6% 0 auto;width:42%;clip-path:polygon(25% 0,100% 0,100% 100%,0 100%);
   background:color-mix(in srgb,var(--bc-a) 7%,transparent)}
 
-@keyframes bc-glass{0%,18%{transform:translateX(-48%) rotate(12deg)}75%,100%{transform:translateX(55%) rotate(12deg)}}
 @keyframes bc-aurora{from{transform:translate(-2%,-3%) scale(1)}to{transform:translate(5%,4%) scale(1.08)}}
-@keyframes bc-velocity{from{transform:translateX(-12%) skewX(-20deg)}to{transform:translateX(12%) skewX(-20deg)}}
 @keyframes bc-particles{from{transform:translateY(3px);opacity:.65}to{transform:translateY(-5px);opacity:1}}
-@keyframes bc-scan{0%,16%{top:-34%}78%,100%{top:100%}}
 
 /* ───────── МОБІЛЬНИЙ ───────── */
 @media(max-width:680px){
@@ -179,7 +146,6 @@
   .bc-head[data-bc-frame="pulse_core"]::before,.bc-head[data-bc-frame="pulse_core"]::after{display:none}
   .bc-head[data-bc-frame="split_rail"]{border-left-width:9px}
   .bc-head[data-bc-frame="fortress"]{border-width:4px}
-  .bc-head[data-bc-fx="velocity"] > .bc-fx-layer.a{animation-duration:8s}
 }
 
 /* ───────── prefers-reduced-motion: повна зупинка декоративного руху ───────── */
@@ -210,7 +176,7 @@
 
 /* ═════════ ФАЗА 2: ОТОЧЕННЯ СТОРІНКИ (теми + Full Sync) ═════════
  * host = .bc-env (профіль #screen-profile · спільнота #cenv: шапка + вкладки + вміст; топбар НЕ входить).
- * Атрибути хоста: data-bc-theme (studio_frame|collector_vault|aegis_citadel|prism_forge|stadium_cathedral) ·
+ * Атрибути хоста: data-bc-theme (collector_vault|aegis_citadel|prism_forge|stadium_cathedral) ·
  * data-bc-pframe / data-bc-pfx (рамка й ефект ШАПКИ — з них Full Sync обчислює фон) · data-bc-prem (преміум-тема) ·
  * --bc-a / --bc-a-rgb (акцент). JS вставляє першими дітьми 3 шари: .a = атмосфера кольору, .b = відлуння рамки
  * (у преміум-темі — структура середовища), .c = розлив ефекту. Область вмісту під вкладками — .bc-content.
@@ -254,12 +220,6 @@ body:has(.bc-env){overflow-x:clip}
   clip-path:polygon(5% 0,71% 0,76% 5%,96% 5%,100% 11%,100% 88%,95% 100%,24% 100%,18% 94%,3% 94%,0 87%,0 9%);
   background:linear-gradient(132deg,rgba(var(--bc-a-rgb),.12),transparent 28%),linear-gradient(313deg,rgba(var(--bc-a-rgb),.09),transparent 24%);
   box-shadow:inset 0 0 80px rgba(var(--bc-a-rgb),.05)}
-.bc-env:not([data-bc-prem])[data-bc-pframe="glass_tunnel"] > .bc-env-layer.b{
-  inset:-3% -2%;opacity:.7;transform:rotate(-2.5deg);
-  background:
-    linear-gradient(112deg,transparent 0 22%,rgba(var(--bc-a-rgb),.18) 22.2% 23%,rgba(255,255,255,.035) 23.2% 35%,transparent 35.3%),
-    linear-gradient(68deg,transparent 0 61%,rgba(var(--bc-a-rgb),.13) 61.2% 62%,rgba(255,255,255,.025) 62.2% 72%,transparent 72.4%);
-  border:1px solid rgba(var(--bc-a-rgb),.18);box-shadow:inset 0 0 90px rgba(var(--bc-a-rgb),.07)}
 .bc-env:not([data-bc-prem])[data-bc-pframe="pulse_core"] > .bc-env-layer.b{
   inset:-140px auto auto -6%;width:min(78%,860px);aspect-ratio:1/.82;opacity:.7;border-radius:50%;
   border:1px solid rgba(var(--bc-a-rgb),.22);
@@ -271,8 +231,6 @@ body:has(.bc-env){overflow-x:clip}
   background:
     repeating-radial-gradient(ellipse at 14% 12%,transparent 0 27px,rgba(var(--bc-a-rgb),.12) 28px 29px,transparent 30px 51px),
     repeating-radial-gradient(ellipse at 88% 62%,transparent 0 42px,rgba(var(--bc-a-rgb),.055) 43px 44px,transparent 45px 75px)}
-.bc-env[data-bc-pfx="velocity"] > .bc-env-layer.c{opacity:.5;
-  background:repeating-linear-gradient(118deg,transparent 0 72px,rgba(var(--bc-a-rgb),.04) 73px 75px,transparent 76px 112px,rgba(var(--bc-a-rgb),.11) 113px 114px,transparent 115px 148px)}
 .bc-env[data-bc-pfx="aurora_mist"] > .bc-env-layer.c{opacity:.5;filter:blur(30px);
   background:
     radial-gradient(ellipse at 20% 14%,rgba(var(--bc-a-rgb),.32),transparent 28%),
@@ -288,8 +246,6 @@ body:has(.bc-env){overflow-x:clip}
     radial-gradient(circle at 84% 49%,rgba(var(--bc-a-rgb),.66) 0 2px,transparent 3px),
     radial-gradient(circle at 94% 77%,rgba(var(--bc-a-rgb),.42) 0 1px,transparent 2px);
   background-size:520px 460px}
-.bc-env[data-bc-pfx="scan_pulse"] > .bc-env-layer.c{opacity:.5;
-  background:repeating-linear-gradient(0deg,transparent 0 7px,rgba(var(--bc-a-rgb),.07) 8px 9px)}
 .bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c{opacity:.7}
 .bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::before,
 .bc-env[data-bc-pfx="crystal_shards"] > .bc-env-layer.c::after{content:"";position:absolute}
@@ -307,12 +263,6 @@ body:has(.bc-env){overflow-x:clip}
   border-right-color:color-mix(in srgb,var(--bc-a) 16%,var(--line));
   border-bottom-color:color-mix(in srgb,var(--bc-a) 16%,var(--line))}
 
-/* ───────── ТЕМА studio_frame — один великий напівпрозорий контейнер під вкладками ───────── */
-.bc-env .bc-content{position:relative}
-.bc-env[data-bc-theme="studio_frame"] .bc-content::before{
-  content:"";position:absolute;z-index:-1;inset:-14px -10px -16px;pointer-events:none;
-  border:1px solid rgba(255,255,255,.09);border-radius:22px;background:rgba(13,18,22,.72);
-  box-shadow:inset 0 1px rgba(255,255,255,.025)}
 
 /* ───────── ТЕМА collector_vault — колекційна вітрина: подвійна рамка, діагональна сітка, рельєф карток ───────── */
 .bc-env[data-bc-theme="collector_vault"]::before{
@@ -399,7 +349,6 @@ body:has(.bc-env){overflow-x:clip}
   .bc-env{--bc-out:6px}
   .bc-env > .bc-env-layer.a{opacity:.5}
   .bc-env[data-bc-pframe="pulse_core"]:not([data-bc-prem]) > .bc-env-layer.b{display:none}
-  .bc-env[data-bc-pframe="glass_tunnel"]:not([data-bc-prem]) > .bc-env-layer.b{display:none}
   .bc-env[data-bc-theme="aegis_citadel"] > .bc-env-layer.b{border-width:6px;
     clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px)}
   .bc-env[data-bc-theme="aegis_citadel"]::before{inset:-6px -4px -8px}
@@ -409,7 +358,6 @@ body:has(.bc-env){overflow-x:clip}
   .bc-env[data-bc-theme="stadium_cathedral"]::after{display:none}
   .bc-env[data-bc-theme="stadium_cathedral"] > .bc-env-layer.b{inset:-6px 2% auto;box-shadow:0 0 0 10px rgba(var(--bc-a-rgb),.035),0 0 0 11px rgba(var(--bc-a-rgb),.1)}
   .bc-env[data-bc-theme="collector_vault"]::before{border-width:4px;border-radius:20px}
-  .bc-env[data-bc-theme="studio_frame"] .bc-content::before{inset:-10px -6px -12px;border-radius:16px}
 }
 
 /* ───────── превʼю теми в редакторі (міні-сторінка тією ж CSS-системою) ───────── */
@@ -428,25 +376,25 @@ body:has(.bc-env){overflow-x:clip}
 .bc-ed .bc-tp-c{display:block;height:42px;border:1px solid var(--line,rgba(255,255,255,.085));border-radius:9px;background:var(--panel,#15191e)}
 
 /* ═════════ ФАЗА 3: ПРЕМІУМ-СКІНИ ШАПКИ + СЕРВЕРНІ ЧЕМПІОНСЬКІ ШАРИ ═════════
- * СКІНИ (вибираються гравцем; data-bc-skin на .bc-head): цілісна композиція шапки, ЗАМІНЮЄ рамку й ефект шапки
- * (apply() ставить frame=default/fx=none, тож їхній CSS інертний). Шари скіна — ті самі .bc-fx-layer a|b|c.
+ * СКІНИ (вибираються гравцем; data-bc-skin на .bc-head): варіант групи «Рамка» — ЗАМІНЮЄ рамку шапки (apply() ставить
+ * frame=default, тож CSS рамок інертний); малюнок — ::before/::after хоста, тому ВНУТРІШНІ ЕФЕКТИ з скіном сумісні.
  * ЧЕМПІОНСЬКІ ШАРИ (НЕ вибираються, НЕ зберігаються; лише Профіль; data-bc-champ="supreme|dynasty" на .hero.champ +
  * .bc-champ-layer a|b|c; та сторінка-середовище data-bc-theme="champion_hall"). Золото = статусний колір, не палітра
  * гравця. Усе статичне, крім повільного обертання променів (вимикає reduced-motion). */
 
-/* ───────── СКІН titanium_wing — механічні крила від рамки аватара ───────── */
+/* ───────── СКІН titanium_wing — механічні крила від рамки аватара (малюнок — ::before/::after хоста; ефекти шапки сумісні) ───────── */
 .bc-head[data-bc-skin="titanium_wing"]{
   clip-path:polygon(0 18px,18px 0,calc(100% - 54px) 0,100% 42px,100% calc(100% - 16px),calc(100% - 16px) 100%,58px 100%,0 calc(100% - 45px));
   border:0;border-radius:0;
   background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 13%,transparent),transparent 48%),#14181d;
   box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--bc-a) 35%,transparent)}
-.bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.a{
-  inset:0 auto 0 0;width:55%;
+.bc-head[data-bc-skin="titanium_wing"]::before{
+  content:"";position:absolute;z-index:-1;inset:0 auto 0 0;width:55%;pointer-events:none;
   background:
     linear-gradient(155deg,transparent 0 20%,color-mix(in srgb,var(--bc-a) 18%,transparent) 20.5% 21.5%,transparent 22% 37%,color-mix(in srgb,var(--bc-a) 10%,transparent) 37.5% 38.5%,transparent 39%),
     linear-gradient(25deg,transparent 0 52%,color-mix(in srgb,var(--bc-a) 14%,transparent) 52.5% 54%,transparent 54.5%)}
-.bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.b{
-  inset:18% auto 18% calc(var(--bc-pad) + var(--bc-av) + 10px);width:min(34%,320px);
+.bc-head[data-bc-skin="titanium_wing"]::after{
+  content:"";position:absolute;z-index:-1;inset:18% auto 18% calc(var(--bc-pad) + var(--bc-av) + 10px);width:min(34%,320px);pointer-events:none;
   clip-path:polygon(0 35%,100% 0,76% 45%,100% 100%,0 65%);
   border-left:4px solid var(--bc-a);
   background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 15%,transparent),transparent)}
@@ -458,14 +406,12 @@ body:has(.bc-env){overflow-x:clip}
 /* ───────── СКІН signature_rift — центральний світловий розлом + підписна панель імені ───────── */
 .bc-head[data-bc-skin="signature_rift"]{
   border:1px solid color-mix(in srgb,var(--bc-a) 35%,transparent);border-radius:24px 7px 24px 7px;
-  background:#14181d;box-shadow:inset 0 0 35px rgba(0,0,0,.24)}
-.bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.a{
-  inset:0 auto 0 31%;width:34%;opacity:.68;
+  background:linear-gradient(105deg,color-mix(in srgb,var(--bc-a) 9%,transparent) 0 34%,transparent 34% 67%,color-mix(in srgb,var(--bc-a) 5%,transparent) 67%),#14181d;
+  box-shadow:inset 0 0 35px rgba(0,0,0,.24)}
+.bc-head[data-bc-skin="signature_rift"]::before{
+  content:"";position:absolute;z-index:-1;inset:0 auto 0 31%;width:34%;opacity:.68;pointer-events:none;
   clip-path:polygon(42% 0,58% 0,47% 29%,67% 31%,42% 60%,55% 63%,29% 100%,8% 100%,36% 65%,22% 61%,46% 35%,31% 30%);
-  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 25%,transparent),var(--bc-a),color-mix(in srgb,var(--bc-a) 18%,transparent));
-  filter:drop-shadow(0 0 15px color-mix(in srgb,var(--bc-a) 40%,transparent))}
-.bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.b{
-  background:linear-gradient(105deg,color-mix(in srgb,var(--bc-a) 9%,transparent) 0 34%,transparent 34% 67%,color-mix(in srgb,var(--bc-a) 5%,transparent) 67%)}
+  background:linear-gradient(90deg,color-mix(in srgb,var(--bc-a) 25%,transparent),var(--bc-a),color-mix(in srgb,var(--bc-a) 18%,transparent))}
 .bc-head[data-bc-skin="signature_rift"] .bc-av{
   border:4px solid color-mix(in srgb,var(--bc-a) 66%,#34383d);border-radius:24px 8px 24px 8px;background:#101318;
   box-shadow:10px 10px 0 color-mix(in srgb,var(--bc-a) 12%,#0d1014),0 0 28px color-mix(in srgb,var(--bc-a) 15%,transparent)}
@@ -518,9 +464,7 @@ body:has(.bc-env){overflow-x:clip}
     linear-gradient(90deg,rgba(var(--gold-rgb,217,180,91),.06),transparent 55%)}
 .hero[data-bc-champ="dynasty"] > .bc-champ-layer.c{
   inset:20% 8% 20% auto;width:44%;transform:skewX(-18deg);background:linear-gradient(90deg,rgba(var(--gold-rgb,217,180,91),.035),transparent)}
-/* кубок + кількість титулів і підпис виграних турнірів (DOM, не псевдоелементи) */
-.champ-trophy{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border:1px solid rgba(var(--gold-rgb,217,180,91),.4);border-radius:20px;
-  color:var(--gold,#d9b45b);font-family:var(--mono,inherit);font-size:11px;font-weight:700;letter-spacing:.08em;background:rgba(var(--gold-rgb,217,180,91),.07)}
+/* підпис виграних турнірів (DOM, не псевдоелементи) */
 .title-list{margin:10px 0 0;color:var(--text-dim,#767c82);font-family:var(--mono,inherit);font-size:11px;letter-spacing:.06em;text-transform:uppercase;line-height:1.5}
 .title-list b{color:var(--gold,#d9b45b);font-weight:700}
 @keyframes bc-champ-spin{to{transform:rotate(360deg)}}
@@ -552,15 +496,47 @@ body:has(.bc-env){overflow-x:clip}
   .hero[data-bc-champ] > .bc-champ-layer.a{width:380px;height:380px;margin-top:-190px;left:calc(var(--bc-pad) + var(--bc-av) / 2 - 190px)}
   .hero.champ[data-bc-champ]{border-radius:22px;border-width:2px}
   .hero.champ[data-bc-champ]::before{left:11px}.hero.champ[data-bc-champ]::after{right:11px}
-  .bc-head[data-bc-skin="titanium_wing"] > .bc-fx-layer.b{display:none}
-  .bc-head[data-bc-skin="signature_rift"] > .bc-fx-layer.a{inset:0 auto 0 40%;width:40%;opacity:.45}
+  .bc-head[data-bc-skin="titanium_wing"]::after{display:none}
+  .bc-head[data-bc-skin="signature_rift"]::before{inset:0 auto 0 40%;width:40%;opacity:.45}
   .bc-head[data-bc-skin="signature_rift"] .bc-av{box-shadow:6px 6px 0 color-mix(in srgb,var(--bc-a) 12%,#0d1014)}
   .bc-env[data-bc-theme="champion_hall"] > .bc-env-layer.b{border-radius:22px}
 }
 @media(prefers-reduced-motion:reduce){
   .hero > .bc-champ-layer{animation:none!important}
 }
-.bc-ed.bc-skin-on .bc-grp-fe{opacity:.5}
+
+/* ═════════ 493: dynasty ≠ supreme (очевидно) + чемпіонські елементи на вибір ═════════
+ * Атрибути hero: data-bc-champ=supreme|dynasty (шари променів — лише з елементом «rays»), data-bc-gold (золота рамка шапки увімкнена:
+ * dynasty = більша шапка, більший аватар 124px, товстіше кільце + золотий відблиск). Корона на шапці (.hero-seal) — коли рамка аватара
+ * не «чемпіонська» (власна форма/скін/стиль), бо clip-path аватара обрізав би корону всередині. */
+.hero[data-bc-champ="dynasty"][data-bc-gold]{min-height:212px}
+.hero[data-bc-champ="dynasty"][data-bc-gold] .frame{width:124px;height:124px}   /* форму (радіус) НЕ чіпаємо — її задає рамка; для класичної золотої нижче */
+.hero[data-bc-champ="dynasty"][data-bc-gold] .frame .av{font-size:42px}
+.hero.champ[data-bc-champ="dynasty"][data-bc-gold] .frame.champ{border-radius:36px;border-width:6px}
+.hero[data-bc-champ="dynasty"][data-bc-gold] .crown-seal{width:42px;height:42px;right:-12px;bottom:-10px}
+/* золотий відблиск (лише dynasty, шар d) */
+.hero[data-bc-champ="dynasty"] > .bc-champ-layer.d{
+  inset:0 auto 0 0;width:60%;transform:translateX(-110%);
+  background:linear-gradient(105deg,transparent 30%,rgba(255,232,150,.15) 47%,rgba(255,232,150,.06) 54%,transparent 70%);
+  animation:bc-champ-sheen 9s ease-in-out infinite}
+@keyframes bc-champ-sheen{0%,14%{transform:translateX(-110%)}62%,100%{transform:translateX(230%)}}
+/* корона окремо на шапці (позиція від аватара: відступ + розмір аватара) */
+.hero > .crown-seal.hero-seal{
+  position:absolute;z-index:7;right:auto;bottom:auto;
+  left:calc(var(--bc-pad,28px) + var(--bc-av,104px) - 25px);top:calc(50% + var(--bc-av,104px) / 2 - 26px)}
+.hero[data-bc-champ="dynasty"][data-bc-gold] > .crown-seal.hero-seal{
+  width:42px;height:42px;left:calc(var(--bc-pad,28px) + var(--bc-av,104px) - 33px);top:calc(50% + var(--bc-av,104px) / 2 - 34px)}
+/* редактор: пресети чемпіона */
+.bc-ed .bc-presets{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:8px}
+@media(max-width:680px){
+  .hero[data-bc-champ="dynasty"][data-bc-gold]{--bc-av:108px!important}
+  .hero[data-bc-champ="dynasty"][data-bc-gold] .frame{width:108px;height:108px}
+  .hero.champ[data-bc-champ="dynasty"][data-bc-gold] .frame.champ{border-radius:32px}
+  .hero[data-bc-champ="dynasty"][data-bc-gold] .frame .av{font-size:38px}
+}
+@media(prefers-reduced-motion:reduce){
+  .hero[data-bc-champ="dynasty"] > .bc-champ-layer.d{animation:none!important}
+}
 
 
 }

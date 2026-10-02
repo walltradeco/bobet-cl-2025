@@ -12,6 +12,9 @@
  *    фоном сторінки через Full Sync) + серверні чемпіонські шари: applyChamp() (supreme+victory_radiance / dynasty на шапці)
  *    і applyChampEnv() (champion_hall на сторінці). Чемпіонські шари НЕ вибираються, НЕ зберігаються й НЕ входять у
  *    whitelist (sanitize їх відкине) — сторінка виводить їх із profile_overview.title_count/is_champion/show_champion.
+ *  • 493 (02.10): чемпіон обирає КОЖЕН чемпіонський елемент окремо (badge, caption, crown, frame, rays, hall) — cfg.parts,
+ *    зберігається в profile_cosmetics.champ_parts. Вимкнений елемент → власний стиль у власному кольорі; увімкнені
+ *    «золоті» елементи можуть поєднуватись з власною формою рамки/скіном, ефектом і темою у золотому виконанні.
  *  • ФАЗА 2: тема сторінки (studio_frame/collector_vault + преміум aegis_citadel/prism_forge/stadium_cathedral) і
  *    Full Sync — applyEnv() обчислює фон сторінки з кольору + рамки + ефекту + теми; НІЧОГО окремо не зберігається.
  *  • Відсутня таблиця (SQL ще не залитий) або мережева помилка → дефолтний вигляд, без помилок для людини.
@@ -26,29 +29,27 @@
     ['fortress','Fortress','Товста матова броня'],
     ['split_rail','Split Rail','Асиметричні рейки'],
     ['obsidian_cut','Obsidian Cut','Гранована форма'],
-    ['glass_tunnel','Glass Tunnel','Прозора глибина'],
     ['pulse_core','Pulse Core','Енергетичне ядро']
   ];
   const EFFECTS=[
     ['none','Без ефекту','Чистий фон'],
     ['aurora_mist','Aurora Mist','М’які кольорові хмари'],
-    ['velocity','Velocity','Швидкі лінії'],
     ['topography','Topography','Контурна карта'],
     ['particle_drift','Particle Drift','Світлові частинки'],
-    ['scan_pulse','Scan Pulse','Сітка й сканування'],
     ['crystal_shards','Crystal Shards','Кристалічні грані']
   ];
-  // Преміум-скіни шапки (фаза 3). Скін = ЦІЛІСНА композиція шапки → замінює рамку й ефект шапки (рішення за референсом).
+  // Преміум-скіни шапки (фаза 3). У редакторі це ВАРІАНТИ групи «Рамка» (скін замінює рамку; ефект сумісний зі скіном). У БД — skin_id.
   const SKINS=[
     ['default','Без скіна','Рамка й ефект на вибір'],
     ['titanium_wing','Titanium Wing','Преміум · механічні крила'],
     ['signature_rift','Signature Rift','Преміум · світловий розлом і підпис']
   ];
   const PREMIUM=['aegis_citadel','prism_forge','stadium_cathedral'];   // преміум-середовища сторінки
-  // Теми сторінки (фаза 2). Перші три — базові, останні три — преміум-середовища (відкриті всім, рішення 01.10).
+  // Теми сторінки (фаза 2). collector_vault — базова, решта — преміум-середовища (відкриті всім, рішення 01.10).
+  // ⚠️ 02.10 (рішення Богдана): з UI прибрано glass_tunnel, velocity, scan_pulse, studio_frame (дублі/мало виразні). SQL-whitelist
+  // навмисно ЛИШИВСЯ ширшим (не перезаливаємо 492): прибраний ID у старому рядку БД → sanitize() → дефолт.
   const THEMES=[
     ['default','Стандартна','Без оформлення сторінки'],
-    ['studio_frame','Studio Frame','Спокійний великий контейнер'],
     ['collector_vault','Collector Vault','Колекційна вітрина'],
     ['aegis_citadel','Aegis Citadel','Преміум · броня навколо сторінки'],
     ['prism_forge','Prism Forge','Преміум · заломлені площини'],
@@ -56,17 +57,31 @@
   ];
   const ok=(list,id)=>list.some(x=>(Array.isArray(x)?x[0]:x)===id);
 
-  const none=()=>({frame:'default',effect:'none',skin:'default',theme:'default'});
+  // Чемпіонські елементи на вибір (493). Дзеркало SQL _champ_parts_all(); PARTS_ALL — алфавітно (як дефолт і результат RPC).
+  const CHAMP_PARTS=[
+    ['badge','Бейдж','Мітка BOBET CHAMPION біля імені'],
+    ['caption','Підпис','«Переможець N турнірів · …» у шапці'],
+    ['crown','Корона','Корона біля аватара'],
+    ['frame','Золота рамка','Золото на рамці шапки'],
+    ['rays','Золоті промені','Промені з аватара'],
+    ['hall','Зал чемпіона','Золоте середовище сторінки']
+  ];
+  const PARTS_ALL=['badge','caption','crown','frame','hall','rays'];
+  const CHAMP_GOLD='#d9b45b';   // статусне золото (не палітра гравця)
+
+  const none=()=>({frame:'default',effect:'none',skin:'default',theme:'default',parts:PARTS_ALL.slice()});
   function sanitize(c){
     c=c||{}; const d=none();
     return {
       frame: ok(FRAMES,c.frame)?c.frame:d.frame,
       effect:ok(EFFECTS,c.effect)?c.effect:d.effect,
       skin:  ok(SKINS,c.skin)?c.skin:d.skin,
-      theme: ok(THEMES,c.theme)?c.theme:d.theme
+      theme: ok(THEMES,c.theme)?c.theme:d.theme,
+      // масив → лише відомі елементи, без дублів, алфавітно; немає масиву (старий рядок/нема колонки) → усі
+      parts: Array.isArray(c.parts)?PARTS_ALL.filter(x=>c.parts.indexOf(x)>=0):PARTS_ALL.slice()
     };
   }
-  const same=(a,b)=>a.frame===b.frame&&a.effect===b.effect&&a.skin===b.skin&&a.theme===b.theme;
+  const same=(a,b)=>a.frame===b.frame&&a.effect===b.effect&&a.skin===b.skin&&a.theme===b.theme&&a.parts.join()===b.parts.join();
 
   // ── колір: нормалізація під темний фон ──
   const FALLBACK='#7e9dbb';
@@ -120,13 +135,13 @@
     }
     const a=accent(opts.accent);
     host.classList.add('bc-head'); if(av) av.classList.add('bc-av');
-    // скін замінює рамку й ефект шапки: їхні CSS стають інертними (frame=default, fx=none), малює лише [data-bc-skin]
-    host.setAttribute('data-bc-frame',skin?'default':cfg.frame); host.setAttribute('data-bc-fx',skin?'none':cfg.effect);
+    // скін = варіант «Рамки»: CSS рамок інертний (frame=default), малює [data-bc-skin] (::before/::after хоста); ефект ЗАЛИШАЄТЬСЯ
+    host.setAttribute('data-bc-frame',skin?'default':cfg.frame); host.setAttribute('data-bc-fx',cfg.effect);
     if(skin) host.setAttribute('data-bc-skin',cfg.skin); else host.removeAttribute('data-bc-skin');
     host.style.setProperty('--bc-a',a.hex); host.style.setProperty('--bc-a-rgb',a.rgb);
     if(opts.size) host.style.setProperty('--bc-av',opts.size+'px');
     if(opts.pad)  host.style.setProperty('--bc-pad',opts.pad+'px');
-    if(cfg.effect!=='none'||skin){
+    if(cfg.effect!=='none'){
       ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-fx-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
     }
   }
@@ -135,16 +150,23 @@
   // tier: 'supreme' (перший титул + victory_radiance) | 'dynasty' (2+ титули) | null (зняти). НЕ вибирається гравцем і НЕ
   // зберігається — сторінка передає tier, виведений із серверних даних. host — .hero; opts.size/pad — геометрія аватара.
   const champTier=n=>(n>=2?'dynasty':'supreme');
+  // opts: size/pad — геометрія аватара; rays (за замовч. true) — шари променів/відблиску; gold (за замовч. true) — золота рамка шапки
+  // (rule `data-bc-gold`: розмір/потрійне кільце dynasty лише з золотою рамкою).
   function applyChamp(host,tier,opts){
     if(!host) return;
     opts=opts||{};
     host.querySelectorAll(':scope > .bc-champ-layer').forEach(n=>n.remove());
     if(tier!=='supreme'&&tier!=='dynasty'){
-      host.removeAttribute('data-bc-champ'); host.style.removeProperty('--bc-pad'); host.style.removeProperty('--bc-av'); return;
+      ['data-bc-champ','data-bc-gold'].forEach(a=>host.removeAttribute(a));
+      host.style.removeProperty('--bc-pad'); host.style.removeProperty('--bc-av'); return;
     }
     host.setAttribute('data-bc-champ',tier);
-    host.style.setProperty('--bc-av',(opts.size||104)+'px'); host.style.setProperty('--bc-pad',(opts.pad||28)+'px');
-    ['c','b','a'].forEach(k=>{ const s=document.createElement('span'); s.className='bc-champ-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
+    if(opts.gold!==false) host.setAttribute('data-bc-gold','1'); else host.removeAttribute('data-bc-gold');
+    const big=(tier==='dynasty'&&opts.gold!==false);
+    host.style.setProperty('--bc-av',(opts.size||(big?124:104))+'px'); host.style.setProperty('--bc-pad',(opts.pad||28)+'px');
+    if(opts.rays===false) return;
+    // dynasty має додатковий шар «d» — повільний золотий відблиск по шапці (видима відмінність від supreme)
+    (tier==='dynasty'?['d','c','b','a']:['c','b','a']).forEach(k=>{ const s=document.createElement('span'); s.className='bc-champ-layer '+k; s.setAttribute('aria-hidden','true'); host.insertBefore(s,host.firstChild); });
   }
 
   // ── ФАЗА 2: оточення сторінки (тема + Full Sync) ──
@@ -182,7 +204,8 @@
     opts=opts||{};
     const content=opts.content?host.querySelector(opts.content):null;
     clearEnv(host,content);
-    mountEnv(host,'champion_hall','default','none',accent('#d9b45b'),content,opts.out);
+    // ефект чемпіона (за вибором) лягає на золотий зал як Effect Spill у золотому кольорі
+    mountEnv(host,'champion_hall','default',ok(EFFECTS,opts.effect)?opts.effect:'none',accent(CHAMP_GOLD),content,opts.out);
   }
 
   // ── дані ──
@@ -190,42 +213,65 @@
   async function load(sb,kind,id){
     const t=T[kind]; if(!t||!id) return none();
     try{
-      const r=await sb.from(t[0]).select('frame_id,effect_id,skin_id,page_theme_id').eq(t[1],id).maybeSingle();
+      const base='frame_id,effect_id,skin_id,page_theme_id';
+      let r=await sb.from(t[0]).select(kind==='profile'?base+',champ_parts':base).eq(t[1],id).maybeSingle();
+      // SQL 493 (колонка champ_parts) може бути залитий пізніше за сайт → перечитуємо без неї, елементи = усі
+      if(r.error && kind==='profile') r=await sb.from(t[0]).select(base).eq(t[1],id).maybeSingle();
       if(r.error||!r.data) return none();
-      return sanitize({frame:r.data.frame_id,effect:r.data.effect_id,skin:r.data.skin_id,theme:r.data.page_theme_id});
+      return sanitize({frame:r.data.frame_id,effect:r.data.effect_id,skin:r.data.skin_id,theme:r.data.page_theme_id,parts:r.data.champ_parts});
     }catch(e){ return none(); }
   }
   async function save(sb,kind,id,cfg){
     cfg=sanitize(cfg);
     const a={p_frame:cfg.frame,p_effect:cfg.effect,p_skin:cfg.skin,p_theme:cfg.theme};
     try{
-      return kind==='community'
-        ? await sb.rpc('set_community_cosmetics',Object.assign({p_community:id},a))
-        : await sb.rpc('set_profile_cosmetics',a);
+      if(kind==='community') return await sb.rpc('set_community_cosmetics',Object.assign({p_community:id},a));
+      let r=await sb.rpc('set_profile_cosmetics',Object.assign({p_champ_parts:cfg.parts},a));
+      // SQL 493 ще не залитий (сайт випередив): функції з таким підписом нема → зберігаємо оформлення без чемпіонських елементів
+      if(r&&r.error&&/PGRST202|Could not find the function/i.test((r.error.code||'')+' '+(r.error.message||''))) r=await sb.rpc('set_profile_cosmetics',a);
+      return r;
     }catch(e){ return {error:{message:(e&&e.message)||'Не вдалось зберегти оформлення'}}; }
   }
 
   // ── редактор «Оформлення шапки» ──
   const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const group=(title,kind,list,cur)=>`<div class="bc-ed-h">${title}</div><div class="bc-opts" role="group" aria-label="${title}">`+
-    list.map(([id,name,sub])=>`<button type="button" class="bc-opt" data-bc-kind="${kind}" data-bc-id="${id}" aria-pressed="${cur===id}"><b>${esc(name)}</b><small>${esc(sub)}</small></button>`).join('')+`</div>`;
+  // items: [kind,id,name,sub,pressed]
+  const groupItems=(title,items)=>`<div class="bc-ed-h">${title}</div><div class="bc-opts" role="group" aria-label="${title}">`+
+    items.map(([kind,id,name,sub,on])=>`<button type="button" class="bc-opt" data-bc-kind="${kind}" data-bc-id="${id}" aria-pressed="${!!on}"><b>${esc(name)}</b><small>${esc(sub)}</small></button>`).join('')+`</div>`;
+  const group=(title,kind,list,cur)=>groupItems(title,list.map(([id,name,sub])=>[kind,id,name,sub,cur===id]));
+  // «Рамка» = класичні рамки + преміум-скіни (одна група, один вибір): обрав скін → рамка скидається, і навпаки
+  const frameItems=(c,F)=>F.map(([id,name,sub])=>['frame',id,name,sub,c.skin==='default'&&c.frame===id])
+    .concat(SKINS.filter(x=>x[0]!=='default').map(([id,name,sub])=>['skin',id,name,sub,c.skin===id]));
+  const isOn=(c,kind,id)=>kind==='frame'?(c.skin==='default'&&c.frame===id)
+    :kind==='part'?c.parts.indexOf(id)>=0
+    :kind==='preset'?(id==='badge'?(c.parts.length===1&&c.parts[0]==='badge'):c.parts.join()===PARTS_ALL.join())
+    :c[kind]===id;
+  // чемпіон: список елементів + пресети («Нічого» = головний перемикач «Відзнаки чемпіона» на сторінці)
+  const partsBlock=c=>`<div class="bc-ed-h">Чемпіонські елементи</div>
+      <div class="bc-opts bc-presets" role="group" aria-label="Пресети">
+        <button type="button" class="bc-opt" data-bc-kind="preset" data-bc-id="all" aria-pressed="${isOn(c,'preset','all')}"><b>Усе</b><small>Повний чемпіонський набір</small></button>
+        <button type="button" class="bc-opt" data-bc-kind="preset" data-bc-id="badge" aria-pressed="${isOn(c,'preset','badge')}"><b>Лише бейдж</b><small>Решта — твій стиль</small></button>
+      </div>
+      <div class="bc-opts" role="group" aria-label="Чемпіонські елементи">`+
+      CHAMP_PARTS.map(([id,name,sub])=>`<button type="button" class="bc-opt" data-bc-kind="part" data-bc-id="${id}" aria-pressed="${isOn(c,'part',id)}"><b>${esc(name)}</b><small>${esc(sub)}</small></button>`).join('')+`</div>
+      <div class="bc-note">Вимкнений елемент замінюється твоїм стилем у твоєму кольорі. Увімкнену золоту рамку, ефект і тему можна поєднувати з власною формою. Усе чемпіонське разом вимикає перемикач «Відзнаки чемпіона» нижче.</div>`;
 
   // o: { cfg, name, sub, initials, note } → HTML. Живе превʼю = та сама CSS-система, що й справжня шапка.
   function editorHtml(o){
     const c=sanitize(o.cfg);
+    // o.champ: чемпіон (відзнаки ввімкнені) — вибір працює у ЗОЛОТОМУ виконанні; дефолти = чемпіонська рамка й «Зал чемпіона»
+    const F=o.champ?[['default','Чемпіонська','Золота рамка за титулами']].concat(FRAMES.slice(1)):FRAMES;
+    const T=o.champ?[['default','Зал чемпіона','Золотий зал сторінки']].concat(THEMES.slice(1)):THEMES;
     return `<div class="bc-ed" id="bc-ed">
       <div class="bc-ed-h">Оформлення шапки</div>
       <div class="bc-prev" id="bc-prev"><span class="bc-pav" id="bc-prev-av">${esc(o.initials||'?')}</span>
         <div class="bc-pt"><b>${esc(o.name||'')}</b><span>${esc(o.sub||'Так виглядатиме шапка')}</span></div></div>
       <div class="bc-note" id="bc-adj" hidden>Колір трохи підсвітлено для читабельності на темному фоні — збережений колір не змінюється.</div>
       ${o.note?`<div class="bc-note">${esc(o.note)}</div>`:''}
-      <div class="bc-grp-fe">
-        ${group('Рамка','frame',FRAMES,c.frame)}
-        ${group('Внутрішній ефект','effect',EFFECTS,c.effect)}
-      </div>
-      ${group('Преміум-скін шапки','skin',SKINS,c.skin)}
-      <div class="bc-note" id="bc-skin-note" hidden>Скін замінює рамку й ефект шапки. Вони й далі керують фоном сторінки (Full Sync).</div>
-      ${group('Тема сторінки','theme',THEMES,c.theme)}
+      ${o.champ?partsBlock(c):''}
+      ${groupItems('Рамка',frameItems(c,F))}
+      ${group('Внутрішній ефект','effect',EFFECTS,c.effect)}
+      ${group('Тема сторінки','theme',T,c.theme)}
       <div class="bc-tprev" id="bc-tprev" aria-hidden="true">
         <div class="bc-tp-hero"><span class="bc-tp-av"></span><span class="bc-tp-l"><i></i><i></i></span></div>
         <div class="bc-tp-tabs"><u></u><u></u><u></u><u></u></div>
@@ -235,32 +281,47 @@
     </div>`;
   }
 
-  // o: { cfg, getAccent:()=>'#rrggbb', colorInput?:HTMLInputElement, size, pad } → { get() }
+  // o: { cfg, getAccent:()=>'#rrggbb', colorInput?:HTMLInputElement, size, pad, champ?:bool, masterOn?:()=>bool } → { get() }
   function wireEditor(root,o){
     const st={cfg:sanitize(o.cfg)};
     const prev=root.querySelector('#bc-prev'), adj=root.querySelector('#bc-adj'), tprev=root.querySelector('#bc-tprev');
+    const master=()=>typeof o.masterOn==='function'?!!o.masterOn():true;
+    const has=k=>st.cfg.parts.indexOf(k)>=0;
     const paint=()=>{
-      const a=accent(o.getAccent());
-      apply(prev,st.cfg,{avatar:'.bc-pav',identity:'.bc-pt',accent:o.getAccent(),size:o.size||64,pad:o.pad||22});
-      const skinOn=st.cfg.skin!=='default';
-      root.classList.toggle('bc-skin-on',skinOn);
-      const sn=root.querySelector('#bc-skin-note'); if(sn) sn.hidden=!skinOn;
+      // чемпіон із золотою рамкою (і ввімкненими відзнаками) бачить превʼю у ЗОЛОТІ; інакше — у власному кольорі
+      const hdrCol=(o.champ&&master()&&has('frame'))?CHAMP_GOLD:o.getAccent();
+      const hallOn=!!(o.champ&&master()&&has('hall'));
+      const a=accent(hdrCol);
+      apply(prev,st.cfg,{avatar:'.bc-pav',identity:'.bc-pt',accent:hdrCol,size:o.size||64,pad:o.pad||22});
       if(tprev){
-        apply(tprev.querySelector('.bc-tp-hero'),st.cfg,{avatar:'.bc-tp-av',identity:'.bc-tp-l',accent:o.getAccent(),size:34,pad:14});
-        applyEnv(tprev,st.cfg,{accent:o.getAccent(),content:'.bc-tp-grid',out:8});
+        apply(tprev.querySelector('.bc-tp-hero'),st.cfg,{avatar:'.bc-tp-av',identity:'.bc-tp-l',accent:hdrCol,size:34,pad:14});
+        if(hallOn&&st.cfg.theme==='default') applyChampEnv(tprev,{content:'.bc-tp-grid',effect:st.cfg.effect,out:8});
+        else applyEnv(tprev,st.cfg,{accent:hallOn?CHAMP_GOLD:o.getAccent(),content:'.bc-tp-grid',out:8});
       }
       // превʼю завжди показує ВИБРАНЕ (навіть дефолт): акцент для UI-стану кнопок
       root.style.setProperty('--bc-ui',a.hex);
-      if(adj) adj.hidden=!a.changed;
-      root.querySelectorAll('.bc-opt').forEach(b=>b.setAttribute('aria-pressed',String(st.cfg[b.dataset.bcKind]===b.dataset.bcId)));
+      if(adj) adj.hidden=!accent(o.getAccent()).changed;
+      root.querySelectorAll('.bc-opt').forEach(b=>b.setAttribute('aria-pressed',String(isOn(st.cfg,b.dataset.bcKind,b.dataset.bcId))));
+      if(o.champ){   // підписи дефолтних кнопок залежать від того, чи ввімкнено золоту рамку / зал
+        const fb=root.querySelector('.bc-opt[data-bc-kind="frame"][data-bc-id="default"]');
+        if(fb) fb.innerHTML=has('frame')?'<b>Чемпіонська</b><small>Золота рамка за титулами</small>':'<b>Стандартна</b><small>Без рамки</small>';
+        const tb=root.querySelector('.bc-opt[data-bc-kind="theme"][data-bc-id="default"]');
+        if(tb) tb.innerHTML=has('hall')?'<b>Зал чемпіона</b><small>Золотий зал сторінки</small>':'<b>Стандартна</b><small>Без оформлення сторінки</small>';
+      }
     };
     root.querySelectorAll('.bc-opt').forEach(b=>b.addEventListener('click',()=>{
-      st.cfg=sanitize(Object.assign({},st.cfg,{[b.dataset.bcKind]:b.dataset.bcId})); paint();
+      const k=b.dataset.bcKind, id=b.dataset.bcId, nx=Object.assign({},st.cfg);
+      if(k==='skin'){ nx.skin=id; nx.frame='default'; }           // скін = варіант «Рамки»: заміщує рамку
+      else if(k==='frame'){ nx.frame=id; nx.skin='default'; }     // класична рамка (або «Стандартна») знімає скін
+      else if(k==='part'){ const set=new Set(nx.parts); if(set.has(id)) set.delete(id); else set.add(id); nx.parts=Array.from(set); }
+      else if(k==='preset'){ nx.parts=(id==='badge')?['badge']:PARTS_ALL.slice(); }
+      else nx[k]=id;
+      st.cfg=sanitize(nx); paint();
     }));
     if(o.colorInput) o.colorInput.addEventListener('input',paint);
     paint();
     return { get:()=>sanitize(st.cfg) };
   }
 
-  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,none,sanitize,same,accent,apply,applyChamp,champTier,applyEnv,applyChampEnv,load,save,editorHtml,wireEditor };
+  global.BoCosmetics={ FRAMES,EFFECTS,SKINS,THEMES,CHAMP_PARTS,PARTS_ALL,CHAMP_GOLD,none,sanitize,same,accent,apply,applyChamp,champTier,applyEnv,applyChampEnv,load,save,editorHtml,wireEditor };
 })(window);
