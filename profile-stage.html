@@ -452,6 +452,8 @@ const HIDE_CARDS=true;
 const HIDE_TEST_TOURS=false;
 // 492: кастомізація шапки (assets/cosmetics-stage.*). Немає файла/SQL → BC=null і профіль виглядає як раніше.
 const BC=window.BoCosmetics||null;
+// 492: виклик косметики НІКОЛИ не ламає сторінку: старий/недозалитий assets/cosmetics-*.js (кеш, гонка деплоїв Pages) → метод відсутній → тихо пропускаємо
+const bcSafe=(fn,...a)=>{ try{ if(BC && typeof BC[fn]==='function') return BC[fn](...a); }catch(e){ console.warn('cosmetics:',fn,e); } return undefined; };
 const TEST_PSL_SEASONS=['Season 4','Season 5'];
 const isTestTour=x=>x.league==='Squad'||(x.league==='PSL'&&TEST_PSL_SEASONS.includes(x.tournament_name));
 // суцільна корона для бейджів чемпіона (контурна ic('crown') на 11-16px зливалась у пляму)
@@ -625,7 +627,7 @@ function renderHead(){
   // Не вибираються й не зберігаються; показуються, лише коли показуються чемпіонські відзнаки (champ) — вимкнув перемикач → видно своє.
   const bobetChamp = !!(BC && champ && (!ov.champion_league || ov.champion_league==='bobet'));
   const nTitles = Math.max(1, ov.title_count||0);
-  const tier = bobetChamp ? BC.champTier(nTitles) : null;
+  const tier = bobetChamp ? (bcSafe('champTier',nTitles)||null) : null;
   const heroStyle = (col && !framed) ? ` style="background:linear-gradient(115deg,${col}59,${col}2e 55%,${col}17)"` : '';
 
   // чемпіонський бейдж + титули
@@ -660,13 +662,13 @@ function renderHead(){
   $('phead').innerHTML=`<section class="hero${champ?' champ':''}"${heroStyle}>${frame}
     <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}${titleLine}</div>
     ${actions}</section>`;
-  if(cz) BC.apply($('phead').querySelector('.hero'),cz,{avatar:'.frame',identity:'.identity',accent:col||'#7e9dbb'});
+  if(cz) bcSafe('apply',$('phead').querySelector('.hero'),cz,{avatar:'.frame',identity:'.identity',accent:col||'#7e9dbb'});
   if(BC){
     // 492 фаза 3: чемпіонські шари шапки (supreme+victory_radiance / dynasty) — з серверних даних
-    BC.applyChamp($('phead').querySelector('.hero'),tier,{size:104,pad:28});
+    bcSafe('applyChamp',$('phead').querySelector('.hero'),tier,{size:104,pad:28});
     // 492 фаза 2/3: сторінка — champion_hall для чемпіона (золото), інакше тема + Full Sync (колір+рамка+ефект+тема)
-    if(tier) BC.applyChampEnv($('screen-profile'),{content:'#ptab'});
-    else BC.applyEnv($('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
+    if(tier) bcSafe('applyChampEnv',$('screen-profile'),{content:'#ptab'});
+    else bcSafe('applyEnv',$('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
   }
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }

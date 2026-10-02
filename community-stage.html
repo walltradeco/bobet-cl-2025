@@ -371,6 +371,8 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
 const $=id=>document.getElementById(id);
 // 492: кастомізація шапки (assets/cosmetics-stage.*). Немає файла/SQL → BC=null, шапка як раніше.
 const BC=window.BoCosmetics||null;
+// 492: виклик косметики НІКОЛИ не ламає сторінку (старий/недозалитий assets/cosmetics-*.js → метод відсутній → тихо пропускаємо)
+const bcSafe=(fn,...a)=>{ try{ if(BC && typeof BC[fn]==='function') return BC[fn](...a); }catch(e){ console.warn('cosmetics:',fn,e); } return undefined; };
 const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const KIND={club:'🏟️ Клуб',bar:'🍻 Бар'};
 const KINDEM={club:'🏟️',bar:'🍻'};
@@ -617,9 +619,9 @@ function renderCommunity(){
       <div class="acts">${stateBtn}${manageBtn}</div>
     </div>
   </div>`;
-  if(cz) BC.apply($('chead').firstElementChild,cz,{avatar:'.crest',identity:'.htext',accent:col,size:92,pad:30});
+  if(cz) bcSafe('apply',$('chead').firstElementChild,cz,{avatar:'.crest',identity:'.htext',accent:col,size:92,pad:30});
   // 492 фаза 2: тема сторінки + Full Sync
-  if(BC) BC.applyEnv($('cenv'),cz||BC.none(),{accent:col,content:'#ctab'});
+  if(BC) bcSafe('applyEnv',$('cenv'),cz||BC.none(),{accent:col,content:'#ctab'});
   const lg=$('c-login'); if(lg) lg.onclick=showLogin;
   const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
   const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
