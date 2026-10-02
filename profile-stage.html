@@ -649,6 +649,8 @@ function renderHead(){
     <div class="identity">${eyebrow}<h2>${esc(name)}</h2>${bio?`<div class="who-sub">${esc(bio)}</div>`:''}${stat}</div>
     ${actions}</section>`;
   if(cz) BC.apply($('phead').querySelector('.hero'),cz,{avatar:'.frame',accent:col||'#7e9dbb'});
+  // 492 фаза 2: тема сторінки + Full Sync (фон обчислюється з кольору+рамки+ефекту+теми; чемпіон → cz=null → сторінка без змін)
+  if(BC) BC.applyEnv($('screen-profile'),cz||BC.none(),{accent:col||'#7e9dbb',content:'#ptab'});
   if(S.isOwn){ const e=$('a-edit'); if(e) e.onclick=openEdit; }
 }
 
@@ -1185,7 +1187,7 @@ function openEdit(){
     }
     const { error:e2 }=await sb.rpc('set_profile_avatar',{ p_emoji:null, p_color:$('av-col').value });
     if(e2){ m.className='msg err'; m.textContent=e2.message||'Не вдалось зберегти колір'; return; }
-    if(bcEd && !BC.same(bcEd.get(),S.cos||BC.none())){   // 492: рамка/ефект (лише якщо змінились)
+    if(bcEd && !BC.same(bcEd.get(),S.cos||BC.none())){   // 492: рамка/ефект/тема (лише якщо змінились)
       const { error:e4 }=await BC.save(sb,'profile',S.me,bcEd.get());
       if(e4){ m.className='msg err'; m.textContent=e4.message||'Не вдалось зберегти оформлення'; return; }
     }

@@ -335,9 +335,11 @@ body:has(#screen-login:not(.hide)){
   <!-- СТОРІНКА СПІЛЬНОТИ -->
   <div id="screen-community" class="hide">
     <button class="ghost sm" id="btn-back-list">← до Огляду</button>
-    <div id="chead"></div>
-    <div id="ctabs" class="tabs"></div>
-    <div id="ctab" class="tabpane"></div>
+    <div id="cenv">   <!-- 492 фаза 2: хост оточення сторінки (тема + Full Sync); топбар і «← до Огляду» поза ним -->
+      <div id="chead"></div>
+      <div id="ctabs" class="tabs"></div>
+      <div id="ctab" class="tabpane"></div>
+    </div>
   </div>
 
   <!-- ЕКРАН ВХОДУ -->
@@ -616,6 +618,8 @@ function renderCommunity(){
     </div>
   </div>`;
   if(cz) BC.apply($('chead').firstElementChild,cz,{avatar:'.crest',accent:col,size:92,pad:30});
+  // 492 фаза 2: тема сторінки + Full Sync
+  if(BC) BC.applyEnv($('cenv'),cz||BC.none(),{accent:col,content:'#ctab'});
   const lg=$('c-login'); if(lg) lg.onclick=showLogin;
   const jn=$('c-join');  if(jn) jn.onclick=()=>joinCommunity(c.id);
   const lv=$('c-leave'); if(lv) lv.onclick=()=>leaveCommunity(c.id);
@@ -1003,7 +1007,7 @@ function openEdit(){
     const v=formVals(); delete v.p_kind;
     const { error }=await sb.rpc('community_update',{ p_community:S.cur.id, ...v });
     if(error){ $('cf-msg').className='msg err'; $('cf-msg').textContent=error.message; return; }
-    if(bcEd && !BC.same(bcEd.get(),S.cur.cos||BC.none())){   // 492: рамка/ефект (лише якщо змінились)
+    if(bcEd && !BC.same(bcEd.get(),S.cur.cos||BC.none())){   // 492: рамка/ефект/тема (лише якщо змінились)
       const { error:e2 }=await BC.save(sb,'community',S.cur.id,bcEd.get());
       if(e2){ $('cf-msg').className='msg err'; $('cf-msg').textContent=e2.message||'Не вдалось зберегти оформлення'; return; }
     }
