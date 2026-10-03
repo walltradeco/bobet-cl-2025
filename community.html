@@ -56,6 +56,8 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:8p
 button.ghost{background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px}
 button.act{background:rgba(120,152,184,.14);color:var(--blue);border:1px solid var(--blue-d);border-radius:8px;padding:8px 14px;font-weight:600;font-size:13px}
 button.act.warn{background:transparent;color:var(--red);border-color:var(--red)}
+a.ghost{display:inline-flex;align-items:center;gap:7px;background:transparent;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:7px 14px;font-size:13px;text-decoration:none}
+a.ghost:hover{border-color:var(--blue);text-decoration:none}
 button.sm{padding:5px 10px;font-size:12px}
 button:disabled{opacity:.45;cursor:not-allowed}
 
@@ -311,6 +313,7 @@ body:has(#screen-login:not(.hide)){
     <div class="right">
       
       <span id="who" class="who hide"></span>
+      <a id="btn-profile" class="ghost hide" href="profile.html"><svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>Профіль</a>
       <button id="btn-login" class="ghost">Увійти</button>
       <button id="btn-logout" class="ghost hide">Вийти</button>
     </div>
@@ -425,7 +428,7 @@ async function boot(){
       if(data){ S.name=data.display_name; S.isAdmin=!!data.is_platform_admin; }
     }catch(e){}
     $('who').classList.remove('hide'); $('who').innerHTML=`<b>${esc(S.name||'ти')}</b>${S.isAdmin?' <span class="abadge">адмін</span>':''}`;
-    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide');
+    $('btn-login').classList.add('hide'); $('btn-logout').classList.remove('hide'); $('btn-profile').classList.remove('hide');
   }
   await loadList();
   if(S.me){ await loadMineAndPending(); }
