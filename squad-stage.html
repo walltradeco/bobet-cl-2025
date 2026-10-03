@@ -235,7 +235,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .sqfull .reflect{position:absolute;left:50%;transform:translateX(-50%) scaleY(-1);z-index:1;pointer-events:none;opacity:.26;filter:blur(1.1px);
   -webkit-mask-image:linear-gradient(to top,#000,transparent 60%);mask-image:linear-gradient(to top,#000,transparent 60%)}
 .sqfull .reflect img,.sqfull .reflect .sqcard{display:block}
-.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.sqfull .podium-card{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
   animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
@@ -386,7 +386,8 @@ const CLUB={
  'Chelsea':'#034694','Dortmund':'#b8a300','Dynamo Kyiv':'#0d47a1','Inter':'#0068a8',
  'Juventus':'#4a4a4a','Leverkusen':'#e32219','Liverpool':'#c8102e','Man City':'#6cabdd',
  'Man Utd':'#da291c','Milan':'#fb090b','Napoli':'#12a0d7','PSG':'#1b3b6f',
- 'Real Madrid':'#3f6fbf','Roma':'#8e1f2f','Shakhtar':'#f37021'};
+ 'Real Madrid':'#3f6fbf','Roma':'#8e1f2f','Shakhtar':'#f37021',
+ 'Brentford':'#e30613','Everton':'#274488','Tottenham':'#3a4f94','Betis':'#0bb363','Athletic':'#ee2523','Polissya':'#2e9b4f'};
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
@@ -466,7 +467,7 @@ function squadCardHTML(p, tier, card){
 const SCENE_FILE={silver:'steel',gold:'gold',emerald:'emerald',rare:'rare',mega_rare:'mega_rare'};
 function fitPodium(stage){
   if(!stage) return;
-  const h=stage.clientHeight, target=h*0.62, isBase=stage.dataset.base==='true';
+  const h=stage.clientHeight, target=Math.min(h*0.68, stage.clientWidth*1.4), isBase=stage.dataset.base==='true';
   const pc=stage.querySelector('.podium-card'), card=pc&&pc.querySelector(isBase?'.sqcard':'img.rarepng');
   if(!card) return;
   if(isBase){ card.style.transformOrigin='bottom center'; card.style.transform='scale('+(target/450)+')'; }
@@ -479,22 +480,42 @@ function fitPodium(stage){
     rf.style.top=(cr.bottom-sr.top-2)+'px';
   }
 }
+// ── Вітрина: швидке відкриття (02.10), БЕЗ втрати якості ──
+// А) прогресивний показ: миттєво мініатюра _sm.webp (малий файл), далі підміна на ПОВНИЙ арт, щойно він завантажений і декодований.
+// Б) прогрів: сцена (+ повний арт) вантажаться, поки користувач лише наводить/торкається «Показати картку».
+const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
+const _warmRefs=[], _warmSet=new Set();
+function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=new Image(); im.decoding='async'; im.src=u; _warmRefs.push(im); }
+function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
+function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmUrl(png); };
+  ['pointerenter','focus','touchstart'].forEach(ev=>btn.addEventListener(ev,go,{once:true,passive:true})); }
+function upgradeArt(el,full){   // el = .sqfull; thumb → повний арт (мініатюра лишається, якщо повний не завантажився)
+  const im=el.querySelector('img.rarepng'), tilt=el.querySelector('.tilt'); if(!im||!full) return;
+  im.addEventListener('error',()=>{ if(im.src.indexOf('_sm.webp')>=0) im.src=full; },{once:true});
+  const big=new Image(); big.decoding='async'; try{ big.fetchPriority='high'; }catch(e){}
+  let done=false;
+  const swap=()=>{ if(done) return; done=true; if(!el.isConnected) return; im.src=full; if(tilt) tilt.style.setProperty('--m',"url('"+full+"')"); };
+  // підміна по onload (надійно); decode() лише згладжує момент, а якщо він завис — через 400мс підміняємо все одно
+  big.onload=()=>{ if(!big.decode){ swap(); return; } const t=setTimeout(swap,400); big.decode().then(()=>{ clearTimeout(t); swap(); },()=>{ clearTimeout(t); swap(); }); };
+  big.src=full;
+}
 function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel';
   const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
   const fx=isArt, reflect=false, mega=(tier==='mega_rare');   // віддзеркалення на підлозі прибрано (рішення Богдана) — лишається контактна тінь
-  const inner=isArt?`<img class="rarepng" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">`
+  const inner=isArt?`<img class="rarepng" src="${esc(showThumb(card.current_card_png))}" alt="${esc(p.name)}">`
                    :squadCardHTML(p,tier,card);
   const el=document.createElement('div'); el.className='sqfull';
   el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
     <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
       ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
       <div class="contact"></div>
-      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(card.current_card_png)}')"`:''}>${inner}</div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(showThumb(card.current_card_png))}')"`:''}>${inner}</div></div>
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
+  if(isArt) upgradeArt(el,card.current_card_png);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
   fitPodium(stage); requestAnimationFrame(()=>fitPodium(stage));
   stage.addEventListener('pointermove',e=>{
@@ -602,6 +623,7 @@ async function openBoardCard(pid){
   const md=$('mhost').querySelector('.modal'); if(md) md.classList.add('pmodal');
   const openFull=()=>showFullCard(p,tier,card);
   const b1=$('bmShowCard'), b2=$('bmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
+  warmScene(SCENE_FILE[tier]||'steel'); if(card.current_card_png){ hookWarm(b1,card.current_card_png,SCENE_FILE[tier]||'steel'); hookWarm(b2,card.current_card_png,SCENE_FILE[tier]||'steel'); }
 }
 
 // Leaderboard — стиль BoBet Leaderboards: 3 картки (1-5 Тур · 6-10 Тур · General=сума)

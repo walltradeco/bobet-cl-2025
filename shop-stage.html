@@ -126,11 +126,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 @keyframes sqglow{0%,100%{opacity:.5}50%{opacity:1}}
 .sqfull .contact{position:absolute;left:50%;bottom:12%;width:21%;height:2.4%;transform:translateX(-50%);
   background:radial-gradient(ellipse at center,rgba(0,0,0,.4),transparent 72%);filter:blur(9px);z-index:1}
-.sqfull .podium-card{position:absolute;left:50%;bottom:26%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
+.sqfull .podium-card{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
   animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
-.sqfull .podium-card img.rarepng{width:auto;height:62vh;display:block}
+.sqfull .podium-card img.rarepng{width:auto;height:min(68vh,140vw);display:block}
 /* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
 .sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
@@ -335,6 +335,7 @@ async function openCard(key){
   const close=()=>host.innerHTML='';
   host.querySelector('.mhost').onclick=e=>{ if(e.target.classList.contains('mhost')||e.target.classList.contains('mx')) close(); };
   const full=host.querySelector('[data-full]'); if(full) full.onclick=()=>showFullCard(c);
+  warmScene(SCENE[c.tier]||'rare'); hookWarm(full,c.png_path,SCENE[c.tier]||'rare');
   const lg=host.querySelector('[data-login]'); if(lg) lg.onclick=()=>{ close(); showLogin(); };
   const rq=host.querySelector('[data-req]'); if(rq) rq.onclick=()=>doRequest(c.card_key, rq.dataset.req);
 }
@@ -347,6 +348,25 @@ async function doRequest(key, kind){
   await loadMine();
 }
 
+// ── Вітрина: швидке відкриття (02.10), БЕЗ втрати якості ──
+// А) прогресивний показ: миттєво мініатюра _sm.webp (малий файл), далі підміна на ПОВНИЙ арт, щойно він завантажений і декодований.
+// Б) прогрів: сцена (+ повний арт) вантажаться, поки користувач лише наводить/торкається «Показати картку».
+const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
+const _warmRefs=[], _warmSet=new Set();
+function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=new Image(); im.decoding='async'; im.src=u; _warmRefs.push(im); }
+function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
+function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmUrl(png); };
+  ['pointerenter','focus','touchstart'].forEach(ev=>btn.addEventListener(ev,go,{once:true,passive:true})); }
+function upgradeArt(el,full){   // el = .sqfull; thumb → повний арт (мініатюра лишається, якщо повний не завантажився)
+  const im=el.querySelector('img.rarepng'), tilt=el.querySelector('.tilt'); if(!im||!full) return;
+  im.addEventListener('error',()=>{ if(im.src.indexOf('_sm.webp')>=0) im.src=full; },{once:true});
+  const big=new Image(); big.decoding='async'; try{ big.fetchPriority='high'; }catch(e){}
+  let done=false;
+  const swap=()=>{ if(done) return; done=true; if(!el.isConnected) return; im.src=full; if(tilt) tilt.style.setProperty('--m',"url('"+full+"')"); };
+  // підміна по onload (надійно); decode() лише згладжує момент, а якщо він завис — через 400мс підміняємо все одно
+  big.onload=()=>{ if(!big.decode){ swap(); return; } const t=setTimeout(swap,400); big.decode().then(()=>{ clearTimeout(t); swap(); },()=>{ clearTimeout(t); swap(); }); };
+  big.src=full;
+}
 // ── showFullCard: арт на сцені (порт із кабінету) ──
 function showFullCard(c){
   const scene=SCENE[c.tier]||'rare', mega=(c.tier==='mega_rare');
@@ -354,11 +374,12 @@ function showFullCard(c){
   el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
     <div class="stage${mega?' mega':''}" style="background-image:url('scenes/${scene}.webp')">
       <div class="glow"></div><div class="contact"></div>
-      <div class="podium-card${mega?' mega':''}"><div class="tilt fx" style="--m:url('${esc(c.png_path)}')">
-        <img class="rarepng" src="${esc(c.png_path)}" alt="${esc(cardTitle(c))}"></div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt fx" style="--m:url('${esc(showThumb(c.png_path))}')">
+        <img class="rarepng" src="${esc(showThumb(c.png_path))}" alt="${esc(cardTitle(c))}"></div></div>
     </div>`;
   el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
+  upgradeArt(el,c.png_path);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
   stage.addEventListener('pointermove',e=>{
     const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
