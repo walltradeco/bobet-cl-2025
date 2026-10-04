@@ -240,6 +240,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
   animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
 .sqfull .podium-card img.rarepng{width:auto;display:block}
+.sqfull .podium-card.mega{bottom:19%}   /* mega росте вниз (знизу є місце) — 04.10: rare 72% / mega 75% */
 /* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
 .sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
@@ -440,15 +441,16 @@ const frameFile=(t)=>FRAME_FILE[t]||t;
 function cardTier(p,card){ return (card&&card.current_tier)||'silver'; }  // ЕФЕКТИВНИЙ дизайн (431)
 const NAT3={Algeria:'ALG',Argentina:'ARG',Austria:'AUT',Belgium:'BEL',Brazil:'BRA',Canada:'CAN',Colombia:'COL',"Cote d'Ivoire":'CIV',Croatia:'CRO',Denmark:'DEN',Ecuador:'ECU',Egypt:'EGY',England:'ENG',France:'FRA',Georgia:'GEO',Germany:'GER',Ghana:'GHA',Greece:'GRE',Guinea:'GUI',Hungary:'HUN',Italy:'ITA',Morocco:'MAR',Netherlands:'NED',Nigeria:'NGA','Northern Ireland':'NIR',Norway:'NOR',Poland:'POL',Portugal:'POR',Senegal:'SEN',Slovakia:'SVK',Slovenia:'SVN','South Korea':'KOR',Spain:'ESP',Sweden:'SWE',Switzerland:'SUI',Turkiye:'TUR',USA:'USA',Ukraine:'UKR',Uruguay:'URU',Uzbekistan:'UZB'};
 function natCode(c){ return NAT3[c]||(c||'').slice(0,3).toUpperCase(); }
-function squadCardHTML(p, tier, card){
+function squadCardHTML(p, tier, card, big){   // big=true — подіум (повний майстер); інакше мініатюри `_sm`
   card=card||{};
   // rare/mega-арт — готовий PNG (current_card_png із market_player_card 431); база — рамка+фото
   if(card.current_card_png){
     return `<div class="sqcard sqart" data-tier="${esc(tier)}">
-      <img class="sq-art" src="${esc(card.current_card_png)}" alt="${esc(p.name)}">${injIcon(p)}</div>`;
+      <img class="sq-art" src="${esc(big?card.current_card_png:showThumb(card.current_card_png))}" alt="${esc(p.name)}" decoding="async"${big?'':imgFallback(card.current_card_png)}>${injIcon(p)}</div>`;
   }
   const cl=(S.clubs[p.club_id]||{}), ff=frameFile(tier);
-  const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(p.photo_url)}" alt=""></div>`
+  const phU = big ? p.photo_url : poolThumb(p.photo_url);
+  const photo = p.photo_url ? `<div class="sq-photo"><img src="${esc(phU)}" alt="" decoding="async"${big?'':' loading="lazy"'}${phU!==p.photo_url?imgFallback(p.photo_url):''}></div>`
     : `<div class="sq-mono">${esc(monogram(p.name))}</div>`;
   const tid=cl.sofascore_tid, crest=tid?`<img class="crest" src="https://img.sofascore.com/api/v1/team/${tid}/image" alt="">`:'';
   const nat=card.country?`<span class="fl">${flagEmoji(card.country)}</span><span class="cd">${natCode(card.country)}</span>`:'';
@@ -467,7 +469,7 @@ function squadCardHTML(p, tier, card){
 const SCENE_FILE={silver:'steel',gold:'gold',emerald:'emerald',rare:'rare',mega_rare:'mega_rare'};
 function fitPodium(stage){
   if(!stage) return;
-  const h=stage.clientHeight, target=Math.min(h*0.68, stage.clientWidth*1.4), isBase=stage.dataset.base==='true';
+  const h=stage.clientHeight, isBase=stage.dataset.base==='true', k=isBase?0.68:(stage.classList.contains('mega')?0.75:0.72), target=Math.min(h*k, stage.clientWidth*1.4);   // base 68% · rare 72% · mega 75% (04.10)
   const pc=stage.querySelector('.podium-card'), card=pc&&pc.querySelector(isBase?'.sqcard':'img.rarepng');
   if(!card) return;
   if(isBase){ card.style.transformOrigin='bottom center'; card.style.transform='scale('+(target/450)+')'; }
@@ -484,6 +486,8 @@ function fitPodium(stage){
 // А) прогресивний показ: миттєво мініатюра _sm.webp (малий файл), далі підміна на ПОВНИЙ арт, щойно він завантажений і декодований.
 // Б) прогрів: сцена (+ повний арт) вантажаться, поки користувач лише наводить/торкається «Показати картку».
 const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
+const poolThumb=u=>{ const s=String(u||''); return /^players\/pool\/\d+\.webp$/.test(s)?s.replace(/\.webp$/,'_sm.webp'):s; };   // фото пулу в сітках/міні-картках — мініатюра `_sm` (≈35 КБ замість ≈312 КБ); майстер лише на подіумі
+const imgFallback=full=>` onerror="this.onerror=null;this.src='${esc(full)}'"`;                                                   // немає `_sm` на сайті → тихо підміняємо на майстер
 const _warmRefs=[], _warmSet=new Set();
 function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=new Image(); im.decoding='async'; im.src=u; _warmRefs.push(im); }
 function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
@@ -505,7 +509,7 @@ function showFullCard(p, tier, card){
   const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
   const fx=isArt, reflect=false, mega=(tier==='mega_rare');   // віддзеркалення на підлозі прибрано (рішення Богдана) — лишається контактна тінь
   const inner=isArt?`<img class="rarepng" src="${esc(showThumb(card.current_card_png))}" alt="${esc(p.name)}">`
-                   :squadCardHTML(p,tier,card);
+                   :squadCardHTML(p,tier,card,true);
   const el=document.createElement('div'); el.className='sqfull';
   el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
     <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">

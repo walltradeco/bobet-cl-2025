@@ -130,7 +130,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;
   animation:sqsway 6s ease-in-out infinite}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
-.sqfull .podium-card img.rarepng{width:auto;height:min(68vh,140vw);display:block}
+.sqfull .podium-card img.rarepng{width:auto;height:min(72vh,140vw);display:block}
+.sqfull .podium-card.mega{bottom:19%}   /* mega росте вниз (знизу є місце) — 04.10: rare 72% / mega 75% */
+.sqfull .podium-card.mega img.rarepng{height:min(75vh,140vw)}
 /* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
 .sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
 .sqfull .tilt.fx::before{content:"";position:absolute;top:-20%;left:-70%;width:55%;height:150%;z-index:6;pointer-events:none;
