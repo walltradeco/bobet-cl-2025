@@ -399,6 +399,8 @@ const medal=['🥇','🥈','🥉'];
 const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null};
 // етапів завжди два; межа — market_config.stage1_last_round (501; 10 турів → 5, 12 → 6). Немає в БД → 5.
 const stage1Max=()=>S.stage1Last||5;
+// кінець 2-го етапу: етапи рівні (10→5+5, 12→6+6), тож не менше 2×межа — навіть коли турів у базі ще мало
+const stage2End=()=>Math.max(S.rounds.length?Math.max(...S.rounds.map(r=>r.number)):0, 2*stage1Max());
 // 🚀 бусти туру (501)
 const BO={ squad_autopilot:{ico:'🤖',name:'Автопілот Squad'}, squad_all_in:{ico:'🔥',name:'All-in'} };
 function boostOf(pid,rid){ return S.boosts.find(b=>b.participant_id===pid && b.round_id===rid)||null; }
@@ -672,7 +674,7 @@ function renderLB(){
   S.lb.forEach(p=>tot[p.participant_id]=(s1[p.participant_id]||0)+(s2[p.participant_id]||0));
   host.innerHTML=`<div class="lbboards">
       ${lbCard('tealh','1-'+stage1Max()+' Тур', s1, false)}
-      ${lbCard('blueh',(stage1Max()+1)+'-'+Math.max(...S.rounds.map(r=>r.number))+' Тур', s2, false)}
+      ${lbCard('blueh',(stage1Max()+1)+'-'+stage2End()+' Тур', s2, false)}
       ${lbCard('goldh','General', tot, true)}
     </div>
     <div class="hint">Наскрізний залік · General = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>`;
@@ -711,7 +713,7 @@ async function boot(){
          const row=cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null);
          if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round; }catch(e){}
     try{ S.boosts=await sbGet(`market_round_boost_pub?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,boost,delta,target_player`); }catch(e){ S.boosts=[]; }
-    { const l1=stage1Max(), mx=Math.max(...S.rounds.map(r=>r.number));
+    { const l1=stage1Max(), mx=stage2End();
       const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2');
       if(b1) b1.textContent='1-'+l1+' Тур'; if(b2) b2.textContent=(l1+1)+'-'+mx+' Тур'; }
     S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,injury,shirt_number`);
