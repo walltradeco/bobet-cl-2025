@@ -224,6 +224,12 @@ table.t{width:100%;border-collapse:collapse}
 .clen-chip.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}
 .clen-chip:disabled{opacity:.38;cursor:not-allowed}
 .clen-info{font-size:12px;color:var(--text-dim);margin-top:8px}
+.clen-info .cw{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
+.clen-info .cw-main{font-size:21px;line-height:1.1;color:var(--gold);font-weight:700}
+.clen-info .cw-main small{font-size:12px;font-weight:600;color:var(--text-dim)}
+.clen-info .cw-sum{font-size:13px;color:var(--text)}
+.clen-info .cw-sub{margin-top:4px;font-size:11.5px}
+.clen-info.bad .cw-main,.clen-info.bad .cw-sum{color:var(--red)}
 .clen-info.bad{color:var(--red)}
 .budg{display:flex;gap:12px;flex-wrap:wrap;align-items:stretch;margin-bottom:14px}
 .budg-card{flex:1;min-width:190px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px}
@@ -711,7 +717,8 @@ async function loadRefs(){
     S.myCards = await sbSel(`card_items?owner_profile_id=eq.${S.myProfile}&select=id,card_key,tier,kind,png_path,eligible_sofa_ids`);
   }catch(e){ S.myEmerald=false; S.myCards=[]; }
   // активні аукціони (публічні)
-  S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`);
+  S.auctions = await sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at,leader_length,leader_wage`)
+    .catch(()=>sbSel(`market_auctions?tournament_id=eq.${S.tour.id}&status=eq.active&select=id,player_id,current_bid,leader_participant_id,ends_at`));   // до заливки 508 колонок нема
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
   const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name`);
   S.names = {}; lb.forEach(p=>S.names[p.participant_id]=p.display_name);
@@ -853,10 +860,12 @@ function premarketBanner(mine){
   const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8;
   const rsAll=S.rounds||[], nowD=new Date();
   const firstFut=rsAll.find(r=>new Date(r.deadline_at)>nowD && !r.results_entered_at);
-  if(!firstFut){
+  // сервер (_market_trade_open) морозить ринок, щойно ХОЧА Б ОДИН тур «у грі» (дедлайн минув, результатів нема) —
+  // навіть коли вже заведено наступний тур із майбутнім дедлайном; банер мусить казати те саме
+  const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
+  if(!firstFut || inplay){
     const warn=t=>`<div class="premkt"><span><b>Ринок зачинено</b> — ${t}</span></div>`;
     if(!rsAll.length) return warn('відкриється, коли буде заведено тур.');
-    const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
     if(inplay) return warn(`тур ${inplay.number} у грі (заморозка до внесення результатів).`);
     const si=stageInfo();                        // усі створені тури мають результати
     if(si.left>0) return warn('усі створені тури зіграні — ринок відкриється, коли буде заведено наступний тур.');
@@ -1332,15 +1341,18 @@ async function viewMarket(){
   if(S.mktSub==='free'||S.mktSub==='all'){
     await loadCardMeta();
     S.f.status = (S.mktSub==='free')?'free':'all';
-    const t=(S.mktSub==='free')?['Вільні гравці','купити зараз (+15%) або поставити (аукціон 12 год, крок +5%)']:['Усі гравці','весь пул + власник · натисни на гравця для дій'];
-    body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${t[0]}</h2><span class="sub">${t[1]} · <span id="mcount"></span></span></div><div class="mgrid" id="mgrid"></div>`;
+    const c=S.cfg||{}, hint=`купити зараз (+${Math.round((c.buynow_pct??0.15)*100)}%) або поставити (аукціон ${c.auction_timer_hours??12} год, крок +${Math.round((c.bid_step_pct??0.05)*100)}%)`;
+    const sub=(S.mktSub==='free')
+      ? `${hint} · <span id="mcount"></span>`
+      : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint}`;
+    body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><span class="sub">${sub}</span></div><div class="mgrid" id="mgrid"></div>`;
   } else if(S.mktSub==='bids'){
     const mine = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
-    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші заморожено до закриття). Перебити чужий лот — у «Ринок».</p>
-      <table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">До</th></tr></thead><tbody>${
+    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші й зарплатний резерв під контракт заморожено до закриття). Перебити чужий лот — у «Ринок».</p>
+      <table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт</th><th class="n">До</th></tr></thead><tbody>${
       mine.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
         return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
-          <td class="n">${eur(a.current_bid)}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+          <td class="n">${eur(a.current_bid)}</td><td class="n">${a.leader_length?a.leader_length+' тур':'—'}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
       }).join('')}</tbody></table>`
       : `<div class="soon">Немає активних ставок, де ти лідируєш. Почни аукціон або перебий лот у «Ринок».</div>`;
   } else {
@@ -1638,8 +1650,13 @@ function updClen(el){
   const info=el.querySelector('.clen-info'); let bad=false;
   const mode=q&&q.mode?q.mode:(pid?defMode(pid):'first');
   const tag=mode==='extend'?` · <b class="warnc">продовження ×${S.cfg?.contract_ext_mult??1}</b>`:mode==='rebuy'?` · <b class="warnc">перевикуп ×${S.cfg?.contract_rebuy_mult??1}</b>`:'';
-  let txt=`${len} тур · ${eur(w)}/тур · резерв <b>${eur(res)}</b>${tag}`;
-  if(wf!=null){ bad=res>wf; txt+=` · зарплатний вільно ${eur(wf)}${bad?' — не вистачає':''}`; }
+  // розмір плати за контракт — головний акцент: велика зарплата за тур і сума резерву, дрібніше — решта
+  let txt=`<div class="cw"><span class="cw-main"><b>${eur(w)}</b> <small>/ тур</small></span>
+      <span class="cw-sum">× ${len} ${len===1?'тур':'тури'} = резерв <b>${eur(res)}</b></span></div>
+    <div class="cw-sub">`;
+  const sub=[]; if(tag) sub.push(tag.replace(/^ · /,''));
+  if(wf!=null){ bad=res>wf; sub.push(`зарплатний вільно ${eur(wf)}${bad?' — <b>не вистачає</b>':''}`); }
+  txt+=sub.join(' · ')+`</div>`;
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
 }
 function bindChips(box){
@@ -1743,15 +1760,17 @@ function actionsHTML(p,ctx){
     const canBuy=au.current_bid < ceil;
     let h=`<p class="mnote">🔨 Аукціон: поточна ${eur(au.current_bid)} · ${iLead?'<b style="color:var(--gold)">ти лідер</b>':esc(S.names[au.leader_participant_id]||'—')} · до ${new Date(au.ends_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}</p>`;
     if(block) return h+`<p class="mnote warn">⛔ ${block}</p>`;
-    if(!iLead) h+=amountUI('Перебити',minBid,'bid',au.id);
-    if(canBuy) h+=contractPicker(mv,0,p.id)+`<div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп · ${eur(ceil)}</button></div>`;
+    if(!iLead||canBuy) h+=contractPicker(mv,0,p.id);   // 508: той самий контракт діє і для ставки, і для викупу
+    if(!iLead) h+=amountUI('Перебити',minBid,'bid',au.id)
+      +`<p class="mnote">Контракт вище підпишеться, якщо виграєш аукціон; зарплатний резерв під нього заморожується, поки ти лідер.</p>`;
+    if(canBuy) h+=`<div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп (+${Math.round((cfg.buynow_pct??0.15)*100)}%) · ${eur(ceil)}</button></div>`;
     return h;
   }
   if(block) return `<p class="mnote warn">⛔ ${block}</p>`;
   return `${contractPicker(mv,0,p.id)}
-    <div class="macts"><button data-do="buy" data-amt="${ceil}">Купити зараз · ${eur(ceil)}</button></div>
+    <div class="macts"><button data-do="buy" data-amt="${ceil}">Купити зараз · ${eur(ceil)} <small style="opacity:.8;font-weight:600">(викуп +${Math.round((cfg.buynow_pct??0.15)*100)}% до вартості)</small></button></div>
     ${amountUI('Зробити ставку (аукціон)',mv,'auc',p.id)}
-    <p class="mnote">Контракт вище — для купівлі зараз. Виграний аукціон підписується на 1 тур, далі перепідпис у складі.</p>`;
+    <p class="mnote">Контракт вище діє і для купівлі зараз, і для аукціону: якщо виграєш — підпишеться саме на обрану довжину (зарплатний резерв під ставку заморожується, поки ти лідер).</p>`;
 }
 // ── хелпери детальної картки ──
 function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
@@ -2017,9 +2036,10 @@ function bindModalActions(p){
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
       if(!eurv || eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
       const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eur(mxv)+' ('+winTxt()+' вартості)'); return; }
+      const len=selectedLen();   // 508: довжина контракту з пікера модалки (ставка/старт аукціону)
       modalClose();
-      if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv},'Аукціон почато');
-      else if(box.dataset.kind==='bid') await act('market_place_bid',{p_auction:box.dataset.ref,p_amount:eurv},'Ставку зроблено');
+      if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv,p_length:len},'Аукціон почато');
+      else if(box.dataset.kind==='bid') await act('market_place_bid',{p_auction:box.dataset.ref,p_amount:eurv,p_length:len},'Ставку зроблено');
       else if(box.dataset.kind==='propose') await act('market_propose_transfer',{p_player:box.dataset.ref,p_amount:eurv,p_length:selectedLen()},'Пропозицію надіслано');
       else if(box.dataset.kind==='list') await act('market_list_player',{p_player:box.dataset.ref,p_ask:eurv},'Виставлено за '+eur(eurv));
     }
