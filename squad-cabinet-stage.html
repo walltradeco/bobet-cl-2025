@@ -1714,7 +1714,10 @@ function actionsHTML(p,ctx){
     if(S.listingsReady && S.listings[p.id]){
       const lst=S.listings[p.id], blockL=acquireBlock(p);
       h+=`<p class="mnote">🏷 <b>${ownerNm}</b> виставив на вітрину за <b>${eur(lst.ask_price)}</b> — миттєвий викуп (0% комісії).</p>`;
-      h+= blockL ? `<p class="mnote warn">Викуп ⛔ ${blockL}</p>`
+      // 506: ціна лота фіксована, а вартість рухається → поза вікном ціни від ПОТОЧНОЇ вартості лот застарів
+      const stale=(+lst.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+lst.ask_price>winMaxEur(mv));
+      h+= stale ? `<p class="mnote warn">🕓 Лот застарів: вартість гравця змінилась, ціна ask (${eur(lst.ask_price)}) поза вікном ${winTxt()} від поточної ${eur(mv)}. Власник має перевиставити — викуп поки неможливий.</p>`
+        : blockL ? `<p class="mnote warn">Викуп ⛔ ${blockL}</p>`
                  : `<div class="macts"><button data-do="buylist" data-amt="${lst.ask_price}">Викупити за ask · ${eur(lst.ask_price)}</button></div>`;
     }
     // ТРАНСФЕР (гроші за гравця)
