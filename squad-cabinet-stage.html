@@ -406,7 +406,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .acard .lk{color:var(--dim);font-size:12px;font-family:var(--mono);font-weight:600;margin-top:8px;display:inline-block}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
-.modal.pmodal{max-width:880px;padding:0;overflow:hidden}
+.modal.pmodal{max-width:880px;padding:0;overflow-x:hidden;overflow-y:auto}   /* прокрутка: висока модалка (акцент на зарплаті) інакше обрізала б низ із примітками */
 .pm-head{display:flex;justify-content:space-between;align-items:flex-start;padding:18px 46px 4px 22px}
 .pm-title{font-family:var(--mono);font-weight:700;font-size:19px;letter-spacing:.02em}
 .pm-state{display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap}
