@@ -347,6 +347,21 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .capB{font-family:var(--mono);font-weight:700;font-size:10px;background:var(--gold);color:#241c00;border-radius:4px;padding:0 5px}
 .viceB{font-family:var(--mono);font-weight:700;font-size:10px;background:#2a3f33;color:#bfe8d1;border-radius:4px;padding:0 5px}
 .valid{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+/* 🚀 бусти туру (Автопілот Squad / All-in) — 05.10 */
+.boosts{margin:14px 0 4px}
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+@media(max-width:560px){.bgrid{grid-template-columns:1fr}}
+.bcard{display:flex;flex-direction:column;gap:4px;text-align:left;background:var(--panel2);color:var(--text);border:1px solid var(--line);
+  border-radius:11px;padding:11px 13px;cursor:pointer;font-family:inherit;font-weight:500}
+.bcard:hover:not(:disabled){border-color:var(--accent-d)}
+.bcard .bh{display:flex;align-items:center;gap:8px;font-weight:700;font-size:14px}
+.bcard .bico{font-size:18px;line-height:1}
+.bcard .bds{font-size:12px;color:var(--text-dim);line-height:1.4}
+.bcard .bst{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
+.bcard.on{background:var(--green-soft);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
+.bcard.on .bst{color:var(--up)}
+.bcard:disabled{opacity:.5;cursor:not-allowed}
+.bcard.used .bst{color:var(--down)}
 .chk{font-size:12px;color:var(--text-dim);border:1px solid var(--line);border-radius:20px;padding:3px 10px;
   display:flex;gap:5px;align-items:center;background:var(--panel2)}
 .chk.ok{color:var(--up);border-color:#1f4d38}.chk.no{color:var(--down);border-color:#4d2427}
@@ -916,10 +931,45 @@ async function viewSquad(){
     try{ lu = await sbSel(`market_lineup?round_id=eq.${round.id}&participant_id=eq.${S.me.id}&select=player_id,role,bench_order,is_captain,is_vice`); }catch(e){}
   }
   // чернетка лайнапу: player_id → {role:'start'|'bench'|'out', cap, vice, ord}
+  // бусти туру (501): свої рядки видно завжди; немає таблиці (501 не залито) → блок ховається
+  S.myBoosts = []; S.boostsOK = true;
+  try{ S.myBoosts = await sbSel(`market_round_boosts?participant_id=eq.${S.me.id}&select=round_id,boost`); }catch(e){ S.boostsOK=false; }
+  S.boost = (round && (S.myBoosts.find(b=>b.round_id===round.id)||{}).boost) || null;
   S.lineup = {}; S.lineupRound = round;
   mine.forEach(p => S.lineup[p.id] = { role:'out', cap:false, vice:false, ord:99 });
   lu.forEach(r => { if(S.lineup[r.player_id]) S.lineup[r.player_id] = { role:r.role, cap:r.is_captain, vice:r.is_vice, ord:r.bench_order||99 }; });
   renderLineup(mine, round);
+}
+
+// ── 🚀 бусти туру: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
+const BOOSTS = {
+  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий у складі за тур. Капітана й віце обирати не треба.' },
+  squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — старт і лавка. Ідеально 5+3, але можна й менше.' }
+};
+const stageOfNum = n => n <= ((S.cfg && S.cfg.stage1_last_round) || 5) ? 1 : 2;
+function boostUsedElsewhere(key, round){   // уже використано/заплановано в ІНШОМУ турі цього ж етапу?
+  const st = stageOfNum(round.number);
+  for(const b of (S.myBoosts||[])){
+    if(b.boost!==key || b.round_id===round.id) continue;
+    const r = S.rounds.find(x=>x.id===b.round_id);
+    if(r && stageOfNum(r.number)===st) return r.number;
+  }
+  return null;
+}
+function boostBlock(round){
+  if(!round || !S.boostsOK) return '';
+  const st = stageOfNum(round.number), l1=(S.cfg&&S.cfg.stage1_last_round)||5;
+  const cards = Object.keys(BOOSTS).map(k=>{
+    const b=BOOSTS[k], used=boostUsedElsewhere(k, round), on = S.boost===k;
+    const state = on ? 'on' : (used!=null ? 'used' : '');
+    const stTxt = on ? 'Увімкнено на цей тур' : (used!=null ? `Етап ${st}: використано в Турі ${used}` : `Етап ${st}: доступний`);
+    return `<button type="button" class="bcard ${state}" data-boost="${k}" ${used!=null&&!on?'disabled':''}>
+      <span class="bh"><span class="bico">${b.ico}</span>${b.name}</span>
+      <span class="bds">${b.desc}</span><span class="bst">${stTxt}</span></button>`;
+  }).join('');
+  return `<div class="boosts"><div class="slot-h"><span>Бусти туру</span><span>1 раз на етап · один буст на тур</span></div>
+    <div class="bgrid">${cards}</div>
+    <p class="dim" style="margin:8px 2px 0">Етап ${st} = ${st===1?`тури 1–${l1}`:`тури ${l1+1}+`}. Буст видно іншим лише після дедлайну; до дедлайну його можна вимкнути без наслідків. Автопілот і All-in разом не вмикаються.</p></div>`;
 }
 
 function lnState(mine){
@@ -928,15 +978,16 @@ function lnState(mine){
   const out= mine.filter(p=>S.lineup[p.id].role==='out');
   const min5 = S.cfg?S.cfg.squad_min:5, benchMax=(S.cfg?S.cfg.squad_max-S.cfg.squad_min:3), dgMin=S.cfg?S.cfg.defgk_start_min:1;
   const defgk = st.filter(p=>p.position==='D'||p.position==='G').length;
-  const cap = st.find(p=>S.lineup[p.id].cap);
-  const vice= st.find(p=>S.lineup[p.id].vice);
+  const auto = S.boost==='squad_autopilot';           // Автопілот замінює Капітана/Віце
+  const cap = auto ? null : st.find(p=>S.lineup[p.id].cap);
+  const vice= auto ? null : st.find(p=>S.lineup[p.id].vice);
   const errs=[];
   if(st.length<1||st.length>min5) errs.push(`старт 1..${min5}`);
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK у старті`);
-  if(!cap) errs.push('обери капітана');
-  if(st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
-  return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, ok: errs.length===0, errs };
+  if(!auto && !cap) errs.push('обери капітана');
+  if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
+  return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
 }
 
 // перемістити лавкового вгору/вниз (порядок = пріоритет автозаміни)
@@ -954,8 +1005,8 @@ function renderLineup(mine, round){
   const val = `<div class="valid">
     ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK у старті`)}
-    ${chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
-    ${chip(!!s.vice || s.st.length<2, s.vice?`Віце: ${lastName(s.vice.name)}`:'Віце не обраний')}
+    ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
+    ${s.auto ? '' : chip(!!s.vice || s.st.length<2, s.vice?`Віце: ${lastName(s.vice.name)}`:'Віце не обраний')}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
   </div>`;
   const injStart = s.st.filter(p=>p&&p.injury);
@@ -966,9 +1017,8 @@ function renderLineup(mine, round){
     let ctrl='';
     if(!round){ ctrl=''; }
     else if(zone==='start'){
-      ctrl = `<button class="mini ${L.cap?'on':'ghost'}" data-cap="${p.id}">© Кап</button>
-        <button class="mini ${L.vice?'on':'ghost'}" data-vice="${p.id}">V Віце</button>
-        <button class="mini ghost" data-role="${p.id}:bench">На лаву</button>
+      ctrl = (S.boost==='squad_autopilot' ? '' : `<button class="mini ${L.cap?'on':'ghost'}" data-cap="${p.id}">© Кап</button>
+        <button class="mini ${L.vice?'on':'ghost'}" data-vice="${p.id}">V Віце</button>`) + `<button class="mini ghost" data-role="${p.id}:bench">На лаву</button>
         <button class="mini ghost" data-role="${p.id}:out">−</button>`;
     } else if(zone==='bench'){
       ctrl = `<button class="mini ghost" data-benchup="${p.id}" title="раніше на заміну">↑</button>
@@ -980,7 +1030,7 @@ function renderLineup(mine, round){
         <button class="mini ghost" data-role="${p.id}:bench">На лаву</button>`;
     }
     const proceeds = Math.round(p.market_value_current*(1-(S.cfg?.sell_pct??0.05)));
-    const capBadge = L.cap?'<span class="capB">К</span>':(L.vice?'<span class="viceB">V</span>':'');
+    const capBadge = S.boost==='squad_autopilot' ? '' : (L.cap?'<span class="capB">К</span>':(L.vice?'<span class="viceB">V</span>':''));
     const ordBadge = (zone==='bench') ? `<span class="benchord" title="${idx+1}-й на заміну">${idx+1}</span>` : '';
     return `<div class="pcard" style="--club:${col}">
       <div>
@@ -1011,9 +1061,10 @@ function renderLineup(mine, round){
          <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>'}</div>
          ${val}
          ${injWarn}
+         ${boostBlock(round)}
          <button class="btn" id="ln-save" ${(!round||!s.ok)?'disabled':''} style="width:100%">Підтвердити склад${round?' на Тур '+round.number:''}</button>
          ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
-         <p class="dim" style="margin-top:8px">Капітан і Віце — обидва обов'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).</p>
+         <p class="dim" style="margin-top:8px">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого у складі.' : 'Капітан і Віце — обидва обов\'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>
        </div>
        <div class="panel">
          ${zoneBlock('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'1 · 2 · 3')}
@@ -1045,6 +1096,12 @@ function renderLineup(mine, round){
     const pid=b.dataset.vice; mine.forEach(p=>S.lineup[p.id].vice=false);
     if(!S.lineup[pid].cap) S.lineup[pid].vice=true; renderLineup(mine, round);
   });
+  document.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{
+    const k=b.dataset.boost;
+    S.boost = (S.boost===k) ? null : k;                       // клік = увімкнути/вимкнути; інший буст заміняє
+    if(S.boost==='squad_autopilot') mine.forEach(p=>{ S.lineup[p.id].cap=false; S.lineup[p.id].vice=false; });   // Кап/Віце більше не потрібні
+    renderLineup(mine, round);
+  });
   document.querySelectorAll('[data-benchup]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchup,-1); renderLineup(mine,round); });
   document.querySelectorAll('[data-benchdown]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchdown,1); renderLineup(mine,round); });
   $('view').querySelectorAll('.pcard [data-p]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button')) return; openPlayerModal(el.dataset.p); });
@@ -1070,11 +1127,12 @@ function openLineupReview(mine, round){
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
     <p class="mnote">Незіграний стартовий → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
+    ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться на цей етап назавжди.</p>`:''}
     <div class="macts" style="margin-top:16px"><button data-do="lnyes">Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
   $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
     p_round:round.id, p_participant:S.me.id, p_starters:s.st.map(p=>p.id),
-    p_bench:s.bn.map(p=>p.id), p_captain:s.cap.id, p_vice:s.vice?s.vice.id:null
-  }, 'Склад підтверджено'); };
+    p_bench:s.bn.map(p=>p.id), p_captain:s.cap?s.cap.id:null, p_vice:s.vice?s.vice.id:null, p_boost:S.boost||null
+  }, S.boost?('Склад підтверджено · '+BOOSTS[S.boost].name):'Склад підтверджено'); };
   $('mhost').querySelector('[data-do="lnno"]').onclick=()=>modalClose();
 }
 // ── дрібні хелпери плитки/картки ──
@@ -2063,6 +2121,8 @@ function newsLine(n){
     case 'transfer_done':     ico='↔️'; txt=`<b>${who(n.actor_participant)}</b> купив ${pl(n.player_id)} у <b>${who(n.subject_participant)}</b> (трансфер) · ${amt}`; break;
     case 'transfer_rejected': ico='✖️'; txt=`<b>${who(n.subject_participant)}</b> відхилив пропозицію <b>${who(n.actor_participant)}</b> на ${pl(n.player_id)} · ${amt}`; break;
     case 'exchange_done':     ico='🔄'; txt=`Обмін: <b>${who(n.actor_participant)}</b> ↔ <b>${who(n.subject_participant)}</b> — ${pl(n.player_id)} ↔ ${pl(m.wanted_player)}${m.cash_delta?` · доплата ${eur(Math.abs(m.cash_delta))}`:''}`; break;
+    case 'boost': { const bb=BOOSTS[m.boost]||{ico:'🚀',name:esc(m.boost||'буст')}; ico=bb.ico;
+                    txt=`<b>${who(n.actor_participant)}</b> — ${bb.name} на Тур ${m.round_number||'?'}${m.delta!=null?` · ${m.delta>0?'+':''}${m.delta} оч.`:''}${(m.boost==='squad_autopilot'&&n.player_id)?` (×2 на ${pl(n.player_id)})`:''}`; break; }
     default:                  txt=esc(n.kind);
   }
   return `<div class="nrow"><span class="nico">${ico}</span><span class="ntxt">${txt}</span><span class="ntime">${t}</span></div>`;

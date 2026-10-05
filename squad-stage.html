@@ -32,6 +32,10 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .wrap{max-width:1180px;margin:0 auto;padding:0 16px 60px}
 
 /* STAGE-бейдж (у embed ховається — оболонку дає BoBet) */
+/* 🚀 бусти туру (501): значок біля очок + рядок у модалці */
+.bchip{margin-left:5px;font-size:12px;vertical-align:1px;cursor:help}
+.boline{margin:10px 0 2px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:13px;line-height:1.45}
+.boline b{font-weight:700}
 .stage-badge{background:#C75C4A;color:#fff;text-align:center;font-size:12px;
   font-weight:700;letter-spacing:.05em;padding:4px;font-family:var(--mono)}
 body.embed .stage-badge, body.embed header{display:none}
@@ -392,11 +396,25 @@ const CLUB={
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
-const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{}};
-const STAGE1_MAX=5;   // турнір ~10 турів → стейдж1 = тури 1-5, стейдж2 = 6-10
+const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null};
+// етапів завжди два; межа — market_config.stage1_last_round (501; 10 турів → 5, 12 → 6). Немає в БД → 5.
+const stage1Max=()=>S.stage1Last||5;
+// 🚀 бусти туру (501)
+const BO={ squad_autopilot:{ico:'🤖',name:'Автопілот Squad'}, squad_all_in:{ico:'🔥',name:'All-in'} };
+function boostOf(pid,rid){ return S.boosts.find(b=>b.participant_id===pid && b.round_id===rid)||null; }
+function boostFx(b){   // що дав буст (для підказки/модалки)
+  if(!b) return '';
+  const d=b.delta!=null? (b.delta>0?'+'+b.delta:String(b.delta)) : '';
+  if(b.boost==='squad_autopilot'){ const t=S.pById[b.target_player]; return d+(t?` · ×2 на ${lastName(t.name)}`:''); }
+  return d? `лавка ${d}` : '';
+}
+function boostChip(pid,rid){
+  const b=boostOf(pid,rid); if(!b) return '';
+  return `<span class="bchip" title="${BO[b.boost].name}${boostFx(b)?' · '+boostFx(b):''}">${BO[b.boost].ico}</span>`;
+}
 function stageRounds(stage){
-  if(stage==='s1') return S.rounds.filter(r=>r.number<=STAGE1_MAX);
-  if(stage==='s2') return S.rounds.filter(r=>r.number>STAGE1_MAX);
+  if(stage==='s1') return S.rounds.filter(r=>r.number<=stage1Max());
+  if(stage==='s2') return S.rounds.filter(r=>r.number>stage1Max());
   return S.rounds;
 }
 function stageSum(stage){   // сума очок кожного учасника за тури стейджа
@@ -653,8 +671,8 @@ function renderLB(){
   const s1=stageSum('s1'), s2=stageSum('s2'), tot={};
   S.lb.forEach(p=>tot[p.participant_id]=(s1[p.participant_id]||0)+(s2[p.participant_id]||0));
   host.innerHTML=`<div class="lbboards">
-      ${lbCard('tealh','1-5 Тур', s1, false)}
-      ${lbCard('blueh','6-10 Тур', s2, false)}
+      ${lbCard('tealh','1-'+stage1Max()+' Тур', s1, false)}
+      ${lbCard('blueh',(stage1Max()+1)+'-'+Math.max(...S.rounds.map(r=>r.number))+' Тур', s2, false)}
       ${lbCard('goldh','General', tot, true)}
     </div>
     <div class="hint">Наскрізний залік · General = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>`;
@@ -688,6 +706,14 @@ async function boot(){
     S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
     S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
     S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
+    // межа етапу (market_config; анонімно читається) + бусти (view показує лише ПІСЛЯ дедлайну); degrade, якщо 501 не залито
+    try{ const cf=await sbGet('market_config?select=tournament_id,stage1_last_round');
+         const row=cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null);
+         if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round; }catch(e){}
+    try{ S.boosts=await sbGet(`market_round_boost_pub?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,boost,delta,target_player`); }catch(e){ S.boosts=[]; }
+    { const l1=stage1Max(), mx=Math.max(...S.rounds.map(r=>r.number));
+      const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2');
+      if(b1) b1.textContent='1-'+l1+' Тур'; if(b2) b2.textContent=(l1+1)+'-'+mx+' Тур'; }
     S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,injury,shirt_number`);
     S.players.forEach(p=>S.pById[p.id]=p);
     // статистика гравця в турнірі (434; market_player_stats публічна) — число очок у детальній картці; degrade якщо не залито
@@ -745,11 +771,12 @@ function startFive(pid){
   const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
   const line=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid && l.role==='start');
   if(line.length){
+    const bo=boostOf(pid,rid), tgt=(bo&&bo.boost==='squad_autopilot')?bo.target_player:null;
     return line.map(l=>{
       const pl=S.pById[l.player_id]||{};
-      const base=S.ppr[l.player_id+'|'+rid];
-      return {name:pl.name,cid:pl.club_id,cap:l.is_captain,
-              pts: base!=null? (l.is_captain?base*2:base) : null};
+      const base=S.ppr[l.player_id+'|'+rid], x2=(l.is_captain || l.player_id===tgt);
+      return {name:pl.name,cid:pl.club_id,cap:x2,
+              pts: base!=null? (x2?base*2:base) : null};
     });
   }
   return S.players.filter(p=>p.owner_participant_id===pid).slice(0,5)
@@ -789,7 +816,7 @@ function renderStandings(){
     return `<tr onclick="openSquad('${pid}')">
       <td class="rk">${place<=3?`<span class="medal">${medal[place-1]}</span>`:place}<span class="delta ${dm.c}">${dm.t}</span></td>
       <td class="name-c">${p.display_name}</td>
-      <td class="rndpts tnum">${roundPts(pid)}</td>
+      <td class="rndpts tnum">${roundPts(pid)}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
       <td class="total tnum">${rk.cum[pid]||0}</td>
       <td>${tiles(pid)}</td>
       <td class="sp tnum">${eur(p.squad_price)}</td>
@@ -811,7 +838,7 @@ function renderByRound(){
       const row=S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
       const v=row? (row.points||0) : null;
       if(v!=null) sum+=v;
-      return `<td class="pn tnum">${v!=null? v : '·'}</td>`;
+      return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}</td>`;
     }).join('');
     return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${p.display_name}</td>${cells}<td class="total tnum">${sum}</td></tr>`;
   }).join('');
@@ -825,9 +852,10 @@ function openSquad(pid){
   const line=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid);
   let bodyHtml;
   if(line.length){
-    const start=line.filter(l=>l.role==='start').map(l=>pcard(l.player_id,rid,l.is_captain,l.is_vice,null));
+    const bo=boostOf(pid,rid), tgt=(bo&&bo.boost==='squad_autopilot')?bo.target_player:null, allin=!!(bo&&bo.boost==='squad_all_in');
+    const start=line.filter(l=>l.role==='start').map(l=>pcard(l.player_id,rid,l.is_captain||l.player_id===tgt,l.is_vice,null,{auto:l.player_id===tgt}));
     const bench=line.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0))
-                    .map(l=>pcard(l.player_id,rid,false,false,l.bench_order));
+                    .map(l=>pcard(l.player_id,rid,false,false,l.bench_order,{counted:allin}));
     bodyHtml=`<div class="slot-h"><span>Стартова 5</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
       + (bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:'');
   }else{
@@ -843,18 +871,20 @@ function openSquad(pid){
       <div class="m"><span>Squad Price</span><b class="tnum">${eur(p.squad_price)}</b></div>
       <div class="m"><span>Val Δ</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</b></div>
       <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
-    </div>`+bodyHtml;
+    </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
   document.getElementById('ovl').classList.add('on');
 }
-function pcard(playerId,rid,cap,vice,benchOrder){
+function pcard(playerId,rid,cap,vice,benchOrder,opt){
+  opt=opt||{};
   const pl=S.pById[playerId]||{}; const base=S.ppr[playerId+'|'+rid];
-  const val=benchOrder!=null? '—' : (base!=null? (cap?base*2:base) : '—');
-  const tag=cap?'<span class="capB">К ×2</span>':(vice?'<span class="capB">В</span>':'');
-  return `<div class="pcard" data-p="${playerId}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${benchOrder!=null?';opacity:.6':''}">
+  const dim = benchOrder!=null && !opt.counted;            // 🔥 All-in: лавка рахується → не приглушуємо
+  const val=benchOrder!=null? (opt.counted&&base!=null? base : '—') : (base!=null? (cap?base*2:base) : '—');
+  const tag=opt.auto?'<span class="capB">🤖 ×2</span>':(cap?'<span class="capB">К ×2</span>':(vice?'<span class="capB">В</span>':''))+(benchOrder!=null&&opt.counted?'<span class="capB">🔥</span>':'');
+  return `<div class="pcard" data-p="${playerId}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${dim?';opacity:.6':''}">
     <div><div class="nm">${lastName(pl.name)} ${tag}</div>
     <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${benchOrder!=null?' · лавка '+benchOrder:''}</div></div>
-    <div class="rt"><div class="big tnum"${benchOrder!=null?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${benchOrder!=null?'':'оч. туру'}</div></div></div>`;
+    <div class="rt"><div class="big tnum"${dim?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${(benchOrder!=null&&!opt.counted)?'':'оч. туру'}</div></div></div>`;
 }
 function ownCard(x){
   return `<div class="pcard" data-p="${x.id}" title="Картка гравця" style="--club:${clubCol(x.club_id)}">
