@@ -62,6 +62,8 @@ header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdro
 .hstat .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);font-weight:600}
 .hstat .v{font-family:var(--mono);font-weight:700;font-size:18px}
 .hstat.bank .v{color:var(--gold)}
+.hstat .bk-parts{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px;letter-spacing:.01em;max-width:330px}
+.hstat .bk-parts b{color:var(--text-dim);font-weight:600}
 .me{display:flex;align-items:center;gap:8px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:30px;background:var(--panel)}
 .me .av{width:26px;height:26px;border-radius:50%;background:var(--accent-d);display:grid;place-items:center;
   font-family:var(--mono);font-weight:700;font-size:13px;color:#dff5ea}
@@ -593,7 +595,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
   <header>
     <div class="hbar">
       <div class="brand"><div class="dot">SQ</div><div><h1>Squad Mode</h1><small>Трансферний ринок</small></div></div>
-      <div class="hstat bank"><span class="k">Мій Bank <span class="priv">лише я</span></span><span class="v tnum" id="h-bank">—</span></div>
+      <div class="hstat bank" id="h-bank-box"><span class="k">Банк <span class="priv" title="Сума Банку публічна (борда «🏦 Банк», знімок після туру). Розклад балансів бачиш лише ти.">розклад лише я</span></span><span class="v tnum" id="h-bank">—</span><span class="bk-parts" id="h-bank-parts"></span></div>
       <div class="hstat"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div>
       <div class="me"><span class="av" id="h-av">—</span><span id="my-name" style="font-family:var(--mono);font-weight:600">—</span>
         <a href="profile-stage.html" target="_blank" class="btn ghost sm win-open" data-title="👤 Профіль" style="margin-left:4px;text-decoration:none">👤 Мій профіль</a>
@@ -726,7 +728,7 @@ async function loadRefs(){
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
   const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name`);
   S.names = {}; lb.forEach(p=>S.names[p.participant_id]=p.display_name);
-  // свій Bank / доступне / заморожене (RLS + RPC: лише свій)
+  // свої баланси: трансферний/зарплатний + доступне/заморожене (RLS + RPC: лише свої; публічна лише сума Банку, 510)
   const b = await sbSel(`market_budget?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=bank_eur,wage_bank_eur`);
   S.bank = b.length? b[0].bank_eur : null;
   S.wageBank = b.length? b[0].wage_bank_eur : null;   // зарплатний банк (413); вільно=wageFree, резерв=wageBank−wageFree
@@ -819,7 +821,7 @@ function renderTabs(){
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
 }
-// шапка: Bank (лише свій) + Squad Price (з Val Δ) + аватар/ім'я
+// шапка: Банк (сума + розклад; публічна лише сума) + Squad Price (з Val Δ) + аватар/ім'я
 function renderHeader(){
   if(!S.me) return;
   const mine=S.players.filter(p=>p.owner_participant_id===S.me.id);
@@ -827,7 +829,12 @@ function renderHeader(){
   const start=mine.reduce((s,p)=>s+(p.market_value_start||0),0);
   const dp=start?(price-start)/start*100:0;
   const dstr=start?(dp>0.05?` <small class="up">▲${dp.toFixed(1)}</small>`:dp<-0.05?` <small class="down">▼${Math.abs(dp).toFixed(1)}</small>`:''):'';
-  const bk=$('h-bank'); if(bk) bk.textContent=eur(S.bank);
+  // Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
+  const tr=S.bank, wg=S.wageBank, ok=(tr!=null);
+  const total=ok? price+tr+(wg||0) : null, e1=v=>'€'+(v/1e6).toFixed(1)+'M';
+  const bk=$('h-bank'); if(bk) bk.textContent= ok? e1(total) : '—';
+  const bp=$('h-bank-parts'); if(bp) bp.innerHTML= ok? `= 🏟 <b>${e1(price)}</b> + 💱 <b>${e1(tr)}</b> + 💵 <b>${e1(wg||0)}</b>` : '';
+  const bb=$('h-bank-box'); if(bb) bb.title= ok? `Банк = Squad Price + трансферний + зарплатний баланс (повні, разом із замороженим).\nДоступно: трансферний ${eur(S.spendable)} · зарплатний ${S.wageFree!=null?eur(S.wageFree):'—'}` : '';
   const pr=$('h-price'); if(pr) pr.innerHTML=eur(price)+dstr;
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
@@ -846,19 +853,6 @@ async function go(tab){
   if(tab==='admin')   return viewAdmin();
 }
 
-// шапка-статус (Bank лише свій, Squad Price)
-function statbar(){
-  const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  const price = mine.reduce((s,p)=>s+(p.market_value_current||0),0);
-  const dl = S.rounds.find(r=>new Date(r.deadline_at)>new Date());
-  return `<div class="statbar">
-    <div class="stat"><b>Доступно</b><span class="bank">${eur(S.spendable)}</span></div>
-    <div class="stat"><b>Заморожено</b><span>${eur(S.frozen)}</span></div>
-    <div class="stat"><b>Склад</b><span>${mine.length}/${S.cfg?S.cfg.squad_max:8}</span></div>
-    <div class="stat"><b>Найближчий дедлайн</b><span>${dl?new Date(dl.deadline_at).toLocaleDateString('uk'):'—'}</span></div>
-  </div>`;
-}
-
 // банер пре-маркету (§L): «вікно відкрито до [дедлайн], набери склад мін/макс»
 function premarketBanner(mine){
   const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8;
@@ -868,7 +862,10 @@ function premarketBanner(mine){
   // навіть коли вже заведено наступний тур із майбутнім дедлайном; банер мусить казати те саме
   const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
   if(!firstFut || inplay){
-    const warn=t=>`<div class="premkt"><span><b>Ринок зачинено</b> — ${t}</span></div>`;
+    // Склад і найближчий дедлайн лишаються видимими й коли ринок зачинено/заморожено
+    const nd=firstFut?new Date(firstFut.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):null;
+    const meta=`<span class="pm-prog">Склад <b>${mine.length}/${max}</b> · Найближчий дедлайн: ${nd?`<b>${nd}</b> (тур ${firstFut.number})`:'<b>—</b>'}</span>`;
+    const warn=t=>`<div class="premkt"><span><b>Ринок зачинено</b> — ${t}</span>${meta}</div>`;
     if(!rsAll.length) return warn('відкриється, коли буде заведено тур.');
     if(inplay) return warn(`тур ${inplay.number} у грі (заморозка до внесення результатів).`);
     const si=stageInfo();                        // усі створені тури мають результати
@@ -2276,7 +2273,7 @@ async function viewNews(){
 function renderNews(){
   const rows=S.news;
   if(rows===null){
-    $('view').innerHTML=`<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; <b>Bank ніде</b>. Email — окремо.</div>`;
+    $('view').innerHTML=`<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; баланси учасників приватні. Email — окремо.</div>`;
     return;
   }
   const f=S.newsF||(S.newsF={sub:'all',player:''});
@@ -2287,7 +2284,7 @@ function renderNews(){
   if(f.sub==='mine') list=list.filter(n=>n.actor_participant===S.me.id||n.subject_participant===S.me.id);
   if(f.player) list=list.filter(n=>n.player_id===f.player||(n.meta&&n.meta.wanted_player===f.player));
   $('view').innerHTML=`
-    <div class="head2"><h2>News</h2><span class="sub">подієвий лог ринку · ${rows.length} подій · суми угод публічні, Bank ніде · показано ${list.length}</span></div>
+    <div class="head2"><h2>News</h2><span class="sub">подієвий лог ринку · ${rows.length} подій · суми угод публічні, баланси приватні · показано ${list.length}</span></div>
     <div class="news-filters">
       <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
       <select id="newsPl"><option value="">Гравець: усі</option>${plOpts.map(([id,nm])=>`<option value="${id}"${f.player===id?' selected':''}>${esc(nm)}</option>`).join('')}</select>

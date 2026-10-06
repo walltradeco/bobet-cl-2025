@@ -59,7 +59,8 @@ nav.etabs button{background:transparent;border:0;border-bottom:2px solid transpa
 nav.etabs button.stg-lb{color:var(--accent)}
 nav.etabs button.stg-s1{color:var(--teal)}
 nav.etabs button.stg-s2{color:var(--blue)}
-nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2{opacity:.55}
+nav.etabs button.stg-bank{color:var(--gold)}
+nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank{opacity:.55}
 nav.etabs button:hover{opacity:1}
 nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 
@@ -83,6 +84,14 @@ nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 .lbr .nm{flex:1;font-family:'Montserrat',sans-serif;font-size:21px;font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .lbr.p1 .nm,.lbr.p2 .nm,.lbr.p3 .nm{font-weight:700}
 .lbr .pts{font-family:var(--mono);font-weight:700;font-size:25px;color:var(--text);flex-shrink:0;font-variant-numeric:tabular-nums}
+/* борда Банку (510): підрядок під іменем — Squad Price і Δ проти старту етапу */
+.lbr .bsub{display:block;white-space:normal;font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--dim);margin-top:3px;letter-spacing:.02em}
+.lbr .bsub b{font-weight:700}
+.bankhint{padding:16px 22px;font-size:13px;color:var(--dim);line-height:1.5}
+@media(max-width:520px){   /* 4 вкладки ЕТАПИ мають вміститись; рядки борди Банку не обрізають підрядок */
+  nav.etabs{gap:0} nav.etabs button{font-size:14px;padding:12px 9px}
+  .lbr.bk{padding:14px 14px;gap:10px} .lbr.bk .rnk{min-width:34px} .lbr.bk .nm{font-size:18px} .lbr.bk .pts{font-size:19px}
+}
 .lbr.p1 .pts{color:var(--gold)}.lbr.p2 .pts{color:#C7CDC3}.lbr.p3 .pts{color:#C97B4A}
 
 /* публічна шапка */
@@ -330,7 +339,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
   <div class="hbar">
     <div class="logo">SQ</div>
     <div class="htxt"><h1>Squad Mode</h1><div class="sub">Race Recap · Публічна борда</div></div>
-    <div class="pubtag">🌐 без логіну · <b>Bank ніде</b></div>
+    <div class="pubtag">🌐 без логіну · <b>розклад балансів приватний</b></div>
   </div>
 </header>
 
@@ -340,14 +349,18 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
     <button class="stg-lb active" data-stage="lb">Leaderboard</button>
     <button class="stg-s1" data-stage="s1">1-5 Тур</button>
     <button class="stg-s2" data-stage="s2">6-10 Тур</button>
+    <button class="stg-bank" data-stage="bank">🏦 Банк</button>
   </nav>
 
   <!-- Leaderboard — 3 картки (1-5 Тур · 6-10 Тур · General), заповнює renderLB -->
   <section id="secLB"></section>
 
+  <!-- Банк (510): окрема борда по етапах — Банк = Squad Price + трансферний + зарплатний; знімок після кожного туру -->
+  <section id="secBank" class="hide"></section>
+
   <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
   <section id="secStage" class="hide">
-    <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без Bank) · рух рангу ▲▼=</span></div>
+    <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без балансів) · рух рангу ▲▼=</span></div>
     <div class="turnrow" id="turnRow"></div>
 
     <div class="subtabs">
@@ -396,7 +409,7 @@ const CLUB={
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
-const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null};
+const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null,bank:[],bankReady:false};
 // етапів завжди два; межа — market_config.stage1_last_round (501; 10 турів → 5, 12 → 6). Немає в БД → 5.
 const stage1Max=()=>S.stage1Last||5;
 // кінець 2-го етапу: етапи рівні (10→5+5, 12→6+6), тож не менше 2×межа — навіть коли турів у базі ще мало
@@ -679,14 +692,42 @@ function renderLB(){
     </div>
     <div class="hint">Наскрізний залік · General = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>`;
 }
-// перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур
+// 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
+// публічна лише СУМА, розклад приватний; зі знімка після останнього туру з результатами цього етапу.
+const eurB=v=>'€'+(v/1e6).toFixed(1)+'M';
+const eurD=d=>d>0?'<b class="up">▲ +€'+(d/1e6).toFixed(1)+'M</b>':d<0?'<b class="down">▼ −€'+(Math.abs(d)/1e6).toFixed(1)+'M</b>':'<b class="eq">– €0.0M</b>';
+function bankCard(cls, title, stage){
+  const rows=S.bank.filter(b=>b.stage===stage);
+  if(!rows.length) return `<div class="lbcard ${cls}"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого туру цього етапу з внесеними результатами.</div></div>`;
+  const rn=Math.max(...rows.map(b=>b.round_number));
+  const body=rows.map(b=>{ const pl=b.place-1, pc=pl===0?'p1':pl===1?'p2':pl===2?'p3':'';
+    const rank=pl<3?`<span class="crown">${medal[pl]}</span>`:b.place;
+    return `<div class="lbr bk ${pc}" onclick="openSquad('${b.participant_id}')">
+      <div class="rnk">${rank}</div>
+      <div class="nm">${esc(b.display_name)}<span class="bsub">Squad Price ${eurB(b.squad_price)} · ${eurD(b.delta)}</span></div>
+      <div class="pts">${eurB(b.bank_total)}</div></div>`; }).join('');
+  return `<div class="lbcard ${cls}"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${rn}</span></div>${body}</div>`;
+}
+function renderBank(){
+  const host=$('secBank'); if(!host) return;
+  if(!S.bankReady){ host.innerHTML='<div class="hint" style="padding:16px 2px">Борда Банку зʼявиться після оновлення бази (SQL 510).</div>'; return; }
+  const l1=stage1Max();
+  host.innerHTML=`<div class="lbboards">
+      ${bankCard('tealh','Етап 1 · 1-'+l1+' Тур', 1)}
+      ${bankCard('blueh','Етап 2 · '+(l1+1)+'-'+stage2End()+' Тур', 2)}
+    </div>
+    <div class="hint">Банк = Squad Price + трансферний баланс + зарплатний баланс · публічна лише сума (розклад приватний) · оновлюється після кожного туру · Δ — проти старту етапу · кожен етап рахується окремо · рівні → ділять місце</div>`;
+}
+// перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур / Банк
 function goStage(stage){
   S.stage=stage;
   document.querySelectorAll('#etabs button').forEach(b=>b.classList.toggle('active', b.dataset.stage===stage));
-  const lb=(stage==='lb');
+  const lb=(stage==='lb'), bank=(stage==='bank');
   $('secLB').classList.toggle('hide', !lb);
-  $('secStage').classList.toggle('hide', lb);
+  $('secBank').classList.toggle('hide', !bank);
+  $('secStage').classList.toggle('hide', lb||bank);
   if(lb){ renderLB(); return; }
+  if(bank){ renderBank(); return; }
   const rs=stageRounds(stage);
   if(!rs.length){
     $('turnRow').innerHTML=''; $('h2tour').textContent='🏁 Турів ще не було';
@@ -712,6 +753,8 @@ async function boot(){
     try{ const cf=await sbGet('market_config?select=tournament_id,stage1_last_round');
          const row=cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null);
          if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round; }catch(e){}
+    // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
+    try{ S.bank=await sbGet(`market_bank_board?tournament_id=eq.${S.tournament}&select=stage,participant_id,display_name,round_number,bank_total,squad_price,start_total,delta,place&order=stage.asc,place.asc,display_name.asc`); S.bankReady=true; }catch(e){ S.bank=[]; S.bankReady=false; }
     try{ S.boosts=await sbGet(`market_round_boost_pub?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,boost,delta,target_player`); }catch(e){ S.boosts=[]; }
     { const l1=stage1Max(), mx=stage2End();
       const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2');
@@ -866,7 +909,7 @@ function openSquad(pid){
       +`<div class="plist">${own.length? own.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div>`;
   }
   document.getElementById('ovlT').textContent='Склад · '+p.display_name;
-  document.getElementById('ovlS').textContent='Тур '+S.tour+' · без Bank';
+  document.getElementById('ovlS').textContent='Тур '+S.tour+' · без балансів';
   document.getElementById('ovlB').innerHTML=
     `<div class="ovl-meta">
       <div class="m"><span>Місце</span><b>${place<=3?medal[place-1]:'#'+place}</b></div>
