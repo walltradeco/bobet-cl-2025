@@ -418,7 +418,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-injury{margin:6px 22px 0;border:1px solid #8b3438;background:#3a2020;color:#f29b9f;border-radius:10px;
   padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:7px}
 .pm-injury b{font-weight:600}.pm-injury .em{font-size:15px}
-.pm-body{display:grid;grid-template-columns:212px 1fr;gap:20px;padding:12px 22px}
+.pm-body{display:grid;grid-template-columns:212px 1fr;gap:20px;padding:8px 22px}
 .pm-cardside{display:flex;flex-direction:column;gap:8px;align-items:center}
 .pm-showcard{border:1px solid #315041;background:#102019;color:#bfd0c6;border-radius:10px;height:36px;width:100%;
   font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px}
@@ -444,7 +444,11 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
 .pm-seasons span{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim)}
 .pm-inforow{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;padding-top:10px}
-.pm-inforow.has-role{grid-template-columns:1.45fr .95fr 1.1fr}
+.pm-inforow.has-role{grid-template-columns:1.15fr .85fr 1fr 1.6fr}
+.pm-inforow.has-role .pm-design{grid-column:auto}
+.own-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:6px 18px;align-items:start}
+.own-col .clen{margin-top:0}
+@media(max-width:720px){.own-grid{grid-template-columns:1fr}}
 .pm-box{border:1px solid var(--line);background:var(--panel2);border-radius:9px;padding:8px 10px;min-height:50px}
 .pm-box>span{display:block;font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:5px}
 .pm-box strong{display:flex;align-items:center;gap:6px;font-size:11px;font-weight:500;line-height:1.3}
@@ -896,13 +900,13 @@ function budgetPanel(){
   return `<div class="budg">
     <div class="budg-card">
       <div class="bc-h">💱 Трансферний бюджет</div>
-      <div class="bc-main">${eur(S.bank)}</div>
-      <div class="bc-sub"><span>Доступно <b>${eur(S.spendable)}</b></span><span title="Під ставки й пропозиції">Заморожено ${eur(S.frozen)}</span></div>
+      <div class="bc-main" title="Доступно">${eur(S.spendable)}</div>
+      <div class="bc-sub"><span title="Під ставки й пропозиції">Заморожено ${eur(S.frozen)}</span></div>
     </div>
     <div class="budg-card">
       <div class="bc-h">💵 Зарплатний бюджет</div>
-      <div class="bc-main">${wb!=null?eur(wb):'—'}</div>
-      <div class="bc-sub"><span>Доступно <b>${wf!=null?eur(wf):'—'}</b></span><span title="Під діючі контракти й ставки, де ти лідер">Заморожено ${wr!=null?eur(wr):'—'}</span></div>
+      <div class="bc-main" title="Доступно">${wf!=null?eur(wf):'—'}</div>
+      <div class="bc-sub"><span title="Під діючі контракти й ставки, де ти лідер">Заморожено ${wr!=null?eur(wr):'—'}</span></div>
       ${runwayHTML(wb)}
     </div>
     <button class="budg-pour" data-do="pour">↔ Переливання<small>комісія −${feePct}%</small></button>
@@ -1034,7 +1038,9 @@ function renderLineup(mine, round){
     ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK у старті`)}
     ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
-    ${s.auto ? '' : chip(!!s.vice || s.st.length<2, s.vice?`Віце: ${lastName(s.vice.name)}`:'Віце не обраний')}
+    ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`)
+                  : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 у старті)')
+                  : chip(false, 'Віце не обраний'))}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
   </div>`;
   const injStart = s.st.filter(p=>p&&p.injury);
@@ -1064,7 +1070,7 @@ function renderLineup(mine, round){
       <div>
         <div class="ptap" data-p="${p.id}" title="Детальна картка гравця">
           <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
-          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (перепідпис у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
+          <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (продовження — у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
@@ -1633,14 +1639,23 @@ function wageFor(mv,len,mode){ const c=S.cfg||{}; let base=0;
 function qWage(pid,len,mv){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes.find(x=>x.len===len); return e?+e.wage:wageFor(mv,len,defMode(pid)); }
 function maxLen(){ const c=S.cfg||{}; return Math.max(1,Math.min(c.max_contract_len??5, stageInfo().left)); }
 function chipsHTML(max,sel){ let h=''; for(let L=1;L<=max;L++) h+=`<button type="button" class="clen-chip${L===sel?' on':''}" data-l="${L}">${L}</button>`; return h; }
-function contractPicker(mv,freeAdd,pid){
-  const c=S.cfg||{}, max=maxLen(), ext=c.contract_ext_mult, si=stageInfo();
-  const owned=!!pid&&defMode(pid)==='extend';   // ×N показуємо лише там, де воно реально діє: перепідпис СВОГО гравця
+function turW(n){ return n===1?'тур':(n<5?'тури':'турів'); }
+// opts.extend — ПРОДОВЖЕННЯ власного контракту (ДОДАЄ тури; opts: left = скільки лишилось, oldWage, max = макс. додати)
+function contractPicker(mv,freeAdd,pid,opts){
+  const c=S.cfg||{}, ext=c.contract_ext_mult, si=stageInfo(), o=opts||{};
+  if(o.extend){
+    const max=o.max||1;
+    return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="0" data-pid="${pid||''}" data-ext="1" data-left="${o.left||0}" data-oldwage="${o.oldWage||0}" data-max="${max}">
+      <div class="clab"><b>Продовжити контракт</b> — нові тури <b>додаються</b> до тих, що лишились (${o.left||0}); нові коштують <b>×${ext??1}</b>, старі лишаються по-старому; разом не більше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
+      <div class="clen-row">${chipsHTML(max,1)}</div>
+      <div class="clen-info"></div></div>`;
+  }
+  const max=maxLen();
   return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="${freeAdd||0}" data-pid="${pid||''}">
-    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)${owned&&ext&&ext>1?`; <b>продовження ×${ext}</b>`:''}</div>
+    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
     <div class="clen-row">${chipsHTML(max,1)}</div>
     <div class="clen-info"></div>
-    ${owned?'':`<div class="clab" style="margin:6px 0 0">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</div>`}</div>`;
+    <div class="clab" style="margin:6px 0 0">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</div></div>`;
 }
 // довжина з ПЕРШОГО пікера модалки (buy/buylist/transfer) або з конкретного контейнера (обмін)
 function selectedLen(){ const el=$('mhost').querySelector('.clen'); return el?(+el.dataset.len||1):1; }
@@ -1649,18 +1664,19 @@ function updClen(el){
   el = el || $('mhost').querySelector('.clen'); if(!el) return;
   const mv=+el.dataset.mv||0, len=+el.dataset.len||1, pid=el.dataset.pid;
   const w=pid?qWage(pid,len,mv):wageFor(mv,len,'first'), res=w*len, q=pid&&S.quotes[pid];
-  // при перепідписі старий резерв цього ж гравця вивільняється → додаємо назад (data-freeadd)
+  const isExt=el.dataset.ext==='1', left=+el.dataset.left||0, oldWage=+el.dataset.oldwage||0;
   const wf=(S.wageFree!=null)?(S.wageFree+(+el.dataset.freeadd||0)):null;
   const info=el.querySelector('.clen-info'); let bad=false;
   const mode=q&&q.mode?q.mode:(pid?defMode(pid):'first');
-  const tag=mode==='extend'?` · <b class="warnc">продовження ×${S.cfg?.contract_ext_mult??1}</b>`:mode==='rebuy'?` · <b class="warnc">перевикуп ×${S.cfg?.contract_rebuy_mult??1}</b>`:'';
-  // розмір плати за контракт — головний акцент: велика зарплата за тур і сума резерву, дрібніше — решта
-  let txt=`<div class="cw"><span class="cw-main"><b>${eur(w)}</b> <small>/ тур</small></span>
-      <span class="cw-sum">× ${len} ${len===1?'тур':'тури'} = резерв <b>${eur(res)}</b></span>`;
+  const tag=(!isExt&&mode==='rebuy')?`перевикуп ×${S.cfg?.contract_rebuy_mult??1}`:'';
+  // розмір плати за контракт — головний акцент; калькулятор у лінію: плата × тури = резерв | зарплатний → лишиться
+  let txt=`<div class="cw"><span class="cw-main"><b>${isExt?'+':''}${eur(w)}</b> <small>/ тур</small></span>
+      <span class="cw-sum">${isExt?'+':'×'} ${len} ${turW(len)} = ${isExt?'додатково заморозиться':'резерв'} <b>${eur(res)}</b></span>`;
   if(wf!=null){ bad=res>wf;
-    txt+=`<span class="cw-free">зарплатний вільно <b>${eur(wf)}</b> → ${bad?`<b>не вистачає ${eur(res-wf)}</b>`:`лишиться <b>${eur(wf-res)}</b>`}</span>`; }
+    txt+=`<span class="cw-free">зарплатний доступно <b>${eur(wf)}</b> → ${bad?`<b>не вистачає ${eur(res-wf)}</b>`:`лишиться <b>${eur(wf-res)}</b>`}</span>`; }
   txt+=`</div>`;
-  if(tag) txt+=`<div class="cw-sub">${tag.replace(/^ · /,'')}</div>`;
+  if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1})</div>`;
+  else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
 }
 function bindChips(box){
@@ -1675,7 +1691,7 @@ async function loadQuotes(pid){      // котирування з БД: режи
     const r=await sb.rpc('market_wage_quotes',{p_player:pid}); if(r.error||!r.data) return;
     S.quotes[pid]=r.data;
     document.querySelectorAll('.clen[data-pid="'+pid+'"]').forEach(box=>{
-      const max=r.data.max_len||maxLen(), cur=Math.min(+box.dataset.len||1,max);
+      const max=box.dataset.max?+box.dataset.max:(r.data.max_len||maxLen()), cur=Math.min(+box.dataset.len||1,max);   // продовження: межа з data-max
       box.dataset.len=cur; box.querySelector('.clen-row').innerHTML=chipsHTML(max,cur); bindChips(box); updClen(box);
     });
   }catch(e){}
@@ -1705,26 +1721,27 @@ function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
-    const ci=contractInfo(p), oldReserve=(ci.rl!=null&&ci.wage)?ci.rl*ci.wage:0;
-    // КОНТРАКТ + ПЕРЕПІДПИС (415): нова довжина скидає лічильник, вивільняє старий резерв
-    let h=`<p class="mnote">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — перепідпиши, інакше після наступного туру автопродаж</b>':''}</p>
-      ${contractPicker(mv, oldReserve, p.id)}
-      <div class="macts"><button class="ghost" data-do="resign">Перепідписати (нова довжина)</button></div>`;
-    h+=`<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
-      <p class="mnote">Заморозка блокує продаж під час туру; гравця в лайнапі незіграного туру продати не можна.</p>`;
+    const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
+    // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
+    const cinfo=`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`;
+    const extBlock = extMax>=1
+      ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
+      : `<p class="mnote">Контракт уже покриває всі тури етапу (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
+    let right=`<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
+      <p class="mnote">Під час туру (заморозка) продаж заблоковано; гравця в лайнапі незіграного туру продати не можна.</p>`;
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
     if(S.listingsReady){
       const lst=S.listings[p.id];
       if(lst){
-        h+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
+        right+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
           <div class="macts"><button class="ghost" data-do="unlist">Зняти з продажу</button></div>`;
       } else {
         const minAsk=Math.ceil(mv*winMinPct()), maxAsk=winMaxEur(mv);
-        h+=`<p class="mnote">Вітрина: вистав свого за фіксованою ціною (${winTxt()} вартості; якщо вартість зміниться — лот застаріє, його треба перевиставити) — інший викупить миттєво, отримаєш суму повністю (0% комісії).</p>
+        right+=`<p class="mnote">Вітрина: фіксована ціна ${winTxt()} вартості (зміниться вартість — лот застаріє); інший викупить миттєво, ти отримаєш суму повністю (0% комісії).</p>
           ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk)}`;
       }
     }
-    return h;
+    return `<div class="own-grid"><div class="own-col">${cinfo}${extBlock}</div><div class="own-col">${right}</div></div>`;
   }
   if(!free){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
@@ -1967,7 +1984,7 @@ async function openPlayerModal(pid){
   const sp = (S.stats&&S.stats[p.id]) || null;
   const ptScored  = sp && sp.rounds_played>0  ? sp.scored_points  : '—';
   const ptFielded = sp && sp.fielded_rounds>0 ? sp.fielded_points : '—';
-  const html = `
+  const html = `<div class="pm-fit">
     <header class="pm-head"><div>
       <div class="pm-title">Детальна картка гравця</div>
       <div class="pm-state ${st.tone}"><i></i><b>${st.eb}</b><span class="hlp">${st.hlp}</span></div>
@@ -2000,14 +2017,27 @@ async function openPlayerModal(pid){
         </div>
       </section>
     </div>
-    <footer class="pm-actions">${actionsHTML(p,ctx)}</footer>`;
+    <footer class="pm-actions">${actionsHTML(p,ctx)}</footer></div>`;
   modalOpen(html);
   const md=$('mhost').querySelector('.modal'); if(md) md.classList.add('pmodal');
+  fitPmodal(); setTimeout(fitPmodal,350); setTimeout(fitPmodal,1200);   // усе видно без прокрутки; зображення довантажуються → перерахунок
   const openFull=()=>showFullCard(p,tier,card);
   const b1=$('pmShowCard'), b2=$('pmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
   warmScene(SCENE_FILE[tier]||'steel'); if(card.current_card_png){ hookWarm(b1,card.current_card_png,SCENE_FILE[tier]||'steel'); hookWarm(b2,card.current_card_png,SCENE_FILE[tier]||'steel'); }
   bindModalActions(p);
 }
+// «збільшити вікно»: вікно не вище за екран (96vh), тож замість прокрутки стискаємо вміст (CSS zoom), щоб усе було видно відразу
+function fitPmodal(){
+  const m=$('mhost')&&$('mhost').querySelector('.pmodal'); const w=m&&m.querySelector('.pm-fit'); if(!w) return;
+  w.style.zoom='';
+  if(window.innerWidth<720) return;                               // на телефоні — звичайна прокрутка
+  let z=1;
+  for(let i=0;i<6 && m.scrollHeight>m.clientHeight+1;i++){
+    z=Math.max(.6, z*(m.clientHeight/m.scrollHeight)*0.99); w.style.zoom=z.toFixed(3);
+    if(z<=.6) break;
+  }
+}
+window.addEventListener('resize',()=>{ try{ fitPmodal(); }catch(e){} });
 function bindModalActions(p){
   const h=$('mhost');
   h.querySelectorAll('[data-do]').forEach(b=>b.onclick=async()=>{
@@ -2019,9 +2049,9 @@ function bindModalActions(p){
       ()=>act('market_buynow',{p_player:p.id,p_length:len},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
-    if(kind==='resign'){ const len=selectedLen();
-      confirmModal(`Перепідписати <b>${esc(p.name)}</b> на <b>${len} тур</b> (резерв ${eur(qWage(p.id,len,p.market_value_current)*len)}; усе після першого контракту — продовження ×${S.cfg?.contract_ext_mult??1})?`, 'Перепідписати',
-      ()=>act('market_resign_contract',{p_player:p.id,p_length:len},'Контракт перепідписано'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='extend'){ const len=selectedLen(), ci=contractInfo(p), w=qWage(p.id,len,p.market_value_current), em=S.cfg?.contract_ext_mult??1;
+      confirmModal(`Продовжити <b>${esc(p.name)}</b> ще на <b>${len} ${turW(len)}</b>?<br>Було: ${ci.rl} × ${eur(ci.wage)}. Додасться: ${len} × ${eur(w)} (×${em}). Стане: <b>${(ci.rl||0)+len} ${turW((ci.rl||0)+len)}</b>. Додатково заморозиться ${eur(w*len)}.`, 'Продовжити',
+      ()=>act('market_extend_contract',{p_player:p.id,p_length:len},'Контракт продовжено'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buylist'){ const amt=+b.dataset.amt, len=selectedLen();
       confirmModal(`Викупити <b>${esc(p.name)}</b> з вітрини за <b>${eur(amt)}</b> (миттєво, 0% комісії) · контракт <b>${len} тур</b>?`, 'Викупити · '+eur(amt),
       ()=>act('market_buy_listing',{p_player:p.id,p_length:len},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
