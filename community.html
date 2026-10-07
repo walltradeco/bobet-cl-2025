@@ -412,17 +412,23 @@ const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'�
 const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключив учасника',
   role_added:'надав роль',role_removed:'зняв роль',invited:'запросив у спільноту',invite_accepted:'прийняв запрошення',
   request_approved:'схвалив заявку',founder_transferred:'передав засновництво',
-  relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок',
+  relation_ally:'оголосив партнером',relation_enemy:'оголосив суперником',relation_cleared:'скасував звʼязок',
   beer:'випив пиво'};
 
 // хвіст фрази після імені виконавця. Для подій «хтось зробив щось із кимось» (ролі, виключення, запрошення,
 // схвалення заявки, передача засновництва) виконавець = хто зробив, ціль = на кого — «Бо надав роль «Клієнт» — Женя»
 // (без відмінювання імен, бо імена довільні)
 const EV_WITH_TARGET=['role_added','role_removed','kicked','invited','request_approved','founder_transferred'];
+// події дипломатії: назва ДРУГОЇ спільноти лежить у `detail` («Бо оголосив партнером «Бар Б»») — слова як в UI: Партнер/Суперник
+const EV_REL=['relation_ally','relation_enemy','relation_cleared'];
 function evTail(l,boldTgt){
   const t=l.target_name?(boldTgt?` <b>${esc(l.target_name)}</b>`:` ${esc(l.target_name)}`):'';
   const rl=l.role_label?` «${esc(l.role_label)}»`:'';
   const verb=EVLBL[l.event]||l.event;
+  if(EV_REL.includes(l.event)){
+    const to=l.detail?` «${esc(l.detail)}»`:'';
+    return l.event==='relation_cleared'?(to?`скасував звʼязок з${to}`:verb):`${verb}${to}`;
+  }
   if(EV_WITH_TARGET.includes(l.event)) return `${verb}${rl}${t?' —'+t:''}`;
   return `${verb}${t}${rl}`;
 }
@@ -888,7 +894,7 @@ function renderMembers(perms){
 function renderHistory(){
   const rows=S.cur.log.map(l=>{
     const who=`<b>${esc(l.actor_name||'—')}</b>`;
-    const dt=l.detail?` (${esc(l.detail)})`:'';   // причина/прощальне слово (left/kicked)
+    const dt=(l.detail&&!EV_REL.includes(l.event))?` (${esc(l.detail)})`:'';   // причина/прощальне слово (left/kicked); для дипломатії назва вже у фразі
     return `<div class="logrow">${who} ${evTail(l,true)}${dt}
       <span class="st" style="float:right">${new Date(l.created_at).toLocaleDateString('uk')}</span></div>`;
   }).join('');
