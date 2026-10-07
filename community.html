@@ -409,12 +409,23 @@ function ago(iso){ const s=(Date.now()-new Date(iso))/1000;
 let formEmoji=null;   // збережений емодзі спільноти (поля у формі нема; на редагуванні не затираємо)
 const PERMKEYS=['perm_manage_info','perm_manage_roles','perm_manage_members','perm_moderate_wall','perm_manage_relations','perm_delete'];
 const PERMLBL={perm_manage_info:'Керувати інфо',perm_manage_roles:'Керувати ролями',perm_manage_members:'Керувати учасниками',perm_moderate_wall:'Модерувати стіну',perm_manage_relations:'Дипломатія',perm_delete:'Видаляти спільноту'};
-const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключено',
-  role_added:'отримав роль',role_removed:'втратив роль',invited:'запрошено',invite_accepted:'прийняв запрошення',
-  request_approved:'заявку схвалено',founder_transferred:'передав засновництво',
+const EVLBL={created:'заснував спільноту',joined:'доєднався',left:'вийшов',kicked:'виключив учасника',
+  role_added:'надав роль',role_removed:'зняв роль',invited:'запросив у спільноту',invite_accepted:'прийняв запрошення',
+  request_approved:'схвалив заявку',founder_transferred:'передав засновництво',
   relation_ally:'оголосив партнером',relation_enemy:'оголосив ворогом',relation_cleared:'скасував звʼязок',
   beer:'випив пиво'};
 
+// хвіст фрази після імені виконавця. Для подій «хтось зробив щось із кимось» (ролі, виключення, запрошення,
+// схвалення заявки, передача засновництва) виконавець = хто зробив, ціль = на кого — «Бо надав роль «Клієнт» — Женя»
+// (без відмінювання імен, бо імена довільні)
+const EV_WITH_TARGET=['role_added','role_removed','kicked','invited','request_approved','founder_transferred'];
+function evTail(l,boldTgt){
+  const t=l.target_name?(boldTgt?` <b>${esc(l.target_name)}</b>`:` ${esc(l.target_name)}`):'';
+  const rl=l.role_label?` «${esc(l.role_label)}»`:'';
+  const verb=EVLBL[l.event]||l.event;
+  if(EV_WITH_TARGET.includes(l.event)) return `${verb}${rl}${t?' —'+t:''}`;
+  return `${verb}${t}${rl}`;
+}
 const S={ me:null, name:null, isAdmin:false, list:[], mine:[], pending:[],
   f:{q:'',kind:'',join:'',sort:'active'}, cur:null, tab:'wall' };
 
@@ -668,9 +679,8 @@ function renderOverview(perms, member){
       return `<div class="evrow"><div class="evic">📝</div><div class="evtx"><b>${esc(trunc(p.body,58))}</b>
         <div class="sub">Пост · ${esc(p.author_name||'—')}</div></div><div class="evt">${ago(p.created_at)}</div></div>`; }
     const l=it.d; const gold=(l.event==='role_added'||l.event==='created'||l.event==='founder_transferred')?' gold':'';
-    const tgt=l.target_name?` ${esc(l.target_name)}`:''; const rl=l.role_label?` «${esc(l.role_label)}»`:'';
     return `<div class="evrow"><div class="evic${gold}">${EV_IC[l.event]||'•'}</div>
-      <div class="evtx"><b>${esc(l.actor_name||'—')} ${esc(EVLBL[l.event]||l.event)}${tgt}${rl}</b>
+      <div class="evtx"><b>${esc(l.actor_name||'—')} ${evTail(l,false)}</b>
       <div class="sub">Історія</div></div><div class="evt">${ago(l.created_at)}</div></div>`;
   };
   const pinHTML = pinned ? `<div class="post pin">
@@ -783,7 +793,7 @@ function renderPrestige(perms, member){
   const col=safeCol(c.accent_color);
   const how = c.kind==='bar'
     ? `<h5>🍻 Як росте престиж бару</h5>Престиж бару росте, коли учасники <b>заходять випити пиво</b>.
-       Кулдаун <b>30 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
+       Кулдаун <b>15 хв</b> між пивами, до <b>5</b> на день. За кожен день поспіль — ще <b>+1</b> (стрік).
        Бар піднімається драбиною рангів — від <b>Розливу</b> до <b>Пивної імперії</b>.
        Одне пиво = <b>0.5 л</b>.`
     : `<h5>🛡 Як росте престиж клубу</h5>Престиж клубу — це <b>сума досягнень учасників</b> у <b>BOBET</b> та <b>PSL</b>:
@@ -878,10 +888,8 @@ function renderMembers(perms){
 function renderHistory(){
   const rows=S.cur.log.map(l=>{
     const who=`<b>${esc(l.actor_name||'—')}</b>`;
-    const tgt=l.target_name?` <b>${esc(l.target_name)}</b>`:'';
-    const rl=l.role_label?` «${esc(l.role_label)}»`:'';
     const dt=l.detail?` (${esc(l.detail)})`:'';   // причина/прощальне слово (left/kicked)
-    return `<div class="logrow">${who} ${EVLBL[l.event]||l.event}${tgt}${rl}${dt}
+    return `<div class="logrow">${who} ${evTail(l,true)}${dt}
       <span class="st" style="float:right">${new Date(l.created_at).toLocaleDateString('uk')}</span></div>`;
   }).join('');
   $('ctab').innerHTML = rows ? `<div class="histscroll">${rows}</div>` : '<div class="sum">Історія порожня.</div>';
