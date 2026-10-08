@@ -914,11 +914,11 @@ function renderRel(perms){
     const em=r.type==='ally'?'🤝':'⚔️';
     const mut=r.mutual?`<span class="rel-mut ${r.type==='ally'?'rel-ally':'rel-enemy'}" style="border-color:currentColor">${r.type==='ally'?'СОЮЗ':'ДЕРБІ'}</span>`:'';
     return `<div class="relrow"><span>${em} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
-      <span class="${r.type==='ally'?'rel-ally':'rel-enemy'}">${r.type==='ally'?'партнер':'ворог'}</span>${mut}
+      <span class="${r.type==='ally'?'rel-ally':'rel-enemy'}">${r.type==='ally'?'партнер':'суперник'}</span>${mut}
       ${perms.perm_manage_relations?`<button class="ghost sm warn" data-relclear="${r.other_id}" style="margin-left:auto">Скасувати</button>`:''}</div>`;
   };
   const incLine=(r)=>`<div class="relrow"><span>${r.type==='ally'?'🤝':'⚔️'} ${esc(r.other_emoji||'')} <b>${esc(r.other_name)}</b></span>
-    <span class="st">${r.type==='ally'?'вважає партнером':'вважає ворогом'}</span>
+    <span class="st">${r.type==='ally'?'вважає партнером':'вважає суперником'}</span>
     ${(perms.perm_manage_relations&&!r.mutual)?`<button class="act sm" data-relconfirm="${r.other_id}" data-reltype="${r.type}" style="margin-left:auto">Підтвердити ${r.type==='ally'?'союз':'дербі'}</button>`:''}</div>`;
   $('ctab').innerHTML=
     `${perms.perm_manage_relations?`<button class="act sm" id="rel-add" style="margin-bottom:10px">+ Оголосити звʼязок</button>`:''}
@@ -1116,7 +1116,7 @@ function openRelAdd(){
   modal(`<div class="mhead"><h3>Оголосити звʼязок</h3><button class="mx">✕</button></div>
     <div class="mbody"><div class="field"><label>Спільнота</label>
       <select id="rl-to">${targets.map(c=>`<option value="${c.id}">${esc(c.emoji||'')} ${esc(c.name)}</option>`).join('')}</select></div>
-      <div class="field"><label>Тип</label><select id="rl-type"><option value="ally">🤝 Партнер</option><option value="enemy">⚔️ Ворог</option></select></div>
+      <div class="field"><label>Тип</label><select id="rl-type"><option value="ally">🤝 Партнер</option><option value="enemy">⚔️ Суперник</option></select></div>
       <button class="act" id="rl-go">Оголосити</button><div id="rl-msg"></div></div>`);
   $('rl-go').onclick=async()=>{ const to=$('rl-to').value, type=$('rl-type').value; if(!to) return;
     if(await act('community_set_relation',{p_from:S.cur.id,p_to:to,p_type:type},reopen)) closeModal(); };
