@@ -163,6 +163,13 @@ table.t{width:100%;border-collapse:collapse}
   border-bottom:1px solid var(--line);padding-bottom:8px;margin:6px 0 14px;display:flex;justify-content:space-between}
 
 .mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px}
+/* 514: нагадування DEF/GK */
+.dgbanner{margin:10px 0;padding:9px 14px;border-radius:10px;font-size:13px;line-height:1.4;border:1px solid var(--line);background:var(--panel)}
+.dgbanner.dgb-ok{color:var(--up,#6fcf8f);border-color:rgba(111,207,143,.35)}
+.dgbanner.dgb-warn{color:var(--gold);border-color:var(--gold);background:rgba(212,175,55,.08)}
+.dgbanner.dgb-bad{color:#ff8a80;border-color:rgba(255,138,128,.5);background:rgba(255,138,128,.08)}
+.mtile.dgblock{opacity:.55}
+.mdgb{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:-2px 0 4px}
 .mtile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;
   cursor:pointer;transition:border-color .12s,transform .12s;text-align:center}
 .mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
@@ -952,11 +959,19 @@ function pourModal(){
   };
   upd();
 }
+// підпис лайнапу: порівнюємо чернетку з ЗБЕРЕЖЕНИМ на сервері → кнопка «Підтвердити» знає, чи є що зберігати
+// (Автопілот ігнорує капітана/віце, тож їх у підпис не кладемо)
+function lnSigOf(rows, boost){
+  const auto = boost==='squad_autopilot';
+  const st = rows.filter(r=>r.role==='start').map(r=>r.id+':s'+(auto?'':(r.cap?'c':(r.vice?'v':'')))).sort();
+  const bn = rows.filter(r=>r.role==='bench').sort((a,b)=>a.ord-b.ord).map((r,i)=>r.id+':b'+(i+1));
+  return st.join(',')+'|'+bn.join(',')+'|'+(boost||'');
+}
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
   if(!mine.length){
-    $('view').innerHTML = premarketBanner(mine) + budgetPanel() +
+    $('view').innerHTML = premarketBanner(mine) + defgkBanner(mine) + budgetPanel() +
       '<div class="head2"><h2>Мій склад</h2></div><div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>';
     const pb0=$('view').querySelector('[data-do="pour"]'); if(pb0) pb0.onclick=pourModal;
     return;
@@ -975,6 +990,8 @@ async function viewSquad(){
   S.lineup = {}; S.lineupRound = round;
   mine.forEach(p => S.lineup[p.id] = { role:'out', cap:false, vice:false, ord:99 });
   lu.forEach(r => { if(S.lineup[r.player_id]) S.lineup[r.player_id] = { role:r.role, cap:r.is_captain, vice:r.is_vice, ord:r.bench_order||99 }; });
+  // збережений на сервері склад (для стану кнопки): null = ще нічого не підтверджено на цей тур
+  S.lnSaved = lu.length ? lnSigOf(lu.map(r=>({id:r.player_id, role:r.role, ord:r.bench_order||99, cap:r.is_captain, vice:r.is_vice})), S.boost) : null;
   renderLineup(mine, round);
 }
 
@@ -1015,6 +1032,10 @@ function lnState(mine){
   const out= mine.filter(p=>S.lineup[p.id].role==='out');
   const min5 = S.cfg?S.cfg.squad_min:5, benchMax=(S.cfg?S.cfg.squad_max-S.cfg.squad_min:3), dgMin=S.cfg?S.cfg.defgk_start_min:1;
   const defgk = st.filter(p=>p.position==='D'||p.position==='G').length;
+  // 514: повна лавка (3) → ≥ (defgk_full_min − defgk_start_min) DEF/GK НА ЛАВЦІ (старт 1 + лавка 1 = 2 у складі з 8)
+  const benchDgNeed = S.cfg ? Math.max(0,(S.cfg.defgk_full_min||2)-(S.cfg.defgk_start_min||1)) : 1;
+  const benchDg = bn.filter(p=>p.position==='D'||p.position==='G').length;
+  const benchFull = bn.length>=benchMax;
   const auto = S.boost==='squad_autopilot';           // Автопілот замінює Капітана/Віце
   const cap = auto ? null : st.find(p=>S.lineup[p.id].cap);
   const vice= auto ? null : st.find(p=>S.lineup[p.id].vice);
@@ -1022,9 +1043,10 @@ function lnState(mine){
   if(st.length<1||st.length>min5) errs.push(`старт 1..${min5}`);
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK у старті`);
+  if(benchFull && benchDg<benchDgNeed) errs.push(`≥${benchDgNeed} DEF/GK на лавці`);
   if(!auto && !cap) errs.push('обери капітана');
   if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
-  return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
+  return { st, bn, out, defgk, dgMin, min5, benchMax, benchDg, benchDgNeed, benchFull, cap, vice, auto, ok: errs.length===0, errs };
 }
 
 // перемістити лавкового вгору/вниз (порядок = пріоритет автозаміни)
@@ -1042,6 +1064,7 @@ function renderLineup(mine, round){
   const val = `<div class="valid">
     ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK у старті`)}
+    ${s.benchDgNeed>0 && (s.benchFull || mine.length>=((S.cfg&&S.cfg.squad_max)||8)) ? chip(s.benchDg>=s.benchDgNeed, `≥${s.benchDgNeed} DEF/GK на лавці`) : ''}
     ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
     ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`)
                   : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 у старті)')
@@ -1092,7 +1115,7 @@ function renderLineup(mine, round){
         <span class="cd tnum">⏳ ${countdown(round.deadline_at)}</span></div>`
     : `<div class="rndbar"><span class="pill">—</span><span class="txt">Турів попереду немає — виставлення закрито</span></div>`;
 
-  $('view').innerHTML = premarketBanner(mine) + budgetPanel() + tourBanner +
+  $('view').innerHTML = premarketBanner(mine) + defgkBanner(mine) + budgetPanel() + tourBanner +
     `<div class="head2"><h2>Мій склад</h2><span class="sub">старт ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / У старт)</span></div>
      <div class="squad-wrap">
        <div class="panel">
@@ -1102,7 +1125,11 @@ function renderLineup(mine, round){
          ${injWarn}
          ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 згорить. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
          ${boostBlock(round)}
-         <button class="btn" id="ln-save" ${(!round||!s.ok)?'disabled':''} style="width:100%">Підтвердити склад${round?' на Тур '+round.number:''}</button>
+         ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost);
+                  const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved, nTxt=round?' на Тур '+round.number:'';
+                  const label = same ? '✓ Склад'+nTxt+' підтверджено' : (saved ? 'Підтвердити зміни складу'+nTxt : 'Підтвердити склад'+nTxt);
+                  return `<button class="btn" id="ln-save" ${(!round||!s.ok||same)?'disabled':''} style="width:100%${same?';opacity:.75':''}">${label}</button>`
+                       + (same ? '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну туру — після змін кнопка знову стане активною.</p>' : ''); })()}
          ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
          <p class="dim" style="margin-top:8px">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого у складі.' : 'Капітан і Віце — обидва обов\'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>
        </div>
@@ -1221,28 +1248,49 @@ function formChart(p){
       <polyline fill="none" stroke="var(--gold)" stroke-width="2" points="${pts}"/></svg></div>`;
 }
 // пре-чек лімітів складу при набутті (дублює тригер 398 — тут для UX, блокуємо заздалегідь §K)
+// ── DEF/GK: «досяжність» (SQL 514, рішення Богдана 09.10) ──
+// після набуття слотів до squad_max має вистачати, щоб добрати defgk_full_min DEF/GK: D/G + (max − гравців) ≥ min.
+const isDG = x => x && (x.position==='D' || x.position==='G');
+function dgRule(total, dg){                       // → null (ок) або текст причини; total/dg — ПІСЛЯ набуття
+  const cfg=S.cfg||{}, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
+  if(dg + (max-total) >= need) return null;
+  if(total===max) return `На повному складі потрібно ≥${need} DEF/GK`;
+  return `Далі лише DEF/GK: у складі з ${max} потрібно ≥${need} DEF/GK, а слотів після цієї купівлі лишиться ${max-total}, коли DEF/GK бракує ще ${need-dg}`;
+}
+// нагадування про DEF/GK на «Мій склад» і «Ринок» (стани: ок / потрібно ще / решта слотів лише DEF/GK / недосяжно)
+function defgkBanner(mine){
+  const cfg=S.cfg||{}, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
+  const n=mine.length; if(!n) return '';
+  const d=mine.filter(isDG).length, slots=max-n, lack=Math.max(0,need-d);
+  let cls='dgb-info', txt;
+  if(lack===0){ cls='dgb-ok'; txt=`✓ DEF/GK у складі: <b>${d}</b> (потрібно ≥${need}).`; }
+  else if(lack>slots){ cls='dgb-bad'; txt=`✕ DEF/GK: <b>${d}</b> з ${need}, вільних слотів <b>${slots}</b> — склад із ${max} недосяжний. Продай не-DEF/GK або обміняй його на DEF/GK.`; }
+  else if(lack===slots){ cls='dgb-warn'; txt=`⚠️ Решта <b>${slots}</b> ${slots===1?'слот':'слоти'} — <b>лише DEF/GK</b> (потрібно ще ${lack}).`; }
+  else { txt=`DEF/GK у складі: <b>${d}</b> з ${need}. Для повного складу з ${max} потрібно ще <b>${lack}</b> · вільних слотів: ${slots}.`; }
+  return `<div class="dgbanner ${cls}">${txt}</div>`;
+}
 function acquireBlock(p){
   const cfg=S.cfg||{}, mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
   if(mine.length >= (cfg.squad_max||8)) return `Склад повний (${cfg.squad_max||8}) — спершу звільни місце`;
   if(mine.filter(x=>x.club_id===p.club_id).length >= (cfg.max_per_club||3)) return `Уже ${cfg.max_per_club||3} з цього клубу`;
   if(p.position==='G' && mine.some(x=>x.position==='G'&&x.club_id===p.club_id)) return 'Уже є воротар з цього клубу';
-  const dgFull=cfg.defgk_full_min||2;
-  if(mine.length === (cfg.squad_max||8)-1){
-    const dg=mine.filter(x=>x.position==='D'||x.position==='G').length + ((p.position==='D'||p.position==='G')?1:0);
-    if(dg<dgFull) return `На повному складі потрібно ≥${dgFull} DEF/GK`;
-  }
-  return null;
+  // 514: досяжність 2 DEF/GK уже з 7-го гравця (раніше лише на 8-му)
+  return dgRule(mine.length+1, mine.filter(isDG).length + (isDG(p)?1:0));
 }
 
 // ── плитка гравця (сітка ринку, за макетом) ──
 function mtile(p){
   const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
-  return `<div class="mtile ${o.cls==='mine'?'mine':''}" data-p="${p.id}">
+  // 514: вільний не-DEF/GK, якого вже не можна взяти через правило DEF/GK → приглушуємо й підписуємо
+  let dgb=''; if(S.me && !p.owner_participant_id && !isDG(p)){ const mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
+    if(mine.length && dgRule(mine.length+1, mine.filter(isDG).length)) dgb='<div class="mdgb" title="Решта слотів — лише DEF/GK">лише DEF/GK</div>'; }
+  return `<div class="mtile ${o.cls==='mine'?'mine':''}${dgb?' dgblock':''}" data-p="${p.id}">
     <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}
       <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
     ${avatar(p,76)}
     <div class="mnm">${esc(p.name)}</div>
     <div class="mclub">${esc(cl.name||'')}</div>
+    ${dgb}
     <div class="mtrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span></div>
     ${sparkTile(p)}
     <div class="mstatus ${o.cls}">${o.dot}${o.txt}</div>
@@ -1384,7 +1432,7 @@ async function viewMarket(){
     }
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  $('view').innerHTML = premarketBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
+  $('view').innerHTML = premarketBanner(mineM)+defgkBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
@@ -1546,7 +1594,7 @@ function exchangeBlock(pid,outP,inP){
   if(total>(cfg.squad_max||8)) return `склад >${cfg.squad_max||8}`;
   if(clubN>(cfg.max_per_club||3)) return `>${cfg.max_per_club||3} з клубу ${esc((S.clubs[inP.club_id]||{}).name||'')}`;
   if(clubGK>1) return 'два воротарі з одного клубу';
-  if(total===(cfg.squad_max||8)&&dg<(cfg.defgk_full_min||2)) return `на повному потрібно ≥${cfg.defgk_full_min||2} DEF/GK`;
+  const dgr=dgRule(total,dg); if(dgr) return dgr.charAt(0).toLowerCase()+dgr.slice(1);   // 514: досяжність
   return null;
 }
 // блок обміну в модалці чужого гравця p (=wanted). Селект свого + доплата + наживо валідація.
@@ -2215,12 +2263,15 @@ async function viewMatches(){
   const freeze = frozen? `<div class="rndbar" style="border-color:#244;background:#0e1a22">
       <span class="pill" style="background:#0e1a22;border:1px solid #244;color:var(--blue)">❄ Заморозка</span>
       <span class="txt">Тур ${round.number} у грі — ринок зачинено до внесення всіх результатів.</span></div>` : '';
-  // лише матчі клубів, що мають гравців у пулі (порожні засіяні клуби ховаємо)
+  // матчі, де грає ХОЧА Б ОДИН клуб із гравцями пулу (09.10: реальні матчі проти суперників без гравців теж показуємо;
+  // матчі двох порожніх засіяних клубів ховаємо), за часом
   const activeClubs=new Set(S.players.map(p=>p.club_id));
-  const rf=fx.filter(f=>f.round_id===round.id && activeClubs.has(f.home_club_id) && activeClubs.has(f.away_club_id));
+  const rf=fx.filter(f=>f.round_id===round.id && (activeClubs.has(f.home_club_id) || activeClubs.has(f.away_club_id)))
+             .sort((a,b)=>new Date(a.kickoff_at)-new Date(b.kickoff_at));
   const rows = rf.length ? rf.map(f=>{
     const sched=f.home_score==null;
-    const sc=sched? new Date(f.kickoff_at).toLocaleString('uk',{weekday:'short',hour:'2-digit',minute:'2-digit'}) : `${f.home_score}:${f.away_score}`;
+    const off = f.status==='postponed' ? 'перенесено' : (f.status==='cancelled' ? 'скасовано' : '');
+    const sc= off ? off : (sched? new Date(f.kickoff_at).toLocaleString('uk',{weekday:'short',hour:'2-digit',minute:'2-digit'}) : `${f.home_score}:${f.away_score}`);
     return `<div class="mrow" data-fx="${f.home_club_id}|${f.away_club_id}">
       <div class="t"><span class="crest" style="--club:${clubCol(f.home_club_id)}"></span><span>${esc(clubName(f.home_club_id))}</span></div>
       <div class="score ${sched?'sched':''}">${sc}</div>
