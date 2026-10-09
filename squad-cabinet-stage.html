@@ -1032,10 +1032,6 @@ function lnState(mine){
   const out= mine.filter(p=>S.lineup[p.id].role==='out');
   const min5 = S.cfg?S.cfg.squad_min:5, benchMax=(S.cfg?S.cfg.squad_max-S.cfg.squad_min:3), dgMin=S.cfg?S.cfg.defgk_start_min:1;
   const defgk = st.filter(p=>p.position==='D'||p.position==='G').length;
-  // 514: повна лавка (3) → ≥ (defgk_full_min − defgk_start_min) DEF/GK НА ЛАВЦІ (старт 1 + лавка 1 = 2 у складі з 8)
-  const benchDgNeed = S.cfg ? Math.max(0,(S.cfg.defgk_full_min||2)-(S.cfg.defgk_start_min||1)) : 1;
-  const benchDg = bn.filter(p=>p.position==='D'||p.position==='G').length;
-  const benchFull = bn.length>=benchMax;
   const auto = S.boost==='squad_autopilot';           // Автопілот замінює Капітана/Віце
   const cap = auto ? null : st.find(p=>S.lineup[p.id].cap);
   const vice= auto ? null : st.find(p=>S.lineup[p.id].vice);
@@ -1043,10 +1039,9 @@ function lnState(mine){
   if(st.length<1||st.length>min5) errs.push(`старт 1..${min5}`);
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK у старті`);
-  if(benchFull && benchDg<benchDgNeed) errs.push(`≥${benchDgNeed} DEF/GK на лавці`);
   if(!auto && !cap) errs.push('обери капітана');
   if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
-  return { st, bn, out, defgk, dgMin, min5, benchMax, benchDg, benchDgNeed, benchFull, cap, vice, auto, ok: errs.length===0, errs };
+  return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
 }
 
 // перемістити лавкового вгору/вниз (порядок = пріоритет автозаміни)
@@ -1064,7 +1059,7 @@ function renderLineup(mine, round){
   const val = `<div class="valid">
     ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK у старті`)}
-    ${s.benchDgNeed>0 && (s.benchFull || mine.length>=((S.cfg&&S.cfg.squad_max)||8)) ? chip(s.benchDg>=s.benchDgNeed, `≥${s.benchDgNeed} DEF/GK на лавці`) : ''}
+    ${mine.length>=((S.cfg&&S.cfg.squad_max)||8) ? chip(mine.filter(p=>p.position==='D'||p.position==='G').length>=((S.cfg&&S.cfg.defgk_full_min)||2), `≥${(S.cfg&&S.cfg.defgk_full_min)||2} DEF/GK у складі (основа або лавка)`) : ''}
     ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
     ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`)
                   : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 у старті)')
