@@ -3626,16 +3626,16 @@ function mvpBadge(name){
 /* Бейдж 🐐 з Club Legend (334/385) поруч із ⚔️/👔/MVP. Показуємо лише
    в місячній таблиці (LIVE_LEGEND != null) і лише коли етап реально має
    Legend-пул (людина без вибору просто не потрапляє в мапу — пусто).
-   Число — сума балів обох слотів зі стелею LIVE_LEGEND_CAP (стеля лише
-   НА СУМУ ЕТАПУ — за вікенд стелі немає, файл 386, рішення Богдана
-   28.09.2026). У підказці — по рядку на кожен обраний слот, а під ним
-   розбивка по вікендах (386: legend_match_board), як у Rivals/Style.
+   У рядку — лише іконка 🐐, без «0/16» (рішення Богдана 09.10.2026: усе
+   по наведенню, як у ⚔️/👔/MVP). У підказці — по рядку на кожен обраний
+   слот, а під ним розбивка по вікендах (386: legend_match_board), як у
+   Rivals/Style. Стеля етапу (LIVE_LEGEND_CAP) діє лише на суму етапу —
+   за вікенд стелі немає (файл 386, 28.09.2026) — і в бейдж не виводиться.
    Вікенд, у якому клуб не грав, просто відсутній у розбивці. */
 function legendBadge(name){
   if(!LIVE_LEGEND) return '';
   const picks = LIVE_LEGEND[name];
   if(!picks || !picks.length) return '';
-  const total = Math.min(LIVE_LEGEND_CAP, picks.reduce((s, p) => s + (p.points || 0), 0));
   const rows = picks
     .map(p => {
       // Підпис легенди: ім'я/прізвище легенди клубу (Баварія·Канонада →
@@ -3656,7 +3656,7 @@ function legendBadge(name){
         + (breakdown ? `<div class="rv-tip-row" style="opacity:0.75">${breakdown}</div>` : '');
     })
     .join('');
-  return `<span class="rv-badge">🐐 ${total}/${LIVE_LEGEND_CAP}<span class="rv-tip">${rows}</span></span>`;
+  return `<span class="rv-badge">🐐<span class="rv-tip">${rows}</span></span>`;
 }
 
 /* ======== MATCHES ======== */
