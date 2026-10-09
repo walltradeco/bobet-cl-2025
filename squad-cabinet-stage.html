@@ -713,6 +713,8 @@ async function loadRefs(){
   S.clubs = {}; cs.forEach(c=>S.clubs[c.id]=c);
   S.cfg = (await sb.rpc('market_cfg', { p_tournament:S.tour.id })).data || null;
   S.rounds = await sbSel(`market_rounds?tournament_id=eq.${S.tour.id}&select=id,number,title,deadline_at,results_entered_at&order=number.asc`);
+  // 513: стан туру «у грі» для банера (збираємо / закриваємо / чекає рішення адміна); без 513 — порожньо, банер як раніше
+  S.attn = {}; try{ (await sbSel(`market_rounds_attention?tournament_id=eq.${S.tour.id}&select=round_number,state,reason,fixtures,played`)).forEach(a=>S.attn[a.round_number]=a); }catch(e){}
   S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,wage_per_round,injury,shirt_number,sofascore_player_id&order=market_value_current.desc`);
   // тіри (431): мої розблоковані рамки (emerald) + мої картки-предмети (для перемикача дизайну).
   // graceful-degrade — якщо 430/431 ще не залито, картка лишається базовою.
@@ -867,7 +869,13 @@ function premarketBanner(mine){
     const meta=`<span class="pm-prog">Склад <b>${mine.length}/${max}</b> · Найближчий дедлайн: ${nd?`<b>${nd}</b> (тур ${firstFut.number})`:'<b>—</b>'}</span>`;
     const warn=t=>`<div class="premkt"><span><b>Ринок зачинено</b> — ${t}</span>${meta}</div>`;
     if(!rsAll.length) return warn('відкриється, коли буде заведено тур.');
-    if(inplay) return warn(`тур ${inplay.number} у грі (заморозка до внесення результатів).`);
+    if(inplay){
+      const a=(S.attn||{})[inplay.number];
+      const why = !a ? '' : (a.state==='blocked' ? ` <b style="color:var(--gold)">⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.</b>`
+                       : a.state==='closing' ? ' Усі матчі завершені — розрахунок за ~1 год.'
+                       : ` Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`);
+      return warn(`тур ${inplay.number} у грі (заморозка до розрахунку).${why}`);
+    }
     const si=stageInfo();                        // усі створені тури мають результати
     if(si.left>0) return warn('усі створені тури зіграні — ринок відкриється, коли буде заведено наступний тур.');
     return si.stage===1 ? warn(`етап 1 завершено. Пре-маркет етапу 2 (з нуля) відкриється, коли адмін заведе тур ${si.last+1} і запустить старт етапу.`)

@@ -140,7 +140,11 @@ table.f1 tbody tr:last-child td{border-bottom:none}
 .name-c{font-weight:600;font-size:16px;white-space:nowrap}
 .rndpts{font-family:var(--mono);font-weight:700;font-size:17px}
 .total{font-family:var(--mono);font-weight:700;font-size:18px;color:var(--gold)}
-.squad-tiles{display:flex;gap:5px}
+.squad-tiles{display:flex;gap:5px;align-items:center}
+.sq-gap{flex:none;width:12px}                                   /* невеликий проміжок: старт 5 | лавка 3 */
+.stile.bn{opacity:.82}
+.stile .bo{position:absolute;top:-7px;left:-5px;font-size:9px;background:var(--panel2);color:var(--text);
+  font-family:var(--mono);font-weight:700;border-radius:4px;padding:0 4px;border:1px solid var(--line)}   /* 1/2/3 = порядок заміни */
 .stile{width:62px;height:50px;border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;
   gap:2px;padding:0 3px;background:var(--club,#233);color:#fff;border:1px solid rgba(255,255,255,.16);position:relative}
 .stile .ab{font-family:var(--mono);font-weight:700;font-size:10.5px;line-height:1.05;text-align:center;max-width:100%;
@@ -370,7 +374,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 
     <section data-view="tbl" class="on">
       <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
-      <div class="hint" id="tblHint">SQUAD — стартова 5 (клік → повний склад) · капітан ×2 · Squad Price = сума поточних вартостей складу</div>
+      <div class="hint" id="tblHint">SQUAD — стартова 5 і лавка 3 (цифра на лавці = порядок заміни; клік → повний склад) · капітан ×2 · Squad Price = сума поточних вартостей складу</div>
     </section>
     <section data-view="grid">
       <div class="board"><div class="f1-scroll"><table class="f1 grid" id="gridT"></table></div></div>
@@ -827,16 +831,40 @@ function startFive(pid){
   return S.players.filter(p=>p.owner_participant_id===pid).slice(0,5)
     .map(p=>({name:p.name,cid:p.club_id,cap:false,pts:null,rating:p.season_avg_rating}));
 }
+// лавка (до 3) обраного туру: з лайнапу — у порядку заміни; до дедлайну розстановка прихована → решта володіння без номерів
+function benchThree(pid){
+  const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
+  const mine=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid);
+  if(mine.some(l=>l.role==='start')){
+    const bo=boostOf(pid,rid), allin=!!(bo&&bo.boost==='squad_all_in');   // 🔥 All-in: лавка рахується
+    return mine.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0)).map(l=>{
+      const pl=S.pById[l.player_id]||{}, base=S.ppr[l.player_id+'|'+rid];
+      return {name:pl.name,cid:pl.club_id,order:l.bench_order,pts:(allin&&base!=null)?base:null,known:true};
+    });
+  }
+  return S.players.filter(p=>p.owner_participant_id===pid).slice(5,8)
+    .map(p=>({name:p.name,cid:p.club_id,order:null,pts:null,rating:p.season_avg_rating,known:false}));
+}
+// довге прізвище (Bellingham…) не влазить у плитку 62px → зменшуємо шрифт пропорційно довжині (мін 6.5px)
+function nmFs(name){ const n=(lastName(name)||'').length; return n<=8? '' : ` style="font-size:${Math.max(6.5, 52/(0.62*n)).toFixed(1)}px"`; }
 function tiles(pid){
   const list=startFive(pid).slice(0,5);
   const cells=list.map(x=>{
-    const num = x.pts!=null? x.pts : (x.rating!=null? x.rating : '·');
+    const num = x.pts!=null? x.pts : '·';   // тут ОЧКИ, які гравець заробив у турі (не сезонний рейтинг); до матчів — крапка
     return `<div class="stile" style="--club:${clubCol(x.cid)}" title="${x.name||''}">
-      <span class="ab">${lastName(x.name)}</span><span class="pt">${num}</span>
+      <span class="ab"${nmFs(x.name)}>${lastName(x.name)}</span><span class="pt">${num}</span>
       ${x.cap?'<span class="cc">×2</span>':''}</div>`;
   });
   while(cells.length<5) cells.push('<div class="stile empty"><span class="ab">—</span></div>');
-  return `<div class="squad-tiles">${cells.join('')}</div>`;
+  const bcells=benchThree(pid).slice(0,3).map(x=>{
+    const num = x.pts!=null? x.pts : '·';   // очки лавки видно лише при All-in (інакше лавка не рахується); до матчів — крапка
+    const tip=(x.name||'')+(x.order?` · заміна №${x.order}`:' · порядок заміни — після дедлайну');
+    return `<div class="stile bn" style="--club:${clubCol(x.cid)}" title="${tip}">
+      <span class="ab"${nmFs(x.name)}>${lastName(x.name)}</span><span class="pt">${num}</span>
+      ${x.order?`<span class="bo">${x.order}</span>`:''}</div>`;
+  });
+  while(bcells.length<3) bcells.push('<div class="stile bn empty"><span class="ab">—</span></div>');
+  return `<div class="squad-tiles">${cells.join('')}<span class="sq-gap" aria-hidden="true"></span>${bcells.join('')}</div>`;
 }
 
 function renderTours(){
@@ -860,16 +888,15 @@ function renderStandings(){
     const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid), vd=squadValDelta(pid);
     return `<tr onclick="openSquad('${pid}')">
       <td class="rk">${place<=3?`<span class="medal">${medal[place-1]}</span>`:place}<span class="delta ${dm.c}">${dm.t}</span></td>
-      <td class="name-c">${p.display_name}</td>
-      <td class="rndpts tnum">${roundPts(pid)}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
+      <td class="name-c">${p.display_name}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
       <td class="total tnum">${rk.cum[pid]||0}</td>
       <td>${tiles(pid)}</td>
       <td class="sp tnum">${eur(p.squad_price)}</td>
       <td class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</td>
     </tr>`;
   }).join('');
-  t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th><th>Тур ${S.tour}</th><th>Total</th>
-    <th>Squad (стартова 5)</th><th>Price</th><th>Val Δ</th></tr></thead><tbody>${body}</tbody>`;
+  t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th><th>Total</th>
+    <th>Squad (старт 5 + лавка 3)</th><th>Price</th><th>Val Δ</th></tr></thead><tbody>${body}</tbody>`;
 }
 
 function renderByRound(){
@@ -901,12 +928,14 @@ function openSquad(pid){
     const start=line.filter(l=>l.role==='start').map(l=>pcard(l.player_id,rid,l.is_captain||l.player_id===tgt,l.is_vice,null,{auto:l.player_id===tgt}));
     const bench=line.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0))
                     .map(l=>pcard(l.player_id,rid,false,false,l.bench_order,{counted:allin}));
-    bodyHtml=`<div class="slot-h"><span>Стартова 5</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
+    bodyHtml=`<div class="slot-h"><span>Основа</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
       + (bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:'');
   }else{
     const own=S.players.filter(x=>x.owner_participant_id===pid);
-    bodyHtml=`<div class="slot-h"><span>Володіння (${own.length})</span><span>стартова 5 — після дедлайну</span></div>`
-      +`<div class="plist">${own.length? own.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div>`;
+    const o5=own.slice(0,5), ob=own.slice(5,8);   // до дедлайну справжня розстановка прихована → поділ умовний (як у таблиці)
+    bodyHtml=`<div class="slot-h"><span>Основа (${o5.length})</span><span>розстановка — після дедлайну</span></div>`
+      +`<div class="plist">${o5.length? o5.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div>`
+      +(ob.length?`<div class="slot-h"><span>Лавка (${ob.length})</span><span>порядок заміни — після дедлайну</span></div><div class="plist">${ob.map(x=>ownCard(x)).join('')}</div>`:'');
   }
   document.getElementById('ovlT').textContent='Склад · '+p.display_name;
   document.getElementById('ovlS').textContent='Тур '+S.tour+' · без балансів';
