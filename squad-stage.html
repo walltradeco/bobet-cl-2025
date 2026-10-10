@@ -337,6 +337,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 .pm-rating{text-align:right;flex:none}
 .pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
 .pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
+.was{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;line-height:1.2;color:var(--text-dim);text-transform:none;letter-spacing:0;margin-top:4px;white-space:nowrap}   /* зафіксована початкова вартість під поточною */
 .pm-value{display:flex;gap:48px;padding:12px 0 6px}
 .pm-value .metric strong{font-family:var(--mono);font-weight:700;font-size:25px;display:block;line-height:1}
 .pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
@@ -398,7 +399,7 @@ table.grid td.pn{font-family:var(--mono);font-weight:700}
 
     <section data-view="tbl" class="on">
       <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
-      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу</div>
+      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу · Val Δ = сума відсотків зміни вартості гравців складу (ціна гравця не впливає)</div>
     </section>
     <section data-view="grid">
       <div class="board"><div class="f1-scroll"><table class="f1 grid" id="gridT"></table></div></div>
@@ -489,6 +490,28 @@ function flagEmoji(c){ if(!c) return ''; const u=String(c).toUpperCase();
   if(FLAG[u]) return FLAG[u];
   if(u.length===2) return u.replace(/./g,ch=>String.fromCodePoint(127397+ch.charCodeAt(0)));
   return ''; }
+// зафіксована початкова вартість під поточною: лише коли ціна вже зрушила (до першого матчу — один рядок)
+function startWas(p,align){
+  const s=p.market_value_start, c=p.market_value_current;
+  if(s==null || c==null || s===c) return '';
+  return `<small class="was"${align?` style="text-align:${align}"`:''} title="Вартість на старті турніру (зафіксована)">старт ${eur(s)}</small>`;
+}
+// модалка складу: як склалась зміна вартості — по кожному гравцю (€ і %) і разом
+const eur2=v=>'€'+(v/1e6).toFixed(2)+'M';
+const eurS=v=>(v<0?'−':'+')+'€'+(Math.abs(v)/1e6).toFixed(2)+'M';
+function priceLine(p){
+  const s=p.market_value_start, c=p.market_value_current; if(s==null||c==null) return '';
+  const d=c-s; if(d===0) return `<div class="meta">ціна ${eur2(c)} · без змін</div>`;
+  const pct=d/s*100, cls=d>0?'up':'down';
+  return `<div class="meta"><b class="${cls}">${d>0?'▲':'▼'} ${eurS(d)} (${pct>0?'+':''}${pct.toFixed(1)}%)</b> · ${eur2(s)} → ${eur2(c)}</div>`;
+}
+function squadMoves(pid){   // разом по складу: Σ зміни вартості в €, хто зрушив ціну (за відсотком)
+  const mine=S.players.filter(p=>p.owner_participant_id===pid);
+  const pc=p=>p.market_value_start? (p.market_value_current-p.market_value_start)/p.market_value_start*100 : 0;
+  const d=mine.reduce((a,p)=>a+((p.market_value_current||0)-(p.market_value_start||0)),0);
+  const movers=mine.filter(p=>p.market_value_current!==p.market_value_start).sort((a,b)=>Math.abs(pc(b))-Math.abs(pc(a)));
+  return {d,movers,pc};
+}
 function vDelta(p){ const s=p.market_value_start||0,c=p.market_value_current||0;
   if(!s) return {pct:0,dir:'flat'}; const d=(c-s)/s;
   return {pct:d,dir:d>0.0005?'up':(d<-0.0005?'down':'flat')}; }
@@ -668,7 +691,7 @@ async function openBoardCard(pid){
           <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг</span></div>
         </div>
         <div class="pm-value">
-          <div class="metric"><strong>${eur(p.market_value_current)}</strong><span>Вартість</span></div>
+          <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
           <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong><span>Val Δ (тур)</span></div>
         </div>
         <div class="pm-value pm-points">
@@ -861,12 +884,12 @@ function roundPts(pid){
   const row=S.scores.find(s=>s.participant_id===pid && s.round_id===rid);
   return row? row.points||0 : 0;
 }
+// Val Δ складу = СУМА відсотків зміни вартості гравців складу (рішення Богдана 10.10: вартість гравця не має впливати — дешевий і дорогий важать однаково)
+const pctS=n=>(n>0?'+':n<0?'−':'')+Math.abs(n).toFixed(1)+'%';
 function squadValDelta(pid){
   const mine=S.players.filter(p=>p.owner_participant_id===pid);
-  const s=mine.reduce((a,p)=>a+(p.market_value_start||0),0);
-  const c=mine.reduce((a,p)=>a+(p.market_value_current||0),0);
-  if(!s) return {pct:0,dir:''};
-  const d=(c-s)/s; return {pct:d*100,dir:d>0.0005?'up':(d<-0.0005?'down':'')};
+  const pct=mine.reduce((a,p)=>a+(p.market_value_start? (p.market_value_current-p.market_value_start)/p.market_value_start*100 : 0),0);
+  return {pct,dir:pct>0.05?'up':(pct<-0.05?'down':'')};
 }
 
 // стан «наживо» (516): рядки market_squad_live учасника за тур; нема вьюхи/рядків → null (старий розрахунок плиток)
@@ -1009,11 +1032,11 @@ function renderStandings(){
       <td class="name-c">${p.display_name}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
       <td>${tiles(pid)}</td>
       <td class="sp tnum">${eur(p.squad_price)}</td>
-      <td class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</td>
+      <td class="tnum ${vd.dir||'eq'}" title="Сума відсотків зміни вартості гравців складу (ціна гравця не впливає)">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'} ${pctS(vd.pct)}</td>
     </tr>`;
   }).join('');
   t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th>
-    <th>Squad (старт 5 + лавка 3)</th><th>Price</th><th>Val Δ</th></tr></thead><tbody>${body}</tbody>`;
+    <th>Squad (старт 5 + лавка 3)</th><th>Price</th><th title="Сума відсотків зміни вартості гравців складу">Val Δ</th></tr></thead><tbody>${body}</tbody>`;
 }
 
 function renderByRound(){
@@ -1037,7 +1060,7 @@ function renderByRound(){
 function openSquad(pid){
   const p=S.lb.find(x=>x.participant_id===pid); if(!p) return;
   const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
-  const place=rankAt(S.tour).rank[pid], vd=squadValDelta(pid);
+  const place=rankAt(S.tour).rank[pid], vd=squadValDelta(pid), mv=squadMoves(pid);
   const line=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rid);
   const lr=liveRowsOf(pid,rid);
   let bodyHtml;
@@ -1067,9 +1090,9 @@ function openSquad(pid){
     `<div class="ovl-meta">
       <div class="m"><span>Місце</span><b>${place<=3?medal[place-1]:'#'+place}</b></div>
       <div class="m"><span>Squad Price</span><b class="tnum">${eur(p.squad_price)}</b></div>
-      <div class="m"><span>Val Δ</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'}${Math.abs(vd.pct).toFixed(1)}</b></div>
+      <div class="m"><span>Val Δ (сума % гравців)</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'} ${pctS(vd.pct)}</b></div>
       <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
-    </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
+    </div>`+(mv.movers.length?`<div class="boline">💹 Хто зрушив ціну: ${mv.movers.map(p=>`<b>${lastName(p.name)}</b> <b class="${mv.pc(p)>0?'up':'down'}">${pctS(mv.pc(p))}</b>`).join(' · ')} = <b class="${vd.pct>=0?'up':'down'}">${pctS(vd.pct)}</b> <span style="opacity:.65">(у вартості ${eurS(mv.d)})</span></div>`:'')+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
   document.getElementById('ovl').classList.add('on');
 }
@@ -1089,7 +1112,7 @@ function pcardLive(l,bo){
   const rt = (l.state==='played' && l.avg_rating!=null)? ' · оцінка '+fmtR(l.avg_rating) : '';
   return `<div class="pcard" data-p="${l.player_id}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${dim||l.state==='dnp'?';opacity:.6':''}">
     <div><div class="nm">${lastName(pl.name)} ${tag}</div>
-    <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${bench&&l.bench_order!=null?' · лавка '+l.bench_order:''}${rt}</div></div>
+    <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${bench&&l.bench_order!=null?' · лавка '+l.bench_order:''}${rt}</div>${priceLine(pl)}</div>
     <div class="rt"><div class="big tnum"${dim?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${sub}</div></div></div>`;
 }
 function pcard(playerId,rid,cap,vice,benchOrder,opt){
@@ -1107,7 +1130,7 @@ function ownCard(x){
   return `<div class="pcard" data-p="${x.id}" title="Картка гравця" style="--club:${clubCol(x.club_id)}">
     <div><div class="nm">${lastName(x.name)}</div>
     <div class="meta">${posShort[x.position]||x.position||''} · ${clubName(x.club_id)}</div></div>
-    <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div><div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;
+    <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div>${startWas(x,'right')}<div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;
 }
 function closeM(){ document.getElementById('ovl').classList.remove('on'); }
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeM(); });

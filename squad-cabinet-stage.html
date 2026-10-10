@@ -443,6 +443,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-rating{text-align:right;flex:none}
 .pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
 .pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
+.was{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;line-height:1.2;color:var(--text-dim);text-transform:none;letter-spacing:0;margin-top:4px;white-space:nowrap}   /* зафіксована початкова вартість під поточною */
 .pm-value{display:flex;gap:10px 40px;flex-wrap:wrap;padding:10px 0 6px}
 .pm-value .metric strong{font-family:var(--mono);font-weight:700;font-size:25px;display:block;line-height:1}
 .pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
@@ -1097,7 +1098,7 @@ function renderLineup(mine, round){
         </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
-      <div class="rt tap" data-p="${p.id}" title="Детальна картка гравця"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div></div>
+      <div class="rt tap" data-p="${p.id}" title="Детальна картка гравця"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div>${startWas(p,'right')}</div>
     </div>`;
   };
 
@@ -1200,6 +1201,12 @@ function openLineupReview(mine, round){
 // ── дрібні хелпери плитки/картки ──
 const POS = { G:'GK', D:'DEF', M:'MID', F:'FWD' };
 function posCat(p){ return POS[p]||p; }
+// зафіксована початкова вартість під поточною: показуємо лише коли ціна вже зрушила (до першого матчу поточна = початкова — один рядок)
+function startWas(p,align){
+  const s=p.market_value_start, c=p.market_value_current;
+  if(s==null || c==null || s===c) return '';
+  return `<small class="was"${align?` style="text-align:${align}"`:''} title="Вартість на старті турніру (зафіксована)">старт ${eur(s)}</small>`;
+}
 function vDelta(p){
   const s=p.market_value_start||0, c=p.market_value_current||0;
   if(!s) return { pct:0, dir:'flat' };
@@ -1287,6 +1294,7 @@ function mtile(p){
     <div class="mclub">${esc(cl.name||'')}</div>
     ${dgb}
     <div class="mtrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span></div>
+    ${startWas(p,'center')}
     ${sparkTile(p)}
     <div class="mstatus ${o.cls}">${o.dot}${o.txt}</div>
   </div>`;
@@ -2049,7 +2057,7 @@ async function openPlayerModal(pid){
           <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг</span></div>
         </div>
         <div class="pm-value">
-          <div class="metric"><strong>${eur(p.market_value_current)}</strong><span>Вартість</span></div>
+          <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
           <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong><span>Val Δ (тур)</span></div>
           <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
           <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
