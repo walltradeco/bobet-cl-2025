@@ -51,7 +51,7 @@ button:disabled{background:var(--panel2);color:var(--dim);border-color:var(--lin
 #screen-app{padding-top:26px}
 header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdrop-filter:blur(10px)}
 .hbar{max-width:1440px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
-.brand{display:flex;align-items:center;gap:10px;margin-right:auto}
+.brand{display:flex;align-items:center;gap:10px;margin-right:22px}   /* Банк і Squad Price стоять впритул до назви; профіль/кнопки — справа (.me{margin-left:auto}) */
 .brand .dot{width:30px;height:30px;border-radius:9px;font-size:13px;
   background:conic-gradient(from 200deg,var(--accent),var(--gold),var(--accent));
   display:grid;place-items:center;font-family:var(--mono);font-weight:700;color:#06120c}
@@ -64,7 +64,7 @@ header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdro
 .hstat.bank .v{color:var(--gold)}
 .hstat .bk-parts{font-family:var(--mono);font-size:10.5px;color:var(--dim);margin-top:3px;letter-spacing:.01em;max-width:330px}
 .hstat .bk-parts b{color:var(--text-dim);font-weight:600}
-.me{display:flex;align-items:center;gap:8px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:30px;background:var(--panel)}
+.me{display:flex;align-items:center;gap:8px;padding:5px 8px 5px 5px;border:1px solid var(--line);border-radius:30px;background:var(--panel);margin-left:auto}
 .me .av{width:26px;height:26px;border-radius:50%;background:var(--accent-d);display:grid;place-items:center;
   font-family:var(--mono);font-weight:700;font-size:13px;color:#dff5ea}
 .priv{font-size:9.5px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:1px 5px;letter-spacing:.04em}
@@ -837,8 +837,11 @@ function renderHeader(){
   const mine=S.players.filter(p=>p.owner_participant_id===S.me.id);
   const price=mine.reduce((s,p)=>s+(p.market_value_current||0),0);
   const start=mine.reduce((s,p)=>s+(p.market_value_start||0),0);
-  const dp=start?(price-start)/start*100:0;
-  const dstr=start?(dp>0.05?` <small class="up">▲${dp.toFixed(1)}</small>`:dp<-0.05?` <small class="down">▼${Math.abs(dp).toFixed(1)}</small>`:''):'';
+  // зміна вартості складу від старту: у € (скільки грошей) і в % = СУМА відсотків зміни вартості гравців (ціна гравця не впливає — як Val Δ на борді)
+  const dEur=price-start, dpSum=mine.reduce((s,p)=>s+(p.market_value_start? (p.market_value_current-p.market_value_start)/p.market_value_start*100 : 0),0);
+  const sgn=n=>n>0?'+':n<0?'−':'', eAbs=v=>'€'+(Math.abs(v)/1e6).toFixed(1)+'M';
+  const dstr=(start && (Math.abs(dEur)>=50000 || Math.abs(dpSum)>=0.05))
+    ? ` <small class="${dEur>=0?'up':'down'}" title="Зміна вартості складу від старту: ${eur(start)} → ${eur(price)}. % = сума відсотків зміни вартості гравців (ціна гравця не впливає) — те саме, що Val Δ на борді">${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dpSum)}${Math.abs(dpSum).toFixed(1)}%</small>` : '';
   // Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
   const tr=S.bank, wg=S.wageBank, ok=(tr!=null);
   const total=ok? price+tr+(wg||0) : null, e1=v=>'€'+(v/1e6).toFixed(1)+'M';
