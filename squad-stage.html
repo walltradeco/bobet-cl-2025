@@ -626,7 +626,7 @@ const $=id=>document.getElementById(id);
 function modalOpen(html){
   const h=$('mhost');
   h.innerHTML = `<div class="modal"><button class="mx" aria-label="закрити">✕</button>${html}</div>`;
-  h.classList.remove('hide');
+  h.classList.remove('hide'); embedPlace();
   h.onclick=(e)=>{ if(e.target===h) modalClose(); };
   h.querySelector('.mx').onclick=modalClose;
 }
@@ -1091,7 +1091,7 @@ async function openMatch(fid){
   document.getElementById('ovlT').textContent=clubName(f.home_club_id)+' — '+clubName(f.away_club_id);
   document.getElementById('ovlS').textContent='Тур '+(rnd.number||'')+' · '+wd+' о '+hm+' (Київ)'+((f.home_score!=null&&f.away_score!=null)?' · рахунок '+f.home_score+':'+f.away_score:'');
   document.getElementById('ovlB').innerHTML='<div class="hint" style="padding:14px 2px">завантаження…</div>';
-  document.getElementById('ovl').classList.add('on');
+  document.getElementById('ovl').classList.add('on'); embedPlace();
   let rows=[];
   try{ rows=await sbGet(`market_ratings?fixture_id=eq.${fid}&select=player_id,rating&order=rating.desc`); }catch(e){}
   const pb={}; (S.pool||[]).forEach(p=>pb[p.id]=p);
@@ -1143,7 +1143,7 @@ function openSquad(pid){
       <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
     </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
-  document.getElementById('ovl').classList.add('on');
+  document.getElementById('ovl').classList.add('on'); embedPlace();
 }
 // гравець лайнапу «наживо» (516): очки показуються завжди; лавка приглушена, поки очки не в сумі; К/В — чи вже діє ×2
 function pcardLive(l,bo){
@@ -1182,6 +1182,17 @@ function ownCard(x){
     <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div>${startWas(x,'right')}<div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;
 }
 function closeM(){ document.getElementById('ovl').classList.remove('on'); }
+// у кабінеті борда вставлена iframe на ВСЮ висоту → fixed-вікно відкривалось угорі iframe, поза екраном (якщо користувач проскролив).
+// Зсуваємо вміст вікон у ВИДИМУ частину (однакова origin; інакше нічого не робимо)
+function embedPlace(){
+  if(!document.body.classList.contains('embed')) return;
+  try{
+    const fe=window.frameElement; if(!fe) return;
+    const top=Math.max(0,-fe.getBoundingClientRect().top), off=top+Math.round(window.parent.innerHeight*0.06);
+    const ovl=document.getElementById('ovl'); if(ovl) ovl.style.paddingTop=off+'px';
+    const mh=document.getElementById('mhost'); if(mh){ mh.style.alignItems='flex-start'; mh.style.paddingTop=off+'px'; const md=mh.querySelector('.modal'); if(md) md.style.maxHeight=Math.round(window.parent.innerHeight*0.88)+'px'; }
+  }catch(e){}
+}
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeM(); });
 function sub(v,btn){
   document.querySelectorAll('[data-view]').forEach(s=>s.classList.toggle('on',s.dataset.view===v));

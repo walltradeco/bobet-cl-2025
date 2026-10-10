@@ -50,7 +50,7 @@ button:disabled{background:var(--panel2);color:var(--dim);border-color:var(--lin
 /* шапка застосунку (F1-макет) */
 #screen-app{padding-top:26px}
 header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdrop-filter:blur(10px)}
-.hbar{max-width:1440px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+.hbar{max-width:1440px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
 .brand{display:flex;align-items:center;gap:10px;margin-right:22px}   /* Банк і Squad Price стоять впритул до назви; профіль/кнопки — справа (.me{margin-left:auto}) */
 .brand .dot{width:30px;height:30px;border-radius:9px;font-size:13px;
   background:conic-gradient(from 200deg,var(--accent),var(--gold),var(--accent));
@@ -58,6 +58,18 @@ header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdro
 .brand h1{font-size:19px;font-weight:700;margin:0}
 .brand small{display:block;font-size:10.5px;color:var(--dim);letter-spacing:.16em;
   text-transform:uppercase;font-family:var(--mono);margin-top:-2px}
+.hbox{display:flex;align-items:flex-end;gap:6px 22px;flex-wrap:wrap;padding:8px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
+.hcol{display:flex;flex-direction:column;line-height:1.15;min-width:0}
+.hcol .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);font-weight:600;white-space:nowrap}
+.hcol .k i{font-style:normal;color:var(--text-dim);margin-right:3px}
+.hcol .v{font-family:var(--mono);font-weight:700;font-size:15px;margin-top:3px;white-space:nowrap}
+.hcol.main .v{font-size:23px;margin-top:2px}
+.hbox.bank .hcol.main .v{color:var(--gold)}
+.hparts{display:flex;gap:6px 20px;align-items:flex-end;flex-wrap:wrap;padding-left:20px;border-left:1px solid var(--line)}
+.hstats{display:flex;gap:12px 16px;flex-wrap:wrap;order:3;flex:1 1 100%}   /* Мій Банк і Squad Price — окремий рядок під брендом/профілем (у типовому вікні вони б не вмістились) */
+.brand{order:1}
+.me{order:2}
+@media(min-width:1780px){ .hstats{order:2;flex:0 1 auto} .me{order:3} }   /* дуже широке вікно: усе в один рядок */
 .hstat{display:flex;flex-direction:column;line-height:1.15}
 .hstat .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);font-weight:600}
 .hstat .v{font-family:var(--mono);font-weight:700;font-size:18px}
@@ -603,8 +615,10 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
   <header>
     <div class="hbar">
       <div class="brand"><div class="dot">SQ</div><div><h1>Squad Mode</h1><small>Трансферний ринок</small></div></div>
-      <div class="hstat bank" id="h-bank-box"><span class="k">Банк <span class="priv" title="Сума Банку публічна (борда «🏦 Банк», знімок після туру). Розклад балансів бачиш лише ти.">розклад лише я</span></span><span class="v tnum" id="h-bank">—</span><span class="bk-parts" id="h-bank-parts"></span></div>
-      <div class="hstat"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div>
+      <div class="hstats">
+      <div class="hbox bank" id="h-bank-box"><div class="hcol main"><span class="k">Мій Банк</span><span class="v tnum" id="h-bank">—</span></div><div class="hparts" id="h-bank-parts"></div></div>
+      <div class="hbox" id="h-price-box"><div class="hcol main"><span class="k">Squad Price</span><span class="v tnum" id="h-price">—</span></div><div class="hparts" id="h-price-parts"></div></div>
+      </div>
       <div class="me"><span class="av" id="h-av">—</span><span id="my-name" style="font-family:var(--mono);font-weight:600">—</span>
         <a href="profile-stage.html" target="_blank" class="btn ghost sm win-open" data-title="👤 Профіль" style="margin-left:4px;text-decoration:none">👤 Мій профіль</a>
         <a id="btn-communities" href="community-stage.html" target="_blank" class="btn ghost sm win-open" data-title="👥 Спільноти" style="margin-left:4px;text-decoration:none">👥 Спільноти</a>
@@ -826,7 +840,7 @@ async function tok(){ const {data}=await sb.auth.getSession(); return data.sessi
 
 // ── ВКЛАДКИ (6, §F) ──
 function renderTabs(){
-  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['collection','📇','Колекція'],['stats','📊','Статистика'],['table','🏆','Таблиця'],['matches','⚽','Матчі'],['news','📰','News & Press']];
+  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['collection','📇','Колекція'],['stats','📊','Статистика'],['table','🏆','Таблиця & Матчі'],['news','📰','News & Press']];
   if(S.me && S.me.is_admin) tabs.push(['admin','⚙','Адмінка']);
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
@@ -840,15 +854,24 @@ function renderHeader(){
   // зміна вартості складу від старту: у € (скільки грошей) і в % = СУМА відсотків зміни вартості гравців (ціна гравця не впливає — як Val Δ на борді)
   const dEur=price-start, dpSum=mine.reduce((s,p)=>s+(p.market_value_start? (p.market_value_current-p.market_value_start)/p.market_value_start*100 : 0),0);
   const sgn=n=>n>0?'+':n<0?'−':'', eAbs=v=>'€'+(Math.abs(v)/1e6).toFixed(1)+'M';
-  const dstr=(start && (Math.abs(dEur)>=50000 || Math.abs(dpSum)>=0.05))
-    ? ` <small class="${dEur>=0?'up':'down'}" title="Зміна вартості складу від старту: ${eur(start)} → ${eur(price)}. % = сума відсотків зміни вартості гравців (ціна гравця не впливає) — те саме, що Val Δ на борді">${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dpSum)}${Math.abs(dpSum).toFixed(1)}%</small>` : '';
-  // Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
+  const moved=!!(start && (Math.abs(dEur)>=50000 || Math.abs(dpSum)>=0.05));
+  const e1=v=>'€'+(v/1e6).toFixed(1)+'M';
+  // Мій Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
   const tr=S.bank, wg=S.wageBank, ok=(tr!=null);
-  const total=ok? price+tr+(wg||0) : null, e1=v=>'€'+(v/1e6).toFixed(1)+'M';
-  const bk=$('h-bank'); if(bk) bk.textContent= ok? e1(total) : '—';
-  const bp=$('h-bank-parts'); if(bp) bp.innerHTML= ok? `= 🏟 <b>${e1(price)}</b> + 💱 <b>${e1(tr)}</b> + 💵 <b>${e1(wg||0)}</b>` : '';
-  const bb=$('h-bank-box'); if(bb) bb.title= ok? `Банк = Squad Price + трансферний + зарплатний баланс (повні, разом із замороженим).\nДоступно: трансферний ${eur(S.spendable)} · зарплатний ${S.wageFree!=null?eur(S.wageFree):'—'}` : '';
-  const pr=$('h-price'); if(pr) pr.innerHTML=eur(price)+dstr;
+  const col=(k,v,cls,title)=>`<div class="hcol"${title?` title="${esc(title)}"`:''}><span class="k">${k}</span><span class="v tnum ${cls||''}">${v}</span></div>`;
+  const bk=$('h-bank'); if(bk) bk.textContent= ok? e1(price+tr+(wg||0)) : '—';
+  const bp=$('h-bank-parts'); if(bp) bp.innerHTML= ok
+    ? col('<i>=</i> Squad Price', e1(price), '', 'Поточна вартість усіх твоїх гравців')
+      + col('<i>+</i> Трансферний баланс', e1(tr), '', `Гроші на купівлі/ставки. Доступно зараз: ${eur(S.spendable)}`)
+      + col('<i>+</i> Зарплатний баланс', e1(wg||0), '', `Гроші на зарплати контрактів. Доступно зараз: ${S.wageFree!=null?eur(S.wageFree):'—'}`)
+    : '';
+  const bb=$('h-bank-box'); if(bb) bb.title= ok? 'Мій Банк = Squad Price + трансферний + зарплатний баланс (повні, разом із замороженим). Публічна лише сума Банку (вкладка «🏦 Банк» на борді); розклад балансів бачиш лише ти.' : '';
+  const pr=$('h-price'); if(pr) pr.textContent=eur(price);
+  const pp=$('h-price-parts'); if(pp) pp.innerHTML = start
+    ? col('Старт', e1(start), '', 'Вартість гравців твого нинішнього складу на старті турніру (зафіксована; до першого матчу = поточна)')
+      + col('Зміна', moved? `${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dpSum)}${Math.abs(dpSum).toFixed(1)}%` : 'без змін', moved? (dEur>=0?'up':'down') : '',
+            `Зміна вартості складу від старту: ${eur(start)} → ${eur(price)}. % = сума відсотків зміни вартості гравців (ціна гравця не впливає) — те саме, що Val Δ на борді`)
+    : '';
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
@@ -861,7 +884,6 @@ async function go(tab){
   if(tab==='collection') return viewCollection();
   if(tab==='stats')   return viewStats();
   if(tab==='table')   return viewTable();
-  if(tab==='matches') return viewMatches();
   if(tab==='news')    return viewNews();
   if(tab==='admin')   return viewAdmin();
 }
@@ -2227,27 +2249,53 @@ function statRows(list, valFn){
     <span class="vv">${valFn(p)}</span></div>`).join('');
 }
 function viewStats(){
-  const N=10, pool=S.players.slice();
+  const N=20;   // топ-20 (було 10); фільтри — як на «Ринку»: ліга · клуб · позиція · власник
+  const F=S.stF||(S.stF={league:'',club:'',pos:'',own:''});
+  const all=S.players.slice();
+  let pool=all;
+  if(F.league) pool=pool.filter(p=>(S.clubs[p.club_id]||{}).league===F.league);
+  if(F.club)   pool=pool.filter(p=>p.club_id===F.club);
+  if(F.pos)    pool=pool.filter(p=>p.position===F.pos);
+  if(F.own==='free')       pool=pool.filter(p=>!p.owner_participant_id);
+  else if(F.own==='owned') pool=pool.filter(p=>p.owner_participant_id);
+  else if(F.own==='mine')  pool=pool.filter(p=>S.me && p.owner_participant_id===S.me.id);
+  const filtered=!!(F.league||F.club||F.pos||F.own);
   const scored=p=>{ const st=S.stats[p.id]; return st && st.rounds_played>0 ? st.scored_points : null; };
   const byRating=pool.filter(p=>p.season_avg_rating!=null).sort((a,b)=>b.season_avg_rating-a.season_avg_rating).slice(0,N);
   const byPoints=pool.filter(p=>scored(p)!=null).sort((a,b)=>scored(b)-scored(a)).slice(0,N);
-  // лише гравці з реальним рухом ціни (у пре-маркеті всі flat 0% → борди порожні, а не «топ-10 з –0%»)
+  // лише гравці з реальним рухом ціни (у пре-маркеті всі flat 0% → борди порожні, а не «топ з –0%»)
   const up  =pool.filter(p=>vDelta(p).pct> 0.0005).sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
   const down=pool.filter(p=>vDelta(p).pct<-0.0005).sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
-  const empty='<div class="dim" style="padding:12px 14px">Даних ще немає (зʼявляться після зіграних турів)</div>';
+  const empty=`<div class="dim" style="padding:12px 14px">${filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних турів)'}</div>`;
   const board=(title,sub,rows)=>`<div class="statcard"><div class="sthead"><b>${title}</b><span>${sub}</span></div>${rows||empty}</div>`;
+  const opt=(v,tx,cur)=>`<option value="${esc(v)}" ${String(cur)===String(v)?'selected':''}>${esc(tx)}</option>`;
+  const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort();
+  const clubs=Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id) && (!F.league || c.league===F.league)).sort((a,b)=>a.name.localeCompare(b.name));
+  const fbar=`<div class="mfilters">
+    <div class="mf"><select id="sf-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,F.league)).join('')}</select></div>
+    <div class="mf"><select id="sf-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,F.club)).join('')}</select></div>
+    <div class="mf"><select id="sf-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),F.pos)).join('')}</select></div>
+    <div class="mf"><select id="sf-own">${[['','Власник: усі'],['free','Вільні'],['owned','У складах'],['mine','Мої']].map(([v,tx])=>opt(v,tx,F.own)).join('')}</select></div>
+    ${filtered?'<button class="mini ghost" id="sf-reset">Скинути</button>':''}
+    <span class="dim" style="margin-left:auto;font-size:12px">у вибірці: ${pool.length} з ${all.length}</span>
+  </div>`;
   $('view').innerHTML=`
-    <div class="head2"><h2>Статистика</h2><span class="sub">по пулу турніру · клік по гравцю — детальна картка</span></div>
+    <div class="head2"><h2>Статистика</h2><span class="sub">по пулу турніру · топ-${N} · клік по гравцю — детальна картка</span></div>
+    ${fbar}
     <div class="statboards">
       ${board('🏅 Топ рейтинг','SofaScore · увесь пул', statRows(byRating, p=>Number(p.season_avg_rating).toFixed(2)))}
       ${board('⚽ Найбільше очок','наш турнір · лише заіграні', byPoints.length?statRows(byPoints, p=>scored(p)):null)}
       ${board('📈 Найбільше подорожчав','наш турнір', statRows(up, p=>fmtDelta(vDelta(p))))}
       ${board('📉 Найбільше подешевшав','наш турнір', statRows(down, p=>fmtDelta(vDelta(p))))}
     </div>`;
+  const bind=(id,key,extra)=>{ const el=$(id); if(el) el.onchange=()=>{ F[key]=el.value; if(extra) extra(); viewStats(); }; };
+  bind('sf-league','league',()=>{ if(F.club && (S.clubs[F.club]||{}).league!==F.league) F.club=''; });   // змінили лігу — клуб поза нею скидаємо
+  bind('sf-club','club'); bind('sf-pos','pos'); bind('sf-own','own');
+  const rs=$('sf-reset'); if(rs) rs.onclick=()=>{ S.stF={league:'',club:'',pos:'',own:''}; viewStats(); };
   $('view').querySelectorAll('.strow').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
 }
 function viewTable(){
-  $('view').innerHTML = `<div class="head2"><h2>Таблиця</h2><span class="sub">повна F1-борда — склади-плитки, очки по турах, рух рангу ▲▼ · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
+  $('view').innerHTML = `<div class="head2"><h2>Таблиця &amp; Матчі</h2><span class="sub">борда: залік, тури (таблиця й матчі), очки по турах, Банк · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
     <iframe id="boardFrame" src="squad-stage.html?embed" title="Squad борда" scrolling="no"
       style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:880px;display:block"></iframe>`;
   const fr=$('boardFrame');
@@ -2256,51 +2304,6 @@ function viewTable(){
   fr.addEventListener('load',()=>{ fit(); setTimeout(fit,400);
     try{ new ResizeObserver(fit).observe(fr.contentDocument.body); }catch(e){} });
   window.addEventListener('resize', fit, {passive:true});
-}
-
-// ── ⚽ МАТЧІ (фікстури 19 клубів; селектор турів + заморозка + клік на матч) ──
-async function viewMatches(){
-  if(!S.rounds.length){ $('view').innerHTML=`<div class="head2"><h2>Матчі</h2></div><div class="soon">Турів ще немає.</div>`; return; }
-  const fx = await sbSel(`market_fixtures?tournament_id=eq.${S.tour.id}&select=round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score`);
-  if(S.matchRound==null){ const up=S.rounds.find(r=>new Date(r.deadline_at)>new Date()); S.matchRound=(up||S.rounds[S.rounds.length-1]).id; }
-  const round=S.rounds.find(r=>r.id===S.matchRound)||S.rounds[0];
-  const frozen = new Date(round.deadline_at)<=new Date() && !round.results_entered_at;
-  const sel=`<div class="subtabs">${S.rounds.map(r=>`<button data-mr="${r.id}" class="${r.id===round.id?'on':''}">Тур ${r.number}</button>`).join('')}</div>`;
-  const freeze = frozen? `<div class="rndbar" style="border-color:#244;background:#0e1a22">
-      <span class="pill" style="background:#0e1a22;border:1px solid #244;color:var(--blue)">❄ Заморозка</span>
-      <span class="txt">Тур ${round.number} у грі — ринок зачинено до внесення всіх результатів.</span></div>` : '';
-  // матчі, де грає ХОЧА Б ОДИН клуб із гравцями пулу (09.10: реальні матчі проти суперників без гравців теж показуємо;
-  // матчі двох порожніх засіяних клубів ховаємо), за часом
-  const activeClubs=new Set(S.players.map(p=>p.club_id));
-  const rf=fx.filter(f=>f.round_id===round.id && (activeClubs.has(f.home_club_id) || activeClubs.has(f.away_club_id)))
-             .sort((a,b)=>new Date(a.kickoff_at)-new Date(b.kickoff_at));
-  const rows = rf.length ? rf.map(f=>{
-    const sched=f.home_score==null;
-    const off = f.status==='postponed' ? 'перенесено' : (f.status==='cancelled' ? 'скасовано' : '');
-    const sc= off ? off : (sched? new Date(f.kickoff_at).toLocaleString('uk',{weekday:'short',hour:'2-digit',minute:'2-digit'}) : `${f.home_score}:${f.away_score}`);
-    return `<div class="mrow" data-fx="${f.home_club_id}|${f.away_club_id}">
-      <div class="t"><span class="crest" style="--club:${clubCol(f.home_club_id)}"></span><span>${esc(clubName(f.home_club_id))}</span></div>
-      <div class="score ${sched?'sched':''}">${sc}</div>
-      <div class="t away"><span>${esc(clubName(f.away_club_id))}</span><span class="crest" style="--club:${clubCol(f.away_club_id)}"></span></div>
-    </div>`;
-  }).join('') : '<div class="dim" style="padding:12px 4px">Фікстур на цей тур ще немає.</div>';
-  $('view').innerHTML = `<div class="head2"><h2>Матчі · Тур ${round.number}</h2><span class="sub">розклад/результати клубів пулу · клік на матч → рейтинги гравців пулу</span></div>
-    ${sel}${freeze}<div class="panel" style="padding:4px 10px">${rows}</div>`;
-  [...document.querySelectorAll('[data-mr]')].forEach(b=>b.onclick=()=>{ S.matchRound=b.dataset.mr; viewMatches(); });
-  [...document.querySelectorAll('[data-fx]')].forEach(el=>el.onclick=()=>openMatchModal(round, el.dataset.fx));
-}
-async function openMatchModal(round, fx){
-  const [hc,ac]=fx.split('|');
-  const pool=S.players.filter(p=>p.club_id===hc||p.club_id===ac);
-  let prp={};
-  try{ (await sbSel(`market_player_round_points?tournament_id=eq.${S.tour.id}&round_id=eq.${round.id}&select=player_id,avg_rating,points`)).forEach(r=>prp[r.player_id]=r); }catch(e){}
-  const played=pool.filter(p=>prp[p.id]);
-  const body = played.length
-    ? `<div class="plist" style="margin-top:4px">${played.map(p=>{const r=prp[p.id];return `<div class="pcard" style="--club:${clubCol(p.club_id)}">
-        <div><div class="nm">${esc(p.name)}</div><div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(clubName(p.club_id))}</span></div></div>
-        <div class="rt"><div class="big tnum">${r.points??'—'}</div><div class="pr tnum">рейтинг ${r.avg_rating??'—'} → ${r.points??0} оч.</div></div></div>`;}).join('')}</div>`
-    : `<p class="mnote">Матч ще не зіграний або рейтинги ще не внесені — зʼявляться після результатів туру. Показуємо лише гравців пулу (решта складів не відкриваємо).</p>`;
-  modalOpen(`<h3>${esc(clubName(hc))} — ${esc(clubName(ac))}</h3><p class="mnote">Тур ${round.number} · рейтинги гравців пулу за тур</p>${body}`);
 }
 
 // ── 📰 NEWS & PRESS (подієвий авто-лог ринку — наступний крок) ──
