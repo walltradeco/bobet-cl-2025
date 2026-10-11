@@ -391,7 +391,7 @@ table.grid{min-width:0}
   <div class="hbar">
     <div class="logo">SQ</div>
     <div class="htxt"><h1>Squad Mode</h1><div class="sub">Race Recap · Публічна борда</div></div>
-    <div class="pubtag">🌐 без логіну · <b>розклад балансів приватний</b></div>
+    <div class="pubtag">🌐 без логіну · <b>розклад бюджетів приватний</b></div>
   </div>
 </header>
 
@@ -416,7 +416,7 @@ table.grid{min-width:0}
 
   <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
   <section id="secStage" class="hide">
-    <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без балансів) · рух рангу ▲▼=</span></div>
+    <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без бюджетів) · рух рангу ▲▼=</span></div>
     <div class="turnrow" id="turnRow"></div>
     <div id="tourBanner"></div>
     <div class="topcards" id="topCards"></div>
@@ -789,7 +789,7 @@ function renderBank(){
       ${bankCard('tealh','Етап 1 · 1-'+l1+' Тур', 1)}
       ${bankCard('blueh','Етап 2 · '+(l1+1)+'-'+stage2End()+' Тур', 2)}
     </div>
-    <div class="hint">Банк = Squad Price + трансферний баланс + зарплатний баланс · публічна лише сума (розклад приватний) · оновлюється після кожного туру · Δ — проти старту етапу · кожен етап рахується окремо · рівні → ділять місце</div>`;
+    <div class="hint">Банк = Squad Price + Трансферний бюджет + Зарплатний бюджет · публічна лише сума (розклад приватний) · оновлюється після кожного туру · Δ — проти старту етапу · кожен етап рахується окремо · рівні → ділять місце</div>`;
 }
 // перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур / Банк
 function goStage(stage){
@@ -1174,7 +1174,7 @@ function openSquad(pid){
       +(ob.length?`<div class="slot-h"><span>Лавка (${ob.length})</span><span>порядок заміни — після дедлайну</span></div><div class="plist">${ob.map(x=>ownCard(x)).join('')}</div>`:'');
   }
   document.getElementById('ovlT').textContent='Склад · '+p.display_name;
-  document.getElementById('ovlS').textContent='Тур '+S.tour+' · без балансів';
+  document.getElementById('ovlS').textContent='Тур '+S.tour+' · без бюджетів';
   document.getElementById('ovlB').innerHTML=
     `<div class="ovl-meta">
       <div class="m"><span>Місце</span><b>${place<=3?medal[place-1]:'#'+place}</b></div>
