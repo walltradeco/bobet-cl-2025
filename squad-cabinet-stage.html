@@ -1238,7 +1238,8 @@ function vDelta(p){
   const d=(c-s)/s;
   return { pct:d, dir: d>0.0005?'up':(d<-0.0005?'down':'flat') };
 }
-function fmtDelta(d){ return (d.dir==='up'?'▲ ':d.dir==='down'?'▼ ':'– ')+Math.abs(d.pct*100).toFixed(0)+'%'; }
+// один знак після коми без зайвого «.0» — як на борді (раніше цілі: −0.25% показувалось «▼ 0%», а на борді «−0.3%»)
+function fmtDelta(d){ return (d.dir==='up'?'▲ ':d.dir==='down'?'▼ ':'– ')+Math.abs(d.pct*100).toFixed(1).replace(/\.0$/,'')+'%'; }
 function avatar(p,size){
   const s=size||76;
   const init=(p.name||'?').split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase();
@@ -1597,6 +1598,8 @@ function modalOpen(html){
   h.querySelector('.mx').onclick=modalClose;
 }
 function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
+// Esc закриває відкриту модалку — так само, як ✕ і клік повз вікно (на борді вже було; рішення Богдана 11.10)
+document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('mhost').classList.contains('hide')) modalClose(); });
 // стилізоване підтвердження (замість системного confirm())
 function confirmModal(msg, okLabel, onOk, onCancel){
   modalOpen(`<h3>Підтвердження</h3>
@@ -2250,16 +2253,17 @@ function statRows(list, valFn){
 }
 function viewStats(){
   const N=20;   // топ-20 (було 10); фільтри — як на «Ринку»: ліга · клуб · позиція · власник
-  const F=S.stF||(S.stF={league:'',club:'',pos:'',own:''});
+  const F=S.stF||(S.stF={league:'',club:'',pos:'',own:'',q:''});
   const all=S.players.slice();
   let pool=all;
+  { const q=(F.q||'').trim().toLowerCase(); if(q) pool=pool.filter(p=>(p.name||'').toLowerCase().includes(q)); }   // пошук по імені — як на «Ринку»
   if(F.league) pool=pool.filter(p=>(S.clubs[p.club_id]||{}).league===F.league);
   if(F.club)   pool=pool.filter(p=>p.club_id===F.club);
   if(F.pos)    pool=pool.filter(p=>p.position===F.pos);
   if(F.own==='free')       pool=pool.filter(p=>!p.owner_participant_id);
   else if(F.own==='owned') pool=pool.filter(p=>p.owner_participant_id);
   else if(F.own==='mine')  pool=pool.filter(p=>S.me && p.owner_participant_id===S.me.id);
-  const filtered=!!(F.league||F.club||F.pos||F.own);
+  const filtered=!!(F.league||F.club||F.pos||F.own||(F.q||'').trim());
   const scored=p=>{ const st=S.stats[p.id]; return st && st.rounds_played>0 ? st.scored_points : null; };
   const byRating=pool.filter(p=>p.season_avg_rating!=null).sort((a,b)=>b.season_avg_rating-a.season_avg_rating).slice(0,N);
   const byPoints=pool.filter(p=>scored(p)!=null).sort((a,b)=>scored(b)-scored(a)).slice(0,N);
@@ -2272,6 +2276,7 @@ function viewStats(){
   const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort();
   const clubs=Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id) && (!F.league || c.league===F.league)).sort((a,b)=>a.name.localeCompare(b.name));
   const fbar=`<div class="mfilters">
+    <div class="mf search"><input id="sf-q" placeholder="Пошук по імені (англ.)" value="${esc(F.q||'')}"></div>
     <div class="mf"><select id="sf-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,F.league)).join('')}</select></div>
     <div class="mf"><select id="sf-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,F.club)).join('')}</select></div>
     <div class="mf"><select id="sf-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),F.pos)).join('')}</select></div>
@@ -2291,7 +2296,8 @@ function viewStats(){
   const bind=(id,key,extra)=>{ const el=$(id); if(el) el.onchange=()=>{ F[key]=el.value; if(extra) extra(); viewStats(); }; };
   bind('sf-league','league',()=>{ if(F.club && (S.clubs[F.club]||{}).league!==F.league) F.club=''; });   // змінили лігу — клуб поза нею скидаємо
   bind('sf-club','club'); bind('sf-pos','pos'); bind('sf-own','own');
-  const rs=$('sf-reset'); if(rs) rs.onclick=()=>{ S.stF={league:'',club:'',pos:'',own:''}; viewStats(); };
+  const qi=$('sf-q'); if(qi) qi.oninput=()=>{ F.q=qi.value; const at=qi.selectionStart; viewStats(); const n=$('sf-q'); if(n){ n.focus(); n.setSelectionRange(at,at); } };   // вид перемальовується цілком → повертаємо фокус і курсор
+  const rs=$('sf-reset'); if(rs) rs.onclick=()=>{ S.stF={league:'',club:'',pos:'',own:'',q:''}; viewStats(); };
   $('view').querySelectorAll('.strow').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
 }
 function viewTable(){

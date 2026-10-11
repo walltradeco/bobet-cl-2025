@@ -174,6 +174,18 @@ table.f1 tbody tr:last-child td{border-bottom:none}
 .stile .cc{position:absolute;top:-7px;right:-5px;font-size:9px;background:var(--gold);color:#241c00;
   font-family:var(--mono);font-weight:700;border-radius:4px;padding:0 3px;border:1px solid #8a6f16}
 .stile.empty{background:var(--panel2);border:1px dashed var(--line);color:var(--dim)}
+.stile .pp{position:absolute;bottom:-6px;right:-4px;font-size:8.5px;line-height:1;font-family:var(--mono);font-weight:700;
+  background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:1px 3px;white-space:nowrap}   /* ▲▼ вартість гравця від старту турніру (лише коли ціна зрушила) */
+/* банер туру: скільки матчів зіграно + чому тур ще не закрито */
+.tbn{margin:4px 0 14px;padding:10px 14px;border:1px solid var(--line);border-left:3px solid var(--teal);border-radius:10px;background:var(--panel);font-size:13px;line-height:1.5}
+.tbn b{font-family:var(--mono)}
+.tbn.warn{border-left-color:var(--gold)}
+.tbn.done{border-left-color:var(--up)}
+.tbn .bar{height:4px;border-radius:2px;background:var(--panel3);margin-top:8px;overflow:hidden}
+.tbn .bar i{display:block;height:100%;background:var(--teal)}
+.tbn.done .bar i{background:var(--up)}
+.tbn .ln{color:var(--muted);font-size:12.5px;margin-top:6px}
+.tbn .ln.w{color:var(--gold)}
 .sp{font-family:var(--mono);font-weight:600;font-size:14px}
 .hint{color:var(--dim);font-size:11.5px;font-family:var(--mono);letter-spacing:.03em;margin:14px 2px 0}
 
@@ -406,6 +418,7 @@ table.grid{min-width:0}
   <section id="secStage" class="hide">
     <div class="head2"><h2 id="h2tour">🏁 Тур —</h2><span class="sub">клік на учасника → його склад (без балансів) · рух рангу ▲▼=</span></div>
     <div class="turnrow" id="turnRow"></div>
+    <div id="tourBanner"></div>
     <div class="topcards" id="topCards"></div>
 
     <div class="subtabs">
@@ -415,7 +428,7 @@ table.grid{min-width:0}
 
     <section data-view="tbl" class="on">
       <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
-      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу · Val Δ = сума відсотків зміни вартості гравців складу (ціна гравця не впливає)</div>
+      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · ▲▼ у куті плитки — зміна вартості гравця від старту турніру · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу · Val Δ = сума відсотків зміни вартості гравців складу (ціна гравця не впливає)</div>
     </section>
     <section data-view="mt">
       <div class="board"><div class="mlist" id="mtList"></div></div>
@@ -923,9 +936,17 @@ function kickInfo(fx){
   if(mins<135) return {txt:'йде', cls:'go', tip:'Матч іде: '+match+' · старт '+hm+' (Київ)'};
   return {txt:'⏳', cls:'', tip:'Матч завершився, чекаємо оцінки (збір кожні 2 год): '+match};
 }
+// ▲▼ вартості гравця від старту турніру (рішення Богдана 11.10; та сама метрика, що Val Δ складу): чіп у куті плитки, лише коли ціна зрушила
+function pricePctChip(p){
+  if(!p || !p.market_value_start || p.market_value_current==null) return '';
+  const n=(p.market_value_current/p.market_value_start-1)*100;
+  if(Math.abs(n)<0.05) return '';                                  // той самий поріг, що в vDelta
+  const t=Math.abs(n).toFixed(1).replace(/\.0$/,'');
+  return `<span class="pp ${n>0?'up':'down'}" title="Вартість від старту турніру: ${n>0?'+':'−'}${t}% (${eur2(p.market_value_start)} → ${eur2(p.market_value_current)})">${n>0?'▲':'▼'}${t}%</span>`;
+}
 function tileOf(l){   // рядок market_squad_live → дані плитки
   const pl=S.pById[l.player_id]||{}, raw=l.points;
-  return {live:true,name:pl.name,cid:pl.club_id,state:l.state,rating:l.avg_rating,
+  return {live:true,name:pl.name,cid:pl.club_id,pp:pricePctChip(pl),state:l.state,rating:l.avg_rating,
           pts:(raw==null? null : (l.dbl? raw*2 : raw)),dbl:!!l.dbl,cap:!!l.is_captain,counted:!!l.counted,order:l.bench_order,known:true,
           kick:(l.state==='pending'? kickInfo(nextFx(pl.club_id,l.round_id)) : null)};
 }
@@ -940,12 +961,12 @@ function startFive(pid){
     return line.map(l=>{
       const pl=S.pById[l.player_id]||{};
       const base=S.ppr[l.player_id+'|'+rid], x2=(l.is_captain || l.player_id===tgt);
-      return {name:pl.name,cid:pl.club_id,cap:x2,
+      return {name:pl.name,cid:pl.club_id,pp:pricePctChip(pl),cap:x2,
               pts: base!=null? (x2?base*2:base) : null};
     });
   }
   return S.players.filter(p=>p.owner_participant_id===pid).slice(0,5)
-    .map(p=>({name:p.name,cid:p.club_id,cap:false,pts:null,rating:p.season_avg_rating}));
+    .map(p=>({name:p.name,cid:p.club_id,pp:pricePctChip(p),cap:false,pts:null,rating:p.season_avg_rating}));
 }
 // лавка (до 3) обраного туру: з лайнапу — у порядку заміни; до дедлайну розстановка прихована → решта володіння без номерів
 function benchThree(pid){
@@ -957,11 +978,11 @@ function benchThree(pid){
     const bo=boostOf(pid,rid), allin=!!(bo&&bo.boost==='squad_all_in');   // 🔥 All-in: лавка рахується
     return mine.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0)).map(l=>{
       const pl=S.pById[l.player_id]||{}, base=S.ppr[l.player_id+'|'+rid];
-      return {name:pl.name,cid:pl.club_id,order:l.bench_order,pts:(allin&&base!=null)?base:null,known:true};
+      return {name:pl.name,cid:pl.club_id,pp:pricePctChip(pl),order:l.bench_order,pts:(allin&&base!=null)?base:null,known:true};
     });
   }
   return S.players.filter(p=>p.owner_participant_id===pid).slice(5,8)
-    .map(p=>({name:p.name,cid:p.club_id,order:null,pts:null,rating:p.season_avg_rating,known:false}));
+    .map(p=>({name:p.name,cid:p.club_id,pp:pricePctChip(p),order:null,pts:null,rating:p.season_avg_rating,known:false}));
 }
 // довге прізвище (Bellingham…) не влазить у плитку → зменшуємо шрифт пропорційно довжині (мін 6.5px); ширина плитки 74px
 function nmFs(name){ const n=(lastName(name)||'').length; return n<=9? '' : ` style="font-size:${Math.max(6.5, 62/(0.62*n)).toFixed(1)}px"`; }
@@ -985,7 +1006,7 @@ function tileHtml(x,isBench){
   const badge = x.live? (x.dbl? '<span class="cc">×2</span>' : (x.cap? '<span class="cc w" title="капітан: ×2 чекає на його матч">К</span>' : '')) : (x.cap? '<span class="cc">×2</span>' : '');
   return `<div class="${cls}" style="--club:${clubCol(x.cid)}" title="${esc(tip)}">
       <span class="ab"${nmFs(x.name)}>${lastName(x.name)}</span><span class="bt">${mid}</span>
-      ${badge}${isBench&&x.order?`<span class="bo">${x.order}</span>`:''}</div>`;
+      ${badge}${isBench&&x.order?`<span class="bo">${x.order}</span>`:''}${x.pp||''}</div>`;
 }
 function tiles(pid){
   const cells=startFive(pid).slice(0,5).map(x=>tileHtml(x,false));
@@ -995,9 +1016,28 @@ function tiles(pid){
   return `<div class="squad-tiles">${cells.join('')}<span class="sq-gap" aria-hidden="true"></span>${bcells.join('')}</div>`;
 }
 
+// банер туру (рішення Богдана 11.10): скільки матчів зіграно і чому тур ще не закрито. Рахується з розкладу (market_fixtures) — окремих даних нема;
+// показується, коли дедлайн туру минув (до того склади приховані, матчі не стартували)
+function renderBanner(){
+  const host=document.getElementById('tourBanner'); if(!host) return;
+  const rnd=S.rounds.find(r=>r.number===S.tour);
+  const fx=rnd? (S.fix||[]).filter(f=>f.round_id===rnd.id) : [];
+  if(!rnd || !fx.length || new Date(rnd.deadline_at).getTime()>Date.now()){ host.innerHTML=''; return; }
+  const n=fx.length, played=fx.filter(f=>f.status==='played').length;
+  const off=fx.filter(f=>f.status==='postponed'||f.status==='cancelled');
+  const left=n-played-off.length, closed=!!rnd.results_entered_at;
+  const head= closed? `✅ Тур ${rnd.number} закрито · зіграно <b>${played}</b> з <b>${n}</b>`
+                    : `⏳ Тур ${rnd.number} у грі · зіграно <b>${played}</b> з <b>${n}</b>`+(left>0? ` · попереду <b>${left}</b>`:'');
+  const lines=off.map(f=>`<div class="ln w">⚠️ ${esc(clubName(f.home_club_id))} — ${esc(clubName(f.away_club_id))}: ${f.status==='postponed'?'перенесено':'скасовано/перервано'}</div>`);
+  if(!closed && off.length) lines.push('<div class="ln">Поки є такий матч, тур сам не закривається — чекаємо рішення адміна: закрити без нього чи дочекатись переграшу. Ринок до того заморожений.</div>');
+  else if(!closed && left===0) lines.push('<div class="ln">Усі матчі зіграні — тур закриється автоматично, щойно зберуться рейтинги.</div>');
+  host.innerHTML=`<div class="tbn ${closed?'done':(off.length?'warn':'')}"><div>${head}</div>
+    <div class="bar"><i style="width:${Math.round(played/n*100)}%"></i></div>${lines.join('')}</div>`;
+}
 function renderTours(){
   const now=Date.now();
   document.getElementById('h2tour').textContent='🏁 Тур '+S.tour;
+  renderBanner();
   document.getElementById('turnRow').innerHTML=stageRounds(S.stage).map(r=>{
     const future=new Date(r.deadline_at).getTime()>now && r.number!==S.tour;
     return `<div class="turnc ${future?'future':''}" aria-selected="${r.number===S.tour}" data-tour="${r.number}">${r.number}</div>`;
