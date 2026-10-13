@@ -523,6 +523,8 @@ function mgChip(pid,rid){   // 💎+N біля очок — лише для мі
   return `<span class="mchip" title="${esc('Менеджер туру: '+m.place+'-е місце · +'+m.points+' очк. · приріст вартості складу '+eurSg(m.delta_eur)+' · вартість складу на старті туру '+eurB(m.value_start_eur))}">💎+${m.points}</span>`;
 }
 // 💼 очки наскрізної учасника: лише коли вона вже нарахована (is_final), до того — 0 (прогноз показуємо окремо)
+// наскрізна рахується за Σ приросту вартості складу (529, final_metric='eur') чи за Σ рахунків туру (528 / 'score')
+const mgByEur=()=>!!(S.mgs.length && S.mgs[0].final_metric==='eur');
 function finPts(pid){ const f=S.mgs.find(x=>x.participant_id===pid); return (f&&f.is_final)? (f.final_points||0) : 0; }
 
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
@@ -832,9 +834,11 @@ function renderMg(){
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
   const intro=`<div class="mgintro"><b>Менеджмент бюджету</b> — друга гра поруч з очками за матчі: очки дає й те, як змінюється вартість вашого складу.
     <ul>
-      <li>Після кожного закритого туру для складу (8 гравців: основа + лавка) рахуємо, <b>на скільки змінилась їхня вартість</b> у € за тур, і <b>наскільки дорогий склад</b> на старті туру. Рахунок = приріст вартості + ${cfg.w} × вартість складу — обидва порівнюються з іншими учасниками туру.</li>
+      <li>Після кожного закритого туру для складу (8 гравців: основа + лавка) рахуємо, <b>на скільки змінилась їхня вартість</b> у € за тур, і <b>наскільки дорогий склад</b> на старті туру. Рахунок туру = приріст вартості + ${cfg.w} × вартість складу — обидва порівнюються з іншими учасниками туру. Цей рахунок потрібен лише для 💎 за тур.</li>
       <li>💎 <b>Менеджер туру:</b> три найкращі за рахунком отримують <b>${plus(cfg.tour)}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
-      <li>💼 <b>Менеджер турніру:</b> рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою отримують <b>${cfg.fin.join('/')}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів.</li>
+      <li>💼 <b>Менеджер турніру:</b> ${mgByEur()
+        ? `сумується <b>приріст вартості складу в €</b> за всі ${cfg.total} турів (рахунок туру і 💎 тут не беруться); кращі ${cfg.fin.length} за цією сумою`
+        : `рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою`} отримують <b>${cfg.fin.join('/')}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів.</li>
       <li>Не рахуються: зарплати, премія купівлі, угоди між учасниками, готівка й Банк — грошима між собою очки не накрутиш.</li>
     </ul></div>`;
   // 💼 наскрізна: до закриття останнього туру — прогноз за поточною сумою рахунків
@@ -849,7 +853,7 @@ function renderMg(){
       const pts=x.is_final? x.final_points : x.projected_points;
       return `<div class="lbr bk mg ${pc}" onclick="openSquad('${x.participant_id}')">
         <div class="rnk">${rank}</div>
-        <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)} · 💎 ${x.tour_points} очк. за тури</span></div>
+        <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgByEur()? `приріст складу ${eurSg(x.delta_eur)} за ${x.rounds_done} ${x.rounds_done===1?'тур':'тур.'}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`} · 💎 ${x.tour_points} очк. за тури</span></div>
         <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
     totalCard=`<div class="lbcard roseh"><div class="bh">💼 Менеджер турніру <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
   }
@@ -917,7 +921,9 @@ async function loadDynamic(){
   S.mg=[]; S.mgs=[]; S.mgReady=false;
   try{
     S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,score,place,points`);
-    S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`);
+    // final_metric (529): eur = наскрізна за Σ приросту вартості складу, score = за Σ рахунків; без нього (529 не залито) → рахунки, як у 528
+    try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric&order=place.asc`); }
+    catch(e){ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`); }
     S.mgReady=true;
   }catch(e){ S.mg=[]; S.mgs=[]; }
   // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
@@ -1296,7 +1302,7 @@ function mgSummary(pid,rid){
   let h=`<div class="boline">Очки загалом: матчі <b>${match}</b> · 💎 тури <b>${tourPts}</b>${f.is_final?` · 💼 наскрізна <b>${fp}</b>`:''} = <b>${match+tourPts+fp}</b></div>`;
   const cur=mgRow(pid,rid);
   if(cur) h+=`<div class="boline">💎 <b>Менеджер Т${S.tour}</b> · ${cur.place}-е місце${cur.points>0?` · +${cur.points} очк.`:''} · приріст вартості складу ${eurSg(cur.delta_eur)} · вартість складу ${eurB(cur.value_start_eur)}</div>`;
-  if(!f.is_final && f.rounds_done>0) h+=`<div class="boline">💼 <b>Менеджер турніру</b> (прогноз) · ${f.place}-е місце${f.projected_points>0?` · +${f.projected_points} очк. у General`:''} · після ${f.rounds_done} з ${total} турів</div>`;
+  if(!f.is_final && f.rounds_done>0) h+=`<div class="boline">💼 <b>Менеджер турніру</b> (прогноз) · ${f.place}-е місце${mgByEur()?` · приріст складу ${eurSg(f.delta_eur)}`:''}${f.projected_points>0?` · +${f.projected_points} очк. у General`:''} · після ${f.rounds_done} з ${total} турів</div>`;
   return h;
 }
 // гравець лайнапу «наживо» (516): очки показуються завжди; лавка приглушена, поки очки не в сумі; К/В — чи вже діє ×2
