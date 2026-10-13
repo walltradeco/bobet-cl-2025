@@ -374,6 +374,11 @@ table.grid{min-width:0}
 .pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
 .pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
 .was{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;line-height:1.2;color:var(--text-dim);text-transform:none;letter-spacing:0;margin-top:4px;white-space:nowrap}   /* зафіксована початкова вартість під поточною */
+.fxrow{position:relative;height:30px;margin-top:2px}
+.fxrow .fx{position:absolute;top:0;transform:translateX(-50%);text-align:center;font:600 9.5px var(--mono);color:var(--text-dim);line-height:1.3;white-space:nowrap;cursor:help}
+.fxrow .fx b{color:var(--ink);font-weight:700}
+.fxrow .fx i{display:block;font-style:normal;font-weight:500;letter-spacing:.03em}
+.was.up{color:var(--up)} .was.down{color:var(--down)}
 .pm-value{display:flex;gap:48px;padding:12px 0 6px}
 .pm-value .metric strong{font-family:var(--mono);font-weight:700;font-size:25px;display:block;line-height:1}
 .pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
@@ -568,9 +573,57 @@ function vDelta(p){ const s=p.market_value_start||0,c=p.market_value_current||0;
   if(!s) return {pct:0,dir:'flat'}; const d=(c-s)/s;
   return {pct:d,dir:d>0.0005?'up':(d<-0.0005?'down':'flat')}; }
 function deltaPct(n){ return (n>0?'▲ +':n<0?'▼ ':'– ')+Math.abs(n).toFixed(0)+'%'; }
+// ── форма з суперником (SQL 530, варіант B п.4 відгуку 12.10): під точками графіка — суперник (Д/В) і турнір ──
+const TEAM3_X={Czechia:'CZE',Scotland:'SCO',Wales:'WAL',Serbia:'SRB',Romania:'ROU',Bulgaria:'BUL',Finland:'FIN',Iceland:'ISL',Israel:'ISR',Albania:'ALB',Kosovo:'KOS','North Macedonia':'MKD',Luxembourg:'LUX',Cyprus:'CYP',Latvia:'LVA',Lithuania:'LTU',Estonia:'EST',Malta:'MLT',Montenegro:'MNE',Moldova:'MDA',Belarus:'BLR',Armenia:'ARM',Azerbaijan:'AZE',Kazakhstan:'KAZ','Bosnia & Herzegovina':'BIH','Republic of Ireland':'IRL',Japan:'JPN',Mexico:'MEX',Turkey:'TUR','Türkiye':'TUR','Faroe Islands':'FRO',Gibraltar:'GIB',Andorra:'AND','San Marino':'SMR',Liechtenstein:'LIE'};
+function teamCode(name){
+  if(!name) return '?';
+  if(NAT3[name]) return NAT3[name];
+  if(TEAM3_X[name]) return TEAM3_X[name];
+  const w=String(name).normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/^(FC|CF|AC|AS|SSC|SS|US|SV|VfB|VfL|1\. FC|Real|Sporting)\s+/i,'').split(/\s+/)[0]||'';
+  return w.slice(0,3).toUpperCase()||'?';
+}
+const UT_CODE={8:'LL',17:'PL',35:'BL',23:'SA',34:'L1',218:'УПЛ',7:'UCL',679:'UEL',17015:'UECL',10783:'UNL'};
+const UT_BY_NAME={'LaLiga':'LL','Ла Ліга':'LL','АПЛ':'PL','Бундесліга':'BL','Серія А':'SA','Ліга 1':'L1','УПЛ':'УПЛ','Bundesliga':'BL','Serie A':'SA','Ligue 1':'L1','UEFA Champions League':'UCL','UEFA Europa League':'UEL','UEFA Conference League':'UECL','UEFA Nations League':'UNL'};
+function utCode(f){
+  if(f.utid!=null && UT_CODE[f.utid]) return UT_CODE[f.utid];
+  if(f.ut && UT_BY_NAME[f.ut]) return UT_BY_NAME[f.ut];
+  if(!f.ut) return '';
+  const ini=String(f.ut).split(/[\s\-–]+/).filter(w=>/^[A-Za-zА-Яа-яІіЇїЄє]/.test(w)).map(w=>w[0].toUpperCase()).join('');
+  return ini.slice(0,4);
+}
+// деталі матчів форми у тому ж порядку, що й форма на графіку (старіші ліворуч); null, де деталей нема або оцінка не збігається
+function formDetails(card){
+  const rr=(card.recent_ratings||[]).slice(0,5).map(Number), ff=Array.isArray(card.recent_form)?card.recent_form:[];
+  return rr.map((r,i)=>{ const f=ff[i]; return (f && f.rating!=null && Math.abs(Number(f.rating)-r)<0.011)? f : null; }).reverse();
+}
+function fxTip(f){
+  const d=f.ts? new Date(f.ts*1000).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit',timeZone:'Europe/Kyiv'}) : '';
+  const m=(f.home&&f.away)? `${f.home} – ${f.away}`+((f.hs!=null&&f.as!=null)? ` ${f.hs}:${f.as}` : '') : '';
+  return [d, m, f.ut||'', f.min!=null? f.min+' хв' : ''].filter(Boolean).join(' · ');
+}
+function fxRow(a, meta, W, pad){
+  if(!meta || meta.length!==a.length || !meta.some(Boolean)) return '';
+  W=W||340; pad=pad||12;
+  const cells=a.map((_,i)=>{
+    const f=meta[i]; if(!f) return '';
+    const x=(a.length===1? 50 : (pad+i*(W-2*pad)/(a.length-1))/W*100);
+    const opp=(f.home_game===false)? f.home : f.away, side=(f.home_game===true)?'(Д)':(f.home_game===false?'(В)':'');
+    const t=(f.home&&f.away)? `${esc(teamCode(opp))}${side}` : '';
+    return `<span class="fx" style="left:clamp(8%,${x.toFixed(1)}%,92%)" title="${esc(fxTip(f))}"><b>${t}</b><i>${esc(utCode(f))}</i></span>`;
+  }).join('');
+  return `<div class="fxrow">${cells}</div>`;
+}
+// Val Δ картки (п.2 відгуку 12.10): ГОЛОВНЕ = накопичена від старту турніру; дрібно під нею — останній тур (market_price_log через market_player_card)
 function cardDelta(p,card){
-  const n=(card&&card.val_delta_tour_pct!=null)?card.val_delta_tour_pct:vDelta(p).pct*100;
-  return { txt:deltaPct(n), dir:n>0.05?'up':n<-0.05?'down':'flat' }; }
+  const d=vDelta(p), n=d.pct*100;
+  return { txt:(d.dir==='up'?'▲ +':d.dir==='down'?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%', dir:d.dir };
+}
+function lastTourSmall(card){
+  const n=card&&card.val_delta_tour_pct; if(n==null) return '';
+  const dir=n>0.05?'up':n<-0.05?'down':'';
+  const t=(dir==='up'?'▲ +':dir==='down'?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%';
+  return `<small class="was ${dir}" title="Зміна вартості гравця за останній тур із ціновим рухом">останній тур ${t}</small>`;
+}
 // файл рамки: модель зве базову рамку 'silver', а webp — 'steel' (та сама срібна)
 const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};
 const frameFile=(t)=>FRAME_FILE[t]||t;
@@ -683,7 +736,7 @@ function boardOwnerHist(card,p){
   const prev = chain.length? chain.map(esc).join(' → ')+' → ' : '';
   return prev+'зараз: <b>'+esc(cur)+'</b>';
 }
-function formSvg(arr){
+function formSvg(arr, meta){
   const a=(arr||[]).filter(v=>v!=null); if(!a.length) return `<p style="margin:0;color:var(--muted);font-size:12px">Форма зʼявиться після зіграних турів.</p>`;
   const W=340,H=76,pad=12, mn=Math.min(...a,6), mx=Math.max(...a,9);
   const P=a.map((v,i)=>[pad+i*(W-2*pad)/Math.max(1,a.length-1), H-16-((v-mn)/Math.max(0.1,mx-mn))*(H-30)]);
@@ -693,7 +746,7 @@ function formSvg(arr){
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
       <defs><linearGradient id="sqar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26c281" stop-opacity=".34"/><stop offset="1" stop-color="#26c281" stop-opacity="0"/></linearGradient></defs>
       <path d="M ${line} L ${P[P.length-1][0].toFixed(0)} ${H} L ${P[0][0].toFixed(0)} ${H} Z" fill="url(#sqar)"/>
-      <path d="M ${line}" fill="none" stroke="#26c281" stroke-width="2"/>${dots}</svg></div>`;
+      <path d="M ${line}" fill="none" stroke="#26c281" stroke-width="2"/>${dots}</svg>${fxRow(a, meta)}</div>`;
 }
 async function openBoardCard(pid){
   const p=S.pById[pid]; if(!p) return;
@@ -716,6 +769,7 @@ async function openBoardCard(pid){
   const form = (card.recent_ratings&&card.recent_ratings.length)
     ? card.recent_ratings.slice(0,5).map(Number).reverse()
     : (S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
+  const formMeta = (card.recent_ratings&&card.recent_ratings.length)? formDetails(card) : null;
   const gk=p.position==='G' && (card.clean_sheets!=null||card.saves!=null);
   const seasons = gk
     ? [[card.clean_sheets??'—','Сухарі'],[card.saves??'—','Сейви'],[p.appearances??'—','Матчі']]
@@ -744,13 +798,13 @@ async function openBoardCard(pid){
         </div>
         <div class="pm-value">
           <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
-          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong><span>Val Δ (тур)</span></div>
+          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${lastTourSmall(card)}<span>Val Δ (турнір)</span></div>
         </div>
         <div class="pm-value pm-points">
           <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
           <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
         </div>
-        <div class="pm-perf">${formSvg(form)}
+        <div class="pm-perf">${formSvg(form, formMeta)}
           <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
         </div>
         <div class="pm-inforow">
