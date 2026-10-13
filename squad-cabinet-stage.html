@@ -2298,9 +2298,19 @@ function statRows(list, valFn){
     <span class="cl"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc((S.clubs[p.club_id]||{}).name||'')}</span>
     <span class="vv">${valFn(p)}</span></div>`).join('');
 }
+// журнал цін ОДНОГО туру (market_price_log: оцінка, очки гравця, множник ціни) для фільтра «Тур» у «Статистиці»; кеш S.plogBy[round_id] (null = помилка)
+async function loadTourLog(rid,force){
+  S.plogBy=S.plogBy||{}; S.plogAt=S.plogAt||{}; S.plogLoading=S.plogLoading||{};
+  if(S.plogLoading[rid] || (!force && S.plogBy[rid]!==undefined)) return;
+  S.plogLoading[rid]=true;
+  try{ S.plogBy[rid]=await sbSel(`market_price_log?round_id=eq.${rid}&select=player_id,avg_rating,points,mult&limit=1000`); S.plogAt[rid]=Date.now(); }
+  catch(e){ S.plogBy[rid]=null; }
+  S.plogLoading[rid]=false;
+  if(S.tab==='stats' && S.stF && S.stF.round===rid) viewStats();
+}
 function viewStats(){
   const N=20;   // топ-20 (було 10); фільтри — як на «Ринку»: ліга · клуб · позиція · власник
-  const F=S.stF||(S.stF={league:'',club:'',pos:'',own:'',q:''});
+  const F=S.stF||(S.stF={league:'',club:'',pos:'',own:'',q:'',round:''});
   const all=S.players.slice();
   let pool=all;
   { const q=(F.q||'').trim().toLowerCase(); if(q) pool=pool.filter(p=>(p.name||'').toLowerCase().includes(q)); }   // пошук по імені — як на «Ринку»
@@ -2310,41 +2320,70 @@ function viewStats(){
   if(F.own==='free')       pool=pool.filter(p=>!p.owner_participant_id);
   else if(F.own==='owned') pool=pool.filter(p=>p.owner_participant_id);
   else if(F.own==='mine')  pool=pool.filter(p=>S.me && p.owner_participant_id===S.me.id);
-  const filtered=!!(F.league||F.club||F.pos||F.own||(F.q||'').trim());
+  const filtered=!!(F.league||F.club||F.pos||F.own||(F.q||'').trim());   // (тур — не фільтр пулу)
+  // режим ТУРУ (п.5 відгуку 12.10): оцінка / очки / рух ціни саме ЦЬОГО туру з журналу цін (market_price_log — рядок на кожного гравця пулу, що зіграв); «Весь турнір» — як раніше
+  const rnd=F.round? (S.rounds||[]).find(r=>r.id===F.round) : null;
+  const L={}; let tourLoading=false, tourErr=false;
+  if(rnd){
+    const cached=(S.plogBy||{})[rnd.id];
+    if(cached===undefined){ tourLoading=true; loadTourLog(rnd.id); }
+    else if(cached===null) tourErr=true;
+    else{ cached.forEach(r=>L[r.player_id]=r);
+          if(!rnd.results_entered_at && Date.now()-((S.plogAt||{})[rnd.id]||0)>60000) loadTourLog(rnd.id,true); }   // тур у грі: ціни наживо → освіжаємо раз на хвилину
+  }
   const scored=p=>{ const st=S.stats[p.id]; return st && st.rounds_played>0 ? st.scored_points : null; };
-  const byRating=pool.filter(p=>p.season_avg_rating!=null).sort((a,b)=>b.season_avg_rating-a.season_avg_rating).slice(0,N);
-  const byPoints=pool.filter(p=>scored(p)!=null).sort((a,b)=>scored(b)-scored(a)).slice(0,N);
-  // лише гравці з реальним рухом ціни (у пре-маркеті всі flat 0% → борди порожні, а не «топ з –0%»)
-  const up  =pool.filter(p=>vDelta(p).pct> 0.0005).sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
-  const down=pool.filter(p=>vDelta(p).pct<-0.0005).sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
-  const empty=`<div class="dim" style="padding:12px 14px">${filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних турів)'}</div>`;
+  let byRating, byPoints, up, down;
+  if(rnd){
+    byRating=pool.filter(p=>L[p.id]&&L[p.id].avg_rating!=null).sort((a,b)=>L[b.id].avg_rating-L[a.id].avg_rating).slice(0,N);
+    byPoints=pool.filter(p=>L[p.id]&&L[p.id].points>0).sort((a,b)=>(L[b.id].points-L[a.id].points)||(L[b.id].avg_rating-L[a.id].avg_rating)).slice(0,N);
+    up  =pool.filter(p=>L[p.id]&&L[p.id].mult>1.0001).sort((a,b)=>L[b.id].mult-L[a.id].mult).slice(0,N);
+    down=pool.filter(p=>L[p.id]&&L[p.id].mult<0.9999).sort((a,b)=>L[a.id].mult-L[b.id].mult).slice(0,N);
+  }else{
+    byRating=pool.filter(p=>p.season_avg_rating!=null).sort((a,b)=>b.season_avg_rating-a.season_avg_rating).slice(0,N);
+    byPoints=pool.filter(p=>scored(p)!=null).sort((a,b)=>scored(b)-scored(a)).slice(0,N);
+    // лише гравці з реальним рухом ціни (у пре-маркеті всі flat 0% → борди порожні, а не «топ з –0%»)
+    up  =pool.filter(p=>vDelta(p).pct> 0.0005).sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
+    down=pool.filter(p=>vDelta(p).pct<-0.0005).sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
+  }
+  const tn=rnd? 'Тур '+rnd.number : '';
+  const empty=`<div class="dim" style="padding:12px 14px">${tourLoading?'Завантаження…':tourErr?'Не вдалося завантажити дані туру':rnd?(filtered?'За цим фільтром у '+tn+' нікого немає':tn+': даних ще немає (матчі не зіграні)'):filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних турів)'}</div>`;
   const board=(title,sub,rows)=>`<div class="statcard"><div class="sthead"><b>${title}</b><span>${sub}</span></div>${rows||empty}</div>`;
   const opt=(v,tx,cur)=>`<option value="${esc(v)}" ${String(cur)===String(v)?'selected':''}>${esc(tx)}</option>`;
   const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort();
   const clubs=Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id) && (!F.league || c.league===F.league)).sort((a,b)=>a.name.localeCompare(b.name));
+  const started=(S.rounds||[]).filter(r=>new Date(r.deadline_at)<=new Date()).sort((a,b)=>a.number-b.number);   // тури, що вже стартували (у грі або закриті)
   const fbar=`<div class="mfilters">
+    <div class="mf"><select id="sf-round"><option value="">Тур: весь турнір</option>${started.map(r=>opt(r.id,'Тур '+r.number+(r.results_entered_at?'':' · у грі'),F.round)).join('')}</select></div>
     <div class="mf search"><input id="sf-q" placeholder="Пошук по імені (англ.)" value="${esc(F.q||'')}"></div>
     <div class="mf"><select id="sf-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,F.league)).join('')}</select></div>
     <div class="mf"><select id="sf-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,F.club)).join('')}</select></div>
     <div class="mf"><select id="sf-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),F.pos)).join('')}</select></div>
     <div class="mf"><select id="sf-own">${[['','Власник: усі'],['free','Вільні'],['owned','У складах'],['mine','Мої']].map(([v,tx])=>opt(v,tx,F.own)).join('')}</select></div>
-    ${filtered?'<button class="mini ghost" id="sf-reset">Скинути</button>':''}
+    ${(filtered||F.round)?'<button class="mini ghost" id="sf-reset">Скинути</button>':''}
     <span class="dim" style="margin-left:auto;font-size:12px">у вибірці: ${pool.length} з ${all.length}</span>
   </div>`;
   $('view').innerHTML=`
     <div class="head2"><h2>Статистика</h2><span class="sub">по пулу турніру · топ-${N} · клік по гравцю — детальна картка</span></div>
     ${fbar}
     <div class="statboards">
-      ${board('🏅 Топ рейтинг','SofaScore · увесь пул', statRows(byRating, p=>Number(p.season_avg_rating).toFixed(2)))}
-      ${board('⚽ Найбільше очок','наш турнір · лише заіграні', byPoints.length?statRows(byPoints, p=>scored(p)):null)}
-      ${board('📈 Найбільше подорожчав','наш турнір', statRows(up, p=>fmtDelta(vDelta(p))))}
-      ${board('📉 Найбільше подешевшав','наш турнір', statRows(down, p=>fmtDelta(vDelta(p))))}
+      ${rnd
+        ? board('🏅 Топ рейтинг','SofaScore · '+tn, byRating.length?statRows(byRating, p=>Number(L[p.id].avg_rating).toFixed(2)):null)
+        : board('🏅 Топ рейтинг','SofaScore · увесь пул', statRows(byRating, p=>Number(p.season_avg_rating).toFixed(2)))}
+      ${rnd
+        ? board('⚽ Найбільше очок','очки гравця за '+tn, byPoints.length?statRows(byPoints, p=>L[p.id].points):null)
+        : board('⚽ Найбільше очок','наш турнір · лише заіграні', byPoints.length?statRows(byPoints, p=>scored(p)):null)}
+      ${rnd
+        ? board('📈 Найбільше подорожчав','рух ціни · '+tn, up.length?statRows(up, p=>fmtDelta({pct:L[p.id].mult-1,dir:'up'})):null)
+        : board('📈 Найбільше подорожчав','наш турнір', statRows(up, p=>fmtDelta(vDelta(p))))}
+      ${rnd
+        ? board('📉 Найбільше подешевшав','рух ціни · '+tn, down.length?statRows(down, p=>fmtDelta({pct:L[p.id].mult-1,dir:'down'})):null)
+        : board('📉 Найбільше подешевшав','наш турнір', statRows(down, p=>fmtDelta(vDelta(p))))}
     </div>`;
   const bind=(id,key,extra)=>{ const el=$(id); if(el) el.onchange=()=>{ F[key]=el.value; if(extra) extra(); viewStats(); }; };
   bind('sf-league','league',()=>{ if(F.club && (S.clubs[F.club]||{}).league!==F.league) F.club=''; });   // змінили лігу — клуб поза нею скидаємо
-  bind('sf-club','club'); bind('sf-pos','pos'); bind('sf-own','own');
+  bind('sf-club','club'); bind('sf-pos','pos'); bind('sf-own','own'); bind('sf-round','round');
   const qi=$('sf-q'); if(qi) qi.oninput=()=>{ F.q=qi.value; const at=qi.selectionStart; viewStats(); const n=$('sf-q'); if(n){ n.focus(); n.setSelectionRange(at,at); } };   // вид перемальовується цілком → повертаємо фокус і курсор
-  const rs=$('sf-reset'); if(rs) rs.onclick=()=>{ S.stF={league:'',club:'',pos:'',own:'',q:''}; viewStats(); };
+  const rs=$('sf-reset'); if(rs) rs.onclick=()=>{ S.stF={league:'',club:'',pos:'',own:'',q:'',round:''}; viewStats(); };
   $('view').querySelectorAll('.strow').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
 }
 function viewTable(){
