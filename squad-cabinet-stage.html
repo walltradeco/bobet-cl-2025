@@ -1446,7 +1446,7 @@ async function viewMarket(){
                     .concat(xInv.filter(x=>x.awaiting_participant===S.me.id).map(exchangeRow));
       const outRows = trInv.filter(t=>t.awaiting_participant!==S.me.id).map(transferRow)
                     .concat(xInv.filter(x=>x.awaiting_participant!==S.me.id).map(exchangeRow));
-      body = `<p class="dim">У <b>Ринок</b> тисни на гравця суперника → «Запропонувати трансфер» (гроші, ${winTxt()} вартості) або «Обмін» (свій гравець ↔ його + доплата). Угоди публічні; гроші морозяться на час пропозиції.</p>
+      body = `<p class="dim">У <b>Ринок</b> тисни на гравця суперника → «Запропонувати трансфер» (гроші, ${winTxt()}) або «Обмін» (свій гравець ↔ його + доплата). Угоди публічні; гроші морозяться на час пропозиції.</p>
         <div class="msec">Твоя черга${inRows.length?` · <b style="color:var(--gold)">${inRows.length}</b>`:''}</div>
         ${inRows.length?inRows.join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}
         <div class="msec" style="margin-top:16px">Твої пропозиції / чекають іншого боку</div>
@@ -1701,8 +1701,10 @@ function stageInfo(){            // дзеркало market_current_stage / mark
 }
 function winMinPct(){ return (S.cfg&&S.cfg.transfer_min_pct!=null)?+S.cfg.transfer_min_pct:0.75; }
 function winMaxPct(){ return (S.cfg&&S.cfg.transfer_max_pct!=null)?+S.cfg.transfer_max_pct:null; }
-function winTxt(){ const mx=winMaxPct(); return Math.round(winMinPct()*100)+(mx?'–'+Math.round(mx*100):'+')+'%'; }
-function winMaxEur(mv){ const mx=winMaxPct(); return mx?Math.floor((mv||0)*mx):0; }
+// 527: верх вікна = max(вартість·pct ; вартість+add) — «+25% або +8M, що більше»; add береться з market_config.transfer_max_add_eur (немає → 0, як до 527)
+function winAddEur(){ return (S.cfg&&S.cfg.transfer_max_add_eur!=null)?+S.cfg.transfer_max_add_eur:0; }
+function winTxt(){ const mx=winMaxPct(), ad=winAddEur(); return Math.round(winMinPct()*100)+(mx?'–'+Math.round(mx*100):'+')+'% вартості'+((mx&&ad)?', для дешевих — до +'+(ad/1e6)+'M':''); }
+function winMaxEur(mv){ const mx=winMaxPct(); return mx?Math.max(Math.floor((mv||0)*mx),(mv||0)+winAddEur()):0; }
 function defMode(pid){ const p=(S.players||[]).find(x=>x.id===pid); return (p&&S.me&&p.owner_participant_id===S.me.id)?'extend':'first'; }
 function wageFor(mv,len,mode){ const c=S.cfg||{}; let base=0;
   const br=c.wage_brackets;
@@ -1814,7 +1816,7 @@ function actionsHTML(p,ctx){
           <div class="macts"><button class="ghost" data-do="unlist">Зняти з продажу</button></div>`;
       } else {
         const minAsk=Math.ceil(mv*winMinPct()), maxAsk=winMaxEur(mv);
-        right+=`<p class="mnote">Вітрина: фіксована ціна ${winTxt()} вартості (зміниться вартість — лот застаріє); інший викупить миттєво, ти отримаєш суму повністю (0% комісії).</p>
+        right+=`<p class="mnote">Вітрина: фіксована ціна ${winTxt()} (зміниться вартість — лот застаріє); інший викупить миттєво, ти отримаєш суму повністю (0% комісії).</p>
           ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk)}`;
       }
     }
@@ -1831,7 +1833,7 @@ function actionsHTML(p,ctx){
       h+=`<p class="mnote">🏷 <b>${ownerNm}</b> виставив на вітрину за <b>${eur(lst.ask_price)}</b> — миттєвий викуп (0% комісії).</p>`;
       // 506: ціна лота фіксована, а вартість рухається → поза вікном ціни від ПОТОЧНОЇ вартості лот застарів
       const stale=(+lst.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+lst.ask_price>winMaxEur(mv));
-      h+= stale ? `<p class="mnote warn">🕓 Лот застарів: вартість гравця змінилась, ціна ask (${eur(lst.ask_price)}) поза вікном ${winTxt()} від поточної ${eur(mv)}. Власник має перевиставити — викуп поки неможливий.</p>`
+      h+= stale ? `<p class="mnote warn">🕓 Лот застарів: вартість гравця змінилась, ціна ask (${eur(lst.ask_price)}) поза вікном (${winTxt()}) від поточної ${eur(mv)}. Власник має перевиставити — викуп поки неможливий.</p>`
         : blockL ? `<p class="mnote warn">Викуп ⛔ ${blockL}</p>`
                  : `<div class="macts"><button data-do="buylist" data-amt="${lst.ask_price}">Викупити за ask · ${eur(lst.ask_price)}</button></div>`;
     }
@@ -2144,7 +2146,7 @@ function bindModalActions(p){
       const box=b.closest('.mamt'), min=+box.dataset.min;
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
       if(!eurv || eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
-      const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eur(mxv)+' ('+winTxt()+' вартості)'); return; }
+      const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eur(mxv)+' ('+winTxt()+')'); return; }
       const len=selectedLen();   // 508: довжина контракту з пікера модалки (ставка/старт аукціону)
       modalClose();
       if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv,p_length:len},'Аукціон почато');
