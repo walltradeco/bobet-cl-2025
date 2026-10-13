@@ -14,7 +14,7 @@
   --bg:#1B1B1B; --bg2:#1B251D; --panel:#151D17; --panel2:#1B251D; --panel3:#212D23;
   --line:#2A362B; --ink:#EDEFE8; --muted:#8B9A8C; --dim:#6E7C70;
   --accent:#2E8B57; --accent-d:#256B44; --gold:#F4C430;
-  --teal:#6FAFAF; --blue:#5E97D0; --purple:#A98FDB;
+  --teal:#6FAFAF; --blue:#5E97D0; --purple:#A98FDB; --rose:#E08AA8;
   --up:#4CB07A; --down:#C75C4A; --frost:#5E97D0;
   --text:#EDEFE8; --text-dim:#8B9A8C;   /* аліаси під ports із кабінету (pm-*) */
   --field-line:rgba(237,239,232,0.06);
@@ -34,6 +34,17 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 /* STAGE-бейдж (у embed ховається — оболонку дає BoBet) */
 /* 🚀 бусти туру (501): значок біля очок + рядок у модалці */
 .bchip{margin-left:5px;font-size:12px;vertical-align:1px;cursor:help}
+/* 💎 менеджмент (528): бонус «Менеджер туру» (+3/+2/+1) біля очок; окремо від очок матчів */
+.mchip{display:inline-block;margin-left:6px;padding:1px 6px;border-radius:999px;border:1px solid var(--rose);color:var(--rose);font-family:var(--mono);font-size:11px;font-weight:700;line-height:1.5;vertical-align:1px;cursor:help;white-space:nowrap}
+.lbcard.roseh .bh{color:var(--rose);box-shadow:inset 0 3px 0 var(--rose)}
+.lbboards.one{grid-template-columns:minmax(0,560px)}
+.mgintro{margin:4px 0 22px;padding:14px 18px;border:1px solid var(--line);border-left:3px solid var(--rose);border-radius:10px;background:var(--panel);font-size:13.5px;line-height:1.6;color:var(--muted)}
+.mgintro b{color:var(--ink)}
+.mgintro ul{margin:8px 0 0;padding-left:20px}
+.mgsec{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--rose);opacity:.9;margin:22px 2px 10px}
+.lbr.mg .pts{color:var(--rose)}
+.lbr.mg .pts.pj{opacity:.75}
+.lbr.mg .pts small{display:block;font-size:11px;font-weight:500;color:var(--dim);text-align:right;letter-spacing:.04em}
 .boline{margin:10px 0 2px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:13px;line-height:1.45}
 .boline b{font-weight:700}
 .stage-badge{background:#C75C4A;color:#fff;text-align:center;font-size:12px;
@@ -61,7 +72,8 @@ nav.etabs button.stg-s1{color:var(--teal)}
 nav.etabs button.stg-s2{color:var(--blue)}
 nav.etabs button.stg-bank{color:var(--gold)}
 nav.etabs button.stg-pts{color:var(--purple)}
-nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank,nav.etabs button.stg-pts{opacity:.55}
+nav.etabs button.stg-mg{color:var(--rose)}
+nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank,nav.etabs button.stg-pts,nav.etabs button.stg-mg{opacity:.55}
 nav.etabs button:hover{opacity:1}
 nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 
@@ -401,6 +413,7 @@ table.grid{min-width:0}
     <button class="stg-lb active" data-stage="lb">Leaderboard</button>
     <button class="stg-s1" data-stage="s1">1-5 Тур</button>
     <button class="stg-s2" data-stage="s2">6-10 Тур</button>
+    <button class="stg-mg hide" data-stage="mg">💎 Менеджмент</button>
     <button class="stg-bank" data-stage="bank">🏦 Банк</button>
     <button class="stg-pts" data-stage="pts">📊 Очки по турах</button>
   </nav>
@@ -413,6 +426,9 @@ table.grid{min-width:0}
 
   <!-- Очки по турах: учасник × усі тури + Разом (раніше була підвкладкою туру) -->
   <section id="secPts" class="hide"></section>
+
+  <!-- 💎 Менеджмент (528): подіум менеджменту кожного закритого туру + наскрізна «Менеджмент турніру» -->
+  <section id="secMg" class="hide"></section>
 
   <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
   <section id="secStage" class="hide">
@@ -428,7 +444,7 @@ table.grid{min-width:0}
 
     <section data-view="tbl" class="on">
       <div class="board"><div class="f1-scroll"><table class="f1" id="f1"></table></div></div>
-      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · ▲▼ у куті плитки — зміна вартості гравця від старту турніру · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу · Val Δ = сума відсотків зміни вартості гравців складу (ціна гравця не впливає)</div>
+      <div class="hint" id="tblHint">Плитка гравця: оцінка SofaScore і очки за тур · «·» — матч ще попереду · «–» — не грав · лавка (цифра = порядок заміни) показує очки одразу, але приглушена з пунктиром, поки заміна не визначена; золота рамка — заміна вже в сумі · ▲▼ у куті плитки — зміна вартості гравця від старту турніру · капітан ×2 (віце — лише якщо капітан не зіграв) · клік → повний склад · Squad Price = сума поточних вартостей складу · Val Δ = сума відсотків зміни вартості гравців складу (ціна гравця не впливає) · 💎+N біля імені — бонус «Менеджер туру» (топ-3 за рахунком менеджменту), додається до очок; Total у картках зверху = очки матчів + 💎 бонуси турів</div>
     </section>
     <section data-view="mt">
       <div class="board"><div class="mlist" id="mtList"></div></div>
@@ -467,7 +483,7 @@ const CLUB={
 const posShort={G:'GK',D:'DEF',M:'MID',F:'FWD'};
 const medal=['🥇','🥈','🥉'];
 
-const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null,bank:[],bankReady:false,live:[],liveBy:{},liveReady:false,fix:[],pool:null};
+const S={tour:null,stage:'lb',rounds:[],lb:[],scores:[],players:[],pById:{},lineup:[],ppr:{},clubs:{},tournament:null,names:{},form:{},boosts:[],stage1Last:null,bank:[],bankReady:false,live:[],liveBy:{},liveReady:false,fix:[],pool:null,mg:[],mgs:[],mgReady:false,mgCfg:null};
 // етапів завжди два; межа — market_config.stage1_last_round (501; 10 турів → 5, 12 → 6). Немає в БД → 5.
 const stage1Max=()=>S.stage1Last||5;
 // кінець 2-го етапу: етапи рівні (10→5+5, 12→6+6), тож не менше 2×межа — навіть коли турів у базі ще мало
@@ -490,12 +506,24 @@ function stageRounds(stage){
   if(stage==='s2') return S.rounds.filter(r=>r.number>stage1Max());
   return S.rounds;
 }
-function stageSum(stage){   // сума очок кожного учасника за тури стейджа
+function stageSum(stage){   // сума очок кожного учасника за тури стейджа (очки матчів + 💎 бонус «Менеджер туру», 528)
   const nums=new Set(stageRounds(stage).map(r=>r.number));
   const sum={}; S.lb.forEach(p=>sum[p.participant_id]=0);
-  S.scores.forEach(s=>{ if(nums.has(s.round_number) && sum[s.participant_id]!=null) sum[s.participant_id]+=s.points||0; });
+  S.scores.forEach(s=>{ if(nums.has(s.round_number) && sum[s.participant_id]!=null) sum[s.participant_id]+=(s.points||0)+(s.mgmt_points||0); });
   return sum;
 }
+// 💎 менеджмент бюджету (528): +3/+2/+1 за тур («Менеджер туру») і наскрізна 10/8/6/4/2 за турнір («Менеджер турніру», у General).
+// Нема вьюх (528 не залито) → S.mgReady=false: нічого не показуємо, борда як раніше.
+// Формат «1 етап»: турнір = mgmt_total_rounds турів і вони вміщаються в 1-й етап → 2-й етап і його картки ховаємо.
+const oneStage=()=>!!(S.mgReady && S.mgCfg && S.mgCfg.total && S.mgCfg.total<=stage1Max());
+function mgRow(pid,rid){ return S.mg.find(m=>m.participant_id===pid && m.round_id===rid)||null; }
+const eurSg=d=>(d>0?'+':d<0?'−':'')+'€'+(Math.abs(d)/1e6).toFixed(1)+'M';
+function mgChip(pid,rid){   // 💎+N біля очок — лише для місць з очками (топ-3 туру)
+  const m=mgRow(pid,rid); if(!m || !(m.points>0)) return '';
+  return `<span class="mchip" title="${esc('Менеджер туру: '+m.place+'-е місце · +'+m.points+' очк. · приріст вартості складу '+eurSg(m.delta_eur)+' · вартість складу на старті туру '+eurB(m.value_start_eur))}">💎+${m.points}</span>`;
+}
+// 💼 очки наскрізної учасника: лише коли вона вже нарахована (is_final), до того — 0 (прогноз показуємо окремо)
+function finPts(pid){ const f=S.mgs.find(x=>x.participant_id===pid); return (f&&f.is_final)? (f.final_points||0) : 0; }
 
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
@@ -757,13 +785,17 @@ function renderLB(){
   const host=$('secLB'); if(!host) return;
   if(!S.lb.length){ host.innerHTML='<div class="hint" style="padding:16px 2px">Ще немає учасників.</div>'; return; }
   const s1=stageSum('s1'), s2=stageSum('s2'), tot={};
-  S.lb.forEach(p=>tot[p.participant_id]=(s1[p.participant_id]||0)+(s2[p.participant_id]||0));
+  // General = total_points з market_leaderboard: очки матчів + 💎 бонуси турів + 💼 наскрізна (528); без нього — сума етапів
+  S.lb.forEach(p=>tot[p.participant_id]= p.total_points!=null? p.total_points : (s1[p.participant_id]||0)+(s2[p.participant_id]||0));
+  const one=oneStage(), fin=(S.mgCfg&&S.mgCfg.fin||[]).join('/');
   host.innerHTML=`<div class="lbboards">
       ${lbCard('tealh','1-'+stage1Max()+' Тур', s1, false)}
-      ${lbCard('blueh',(stage1Max()+1)+'-'+stage2End()+' Тур', s2, false)}
+      ${one? '' : lbCard('blueh',(stage1Max()+1)+'-'+stage2End()+' Тур', s2, false)}
       ${lbCard('goldh','General', tot, true)}
     </div>
-    <div class="hint">Наскрізний залік · General = сума всіх турів · рівні очки → ділять місце · клік на учасника → його склад</div>`;
+    <div class="hint">${S.mgReady
+      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів) · деталі — вкладка «💎 Менеджмент»`
+      : 'Наскрізний залік · General = сума всіх турів'} · рівні очки → ділять місце · клік на учасника → його склад</div>`;
 }
 // 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
 // публічна лише СУМА, розклад приватний; зі знімка після останнього туру з результатами цього етапу.
@@ -784,26 +816,77 @@ function bankCard(cls, title, stage){
 function renderBank(){
   const host=$('secBank'); if(!host) return;
   if(!S.bankReady){ host.innerHTML='<div class="hint" style="padding:16px 2px">Борда Банку зʼявиться після оновлення бази (SQL 510).</div>'; return; }
-  const l1=stage1Max();
+  const l1=stage1Max(), one=oneStage();
   host.innerHTML=`<div class="lbboards">
-      ${bankCard('tealh','Етап 1 · 1-'+l1+' Тур', 1)}
-      ${bankCard('blueh','Етап 2 · '+(l1+1)+'-'+stage2End()+' Тур', 2)}
+      ${bankCard('tealh',one? 'Банк · 1-'+l1+' Тур' : 'Етап 1 · 1-'+l1+' Тур', 1)}
+      ${one? '' : bankCard('blueh','Етап 2 · '+(l1+1)+'-'+stage2End()+' Тур', 2)}
     </div>
-    <div class="hint">Банк = Squad Price + Трансферний бюджет + Зарплатний бюджет · публічна лише сума (розклад приватний) · оновлюється після кожного туру · Δ — проти старту етапу · кожен етап рахується окремо · рівні → ділять місце</div>`;
+    <div class="hint">Банк = Squad Price + Трансферний бюджет + Зарплатний бюджет · публічна лише сума (розклад приватний) · оновлюється після кожного туру · Δ — проти старту ${one?'турніру':'етапу · кожен етап рахується окремо'} · рівні → ділять місце</div>`;
+}
+// 💎 Менеджмент (528): як це працює · 💼 наскрізна «Менеджер турніру» (прогноз → підсумок) · подіум КОЖНОГО закритого туру
+function renderMg(){
+  const host=$('secMg'); if(!host) return;
+  if(!S.mgReady){ host.innerHTML='<div class="hint" style="padding:16px 2px">Вкладка зʼявиться після оновлення бази (SQL 528).</div>'; return; }
+  const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6,w:0.25};
+  const plus=a=>a.map(n=>'+'+n).join('/');
+  const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
+  const intro=`<div class="mgintro"><b>Менеджмент бюджету</b> — друга гра поруч з очками за матчі: очки дає й те, як змінюється вартість вашого складу.
+    <ul>
+      <li>Після кожного закритого туру для складу (8 гравців: основа + лавка) рахуємо, <b>на скільки змінилась їхня вартість</b> у € за тур, і <b>наскільки дорогий склад</b> на старті туру. Рахунок = приріст вартості + ${cfg.w} × вартість складу — обидва порівнюються з іншими учасниками туру.</li>
+      <li>💎 <b>Менеджер туру:</b> три найкращі за рахунком отримують <b>${plus(cfg.tour)}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
+      <li>💼 <b>Менеджер турніру:</b> рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою отримують <b>${cfg.fin.join('/')}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів.</li>
+      <li>Не рахуються: зарплати, премія купівлі, угоди між учасниками, готівка й Банк — грошима між собою очки не накрутиш.</li>
+    </ul></div>`;
+  // 💼 наскрізна: до закриття останнього туру — прогноз за поточною сумою рахунків
+  const done=Math.max(0,...S.mgs.map(x=>x.rounds_done||0));
+  let totalCard;
+  if(!done){
+    totalCard='<div class="lbcard roseh"><div class="bh">💼 Менеджер турніру</div><div class="bankhint">Зʼявиться після першого закритого туру.</div></div>';
+  }else{
+    const rows=[...S.mgs].sort((a,b)=>(a.place-b.place)||byName(a,b)).map(x=>{
+      const pl=x.place-1, pc=pl===0?'p1':pl===1?'p2':pl===2?'p3':'';
+      const rank=pl<3?`<span class="crown">${medal[pl]}</span>`:x.place;
+      const pts=x.is_final? x.final_points : x.projected_points;
+      return `<div class="lbr bk mg ${pc}" onclick="openSquad('${x.participant_id}')">
+        <div class="rnk">${rank}</div>
+        <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)} · 💎 ${x.tour_points} очк. за тури</span></div>
+        <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
+    totalCard=`<div class="lbcard roseh"><div class="bh">💼 Менеджер турніру <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
+  }
+  // 💎 подіум кожного закритого туру (новіші зверху)
+  const rids=new Set(S.mg.map(m=>m.round_id));
+  const cards=S.rounds.filter(r=>rids.has(r.id)).sort((a,b)=>b.number-a.number).map(r=>{
+    const rows=S.mg.filter(m=>m.round_id===r.id).sort((a,b)=>(a.place-b.place)||byName(a,b)).map(m=>{
+      const pl=m.place-1, medalled=m.points>0 && pl<3, pc=medalled?(pl===0?'p1':pl===1?'p2':'p3'):'';
+      return `<div class="lbr bk mg ${pc}" onclick="openSquad('${m.participant_id}')">
+        <div class="rnk">${medalled?`<span class="crown">${medal[pl]}</span>`:m.place}</div>
+        <div class="nm">${esc(S.names[m.participant_id]||'—')}<span class="bsub">Δ ${eurSg(m.delta_eur)} · склад ${eurB(m.value_start_eur)} · рахунок ${(+m.score).toFixed(2)}</span></div>
+        <div class="pts">${m.points>0?'+'+m.points:'·'}</div></div>`; }).join('');
+    return `<div class="lbcard roseh"><div class="bh">💎 Тур ${r.number}</div>${rows}</div>`;
+  });
+  host.innerHTML=`<div class="head2"><h2>💎 Менеджмент бюджету</h2><span class="sub">очки за гроші: приріст вартості складу · клік на учасника → склад</span></div>
+    ${intro}
+    <div class="mgsec">💼 Наскрізна · Менеджер турніру</div>
+    <div class="lbboards one">${totalCard}</div>
+    <div class="mgsec">💎 Подіуми турів · Менеджер туру</div>
+    ${cards.length? `<div class="lbboards">${cards.join('')}</div>` : '<div class="hint" style="padding:6px 2px">Ще жоден тур не закрито — подіум зʼявиться, щойно тур отримає результати.</div>'}
+    <div class="hint">Δ — приріст вартості 8 гравців складу за тур (лише рух ринку) · склад — їхня вартість на старті туру · рахунок — стандартизований показник (вищий = кращий) · рівні місця ділять очки цього місця</div>`;
 }
 // перемикання ЕТАПИ: Leaderboard / 1-5 Тур / 6-10 Тур / Банк
 function goStage(stage){
   S.stage=stage;
   document.querySelectorAll('#etabs button').forEach(b=>b.classList.toggle('active', b.dataset.stage===stage));
   { const ab=document.querySelector('#etabs button.active'); if(ab && ab.scrollIntoView) ab.scrollIntoView({inline:'center',block:'nearest'}); }   // вузький екран: активна вкладка в зоні видимості
-  const lb=(stage==='lb'), bank=(stage==='bank'), pts=(stage==='pts');
+  const lb=(stage==='lb'), bank=(stage==='bank'), pts=(stage==='pts'), mg=(stage==='mg');
   $('secLB').classList.toggle('hide', !lb);
   $('secBank').classList.toggle('hide', !bank);
   $('secPts').classList.toggle('hide', !pts);
-  $('secStage').classList.toggle('hide', lb||bank||pts);
+  $('secMg').classList.toggle('hide', !mg);
+  $('secStage').classList.toggle('hide', lb||bank||pts||mg);
   if(lb){ renderLB(); return; }
   if(bank){ renderBank(); return; }
   if(stage==='pts'){ renderPts(); return; }
+  if(mg){ renderMg(); return; }
   const rs=stageRounds(stage);
   if(!rs.length){
     $('turnRow').innerHTML=''; $('h2tour').textContent='🏁 Турів ще не було'; $('topCards').innerHTML=''; $('mtList').innerHTML='';
@@ -827,7 +910,16 @@ async function loadDynamic(){
 
   S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
   S.names={}; S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
-  S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`);
+  // mgmt_points (528) — бонус «Менеджер туру»; нема колонки (528 не залито) → без нього
+  try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points`); }
+  catch(e){ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`); }
+  // менеджмент (528): рядки туру (рахунок/місце/очки) і наскрізна; нема вьюх → вкладка «💎 Менеджмент» прихована
+  S.mg=[]; S.mgs=[]; S.mgReady=false;
+  try{
+    S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,score,place,points`);
+    S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`);
+    S.mgReady=true;
+  }catch(e){ S.mg=[]; S.mgs=[]; }
   // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
   try{ S.bank=await sbGet(`market_bank_board?tournament_id=eq.${S.tournament}&select=stage,participant_id,display_name,round_number,bank_total,squad_price,start_total,delta,place&order=stage.asc,place.asc,display_name.asc`); S.bankReady=true; }catch(e){ S.bank=[]; S.bankReady=false; }
   // бусти (view показує лише ПІСЛЯ дедлайну); degrade, якщо 501 не залито
@@ -861,12 +953,18 @@ async function boot(){
     if(!(await loadDynamic())){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
     (await sbGet('market_clubs?select=id,name,league,sofascore_tid')).forEach(c=>S.clubs[c.id]=c);
     // межа етапу (market_config; анонімно читається); degrade, якщо 501 не залито
-    try{ const cf=await sbGet('market_config?select=tournament_id,stage1_last_round');
-         const row=cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null);
-         if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round; }catch(e){}
-    { const l1=stage1Max(), mx=stage2End();
-      const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2');
-      if(b1) b1.textContent='1-'+l1+' Тур'; if(b2) b2.textContent=(l1+1)+'-'+mx+' Тур'; }
+    // + налаштування менеджменту (528: очки за тур/турнір, кількість турів); без них (528 не залито) → старий запит
+    { let cf=null;
+      try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight'); }
+      catch(e){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round'); }catch(e2){} }
+      const row=cf&&(cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null));
+      if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round;
+      if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25}; }
+    { const l1=stage1Max(), mx=stage2End(), one=oneStage();
+      const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2'), bm=document.querySelector('.stg-mg');
+      if(b1) b1.textContent='1-'+l1+' Тур'; if(b2) b2.textContent=(l1+1)+'-'+mx+' Тур';
+      if(b2) b2.classList.toggle('hide', one);          // формат «1 етап»: 2-го етапу нема
+      if(bm) bm.classList.toggle('hide', !S.mgReady); }
 
     S.tour=curRound(S.rounds);
     document.querySelectorAll('#etabs button').forEach(b=>b.onclick=()=>goStage(b.dataset.stage));
@@ -887,6 +985,7 @@ async function refreshLive(){
     if(S.stage==='lb') renderLB();
     else if(S.stage==='bank') renderBank();
     else if(S.stage==='pts') renderPts();
+    else if(S.stage==='mg') renderMg();
     else { renderTours(); renderStandings(); }
   }catch(e){}
   finally{ _refreshing=false; }
@@ -895,7 +994,7 @@ async function refreshLive(){
 // кумулятивний total і competition-rank станом ПІСЛЯ туру t
 function rankAt(t){
   const cum={}; S.lb.forEach(p=>cum[p.participant_id]=0);
-  S.scores.forEach(s=>{ if(s.round_number<=t && cum[s.participant_id]!=null) cum[s.participant_id]+=s.points||0; });
+  S.scores.forEach(s=>{ if(s.round_number<=t && cum[s.participant_id]!=null) cum[s.participant_id]+=(s.points||0)+(s.mgmt_points||0); });
   const arr=S.lb.map(p=>({pid:p.participant_id,v:cum[p.participant_id]||0})).sort((a,b)=>b.v-a.v);
   const rank={}; arr.forEach((x,i)=>{ rank[x.pid]=(i>0 && arr[i-1].v===x.v)? rank[arr[i-1].pid] : i+1; });
   return {rank,cum,order:arr.map(x=>x.pid)};
@@ -1056,7 +1155,7 @@ function renderTopCards(){
   host.innerHTML=order.map(p=>{
     const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid);
     return `<div class="tc ${place===1?'p1':''}">
-      <div class="tc-top"><span class="tc-pl"><span class="delta ${dm.c}">${dm.t}</span></span><span>${boostChip(pid,rid)}</span></div>
+      <div class="tc-top"><span class="tc-pl"><span class="delta ${dm.c}">${dm.t}</span></span><span>${boostChip(pid,rid)}${mgChip(pid,rid)}</span></div>
       <div class="tc-nm">${esc(p.display_name)}</div>
       <div class="tc-pts tnum">${rk.cum[pid]||0}</div></div>`;
   }).join('');
@@ -1071,7 +1170,7 @@ function renderStandings(){
     const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid), vd=squadValDelta(pid);
     return `<tr onclick="openSquad('${pid}')">
       <td class="rk">${place}<span class="delta ${dm.c}">${dm.t}</span></td>
-      <td class="name-c">${p.display_name}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
+      <td class="name-c">${p.display_name}${boostChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}${mgChip(pid,(S.rounds.find(r=>r.number===S.tour)||{}).id)}</td>
       <td>${tiles(pid)}</td>
       <td class="sp tnum">${eur(p.squad_price)}</td>
       <td class="tnum ${vd.dir||'eq'}" title="Сума відсотків зміни вартості гравців складу (ціна гравця не впливає)">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'} ${pctS(vd.pct)}</td>
@@ -1085,22 +1184,25 @@ function renderStandings(){
 function renderPts(){
   const host=$('secPts'); if(!host) return;
   if(!S.lb.length){ host.innerHTML='<div class="hint" style="padding:16px 2px">Ще немає учасників.</div>'; return; }
-  const rs=S.rounds, l1=stage1Max();
-  const stH=rs.length? `<tr class="stg-row"><th></th>${[[1,rs.filter(r=>r.number<=l1).length],[2,rs.filter(r=>r.number>l1).length]].filter(x=>x[1]>0).map(x=>`<th colspan="${x[1]}" style="text-align:center;color:var(--${x[0]===1?'teal':'blue'})">Етап ${x[0]}</th>`).join('')}<th></th></tr>` : '';
-  const head=`<thead>${stH}<tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th>Разом</th></tr></thead>`;
+  const rs=S.rounds, l1=stage1Max(), one=oneStage();
+  // у форматі «1 етап» рядок «Етап 1» над турами зайвий
+  const stH=(rs.length && !one)? `<tr class="stg-row"><th></th>${[[1,rs.filter(r=>r.number<=l1).length],[2,rs.filter(r=>r.number>l1).length]].filter(x=>x[1]>0).map(x=>`<th colspan="${x[1]}" style="text-align:center;color:var(--${x[0]===1?'teal':'blue'})">Етап ${x[0]}</th>`).join('')}<th></th></tr>` : '';
+  const hasFin=S.mgs.some(x=>x.is_final);   // колонка 💼 зʼявляється, коли наскрізну нараховано (після закриття останнього туру)
+  const head=`<thead>${stH}<tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}${hasFin?'<th title="Менеджер турніру — наскрізна (General)">💼</th>':''}<th>Разом</th></tr></thead>`;
   const body=S.lb.map(p=>{
     let sum=0;
     const cells=rs.map(r=>{
       const row=S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
       const v=row? (row.points||0) : null;
-      if(v!=null) sum+=v;
-      return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}</td>`;
+      if(v!=null) sum+=v+(row.mgmt_points||0);   // 💎 додається до суми, але в клітинці показується окремим значком
+      return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}${mgChip(p.participant_id,r.id)}</td>`;
     }).join('');
-    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}<td class="total tnum">${sum}</td></tr>`;
+    const fp=finPts(p.participant_id); sum+=fp;
+    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}${hasFin?`<td class="pn tnum">${fp>0?'+'+fp:'·'}</td>`:''}<td class="total tnum">${sum}</td></tr>`;
   }).join('');
-  host.innerHTML=`<div class="head2"><h2>📊 Очки по турах</h2><span class="sub">сума очків кожного учасника за кожен тур · клік → склад</span></div>
+  host.innerHTML=`<div class="head2"><h2>📊 Очки по турах</h2><span class="sub">очки кожного учасника за кожен тур · клік → склад</span></div>
     <div class="board"><div class="f1-scroll"><table class="f1 grid">${head}<tbody>${body}</tbody></table></div></div>
-    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру · рівні очки → ділять місце</div>`;
+    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${S.mgReady?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>`;
 }
 // 📅 Матчі туру (вкладка туру): клуби пулу — розклад/результати; клік → оцінки гравців пулу
 function ptsOf(r){ return r==null||r<6.5?0:r>=9?4:r>=8?3:r>=7?2:1; }   // дзеркало market_rating_points (502)
@@ -1181,9 +1283,21 @@ function openSquad(pid){
       <div class="m"><span>Squad Price</span><b class="tnum">${eur(p.squad_price)}</b></div>
       <div class="m"><span>Val Δ (сума % гравців)</span><b class="tnum ${vd.dir||'eq'}">${vd.dir==='up'?'▲':vd.dir==='down'?'▼':'–'} ${pctS(vd.pct)}</b></div>
       <div class="m"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
-    </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
+    </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+mgSummary(pid,rid)+bodyHtml;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
   document.getElementById('ovl').classList.add('on'); embedPlace();
+}
+// 💎 розбивка очок учасника у вікні складу (528): матчі · 💎 тури · 💼 наскрізна; менеджмент цього туру і прогноз наскрізної
+function mgSummary(pid,rid){
+  if(!S.mgReady) return '';
+  const tourPts=S.mg.filter(m=>m.participant_id===pid).reduce((a,m)=>a+(m.points||0),0);
+  const match=S.scores.filter(s=>s.participant_id===pid).reduce((a,s)=>a+(s.points||0),0);
+  const f=S.mgs.find(x=>x.participant_id===pid)||{}, fp=finPts(pid), total=(S.mgCfg&&S.mgCfg.total)||'';
+  let h=`<div class="boline">Очки загалом: матчі <b>${match}</b> · 💎 тури <b>${tourPts}</b>${f.is_final?` · 💼 наскрізна <b>${fp}</b>`:''} = <b>${match+tourPts+fp}</b></div>`;
+  const cur=mgRow(pid,rid);
+  if(cur) h+=`<div class="boline">💎 <b>Менеджер Т${S.tour}</b> · ${cur.place}-е місце${cur.points>0?` · +${cur.points} очк.`:''} · приріст вартості складу ${eurSg(cur.delta_eur)} · вартість складу ${eurB(cur.value_start_eur)}</div>`;
+  if(!f.is_final && f.rounds_done>0) h+=`<div class="boline">💼 <b>Менеджер турніру</b> (прогноз) · ${f.place}-е місце${f.projected_points>0?` · +${f.projected_points} очк. у General`:''} · після ${f.rounds_done} з ${total} турів</div>`;
+  return h;
 }
 // гравець лайнапу «наживо» (516): очки показуються завжди; лавка приглушена, поки очки не в сумі; К/В — чи вже діє ×2
 function pcardLive(l,bo){
