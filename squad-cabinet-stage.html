@@ -985,11 +985,12 @@ function pourModal(){
 }
 // підпис лайнапу: порівнюємо чернетку з ЗБЕРЕЖЕНИМ на сервері → кнопка «Підтвердити» знає, чи є що зберігати
 // (Автопілот ігнорує капітана/віце, тож їх у підпис не кладемо)
-function lnSigOf(rows, boost){
+function lnSigOf(rows, boost, pos){
   const auto = boost==='squad_autopilot';
   const st = rows.filter(r=>r.role==='start').map(r=>r.id+':s'+(auto?'':(r.cap?'c':(r.vice?'v':'')))).sort();
   const bn = rows.filter(r=>r.role==='bench').sort((a,b)=>a.ord-b.ord).map((r,i)=>r.id+':b'+(i+1));
-  return st.join(',')+'|'+bn.join(',')+'|'+(boost||'');
+  const ps = ['fwd','mid','dg'].map(k=>(pos&&pos[k])?k+':'+pos[k]:'').filter(Boolean).join(',');   // 532
+  return st.join(',')+'|'+bn.join(',')+'|'+(boost||'')+'|'+ps;
 }
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
 async function viewSquad(){
@@ -1011,19 +1012,48 @@ async function viewSquad(){
   S.myBoosts = []; S.boostsOK = true;
   try{ S.myBoosts = await sbSel(`market_round_boosts?participant_id=eq.${S.me.id}&select=round_id,boost`); }catch(e){ S.boostsOK=false; }
   S.boost = (round && (S.myBoosts.find(b=>b.round_id===round.id)||{}).boost) || null;
+  // позиційні бусти (532): свої рядки видно завжди; немає таблиці (532 не залито) → блок ховається
+  S.myPosBoosts = []; S.posOK = true;
+  try{ S.myPosBoosts = await sbSel(`market_round_pos_boosts?participant_id=eq.${S.me.id}&select=round_id,kind,player_id`); }catch(e){ S.posOK=false; }
+  S.pos = { fwd:null, mid:null, dg:null };
+  if(round) S.myPosBoosts.filter(b=>b.round_id===round.id).forEach(b=>{ if(b.kind in S.pos) S.pos[b.kind]=b.player_id; });
   S.lineup = {}; S.lineupRound = round;
   mine.forEach(p => S.lineup[p.id] = { role:'out', cap:false, vice:false, ord:99 });
   lu.forEach(r => { if(S.lineup[r.player_id]) S.lineup[r.player_id] = { role:r.role, cap:r.is_captain, vice:r.is_vice, ord:r.bench_order||99 }; });
   // збережений на сервері склад (для стану кнопки): null = ще нічого не підтверджено на цей тур
-  S.lnSaved = lu.length ? lnSigOf(lu.map(r=>({id:r.player_id, role:r.role, ord:r.bench_order||99, cap:r.is_captain, vice:r.is_vice})), S.boost) : null;
+  S.lnSaved = lu.length ? lnSigOf(lu.map(r=>({id:r.player_id, role:r.role, ord:r.bench_order||99, cap:r.is_captain, vice:r.is_vice})), S.boost, S.pos) : null;
   renderLineup(mine, round);
 }
 
 // ── 🚀 бусти туру: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
 const BOOSTS = {
-  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий у складі за тур. Капітана й віце обирати не треба.' },
+  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий з усіх 8 гравців, що зіграли за тур (запасні теж, навіть якщо не зайшли на заміну). Капітана й віце обирати не треба.' },
   squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — старт і лавка. Ідеально 5+3, але можна й менше.' }
 };
+// ── ⚡ позиційні бусти (532): 2x FWD / 2x MID / 2x DEF-GK — одна ціль у основі (не капітан/віце), раз за турнір, до трьох в одному турі, не з Автопілотом/All-in ──
+const POSB = {
+  fwd:{ name:'2x FWD',    desc:'×2 очки одного форварда з основи' },
+  mid:{ name:'2x MID',    desc:'×2 очки одного півзахисника з основи' },
+  dg: { name:'2x DEF/GK', desc:'×2 очки одного захисника чи воротаря з основи' }
+};
+const posKindOf = p => p.position==='F' ? 'fwd' : p.position==='M' ? 'mid' : (p.position==='D'||p.position==='G') ? 'dg' : null;
+function posUsedElsewhere(kind, round){ for(const b of (S.myPosBoosts||[])){ if(b.kind===kind && b.round_id!==round.id){ const r=S.rounds.find(x=>x.id===b.round_id); return r?r.number:'?'; } } return null; }
+function posPayload(){ const o={}; ['fwd','mid','dg'].forEach(k=>{ if(S.pos&&S.pos[k]) o[k]=S.pos[k]; }); return Object.keys(o).length? o : null; }
+function clearPosFor(pid){ ['fwd','mid','dg'].forEach(k=>{ if(S.pos[k]===pid) S.pos[k]=null; }); }
+function posBlock(mine, round){
+  if(!round || !S.posOK) return '';
+  const cards = ['fwd','mid','dg'].map(k=>{
+    const b=POSB[k], used=posUsedElsewhere(k, round), pid=S.pos[k], pl=pid && mine.find(p=>p.id===pid), on=!!pl;
+    const state = on ? 'on' : (used!=null ? 'used' : '');
+    const st = on ? `Обрано: ${esc(lastName(pl.name))} (клік — зняти)` : (used!=null ? `Використано в Турі ${used}` : (S.boost ? 'Недоступний з Автопілотом/All-in' : 'Доступний — натисни «⚡» на гравці основи'));
+    return `<button type="button" class="bcard ${state}" ${on?`data-posclear="${k}"`:'disabled'}>
+      <span class="bh"><span class="bico">⚡</span>${b.name}</span>
+      <span class="bds">${b.desc}</span><span class="bst">${st}</span></button>`;
+  }).join('');
+  return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>⚡ Позиційні бусти</span><span>1 раз за турнір кожен · до 3 в одному турі</span></div>
+    <div class="bgrid">${cards}</div>
+    <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього (не на капітана чи віце). Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до дедлайну можна змінити.</p></div>`;
+}
 const stageOfNum = n => n <= ((S.cfg && S.cfg.stage1_last_round) || 5) ? 1 : 2;
 function boostUsedElsewhere(key, round){   // уже використано/заплановано в ІНШОМУ турі цього ж етапу?
   const st = stageOfNum(round.number);
@@ -1093,13 +1123,19 @@ function renderLineup(mine, round){
   const injStart = s.st.filter(p=>p&&p.injury);
   const injWarn = injStart.length ? `<div class="injwarn">🤕 У старті ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
 
+  const posBtn = (p,L) => {   // 532: ⚡ 2x … на гравця основи (не капітан/віце; не з Автопілотом/All-in)
+    if(!S.posOK || S.boost || L.cap || L.vice) return '';
+    const k=posKindOf(p); if(!k) return '';
+    const on=S.pos[k]===p.id, used=posUsedElsewhere(k, round), dis=!on && used!=null;
+    return `<button class="mini ${on?'on':'ghost'}" data-pos="${p.id}" ${dis?'disabled':''} title="${dis?POSB[k].name+': використано в Турі '+used:POSB[k].desc}">⚡ ${POSB[k].name}</button>`;
+  };
   const row = (p, zone, idx) => {
     const L=S.lineup[p.id], cl=clubName(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
     let ctrl='';
     if(!round){ ctrl=''; }
     else if(zone==='start'){
       ctrl = (S.boost==='squad_autopilot' ? '' : `<button class="mini ${L.cap?'on':'ghost'}" data-cap="${p.id}">© Кап</button>
-        <button class="mini ${L.vice?'on':'ghost'}" data-vice="${p.id}">V Віце</button>`) + `<button class="mini ghost" data-role="${p.id}:bench">На лаву</button>
+        <button class="mini ${L.vice?'on':'ghost'}" data-vice="${p.id}">V Віце</button>`) + posBtn(p,L) + `<button class="mini ghost" data-role="${p.id}:bench">На лаву</button>
         <button class="mini ghost" data-role="${p.id}:out">−</button>`;
     } else if(zone==='bench'){
       ctrl = `<button class="mini ghost" data-benchup="${p.id}" title="раніше на заміну">↑</button>
@@ -1112,11 +1148,12 @@ function renderLineup(mine, round){
     }
     const proceeds = Math.round(p.market_value_current*(1-(S.cfg?.sell_pct??0.05)));
     const capBadge = S.boost==='squad_autopilot' ? '' : (L.cap?'<span class="capB">К</span>':(L.vice?'<span class="viceB">V</span>':''));
+    const pk = posKindOf(p), posBadge = (S.posOK && !S.boost && pk && S.pos[pk]===p.id) ? `<span class="capB" style="background:#2a3f33;color:#bfe8d1" title="${POSB[pk].name}: ×2">⚡ ×2</span>` : '';
     const ordBadge = (zone==='bench') ? `<span class="benchord" title="${idx+1}-й на заміну">${idx+1}</span>` : '';
     return `<div class="pcard" data-pc="${p.id}" style="--club:${col}">
       <div>
         <div class="ptap" data-p="${p.id}" title="Детальна картка гравця">
-          <div class="nm">${ordBadge}${esc(p.name)}${capBadge}</div>
+          <div class="nm">${ordBadge}${esc(p.name)}${capBadge}${posBadge}</div>
           <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось турів (продовження — у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
         <div class="lctrl">${ctrl}<button class="mini ghost sell" data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
@@ -1142,15 +1179,15 @@ function renderLineup(mine, round){
          <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>'}</div>
          ${val}
          ${injWarn}
-         ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 згорить. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
-         ${boostBlock(round)}
-         ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost);
+         ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
+         ${boostBlock(round)}${posBlock(mine, round)}
+         ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos);
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved, nTxt=round?' на Тур '+round.number:'';
                   const label = same ? '✓ Склад'+nTxt+' підтверджено' : (saved ? 'Підтвердити зміни складу'+nTxt : 'Підтвердити склад'+nTxt);
                   return `<button class="btn" id="ln-save" ${(!round||!s.ok||same)?'disabled':''} style="width:100%${same?';opacity:.75':''}">${label}</button>`
                        + (same ? '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну туру — після змін кнопка знову стане активною.</p>' : ''); })()}
          ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
-         <p class="dim" style="margin-top:8px">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого у складі.' : 'Капітан і Віце — обидва обов\'язкові. Капітан — очки ×2 (не зіграв → віце; обидва ні → згорає).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>
+         <p class="dim" style="margin-top:8px">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>
        </div>
        <div class="panel">
          ${zoneBlock('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'1 · 2 · 3')}
@@ -1170,24 +1207,27 @@ function renderLineup(mine, round){
       if(cnt>=(S.cfg?S.cfg.squad_max-S.cfg.squad_min:3)) return alert('Лавка повна');
       S.lineup[pid].ord = 1+Math.max(0,...mine.map(p=>S.lineup[p.id].role==='bench'?S.lineup[p.id].ord:0));
     }
-    if(role!=='start'){ S.lineup[pid].cap=false; S.lineup[pid].vice=false; }
+    if(role!=='start'){ S.lineup[pid].cap=false; S.lineup[pid].vice=false; clearPosFor(pid); }
     S.lineup[pid].role=role;
     renderLineup(mine, round);
   });
   document.querySelectorAll('[data-cap]').forEach(b=>b.onclick=()=>{
     const pid=b.dataset.cap; mine.forEach(p=>S.lineup[p.id].cap=false);
-    S.lineup[pid].cap=true; S.lineup[pid].vice=false; renderLineup(mine, round);
+    S.lineup[pid].cap=true; S.lineup[pid].vice=false; clearPosFor(pid); renderLineup(mine, round);
   });
   document.querySelectorAll('[data-vice]').forEach(b=>b.onclick=()=>{
     const pid=b.dataset.vice; mine.forEach(p=>S.lineup[p.id].vice=false);
-    if(!S.lineup[pid].cap) S.lineup[pid].vice=true; renderLineup(mine, round);
+    if(!S.lineup[pid].cap){ S.lineup[pid].vice=true; clearPosFor(pid); } renderLineup(mine, round);
   });
   document.querySelectorAll('[data-boost]').forEach(b=>b.onclick=()=>{
     const k=b.dataset.boost;
     S.boost = (S.boost===k) ? null : k;                       // клік = увімкнути/вимкнути; інший буст заміняє
     if(S.boost==='squad_autopilot') mine.forEach(p=>{ S.lineup[p.id].cap=false; S.lineup[p.id].vice=false; });   // Кап/Віце більше не потрібні
+    if(S.boost) S.pos={ fwd:null, mid:null, dg:null };                                                         // 532: позиційні бусти не поєднуються з Автопілотом/All-in
     renderLineup(mine, round);
   });
+  document.querySelectorAll('[data-pos]').forEach(b=>b.onclick=()=>{ const pid=b.dataset.pos, p=mine.find(x=>x.id===pid), k=p&&posKindOf(p); if(!k) return; S.pos[k]=(S.pos[k]===pid)?null:pid; renderLineup(mine, round); });
+  document.querySelectorAll('[data-posclear]').forEach(b=>b.onclick=()=>{ S.pos[b.dataset.posclear]=null; renderLineup(mine, round); });
   document.querySelectorAll('[data-benchup]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchup,-1); renderLineup(mine,round); });
   document.querySelectorAll('[data-benchdown]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchdown,1); renderLineup(mine,round); });
   $('view').querySelectorAll('.pcard[data-pc]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button,.lctrl,a,input,select')) return; openPlayerModal(el.dataset.pc); });
@@ -1213,11 +1253,12 @@ function openLineupReview(mine, round){
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
     <p class="mnote">Незіграний стартовий → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
+    ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться на цей етап назавжди.</p>`:''}
     <div class="macts" style="margin-top:16px"><button data-do="lnyes">Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
   $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
     p_round:round.id, p_participant:S.me.id, p_starters:s.st.map(p=>p.id),
-    p_bench:s.bn.map(p=>p.id), p_captain:s.cap?s.cap.id:null, p_vice:s.vice?s.vice.id:null, p_boost:S.boost||null
+    p_bench:s.bn.map(p=>p.id), p_captain:s.cap?s.cap.id:null, p_vice:s.vice?s.vice.id:null, p_boost:S.boost||null, p_pos_boosts:posPayload()
   }, S.boost?('Склад підтверджено · '+BOOSTS[S.boost].name):'Склад підтверджено'); };
   $('mhost').querySelector('[data-do="lnno"]').onclick=()=>modalClose();
 }
