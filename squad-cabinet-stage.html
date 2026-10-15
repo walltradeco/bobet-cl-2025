@@ -403,6 +403,12 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .rrt .mul{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold)}
 .rrt .tot td{font-weight:700;background:var(--panel2)}
 .rr-note{font-size:12.5px;color:var(--text-dim);margin:8px 2px 14px;line-height:1.5}
+.rrt .bno{display:none}
+@media(max-width:640px){   /* телефон: таблиця результату без горизонтального скролу — «Оцінку» ховаємо, стан скорочуємо до іконки */
+  .rrt{min-width:0;font-size:12px}.rrt td,.rrt th{padding:8px 3px}.rrt .c .mul,.rrt .mul{font-size:11px}.rrt .hm{display:none}
+  .rrt .pn .cl{display:block;margin:2px 0 0}.rr-m{min-width:140px}
+  .rrt .bno{display:inline;color:var(--gold);font-weight:700}   /* роль-колонку ховаємо, номер лавки — перед прізвищем */
+}
 .rr-ub{margin-top:18px}
 .head2{display:flex;align-items:baseline;gap:10px;margin:6px 2px 12px;flex-wrap:wrap}
 .head2 h2{font-size:17px;font-weight:700;margin:0}
@@ -1218,15 +1224,15 @@ function viewRoundResult(r){
       const isTgt=bo && bo.boost==='squad_autopilot' && bo.target_player===l.player_id;
       const mul = l.is_captain ? 'К'+(l.dbl?' ×2':'') : l.is_vice ? 'V'+(l.dbl?' ×2':'')
                 : isTgt ? '🤖 ×2' : m.bonusOnly ? '🤖 бонус' : pk ? '⚡ '+POSB[pk].name+(l.dbl?' ×2':'') : (l.dbl?'×2':'');
-      const stIc = l.state==='played' ? '✓ грав' : l.state==='pending' ? '⏳ чекає' : '– не грав';
+      const stIc = l.state==='played' ? '✓<span class="hm"> грав</span>' : l.state==='pending' ? '⏳<span class="hm"> чекає</span>' : '–<span class="hm"> не грав</span>';
       const lg=plog[l.player_id], mv=lg? lg.mult-1 : null;
       const mvH = (mv==null||Math.abs(mv)<0.0005) ? '<span class="dim">—</span>' : `<span class="vdelta ${mv>0?'up':'down'}">${fmtDelta({pct:mv,dir:mv>0?'up':'down'})}</span>`;
       const role = l.role==='start' ? 'Старт' : 'Лавка '+(l.bench_order||'');
       const firstBench = l.role==='bench' && (i===0 || sorted[i-1].role!=='bench');
       return `<tr class="${l.role==='bench'?'bn':''}${(l.state==='played' && !m.inSum)?' nosum':''}${firstBench?' sep':''}" data-p="${l.player_id}">
-        <td>${role}</td>
-        <td class="pn"><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubName(p.club_id))}</span></td>
-        <td>${stIc}</td><td class="r tnum">${l.avg_rating!=null?Number(l.avg_rating).toFixed(1):'—'}</td>
+        <td class="hm">${role}</td>
+        <td class="pn"><span class="bno">${l.role==='bench'?'Л'+(l.bench_order||'')+' · ':''}</span><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubName(p.club_id))}</span></td>
+        <td>${stIc}</td><td class="r tnum hm">${l.avg_rating!=null?Number(l.avg_rating).toFixed(1):'—'}</td>
         <td class="r tnum">${m.raw!=null?m.raw:'—'}</td><td class="c mul">${mul||''}</td>
         <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b></td><td class="r">${mvH}</td></tr>`;
     }).join('');
@@ -1246,7 +1252,7 @@ function viewRoundResult(r){
         ${mg?`<div class="rr-m"><div class="k">приріст складу</div><div class="v ${mg.delta_eur>0?'up':mg.delta_eur<0?'down':''}">${eurSgn(+mg.delta_eur)}</div><div class="s">${mg.delta_pct!=null?'Σ% '+ppSgn(+mg.delta_pct)+' · ':''}💎 менеджмент: ${mg.points>0?'+'+mg.points:'0'} (місце ${mg.place})</div></div>`:''}
         <div class="rr-m"><div class="k">бусти й К/V</div><div class="v" style="font-size:15px;line-height:1.35">${[boostTxt,posTxt].filter(Boolean).join('<br>')||'<span class="dim">бустів нема</span>'}</div><div class="s">${cvTxt||'Автопілот: ×2 отримує найкращий'}</div></div>
       </div>
-      <div class="rr-wrap"><table class="rrt"><thead><tr><th>Роль</th><th>Гравець</th><th>Стан</th><th class="r">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В суму</th><th class="r">Ціна</th></tr></thead>
+      <div class="rr-wrap"><table class="rrt"><thead><tr><th class="hm">Роль</th><th>Гравець</th><th>Стан</th><th class="r hm">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В суму</th><th class="r">Ціна</th></tr></thead>
         <tbody>${tr}<tr class="tot"><td colspan="6">Разом у суму (за гравцями)</td><td class="r tnum">${sum}</td><td></td></tr></tbody></table></div>
       <p class="rr-note">«В суму»: основа — коли зіграв; лавка — коли визначена заміна${(bo&&bo.boost==='squad_all_in')?' (🔥 All-in — очки дають усі 8)':''}; ×2 — капітан/віце (кращий із пари), Автопілот чи позиційний буст. Ціна — зміна вартості гравця за цей тур. Клік на гравця — детальна картка.</p>`;
   }

@@ -61,6 +61,14 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .lbr.mg .pts{color:var(--rose)}
 .lbr.mg .pts.pj{opacity:.75}
 .lbr.mg .pts small{display:block;font-size:11px;font-weight:500;color:var(--dim);text-align:right;letter-spacing:.04em}
+/* компактна картка (15.10, відгук Богдана: «як Rivals та MVP в ЄвроСезоні»): низькі рядки, підпис поруч з іменем, «прогноз» поруч з очками */
+.lbcard.cmp .bh{padding:10px 18px;font-size:13px}
+.lbcard.cmp .lbr{padding:9px 18px;gap:12px}
+.lbcard.cmp .lbr .rnk{min-width:34px}.lbcard.cmp .lbr .rnk .crown{font-size:20px}
+.lbcard.cmp .lbr .nm{font-size:18px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;overflow:visible;white-space:normal}
+.lbcard.cmp .lbr .bsub{display:inline;margin:0;font-size:12px}
+.lbcard.cmp .lbr .pts{font-size:20px;display:flex;align-items:baseline;gap:8px}
+.lbcard.cmp .lbr.mg .pts small{display:inline;font-size:11px;text-align:left}
 .boline{margin:10px 0 2px;padding:9px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(255,255,255,.03);font-size:13px;line-height:1.45}
 .boline b{font-weight:700}
 .stage-badge{background:#C75C4A;color:#fff;text-align:center;font-size:12px;
@@ -954,7 +962,7 @@ function mgTotalCard(title){
   const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6};
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
   const done=Math.max(0,...S.mgs.map(x=>x.rounds_done||0));
-  if(!done) return `<div class="lbcard roseh"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру.</div></div>`;
+  if(!done) return `<div class="lbcard roseh cmp"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру.</div></div>`;
   const rows=[...S.mgs].sort((a,b)=>(a.place-b.place)||byName(a,b)).map(x=>{
     const pl=x.place-1, pc=pl===0?'p1':pl===1?'p2':pl===2?'p3':'';
     const rank=pl<3?`<span class="crown">${medal[pl]}</span>`:x.place;
@@ -963,7 +971,7 @@ function mgTotalCard(title){
       <div class="rnk">${rank}</div>
       <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span></div>
       <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
-  return `<div class="lbcard roseh"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
+  return `<div class="lbcard roseh cmp"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
 }
 // 💎 Менеджмент (528): як це працює · 💼 наскрізна «Менеджер турніру» (прогноз → підсумок) · подіум КОЖНОГО закритого туру
 function renderMg(){
@@ -1359,9 +1367,16 @@ function renderBoostBoard(){
     ['⚡ 2x MID','#6FAFAF', pid=>{ const b=(S.posb||[]).find(x=>x.participant_id===pid&&x.round_id===rid&&x.kind==='mid'); return pl(b&&b.player_id); }],
     ['⚡ 2x DEF/GK','#E08AA8', pid=>{ const b=(S.posb||[]).find(x=>x.participant_id===pid&&x.round_id===rid&&x.kind==='dg'); return pl(b&&b.player_id); }]
   ];
+  // 15.10 (відгук Богдана): показуємо ЛИШЕ рядки, які хоч хтось із учасників використав у цьому турі (Автопілот/All-in/позиційні, без порожніх «—»); К/V — коли хоч у когось вони є
+  const posUsed=(pid,k)=>(S.posb||[]).some(x=>x.participant_id===pid&&x.round_id===rid&&x.kind===k);
+  const usedFns=[ pid=>has(pid)&&!!lu(pid,'is_captain'), pid=>has(pid)&&!!lu(pid,'is_vice'),
+    pid=>{ const b=boostOf(pid,rid); return !!(b&&b.boost==='squad_autopilot'); }, pid=>{ const b=boostOf(pid,rid); return !!(b&&b.boost==='squad_all_in'); },
+    pid=>posUsed(pid,'fwd'), pid=>posUsed(pid,'mid'), pid=>posUsed(pid,'dg') ];
+  const shown=rows.filter((r,i)=>cols.some(p=>usedFns[i](p.participant_id)));
+  if(!shown.length){ host.innerHTML=`<div class="bbwrap">${head}<div class="lockbox">Склади на цей тур не виставлено — капітанів і бустів ще нема.</div></div>`; return; }
   host.innerHTML=`<div class="bbwrap">${head}<div class="board"><div class="f1-scroll"><table class="bb"><thead><tr><th>Boosts</th>${cols.map(p=>`<th>${esc(p.display_name)}</th>`).join('')}</tr></thead>
-    <tbody>${rows.map(r=>`<tr><td class="k" style="--k:${r[1]}">${r[0]}</td>${cols.map(p=>`<td>${r[2](p.participant_id)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
-    <div class="hint">Капітан/віце: ×2 отримує кращий із пари · Автопілот і All-in — окремі бусти туру (${oneStage()?'раз за турнір':'раз на етап'}) · ⚡ 2x — позиційні (раз за турнір кожен)</div></div>`;
+    <tbody>${shown.map(r=>`<tr><td class="k" style="--k:${r[1]}">${r[0]}</td>${cols.map(p=>`<td>${r[2](p.participant_id)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>
+    <div class="hint">Капітан/віце: ×2 отримує кращий із пари · Автопілот і All-in — окремі бусти туру (${oneStage()?'раз за турнір':'раз на етап'}) · ⚡ 2x — позиційні (раз за турнір кожен) · показано лише використане</div></div>`;
 }
 function renderStandings(){
   const t=document.getElementById('f1');
