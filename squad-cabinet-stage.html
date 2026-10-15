@@ -354,6 +354,23 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .cfchip .mini{padding:0 6px;line-height:1.5}
 .lockedn{margin:10px 0;padding:10px 12px;border:1px solid #1f4d38;border-radius:10px;background:var(--panel2);color:var(--up);font-size:13px;font-weight:600}
 .rndbar .cd{margin-left:auto;font-family:var(--mono);font-weight:700;color:var(--gold);font-size:15px}
+/* 15.10: єдиний блок стану туру (рішення Богдана — як у «Predictions & Results» ЄвроСезону): hero «до дедлайну» + «склад n з 8», зелена смужка, «підтвердили» з чіпами */
+.stbox{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;background:linear-gradient(90deg,rgba(244,196,48,.12),rgba(244,196,48,.03));border:1px solid rgba(244,196,48,.32);border-radius:12px;padding:14px 18px;margin-bottom:12px}
+.stbox.closed{background:rgba(226,88,95,.10);border-color:rgba(226,88,95,.35)}
+.stbox.off{background:var(--panel);border-color:var(--line)}
+.stbox .cap,.stconf .cap{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.stbox .t{font-family:var(--mono);font-size:26px;font-weight:700;color:var(--gold);line-height:1.15}
+.stbox.closed .t{color:var(--red);font-size:20px}
+.stbox.off .t{color:var(--text);font-size:18px}
+.stbox .when{font-size:13px;color:var(--text-dim);margin-top:3px;max-width:760px}
+.stbox .rt{text-align:right}.stbox .rt .t{font-size:22px}
+.stmsg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.45;margin-bottom:12px;border:1px solid}
+.stmsg.ok{background:var(--green-soft);border-color:rgba(24,180,122,.35);color:var(--up);font-weight:600}
+.stmsg.warn{background:rgba(244,196,48,.08);border-color:rgba(244,196,48,.35);color:var(--text)}.stmsg.warn b{color:var(--gold)}
+.stconf{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px}
+.stconf .cap b{color:var(--text)}
+.stconf .cfchips{margin:8px 0 6px}
+.stconf .when{font-size:13px;color:var(--text-dim)}
 .head2{display:flex;align-items:baseline;gap:10px;margin:6px 2px 12px;flex-wrap:wrap}
 .head2 h2{font-size:17px;font-weight:700;margin:0}
 .head2 .sub{color:var(--dim);font-size:12px}
@@ -915,39 +932,58 @@ async function go(tab){
 const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>new Date(r.deadline_at)<=n && !r.results_entered_at)||null; };
 const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
 const EXPIRING_TXT='⏳ Контракт добігає (лишився 1 тур): після закриття туру гравець автоматично стане вільним (власник отримає повну вартість), тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.';
-// банер пре-маркету (§L): «вікно відкрито до [дедлайн], набери склад мін/макс»
-function premarketBanner(mine){
-  const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8;
+// ── 🧭 ЄДИНИЙ БЛОК СТАНУ ТУРУ (15.10; рішення Богдана — як у «Predictions & Results» ЄвроСезону). Один над «Мій склад» і «Ринок»:
+//    hero «ДО ДЕДЛАЙНУ» (або «тур у грі» / «ринок зачинено») + «СКЛАД n з 8», зелена смужка «склад підтверджено», «ПІДТВЕРДИЛИ n з m» з чіпами (лише «Мій склад»).
+//    Замінив: «Трансферне вікно відкрито…», «Доступно €…» (дублювало Трансферний бюджет), «Тур N · дедлайн», «Підтвердили…», довге «Склад підтверджено…». Бюджети — budgetPanel() окремо ──
+function countdownLong(iso){ const ms=new Date(iso)-new Date(); if(ms<=0) return 'дедлайн минув';
+  const m=Math.floor(ms/60000), d=Math.floor(m/1440), h=Math.floor((m%1440)/60), mm=m%60;
+  return d? d+' дн '+h+' год' : h? h+' год '+mm+' хв' : mm+' хв'; }
+function dlFmt(iso){ const d=new Date(iso); return d.toLocaleDateString('uk',{weekday:'short'})+' '+d.toLocaleString('uk',{day:'2-digit',month:'2-digit'})+', '+d.toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'}); }
+function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтверджень) | 'market'
+  const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
   const rsAll=S.rounds||[], nowD=new Date();
   const firstFut=rsAll.find(r=>new Date(r.deadline_at)>nowD && !r.results_entered_at);
-  // сервер (_market_trade_open) морозить ринок, щойно ХОЧА Б ОДИН тур «у грі» (дедлайн минув, результатів нема) —
-  // навіть коли вже заведено наступний тур із майбутнім дедлайном; банер мусить казати те саме
+  // сервер (_market_trade_open) морозить ринок, щойно ХОЧА Б ОДИН тур «у грі» (дедлайн минув, результатів нема) — навіть коли вже заведено наступний тур; блок каже те саме
   const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
-  if(!firstFut || inplay){
-    // Склад і найближчий дедлайн лишаються видимими й коли ринок зачинено/заморожено
-    const nd=firstFut?new Date(firstFut.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):null;
-    const meta=`<span class="pm-prog">Склад <b>${mine.length}/${max}</b> · Найближчий дедлайн: ${nd?`<b>${nd}</b> (тур ${firstFut.number})`:'<b>—</b>'}</span>`;
-    const warn=t=>`<div class="premkt"><span><b>Ринок зачинено</b> — ${t}</span>${meta}</div>`;
-    if(!rsAll.length) return warn('відкриється, коли буде заведено тур.');
-    if(inplay){
-      const a=(S.attn||{})[inplay.number];
-      const why = !a ? '' : (a.state==='blocked' ? ` <b style="color:var(--gold)">⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.</b>`
-                       : a.state==='closing' ? ' Усі матчі завершені — розрахунок за ~1 год.'
-                       : ` Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`);
-      return `<div class="premkt"><span><b>Тур ${inplay.number} у грі — ринок частково відкритий.</b> Закриті: купівля, ставки, прийняття угод і продаж. <b>Можна готувати угоди</b> — виставити лот, запропонувати трансфер чи обмін; вони виконаються лише після закриття туру (до розрахунку).${why}</span>${meta}</div>`;
-    }
-    const si=stageInfo();                        // усі створені тури мають результати
-    if(si.left>0) return warn('усі створені тури зіграні — ринок відкриється, коли буде заведено наступний тур.');
-    return si.stage===1 ? warn(`етап 1 завершено. Пре-маркет етапу 2 (з нуля) відкриється, коли адмін заведе тур ${si.last+1} і запустить старт етапу.`)
-                        : warn('турнір завершено.');
+  const n=mine.length, dgOk=mine.filter(isDG).length>=need;
+  const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
+    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}${n?` · DEF/GK ${dgOk?'✓':'✕'}`:''}</div></div>`;
+  const a=inplay?(S.attn||{})[inplay.number]:null;
+  const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
+            : a.state==='closing' ? 'Усі матчі завершені — розрахунок за ~1 год.'
+            : `Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`));
+  let hero;
+  if(firstFut){
+    hero=`<div class="stbox"><div><div class="cap">до дедлайну · Тур ${firstFut.number}</div><div class="t">${countdownLong(firstFut.deadline_at)}</div>
+      <div class="when">склад · бусти · К/V — до ${dlFmt(firstFut.deadline_at)}</div></div>${right}</div>`;
+  }else if(inplay){
+    hero=`<div class="stbox closed"><div><div class="cap">тур ${inplay.number}</div><div class="t">у грі</div>
+      <div class="when">${why||'матчі тривають — розрахунок після останнього'}</div></div>${right}</div>`;
+  }else{
+    let t;
+    if(!rsAll.length) t='відкриється, коли буде заведено тур.';
+    else{ const si=stageInfo();
+      t = si.left>0 ? 'усі створені тури зіграні — ринок відкриється, коли буде заведено наступний тур.'
+        : ((si.stage===1 && S.cfg && S.cfg.stage2_last_round) ? `етап 1 завершено. Пре-маркет етапу 2 (з нуля) відкриється, коли адмін заведе тур ${si.last+1} і запустить старт етапу.`
+                                                              : 'усі тури турніру зіграні — турнір завершено.'); }   // формат «1 етап» (stage2_last_round не задано): другого етапу нема
+    hero=`<div class="stbox off"><div><div class="cap">ринок зачинено</div><div class="t">${rsAll.length?'тур не очікується':'турів нема'}</div><div class="when">${t}</div></div>${right}</div>`;
   }
-  const need=Math.max(0,min-mine.length);
-  const dl=new Date(firstFut.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
-  return `<div class="premkt">
-    <span><b>Трансферне вікно відкрито</b> до ${dl} · набери склад (мін ${min}, макс ${max}).</span>
-    <span class="pm-prog">Зараз <b>${mine.length}/${max}</b>${need?` · ще мін <b>${need}</b> до старту`:` · мінімум зібрано ✓`}</span>
-    <span class="pm-bank">Доступно ${eur(S.spendable)}</span>
-  </div>`;
+  // тур у грі: що закрито/відкрито на ринку (текст як був у банері)
+  const inplayMsg = inplay ? `<div class="stmsg warn"><b>Тур ${inplay.number} у грі — ринок частково відкритий.</b> Закриті: купівля, ставки, прийняття угод і продаж. <b>Можна готувати угоди</b> — виставити лот, запропонувати трансфер чи обмін; вони виконаються лише після закриття туру (до розрахунку).${(firstFut&&why)?' '+why:''}</div>` : '';
+  // мій склад підтверджено (фінально) на найближчий тур
+  const locked=!!(firstFut && S.confOK && S.me && confOf(S.me.id, firstFut.id));
+  const lockedMsg = locked ? `<div class="stmsg ok">🔒 Склад на Тур ${firstFut.number} підтверджено — змінити склад і бусти не можна, а гравців зі складу не можна ні продати, ні обміняти (лише адмін може розблокувати).</div>` : '';
+  // хто підтвердив (лише «Мій склад»; як «Підтвердили» в Predictions & Results)
+  let conf='';
+  const cr=firstFut||inplay;
+  if(mode==='squad' && S.confOK && cr){
+    const pids=Object.keys(S.names), done=pids.filter(id=>confOf(id,cr.id)).length, all=pids.length>0 && done===pids.length;
+    const chips=pids.map(id=>{ const ok=confOf(id,cr.id); return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✓':'○'} ${esc(S.names[id])}</span>`; }).join('');
+    const note = all ? '🔓 Усі підтвердили — склади, капітани й бусти відкрито.'
+                : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
+    conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} з ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
+  }
+  return hero + inplayMsg + lockedMsg + conf;
 }
 
 // ── 💰 ДВА БЮДЖЕТИ (трансферний + зарплатний) + переливання (413) ──
@@ -957,7 +993,7 @@ function runwayHTML(wb){
   const sum=mineP.reduce((a,p)=>a+(+p.wage_per_round||0),0);
   if(wb==null||!sum) return '';
   const n=Math.floor(wb/sum), left=stageInfo().left;
-  return `<span title="На скільки турів вистачить зарплатного бюджету при поточних контрактах">Запас ≈<b>${n}</b> ${n===1?'тур':'тур.'}${n<left?` · до кінця етапу ще ${left}`:''}</span>`;
+  return `<span title="На скільки турів вистачить зарплатного бюджету при поточних контрактах">Запас ≈<b>${n}</b> ${n===1?'тур':'тур.'}${n<left?` · до кінця турніру ще ${left}`:''}</span>`;
 }
 function budgetPanel(){
   const wb=S.wageBank, wf=S.wageFree, wr=(wb!=null&&wf!=null)?(wb-wf):null;
@@ -1026,15 +1062,22 @@ function confOf(pid,rid){ return S.conf.some(c=>c.participant_id===pid && c.roun
 function lnBlocked(playerId){ return !!(S.confOK && S.myConfLn && S.myConfLn.has(playerId)); }
 function lnRound(){ return S.rounds.find(x=>new Date(x.deadline_at)>new Date()); }
 function lnMsg(){ const r=lnRound(); return `🔒 Гравець у підтвердженому складі${r?' туру '+r.number:''}: продаж, обмін і викуп з вітрини неможливі. Розблокувати склад може лише адмін.`; }
-function confPanel(round){
-  if(!round || !S.confOK) return '';
-  const pids=Object.keys(S.names), done=pids.filter(id=>confOf(id,round.id)).length, all=pids.length>0 && done===pids.length;
-  const isAdm=!!(S.me && S.me.is_admin);
-  const chips=pids.map(id=>{ const ok=confOf(id,round.id);
-    return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✅':'⏳'} ${esc(S.names[id])}${(isAdm&&ok)?` <button class="mini ghost" data-unconf="${id}" title="Розблокувати склад (лише адмін)">🔓</button>`:''}</span>`; }).join('');
-  return `<div class="rndbar confbar"><span class="pill">Підтвердили ${done} з ${pids.length}</span>
-    <span class="txt">${all?'🔓 Усі підтвердили — склади, капітани й бусти відкрито':'🔒 Склади й бусти відкриються, коли підтвердять усі (або на дедлайні)'}</span>
-    <span class="cfchips">${chips}${(isAdm&&done>0)?'<button class="mini ghost" data-unconf="all" title="Розблокувати склади всіх (лише адмін)">🔓 Розблокувати всіх</button>':''}</span></div>`;
+// адмін: розблокування підтверджених складів (раніше жило в блоці «Підтвердили» на «Мій склад»; 15.10 перенесено в «Адмінку»)
+function adminConfBlock(){
+  const r=lnRound(); if(!S.confOK || !r || !(S.me && S.me.is_admin)) return '';
+  const pids=Object.keys(S.names), done=pids.filter(id=>confOf(id,r.id)).length;
+  const chips=pids.map(id=>{ const ok=confOf(id,r.id);
+    return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✓':'○'} ${esc(S.names[id])}${ok?` <button class="mini ghost" data-unconf="${id}" title="Розблокувати склад (лише адмін)">🔓</button>`:''}</span>`; }).join('');
+  return `<div class="stconf" style="margin:0 0 14px"><div class="cap">🔓 Підтвердження складів · Тур ${r.number} · <b>${done} з ${pids.length}</b></div>
+    <div class="cfchips">${chips}${done>0?'<button class="mini ghost" data-unconf="all" title="Розблокувати склади всіх (лише адмін)">🔓 Розблокувати всіх</button>':''}</div>
+    <div class="when">Підтвердження фінальне. Розблокований учасник змінює склад і підтверджує заново; склади всіх знову приховуються до нових підтверджень.</div></div>`;
+}
+function bindUnconf(round){
+  document.querySelectorAll('[data-unconf]').forEach(b=>b.onclick=()=>{
+    const who=b.dataset.unconf, all=(who==='all');
+    confirmModal(all? `Розблокувати склади ВСІХ учасників на Тур ${round.number}? Склади знову стануть прихованими, кожен зможе змінити свій і підтвердити заново.`
+                    : `Розблокувати склад «${esc(S.names[who]||'учасника')}» на Тур ${round.number}? Склади всіх знову стануть прихованими, учасник зможе змінити свій склад і підтвердити заново.`,
+      'Розблокувати', ()=>act('market_unconfirm_lineup',{p_round:round.id,p_participant:all?null:who},'Склад розблоковано')); });
 }
 function lockedBoosts(){
   const parts=[]; if(S.boost) parts.push(`${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b>`);
@@ -1045,7 +1088,7 @@ function lockedBoosts(){
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
   if(!mine.length){
-    $('view').innerHTML = premarketBanner(mine) + defgkBanner(mine) + budgetPanel() +
+    $('view').innerHTML = stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
       '<div class="head2"><h2>Мій склад</h2></div><div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>';
     const pb0=$('view').querySelector('[data-do="pour"]'); if(pb0) pb0.onclick=pourModal;
     return;
@@ -1115,18 +1158,17 @@ function boostUsedElsewhere(key, round){   // уже використано/за
 }
 function boostBlock(round){
   if(!round || !S.boostsOK) return '';
-  const st = stageOfNum(round.number), l1=(S.cfg&&S.cfg.stage1_last_round)||5;
   const cards = Object.keys(BOOSTS).map(k=>{
     const b=BOOSTS[k], used=boostUsedElsewhere(k, round), on = S.boost===k;
     const state = on ? 'on' : (used!=null ? 'used' : '');
-    const stTxt = on ? 'Увімкнено на цей тур' : (used!=null ? `Етап ${st}: використано в Турі ${used}` : `Етап ${st}: доступний`);
+    const stTxt = on ? 'Увімкнено на цей тур' : (used!=null ? `Використано в Турі ${used}` : 'Доступний');
     return `<button type="button" class="bcard ${state}" data-boost="${k}" ${used!=null&&!on?'disabled':''}>
       <span class="bh"><span class="bico">${b.ico}</span>${b.name}</span>
       <span class="bds">${b.desc}</span><span class="bst">${stTxt}</span></button>`;
   }).join('');
-  return `<div class="boosts"><div class="slot-h"><span>Бусти туру</span><span>1 раз на етап · один буст на тур</span></div>
+  return `<div class="boosts"><div class="slot-h"><span>Бусти туру</span><span>1 раз за турнір · один буст на тур</span></div>
     <div class="bgrid">${cards}</div>
-    <p class="dim" style="margin:8px 2px 0">Етап ${st} = ${st===1?`тури 1–${l1}`:`тури ${l1+1}+`}. Буст видно іншим лише після дедлайну; до дедлайну його можна вимкнути без наслідків. Автопілот і All-in разом не вмикаються.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">Буст видно іншим лише після дедлайну; до дедлайну його можна вимкнути без наслідків. Автопілот і All-in разом не вмикаються.</p></div>`;
 }
 
 function lnState(mine){
@@ -1215,14 +1257,7 @@ function renderLineup(mine, round){
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
-  const tourBanner = round
-    ? `<div class="rndbar"><span class="pill">Тур ${round.number}</span>
-        <span class="txt">Дедлайн виставлення складу — ${new Date(round.deadline_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</span>
-        <span class="cd tnum">⏳ ${countdown(round.deadline_at)}</span></div>`
-    : `<div class="rndbar"><span class="pill">—</span><span class="txt">Турів попереду немає — виставлення закрито</span></div>`;
-
-  $('view').innerHTML = premarketBanner(mine) + defgkBanner(mine) + budgetPanel() + tourBanner + confPanel(round) +
-    (locked ? `<div class="lockedn">🔒 Склад на Тур ${round.number} підтверджено — змінити склад і бусти не можна, а гравців зі складу не можна ні продати, ні обміняти (лише адмін може розблокувати).</div>` : '') +
+  $('view').innerHTML = stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
     `<div class="head2"><h2>Мій склад</h2><span class="sub">старт ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / У старт)</span></div>
      <div class="squad-wrap">
        <div class="panel">
@@ -1289,11 +1324,6 @@ function renderLineup(mine, round){
   const pb=$('view').querySelector('[data-do="pour"]'); if(pb) pb.onclick=pourModal;   // переливання бюджетів
   const save=$('ln-save');
   if(save) save.onclick=()=>{ const s2=lnState(mine); if(s2.ok) openLineupReview(mine, round); };
-  document.querySelectorAll('[data-unconf]').forEach(b=>b.onclick=()=>{
-    const who=b.dataset.unconf, all=(who==='all');
-    confirmModal(all? `Розблокувати склади ВСІХ учасників на Тур ${round.number}? Склади знову стануть прихованими, кожен зможе змінити свій і підтвердити заново.`
-                    : `Розблокувати склад «${esc(S.names[who]||'учасника')}» на Тур ${round.number}? Склади всіх знову стануть прихованими, учасник зможе змінити свій склад і підтвердити заново.`,
-      'Розблокувати', ()=>act('market_unconfirm_lineup',{p_round:round.id,p_participant:all?null:who},'Склад розблоковано')); });
 }
 
 // модалка-огляд складу перед підтвердженням (капітан/віце + порядок лавки)
@@ -1313,7 +1343,7 @@ function openLineupReview(mine, round){
     <p class="mnote">Незіграний стартовий → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
-    ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться на цей етап назавжди.</p>`:''}
+    ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
     ${S.confOK?'<p class="mnote warn" style="margin-top:14px">⚠️ Підтвердження ФІНАЛЬНЕ: змінити склад і бусти після нього не вийде (лише адмін розблокує). Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>':''}
     <div class="macts" style="margin-top:16px"><button data-do="lnyes">Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
   $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
@@ -1390,7 +1420,7 @@ function defgkBanner(mine){
   const n=mine.length; if(!n) return '';
   const d=mine.filter(isDG).length, slots=max-n, lack=Math.max(0,need-d);
   let cls='dgb-info', txt;
-  if(lack===0){ cls='dgb-ok'; txt=`✓ DEF/GK у складі: <b>${d}</b> (потрібно ≥${need}).`; }
+  if(lack===0) return '';   // ок — показано як «DEF/GK ✓» у блоці стану (stateBlock); окремий банер лише коли є що виправляти
   else if(lack>slots){ cls='dgb-bad'; txt=`✕ DEF/GK: <b>${d}</b> з ${need}, вільних слотів <b>${slots}</b> — склад із ${max} недосяжний. Продай не-DEF/GK або обміняй його на DEF/GK.`; }
   else if(lack===slots){ cls='dgb-warn'; txt=`⚠️ Решта <b>${slots}</b> ${slots===1?'слот':'слоти'} — <b>лише DEF/GK</b> (потрібно ще ${lack}).`; }
   else { txt=`DEF/GK у складі: <b>${d}</b> з ${need}. Для повного складу з ${max} потрібно ще <b>${lack}</b> · вільних слотів: ${slots}.`; }
@@ -1589,7 +1619,7 @@ async function viewMarket(){
          <div class="msec" style="margin-top:16px">Моя вітрина${myShop.length?` · ${myShop.length}`:''}</div>${shopHtml}`;
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  $('view').innerHTML = premarketBanner(mineM)+defgkBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
+  $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
@@ -1873,7 +1903,7 @@ function contractPicker(mv,freeAdd,pid,opts){
   }
   const max=maxLen();
   return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="${freeAdd||0}" data-pid="${pid||''}">
-    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
+    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок турніру (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
     <div class="clen-row">${chipsHTML(max,1)}</div>
     <div class="clen-info"></div>
     <div class="clab" style="margin:6px 0 0">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</div></div>`;
@@ -1947,7 +1977,7 @@ function actionsHTML(p,ctx){
     const cinfo=`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`;
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
-      : `<p class="mnote">Контракт уже покриває всі тури етапу (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
+      : `<p class="mnote">Контракт уже покриває всі тури, що лишились (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
     const lockedP = lnBlocked(p.id), playNow = inPlayRound(), expNow = !!(playNow && expiringP(p));
     let right = lockedP
       ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
@@ -2568,7 +2598,7 @@ function viewStats(){
   $('view').querySelectorAll('.strow').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
 }
 function viewTable(){
-  $('view').innerHTML = `<div class="head2"><h2>Таблиця &amp; Матчі</h2><span class="sub">борда: залік, тури (таблиця й матчі), очки по турах, Банк · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
+  $('view').innerHTML = `<div class="head2"><h2>Таблиця &amp; Матчі</h2><span class="sub">борда: залік, тури (таблиця й матчі), очки по турах, менеджмент · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
     <iframe id="boardFrame" src="squad-stage.html?embed" title="Squad борда" scrolling="no"
       style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:880px;display:block"></iframe>`;
   const fr=$('boardFrame');
@@ -2645,8 +2675,10 @@ function viewAdmin(){
     ['⚖ Розв\'язати спірне','Аукціон / трансфер вручну, коригування пулу, фонд.'],
   ];
   $('view').innerHTML = `<div class="head2"><h2>Адмінка</h2><span class="sub">патерн BoBet/PSL · заморозка авто (дедлайн → усі результати)</span></div>
+    ${adminConfBlock()}
     <div class="adm-grid">${cards.map(([h,p])=>`<div class="acard"><h3>${h}</h3><p>${p}</p><span class="lk">готуємо →</span></div>`).join('')}</div>
     <p class="dim" style="margin-top:12px">Пул зараз: <b>${S.players.length}</b> гравців · турів: <b>${S.rounds.length}</b>. Дії адмінки — наступний крок.</p>`;
+  { const r=lnRound(); if(r) bindUnconf(r); }
 }
 
 sb.auth.onAuthStateChange((_e, session)=>{ if(session) boot(); });
