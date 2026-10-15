@@ -371,6 +371,39 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .stconf .cap b{color:var(--text)}
 .stconf .cfchips{margin:8px 0 6px}
 .stconf .when{font-size:13px;color:var(--text-dim)}
+/* 15.10 крок 2: чіпи турів «Мій склад» (як чіпи Вікендів у Predictions & Results) і результат туру */
+.trow{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}
+.tchip{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 14px;cursor:pointer;color:var(--text);font-family:inherit;text-align:left;min-width:96px}
+.tchip b{display:block;font-family:var(--mono);font-size:15px;letter-spacing:.02em}
+.tchip small{display:block;font-family:var(--mono);font-size:11.5px;color:var(--text-dim);margin-top:1px}
+.tchip:hover{border-color:#2f4a3d}
+.tchip.on{border-color:var(--gold);background:rgba(244,196,48,.10)} .tchip.on b{color:var(--gold)}
+.tchip.off{opacity:.45;cursor:default}
+.tchip .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--green);margin-left:6px;vertical-align:middle}
+.cfchip.pc{cursor:pointer;font-family:var(--body);font-size:13px;padding:5px 12px}
+.cfchip.pc.on{border-color:var(--gold);color:var(--gold);background:rgba(244,196,48,.08)}
+.rr-prog{border:1px solid var(--line);background:var(--panel);border-radius:12px;padding:10px 16px;margin-bottom:12px;font-size:14px}
+.rr-prog.done{border-color:rgba(24,180,122,.35)} .rr-prog.warn{border-color:rgba(244,196,48,.4)}
+.rr-prog .bar{height:5px;background:var(--panel2);border-radius:4px;margin-top:7px;overflow:hidden}.rr-prog .bar i{display:block;height:100%;background:var(--accent)}
+.rr-prog .ln{font-size:12.5px;color:var(--text-dim);margin-top:5px}.rr-prog .ln.w{color:var(--gold)}
+.rr-sum{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0 14px}
+.rr-m{flex:1;min-width:150px;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px 14px}
+.rr-m .k{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)}
+.rr-m .v{font-family:var(--mono);font-size:22px;font-weight:700;margin-top:2px}
+.rr-m .s{font-size:12px;color:var(--text-dim);margin-top:2px}
+.rr-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+.rrt{width:100%;border-collapse:collapse;font-size:13.5px;min-width:620px}
+.rrt th{font-family:var(--mono);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);background:var(--panel2)}
+.rrt td{padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:middle}
+.rrt tr:last-child td{border-bottom:none}
+.rrt .r{text-align:right}.rrt .c{text-align:center}
+.rrt tr.bn td{opacity:.78}.rrt tr.nosum td{opacity:.55}
+.rrt tr.sep td{border-top:2px solid var(--line)}
+.rrt .pn b{font-weight:600}.rrt .pn .cl{color:var(--text-dim);font-size:12px;margin-left:6px}
+.rrt .mul{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold)}
+.rrt .tot td{font-weight:700;background:var(--panel2)}
+.rr-note{font-size:12.5px;color:var(--text-dim);margin:8px 2px 14px;line-height:1.5}
+.rr-ub{margin-top:18px}
 .head2{display:flex;align-items:baseline;gap:10px;margin:6px 2px 12px;flex-wrap:wrap}
 .head2 h2{font-size:17px;font-weight:700;margin:0}
 .head2 .sub{color:var(--dim);font-size:12px}
@@ -917,6 +950,7 @@ function renderHeader(){
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
 }
 async function go(tab){
+  if(S.tab!==tab){ S.ctour=null; S.rrp=null; }   // 15.10: нова вкладка — чіп туру знову за замовчуванням (відкритий тур)
   S.tab=tab; renderTabs(); renderHeader();
   $('view').innerHTML='<div class="spin">завантаження…</div>';
   if(tab==='my')      return viewSquad();
@@ -1084,6 +1118,158 @@ function lockedBoosts(){
   ['fwd','mid','dg'].forEach(k=>{ if(S.pos[k]){ const p=S.players.find(x=>x.id===S.pos[k]); parts.push(`⚡ <b>${POSB[k].name}</b> → ${p?esc(lastName(p.name)):'—'}`); } });
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🚀 Бусти туру</span><span>підтверджено</span></div><p class="mnote" style="margin:6px 2px 0">${parts.length?parts.join(' · '):'Бустів не обрано.'}</p></div>`;
 }
+// ── 📅 ТУР ЗА ТУРОМ (15.10; рішення Богдана — як «Predictions & Results» ЄвроСезону): чіпи турів + результат туру ──
+// дані результатів — публічні вьюхи (нового SQL не треба): market_squad_live (стан/очки/×2 гравця), market_round_scores, market_mgmt_round_scores,
+// market_round_boost_pub, market_round_pos_boost_pub, market_fixtures (дати й прогрес матчів), market_price_log (зміна ціни — через loadTourLog)
+async function loadRR(force){
+  const rr=S.rr||(S.rr={at:0});
+  if(!force && rr.live && Date.now()-rr.at<30000) return;
+  const t=S.tour.id, g=async(q,def)=>{ try{ return await sbSel(q); }catch(e){ return def; } };
+  const [fix,live,rs,mg,boost,posb]=await Promise.all([
+    g(`market_fixtures?tournament_id=eq.${t}&select=round_id,kickoff_at,status,home_club_id,away_club_id&limit=1000`,[]),
+    g(`market_squad_live?tournament_id=eq.${t}&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice,state,points,avg_rating,counted,dbl&limit=3000`,[]),
+    g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points`,[]),
+    g(`market_mgmt_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,value_start_eur,delta_eur,delta_pct,place,points`,[]),
+    g(`market_round_boost_pub?tournament_id=eq.${t}&select=round_id,participant_id,boost,target_player`,[]),
+    g(`market_round_pos_boost_pub?tournament_id=eq.${t}&select=round_id,participant_id,kind,player_id`,[])
+  ]);
+  Object.assign(rr,{fix,live,rs,mg,boost,posb,at:Date.now()});
+}
+const MON_UK=['січ.','лют.','бер.','квіт.','трав.','черв.','лип.','серп.','вер.','жовт.','лист.','груд.'];
+function tourDates(r){   // «17–19 жовт.» / «30 жовт.–1 лист.» — за матчами туру (Київ)
+  const fx=((S.rr&&S.rr.fix)||[]).filter(f=>f.round_id===r.id); if(!fx.length) return '';
+  const ky=iso=>new Date(new Date(iso).toLocaleString('en-US',{timeZone:'Europe/Kyiv'}));
+  const ts=fx.map(f=>ky(f.kickoff_at)).sort((a,b)=>a-b), a=ts[0], b=ts[ts.length-1];
+  if(a.getMonth()===b.getMonth()) return a.getDate()===b.getDate() ? a.getDate()+' '+MON_UK[a.getMonth()] : a.getDate()+'–'+b.getDate()+' '+MON_UK[a.getMonth()];
+  return a.getDate()+' '+MON_UK[a.getMonth()]+'–'+b.getDate()+' '+MON_UK[b.getMonth()];
+}
+// «нове» для закритих турів — що я ще не відкривав (лише цей браузер; localStorage може бути недоступний)
+function seenKey(){ return 'sqseen:'+(S.tour&&S.tour.id)+':'+(S.me&&S.me.id); }
+function seenGet(){ try{ return new Set(JSON.parse(localStorage.getItem(seenKey())||'[]')); }catch(e){ return new Set(); } }
+function seenAdd(id){ try{ const st=seenGet(); if(!st.has(id)){ st.add(id); localStorage.setItem(seenKey(), JSON.stringify([...st])); } }catch(e){} }
+function tourChipsHtml(){
+  const total=Math.max((S.cfg&&S.cfg.mgmt_total_rounds)||6, (S.rounds||[]).length), nowD=new Date();
+  const edit=(S.rounds||[]).find(r=>new Date(r.deadline_at)>nowD && !r.results_entered_at) || (S.rounds||[]).find(r=>new Date(r.deadline_at)>nowD);
+  const seen=seenGet(), sel=S.ctour, chips=[];
+  for(let n=1;n<=total;n++){
+    const r=(S.rounds||[]).find(x=>x.number===n);
+    if(!r){ chips.push(`<button class="tchip off" disabled title="Тур ще не створено"><b>Тур ${n}</b><small>—</small></button>`); continue; }
+    const closed=!!r.results_entered_at, started=new Date(r.deadline_at)<=nowD, isEdit=!!(edit && edit.id===r.id);
+    const mk = closed ? ' ✔' : (started ? ' ⏳' : ((isEdit && S.confOK && S.me && confOf(S.me.id,r.id)) ? ' 🔒' : ''));
+    const dot = (isEdit && S.confOK && S.me && !confOf(S.me.id,r.id)) || (closed && !seen.has(r.id));
+    chips.push(`<button class="tchip ${r.id===sel?'on':''}" data-tchip="${r.id}" title="${closed?'Тур закрито':started?'Тур у грі':isEdit?'Відкритий для виставлення складу':'Ще не відкрито для виставлення'}"><b>Тур ${n}${mk}${dot?'<span class="dot"></span>':''}</b><small>${esc(tourDates(r)||'—')}</small></button>`);
+  }
+  return `<div class="trow">${chips.join('')}</div>`;
+}
+function bindTourChips(){
+  document.querySelectorAll('[data-tchip]').forEach(b=>b.onclick=()=>{ S.ctour=b.dataset.tchip; S.rrp=null; viewSquad(); });
+  document.querySelectorAll('[data-rrp]').forEach(b=>b.onclick=()=>{ S.rrp=b.dataset.rrp; viewSquad(); });
+}
+const eurSgn=d=>(d>0?'+':d<0?'−':'')+'€'+(Math.abs(d)/1e6).toFixed(1)+'M';
+const ppSgn=v=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+' п.п.';
+// стан гравця в лайнапі → очки в суму (та сама логіка, що плитки борди: ×2 лише коли dbl і не «бонусний» запасний Автопілота)
+function rrMath(l){
+  const raw=l.points, bonusOnly=!!(l.dbl && l.role==='bench' && !l.counted);
+  const pts = raw==null ? null : ((l.dbl && !bonusOnly) ? raw*2 : raw);
+  const inSum = l.role==='start' ? l.state==='played' : (!!l.counted || bonusOnly);
+  return {raw, pts, bonusOnly, inSum};
+}
+const POSORD={G:0,D:1,M:2,F:3};
+async function viewRoundView(r, editRound){
+  const started=new Date(r.deadline_at)<=new Date();
+  if(!started){   // майбутній тур, що не найближчий: виставлення ще не відкрито
+    const e=editRound;
+    $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>Тур ${r.number}</h2><span class="sub">виставлення складу ще не відкрито</span></div>
+      <div class="soon">Склад на Тур ${r.number} можна буде виставити, коли мине дедлайн ${e?'Туру '+e.number+' ('+dlFmt(e.deadline_at)+')':'попереднього туру'}. Дедлайн цього туру — ${dlFmt(r.deadline_at)}.</div>`;
+    bindTourChips(); return;
+  }
+  await Promise.all([loadRR(), loadTourLog(r.id)]);
+  viewRoundResult(r);
+}
+function viewRoundResult(r){
+  const rr=S.rr||{}, me=S.me.id, who=S.rrp||me, closed=!!r.results_entered_at;
+  const fx=(rr.fix||[]).filter(f=>f.round_id===r.id), played=fx.filter(f=>f.status==='played').length;
+  const off=fx.filter(f=>f.status==='postponed'||f.status==='cancelled'), left=fx.length-played-off.length;
+  const prog = fx.length ? `<div class="rr-prog ${closed?'done':(off.length?'warn':'')}"><div>${closed?`✅ Тур ${r.number} закрито`:`⏳ Тур ${r.number} у грі`} · зіграно <b>${played}</b> з <b>${fx.length}</b>${(!closed&&left>0)?` · попереду <b>${left}</b>`:''}</div>
+      <div class="bar"><i style="width:${Math.round(played/fx.length*100)}%"></i></div>
+      ${off.map(f=>`<div class="ln w">⚠️ ${esc(clubName(f.home_club_id))} — ${esc(clubName(f.away_club_id))}: ${f.status==='postponed'?'перенесено':'скасовано/перервано'}</div>`).join('')}
+      ${(!closed&&off.length)?'<div class="ln">Поки є такий матч, тур сам не закривається — чекаємо рішення адміна. Ринок до того заморожений.</div>':''}</div>` : '';
+  const pids=Object.keys(S.names);
+  const pick=`<div class="cfchips" style="margin:0 0 12px">${pids.map(id=>`<button class="cfchip pc ${id===who?'on':''}" data-rrp="${id}">${esc(S.names[id])}${id===me?' (я)':''}</button>`).join('')}</div>`;
+  const rows=(rr.live||[]).filter(l=>l.round_id===r.id && l.participant_id===who);
+  const logRows=(S.plogBy||{})[r.id]||[], plog={}; logRows.forEach(x=>plog[x.player_id]=x);
+  const bo=(rr.boost||[]).find(b=>b.round_id===r.id && b.participant_id===who)||null;
+  const pbs=(rr.posb||[]).filter(b=>b.round_id===r.id && b.participant_id===who);
+  const pbOf=pid=>{ const b=pbs.find(x=>x.player_id===pid); return b?b.kind:null; };
+  let body;
+  if(!rows.length){
+    body=`<div class="soon">${who===me?'Свій склад':'Склад «'+esc(S.names[who]||'учасника')+'»'} на Тур ${r.number} ${who===me?'не було виставлено':'не виставлено або ще приховано'}.</div>`;
+  }else{
+    const pl=id=>S.players.find(x=>x.id===id)||{};
+    const sorted=[...rows].sort((a,b)=>{
+      if(a.role!==b.role) return a.role==='start'?-1:1;
+      if(a.role==='bench') return (a.bench_order||9)-(b.bench_order||9);
+      return ((b.is_captain?2:b.is_vice?1:0)-(a.is_captain?2:a.is_vice?1:0)) || ((POSORD[pl(a.player_id).position]??9)-(POSORD[pl(b.player_id).position]??9)) || String(pl(a.player_id).name).localeCompare(String(pl(b.player_id).name));
+    });
+    let sum=0;
+    const tr=sorted.map((l,i)=>{
+      const p=pl(l.player_id), m=rrMath(l), pk=pbOf(l.player_id);
+      if(m.inSum && m.pts!=null) sum+=m.pts;
+      const isTgt=bo && bo.boost==='squad_autopilot' && bo.target_player===l.player_id;
+      const mul = l.is_captain ? 'К'+(l.dbl?' ×2':'') : l.is_vice ? 'V'+(l.dbl?' ×2':'')
+                : isTgt ? '🤖 ×2' : m.bonusOnly ? '🤖 бонус' : pk ? '⚡ '+POSB[pk].name+(l.dbl?' ×2':'') : (l.dbl?'×2':'');
+      const stIc = l.state==='played' ? '✓ грав' : l.state==='pending' ? '⏳ чекає' : '– не грав';
+      const lg=plog[l.player_id], mv=lg? lg.mult-1 : null;
+      const mvH = (mv==null||Math.abs(mv)<0.0005) ? '<span class="dim">—</span>' : `<span class="vdelta ${mv>0?'up':'down'}">${fmtDelta({pct:mv,dir:mv>0?'up':'down'})}</span>`;
+      const role = l.role==='start' ? 'Старт' : 'Лавка '+(l.bench_order||'');
+      const firstBench = l.role==='bench' && (i===0 || sorted[i-1].role!=='bench');
+      return `<tr class="${l.role==='bench'?'bn':''}${(l.state==='played' && !m.inSum)?' nosum':''}${firstBench?' sep':''}" data-p="${l.player_id}">
+        <td>${role}</td>
+        <td class="pn"><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubName(p.club_id))}</span></td>
+        <td>${stIc}</td><td class="r tnum">${l.avg_rating!=null?Number(l.avg_rating).toFixed(1):'—'}</td>
+        <td class="r tnum">${m.raw!=null?m.raw:'—'}</td><td class="c mul">${mul||''}</td>
+        <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b></td><td class="r">${mvH}</td></tr>`;
+    }).join('');
+    const rsRow=(rr.rs||[]).find(x=>x.round_id===r.id && x.participant_id===who);
+    const allRs=(rr.rs||[]).filter(x=>x.round_id===r.id), totOf=x=>(x.points||0)+(x.mgmt_points||0);
+    const matchPts = (closed && rsRow) ? rsRow.points : sum, mgPts = (closed && rsRow) ? (rsRow.mgmt_points||0) : 0;
+    const place = (closed && rsRow) ? 1+allRs.filter(x=>totOf(x)>totOf(rsRow)).length : null;
+    const mg=(rr.mg||[]).find(x=>x.round_id===r.id && x.participant_id===who);
+    const boostTxt = bo ? (bo.boost==='squad_all_in'?'🔥 All-in':'🤖 Автопілот') : '';
+    const posTxt = pbs.map(b=>'⚡ '+POSB[b.kind].name+' → '+esc(lastName(pl(b.player_id).name||''))).join(' · ');
+    const cap=rows.find(l=>l.is_captain), vice=rows.find(l=>l.is_vice);
+    const cvTxt = (bo && bo.boost==='squad_autopilot') ? '' : `К: <b>${cap?esc(lastName(pl(cap.player_id).name)):'—'}</b> · V: <b>${vice?esc(lastName(pl(vice.player_id).name)):'—'}</b>`;
+    body=`<div class="rr-sum">
+        <div class="rr-m"><div class="k">очки туру</div><div class="v" style="color:var(--gold)">${closed?`${matchPts}${mgPts?` + 💎${mgPts} = ${matchPts+mgPts}`:''}`:matchPts}</div>
+          <div class="s">${closed?'матчі'+(mgPts?' + менеджмент':''):'за зіграні матчі · тур ще йде'}</div></div>
+        ${place?`<div class="rr-m"><div class="k">місце в турі</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі + 💎</div></div>`:''}
+        ${mg?`<div class="rr-m"><div class="k">приріст складу</div><div class="v ${mg.delta_eur>0?'up':mg.delta_eur<0?'down':''}">${eurSgn(+mg.delta_eur)}</div><div class="s">${mg.delta_pct!=null?'Σ% '+ppSgn(+mg.delta_pct)+' · ':''}💎 менеджмент: ${mg.points>0?'+'+mg.points:'0'} (місце ${mg.place})</div></div>`:''}
+        <div class="rr-m"><div class="k">бусти й К/V</div><div class="v" style="font-size:15px;line-height:1.35">${[boostTxt,posTxt].filter(Boolean).join('<br>')||'<span class="dim">бустів нема</span>'}</div><div class="s">${cvTxt||'Автопілот: ×2 отримує найкращий'}</div></div>
+      </div>
+      <div class="rr-wrap"><table class="rrt"><thead><tr><th>Роль</th><th>Гравець</th><th>Стан</th><th class="r">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В суму</th><th class="r">Ціна</th></tr></thead>
+        <tbody>${tr}<tr class="tot"><td colspan="6">Разом у суму (за гравцями)</td><td class="r tnum">${sum}</td><td></td></tr></tbody></table></div>
+      <p class="rr-note">«В суму»: основа — коли зіграв; лавка — коли визначена заміна${(bo&&bo.boost==='squad_all_in')?' (🔥 All-in — очки дають усі 8)':''}; ×2 — капітан/віце (кращий із пари), Автопілот чи позиційний буст. Ціна — зміна вартості гравця за цей тур. Клік на гравця — детальна картка.</p>`;
+  }
+  // бусти й капітани всіх (відкриті, бо дедлайн минув) — «хто що юзав»
+  const plN=id=>{ const p=S.players.find(x=>x.id===id); return p?esc(lastName(p.name)):'—'; };
+  const ub=pids.map(id=>{
+    const lr=(rr.live||[]).filter(l=>l.round_id===r.id && l.participant_id===id);
+    if(!lr.length) return `<tr><td><b>${esc(S.names[id])}</b></td><td colspan="3" class="dim">склад не виставлено або ще приховано</td></tr>`;
+    const b=(rr.boost||[]).find(x=>x.round_id===r.id && x.participant_id===id), ps=(rr.posb||[]).filter(x=>x.round_id===r.id && x.participant_id===id);
+    const c=lr.find(l=>l.is_captain), v=lr.find(l=>l.is_vice), auto=b&&b.boost==='squad_autopilot';
+    return `<tr><td><b>${esc(S.names[id])}</b></td><td>${auto?'<span class="dim">Автопілот</span>':(c?plN(c.player_id):'—')}</td><td>${auto?'':(v?plN(v.player_id):'—')}</td>
+      <td>${[b?(b.boost==='squad_all_in'?'🔥 All-in':'🤖 Автопілот'):'', ...ps.map(x=>'⚡ '+POSB[x.kind].name+' → '+plN(x.player_id))].filter(Boolean).join(' · ')||'<span class="dim">—</span>'}</td></tr>`;
+  }).join('');
+  $('view').innerHTML = tourChipsHtml() + prog +
+    `<div class="head2"><h2>Тур ${r.number}</h2><span class="sub">${closed?'результат туру':'тур у грі'} · обери учасника, щоб подивитись його склад</span></div>` + pick + body +
+    `<div class="rr-ub"><div class="slot-h"><span>⚡ Бусти й капітани · Тур ${r.number}</span><span>хто що поставив</span></div>
+      <div class="rr-wrap"><table class="rrt" style="min-width:480px"><thead><tr><th>Учасник</th><th>Капітан</th><th>Віце</th><th>Бусти</th></tr></thead><tbody>${ub}</tbody></table></div></div>`;
+  bindTourChips();
+  $('view').querySelectorAll('.rrt tr[data-p]').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
+  if(closed) seenAdd(r.id);
+  clearTimeout(S.rrTimer);
+  if(!closed) S.rrTimer=setTimeout(async()=>{ if(S.tab==='my' && S.ctour===r.id){ await loadRR(true); await loadTourLog(r.id,true); if(S.tab==='my' && S.ctour===r.id) viewRoundResult(r); } }, 60000);   // тур у грі: освіжаємо раз на хвилину
+}
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
@@ -1095,6 +1281,13 @@ async function viewSquad(){
   }
   // тур для виставлення = найближчий із дедлайном попереду (лок після дедлайну)
   const round = S.rounds.find(r => new Date(r.deadline_at) > new Date()) || null;
+  clearTimeout(S.rrTimer);
+  await loadRR();
+  // вибраний чіп туру (15.10): за замовчуванням — відкритий тур для виставлення; тури без виставлення — результат; коли відкритого нема — останній створений
+  let cur = S.rounds.find(r=>r.id===S.ctour) || null;
+  if(!cur && !round && S.rounds.length) cur = S.rounds.slice().sort((a,b)=>b.number-a.number)[0];
+  if(cur && (!round || cur.id!==round.id)){ S.ctour=cur.id; return viewRoundView(cur, round); }
+  S.ctour = round ? round.id : null;
   let lu = [];
   if(round){
     try{ lu = await sbSel(`market_lineup?round_id=eq.${round.id}&participant_id=eq.${S.me.id}&select=player_id,role,bench_order,is_captain,is_vice`); }catch(e){}
@@ -1257,7 +1450,7 @@ function renderLineup(mine, round){
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
-  $('view').innerHTML = stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
+  $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
     `<div class="head2"><h2>Мій склад</h2><span class="sub">старт ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / У старт)</span></div>
      <div class="squad-wrap">
        <div class="panel">
@@ -1321,6 +1514,7 @@ function renderLineup(mine, round){
   document.querySelectorAll('[data-benchdown]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchdown,1); renderLineup(mine,round); });
   $('view').querySelectorAll('.pcard[data-pc]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('button,.lctrl,a,input,select')) return; openPlayerModal(el.dataset.pc); });
   bindActions();  // кнопки «продати»
+  bindTourChips();   // чіпи турів (15.10)
   const pb=$('view').querySelector('[data-do="pour"]'); if(pb) pb.onclick=pourModal;   // переливання бюджетів
   const save=$('ln-save');
   if(save) save.onclick=()=>{ const s2=lnState(mine); if(s2.ok) openLineupReview(mine, round); };
