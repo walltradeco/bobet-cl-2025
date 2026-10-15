@@ -202,6 +202,8 @@ table.t{width:100%;border-collapse:collapse}
 .spark.empty{color:var(--text-dim);font-size:10px;height:22px;align-items:center}
 .mstatus{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;
   color:var(--text-dim);display:flex;align-items:center;justify-content:center;gap:5px}
+.mlistb{display:inline-block;margin:0 0 6px;padding:2px 8px;border:1px solid var(--gold);border-radius:999px;color:var(--gold);font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap}
+.shoprow.mine td{background:rgba(244,196,48,.05)}
 .mstatus.free{color:var(--up)} .mstatus.mine{color:var(--gold);font-weight:700}
 .dot{width:6px;height:6px;border-radius:50%;display:inline-block}
 .dot.g{background:var(--up)} .dot.o{background:var(--text-dim)}
@@ -909,6 +911,10 @@ async function go(tab){
   if(tab==='admin')   return viewAdmin();
 }
 
+// 535: тур «у грі» (дедлайн минув, результатів нема) — сервер морозить ПРИЙНЯТТЯ/ВИКУП/ставки/продаж, але дозволяє СТВОРЮВАТИ лот, пропозицію трансферу й обмін
+const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>new Date(r.deadline_at)<=n && !r.results_entered_at)||null; };
+const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
+const EXPIRING_TXT='⏳ Контракт добігає (лишився 1 тур): після закриття туру гравець автоматично стане вільним (власник отримає повну вартість), тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.';
 // банер пре-маркету (§L): «вікно відкрито до [дедлайн], набери склад мін/макс»
 function premarketBanner(mine){
   const cfg=S.cfg||{}, min=cfg.squad_min||5, max=cfg.squad_max||8;
@@ -928,7 +934,7 @@ function premarketBanner(mine){
       const why = !a ? '' : (a.state==='blocked' ? ` <b style="color:var(--gold)">⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.</b>`
                        : a.state==='closing' ? ' Усі матчі завершені — розрахунок за ~1 год.'
                        : ` Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`);
-      return warn(`тур ${inplay.number} у грі (заморозка до розрахунку).${why}`);
+      return `<div class="premkt"><span><b>Тур ${inplay.number} у грі — ринок частково відкритий.</b> Закриті: купівля, ставки, прийняття угод і продаж. <b>Можна готувати угоди</b> — виставити лот, запропонувати трансфер чи обмін; вони виконаються лише після закриття туру (до розрахунку).${why}</span>${meta}</div>`;
     }
     const si=stageInfo();                        // усі створені тури мають результати
     if(si.left>0) return warn('усі створені тури зіграні — ринок відкриється, коли буде заведено наступний тур.');
@@ -1408,6 +1414,7 @@ function mtile(p){
   return `<div class="mtile ${o.cls==='mine'?'mine':''}${dgb?' dgblock':''}" data-p="${p.id}">
     <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}
       <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
+    ${S.listingsReady && S.listings[p.id] ? `<div class="mlistb" title="Виставлений на вітрину: ${S.listings[p.id].seller_participant===S.me.id?'твій лот':'викупити можна миттєво'}">🏷 вітрина ${eur(S.listings[p.id].ask_price)}</div>` : ''}
     ${avatar(p,76)}
     <div class="mnm">${esc(p.name)}</div>
     <div class="mclub">${esc(cl.name||'')}</div>
@@ -1514,9 +1521,11 @@ function bindFilters(){
 
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
 async function viewMarket(){
+  if(S.mktSub==='bids' || S.mktSub==='transfers') S.mktSub='deals';       // старі назви вкладок (до об'єднання)
   const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length
                +(S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id).length;
-  const subs=[['free','Вільні'],['all','Усі гравці'],['bids','Мої ставки'],['transfers','Трансфери'+(inCount?` (${inCount})`:'')]];
+  const shopAll=Object.values(S.listings||{});
+  const subs=[['free','Вільні'],['all','Усі гравці'],['shop','Вітрина'+(shopAll.length?` (${shopAll.length})`:'')],['deals','Мої угоди'+(inCount?` (${inCount})`:'')]];
   const bar=`<div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>`;
   let body='';
   if(S.mktSub==='free'||S.mktSub==='all'){
@@ -1527,38 +1536,70 @@ async function viewMarket(){
       ? `${hint} · <span id="mcount"></span>`
       : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint}`;
     body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><span class="sub">${sub}</span></div><div class="mgrid" id="mgrid"></div>`;
-  } else if(S.mktSub==='bids'){
-    const mine = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
-    body = mine.length? `<p class="dim">Лоти, де ти лідируєш (гроші й зарплатний резерв під контракт заморожено до закриття). Перебити чужий лот — у «Ринок».</p>
-      <table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт</th><th class="n">До</th></tr></thead><tbody>${
-      mine.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
-        return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
-          <td class="n">${eur(a.current_bid)}</td><td class="n">${a.leader_length?a.leader_length+' тур':'—'}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
-      }).join('')}</tbody></table>`
-      : `<div class="soon">Немає активних ставок, де ти лідируєш. Почни аукціон або перебий лот у «Ринок».</div>`;
-  } else {
-    if(!S.transfersReady && !S.exchangesReady){
-      body = `<div class="soon">Прямі трансфери (вікно ціни · так/ні/контр) і обмін 1↔1 зʼявляться після заливки <b>405</b>/<b>412</b> (market_transfers/market_exchanges + RPC).</div>`;
+  } else if(S.mktSub==='shop'){
+    // 🏷 ВІТРИНА: лоти за фіксованою ціною (421). Власник бачить свій лот і знімає його; інші — відкривають картку й викуповують миттєво
+    if(!S.listingsReady){
+      body = `<div class="soon">Вітрина зʼявиться після заливки <b>421</b> (market_listings + RPC).</div>`;
     } else {
-      const trInv=(S.transfers||[]).filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id);
-      const xInv =(S.exchanges||[]).filter(x=>x.to_participant===S.me.id||x.from_participant===S.me.id);
-      const inRows  = trInv.filter(t=>t.awaiting_participant===S.me.id).map(transferRow)
-                    .concat(xInv.filter(x=>x.awaiting_participant===S.me.id).map(exchangeRow));
-      const outRows = trInv.filter(t=>t.awaiting_participant!==S.me.id).map(transferRow)
-                    .concat(xInv.filter(x=>x.awaiting_participant!==S.me.id).map(exchangeRow));
-      body = `<p class="dim">У <b>Ринок</b> тисни на гравця суперника → «Запропонувати трансфер» (гроші, ${winTxt()}) або «Обмін» (свій гравець ↔ його + доплата). Угоди публічні; гроші морозяться на час пропозиції.</p>
-        <div class="msec">Твоя черга${inRows.length?` · <b style="color:var(--gold)">${inRows.length}</b>`:''}</div>
-        ${inRows.length?inRows.join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}
-        <div class="msec" style="margin-top:16px">Твої пропозиції / чекають іншого боку</div>
-        ${outRows.length?outRows.join(''):'<div class="dim" style="padding:6px 2px">— немає</div>'}`;
+      const rows=shopAll.map(l=>({l, p:S.players.find(x=>x.id===l.player_id)})).filter(r=>r.p)
+        .sort((a,b)=>((b.l.seller_participant===S.me.id)-(a.l.seller_participant===S.me.id))||(a.l.ask_price-b.l.ask_price));
+      body = `<p class="dim">Гравці, яких власники виставили за <b>фіксованою ціною</b> (${winTxt()}, 0% комісії). Викуп — миттєвий, власник отримує суму повністю. Свій лот можна зняти.</p>`
+        + (rows.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th>Продавець</th><th></th></tr></thead><tbody>${
+          rows.map(({l,p})=>{
+            const mv=p.market_value_current||0, mine=l.seller_participant===S.me.id, pct=mv? Math.round((l.ask_price/mv-1)*100) : 0;
+            const stale=(+l.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+l.ask_price>winMaxEur(mv));
+            return `<tr class="shoprow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name)}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')} · ${posCat(p.position)}</span></td>
+              <td class="n">${eur(mv)}</td><td class="n"><b>${eur(l.ask_price)}</b> <span class="dim">${pct>0?'+':''}${pct}%</span>${stale?' <span class="warnc" title="Вартість змінилась — ціна поза вікном, лот застарів">🕓 застарів</span>':''}</td>
+              <td>${mine?'<b style="color:var(--gold)">ти</b>':esc(S.names[l.seller_participant]||'—')}</td>
+              <td class="n">${mine?`<button class="mini ghost" data-unlistp="${p.id}">Зняти</button>`:`<button class="mini" data-open="${p.id}">Відкрити</button>`}</td></tr>`;
+          }).join('')}</tbody></table>`
+          : `<div class="soon">Вітрина порожня. Виставити свого гравця можна в його картці («Мій склад» → клік по гравцю).</div>`);
     }
+  } else {
+    // 🤝 МОЇ УГОДИ: усе незавершене, під що заморожені твої гроші — пропозиції (мені/від мене), обміни, мої ставки в аукціонах, моя вітрина
+    const trInv=(S.transfers||[]).filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id);
+    const xInv =(S.exchanges||[]).filter(x=>x.to_participant===S.me.id||x.from_participant===S.me.id);
+    const inRows  = trInv.filter(t=>t.awaiting_participant===S.me.id).map(transferRow)
+                  .concat(xInv.filter(x=>x.awaiting_participant===S.me.id).map(exchangeRow));
+    const outRows = trInv.filter(t=>t.awaiting_participant!==S.me.id).map(transferRow)
+                  .concat(xInv.filter(x=>x.awaiting_participant!==S.me.id).map(exchangeRow));
+    const none='<div class="dim" style="padding:6px 2px">— немає</div>';
+    const myBids = S.auctions.filter(a=>a.leader_participant_id===S.me.id);
+    const myShop = shopAll.filter(l=>l.seller_participant===S.me.id);
+    const bidsHtml = myBids.length
+      ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт</th><th class="n">До</th></tr></thead><tbody>${
+        myBids.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
+          return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+            <td class="n">${eur(a.current_bid)}</td><td class="n">${a.leader_length?a.leader_length+' тур':'—'}</td><td class="n">${new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td></tr>`;
+        }).join('')}</tbody></table>` : none;
+    const shopHtml = !S.listingsReady ? '<div class="dim" style="padding:6px 2px">Вітрина зʼявиться після заливки 421.</div>'
+      : myShop.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th></th></tr></thead><tbody>${
+        myShop.map(l=>{ const p=S.players.find(x=>x.id===l.player_id)||{};
+          return `<tr class="shoprow mine" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+            <td class="n">${eur(p.market_value_current)}</td><td class="n"><b>${eur(l.ask_price)}</b></td><td class="n"><button class="mini ghost" data-unlistp="${p.id}">Зняти</button></td></tr>`;
+        }).join('')}</tbody></table>` : none;
+    const tradeIntro = (S.transfersReady||S.exchangesReady)
+      ? `<p class="dim">Усе незавершене, під що заморожені твої гроші. Щоб запропонувати трансфер (гроші, ${winTxt()}) чи обмін — відкрий гравця суперника у «Усі гравці». Угоди публічні.</p>`
+      : `<div class="soon">Прямі трансфери й обмін зʼявляться після заливки <b>405</b>/<b>412</b>.</div>`;
+    body = tradeIntro
+      + `<div class="msec">Твоя черга — чекають ТВОЄЇ відповіді${inRows.length?` · <b style="color:var(--gold)">${inRows.length}</b>`:''}</div>${inRows.length?inRows.join(''):none}
+         <div class="msec" style="margin-top:16px">Твої пропозиції — чекають іншого боку</div>${outRows.length?outRows.join(''):none}
+         <div class="msec" style="margin-top:16px">Мої ставки — аукціони, де ти лідируєш${myBids.length?` · ${myBids.length}`:''}</div>
+         <p class="dim" style="margin:4px 0 8px">Гроші й зарплатний резерв під контракт заморожені до закриття лота. Перебити чужий лот — у «Вільні».</p>${bidsHtml}
+         <div class="msec" style="margin-top:16px">Моя вітрина${myShop.length?` · ${myShop.length}`:''}</div>${shopHtml}`;
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
   $('view').innerHTML = premarketBanner(mineM)+defgkBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
-  if(S.mktSub==='transfers'){ bindTransfers(); bindExchanges(); }
+  if(S.mktSub==='deals'){ bindTransfers(); bindExchanges(); }
+  if(S.mktSub==='shop'||S.mktSub==='deals'){
+    $('view').querySelectorAll('[data-unlistp]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation();
+      const p=S.players.find(x=>x.id===b.dataset.unlistp)||{name:'гравця'};
+      confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини?`, 'Зняти', ()=>act('market_unlist_player',{p_player:b.dataset.unlistp},'Знято з продажу')); });
+    $('view').querySelectorAll('[data-open]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('[data-unlistp]')) return; openPlayerModal(el.dataset.open); });
+  }
 }
 
 // ── рядок трансферу + дії (Так/Ні/Контр) ──
@@ -1574,7 +1615,7 @@ function transferRow(t){
     : `Твоя пропозиція на <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> → <b>${otherName}</b> · <b class="mprice">${eur(t.amount)}</b>`;
   const minC=Math.ceil((p.market_value_current||0)*(S.cfg?.transfer_min_pct??0.75));
   const ctrl = mine
-    ? `<div class="tctrl"><button data-tr-acc="${t.id}">Прийняти</button>
+    ? `<div class="tctrl"><button data-tr-acc="${t.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Прийняти</button>
         <button class="ghost" data-tr-cnt="${t.id}" data-min="${minC}">Контр</button>
         <button class="ghost" data-tr-rej="${t.id}">Відхилити</button></div>`
     : (!iAmSeller
@@ -1624,7 +1665,7 @@ function exchangeRow(x){
     ? `🔄 Твій <b>${esc(off.name||'?')}</b> <span class="dim">${esc(offCl)}</span> ↔ <b>${esc(want.name||'?')}</b> <span class="dim">${esc(wantCl)}</span> · <b>${otherName}</b> · ${xCashLine(x,iAmFrom)}`
     : `🔄 <b>${otherName}</b>: <b>${esc(off.name||'?')}</b> <span class="dim">${esc(offCl)}</span> ↔ твій <b>${esc(want.name||'?')}</b> <span class="dim">${esc(wantCl)}</span> · ${xCashLine(x,iAmFrom)}`;
   const ctrl = mine
-    ? `<div class="tctrl"><button data-xc-acc="${x.id}">Прийняти</button>
+    ? `<div class="tctrl"><button data-xc-acc="${x.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Прийняти</button>
         <button class="ghost" data-xc-cnt="${x.id}" data-xc-from="${iAmFrom?1:0}">Контр</button>
         <button class="ghost" data-xc-rej="${x.id}">Відхилити</button></div>`
     : (iAmFrom
@@ -1724,7 +1765,7 @@ function exchangeBlock(pid,outP,inP){
 }
 // блок обміну в модалці чужого гравця p (=wanted). Селект свого + доплата + наживо валідація.
 function exchangeUI(p){
-  const mine=S.players.filter(x=>x.owner_participant_id===S.me.id && !lnBlocked(x.id));   // 534: гравці з підтвердженого складу в обміні не беруть участі
+  const mine=S.players.filter(x=>x.owner_participant_id===S.me.id && !lnBlocked(x.id) && !(inPlayRound() && expiringP(x)));   // 534/535: гравці з підтвердженого складу й (у турі) з останнім туром контракту в обміні не беруть участі
   if(!mine.length) return `<div class="msec" style="margin-top:14px">🔄 Обмін</div><p class="mnote">У тебе немає гравців для обміну${S.myConfLn&&S.myConfLn.size?' (гравці з підтвердженого складу заблоковані)':''}.</p>`;
   const sel='width:100%;padding:8px;border-radius:8px;background:var(--panel-2,#122);color:inherit;border:1px solid var(--line,#333)';
   const opts=mine.map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc((S.clubs[x.club_id]||{}).name||'')} · ${eur(x.market_value_current)}</option>`).join('');
@@ -1907,13 +1948,16 @@ function actionsHTML(p,ctx){
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
       : `<p class="mnote">Контракт уже покриває всі тури етапу (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
-    const lockedP = lnBlocked(p.id);
+    const lockedP = lnBlocked(p.id), playNow = inPlayRound(), expNow = !!(playNow && expiringP(p));
     let right = lockedP
       ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
-      : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
-      <p class="mnote">Під час туру (заморозка) продаж заблоковано.</p>`;
+      : (playNow
+          ? `<p class="mnote">⏳ Тур ${playNow.number} у грі: продаж у ринок закрито. Лот на вітрину чи обмін можна підготувати зараз — вони виконаються після закриття туру.</p>`
+          : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
+      <p class="mnote">Під час туру (заморозка) продаж у ринок закритий.</p>`);
+    if(expNow) right += `<p class="mnote warn">${EXPIRING_TXT}</p>`;
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
-    if(S.listingsReady && !lockedP){
+    if(S.listingsReady && !lockedP && !expNow){
       const lst=S.listings[p.id];
       if(lst){
         right+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
@@ -1929,6 +1973,9 @@ function actionsHTML(p,ctx){
   if(!free){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
     let h=`<p class="mnote">Власник: <b>${ownerNm}</b>. Угоди <b>публічні</b> — інші теж можуть запропонувати; він обере.</p>`;
+    // 535: у турі пропозиції на гравця з останнім туром контракту заборонені (автопродаж при закритті раніше за будь-яку угоду)
+    if(inPlayRound() && expiringP(p)) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
+    if(inPlayRound()) h+=`<p class="mnote">⏳ Тур ${inPlayRound().number} у грі: пропозицію можна створити зараз, але прийняти її власник зможе лише після закриття туру (гроші на час пропозиції заморожені).</p>`;
     // пікер довжини контракту — коли ліміти дозволяють набути (викуп-ask або трансфер)
     if(!acquireBlock(p) && ((S.listingsReady&&S.listings[p.id]) || S.transfersReady)) h+=contractPicker(mv,0,p.id);
     // ВІТРИНА ask (421): власник виставив за фіксованою ціною → миттєвий викуп
@@ -1958,6 +2005,7 @@ function actionsHTML(p,ctx){
     return h;
   }
   const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
+  if(inPlayRound()) return `<p class="mnote warn">⏳ Тур ${inPlayRound().number} у грі: купівля, ставки й викуп вільних гравців закриті до розрахунку — відкриються після закриття туру.</p>`;
   if(au){
     const iLead=au.leader_participant_id===S.me.id;
     const minBid=Math.ceil(au.current_bid*(1+(cfg.bid_step_pct??0.05)));
@@ -2035,10 +2083,10 @@ function cardDeltaSum(p,card,plog){
   if(!Array.isArray(plog)) return { ...cardDelta(p,card), small:'' };
   const rows=plog.map(r=>({ n:(S.rounds.find(x=>x.id===r.round_id)||{}).number, v:(r.mult-1)*100 })).filter(r=>r.n!=null).sort((a,b)=>a.n-b.n);
   if(!rows.length) return { txt:'– 0%', dir:'flat', small:'<small class="was" title="Цінового руху ще не було">ще без руху</small>' };
-  const sum=rows.reduce((a,r)=>a+r.v,0), dir=sum>0.05?'up':sum<-0.05?'down':'flat';
+  const sum=(rows.reduce((a,r)=>a*(1+r.v/100),1)-1)*100, dir=sum>0.05?'up':sum<-0.05?'down':'flat';   // складений: Π(1+Δ тура) − 1 (як «Статистика»)
   const f=n=>(n>0.05?'▲ +':n<-0.05?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%';
   const per=rows.map(r=>`Т${r.n} ${r.v>0.05?'+':r.v<-0.05?'−':''}${Math.abs(r.v).toFixed(1).replace(/\.0$/,'')}%`).join(' · ');
-  return { txt:f(sum), dir, small:`<small class="was ${dir==='flat'?'':dir}" title="Сума відсотків руху вартості гравця тур за туром">${per}</small>` };
+  return { txt:f(sum), dir, small:`<small class="was ${dir==='flat'?'':dir}" title="Рух вартості гравця тур за туром (підсумок — складений від старту)">${per}</small>` };
 }
 function lastTourSmall(card){
   const n=card&&card.val_delta_tour_pct; if(n==null) return '';
@@ -2266,7 +2314,7 @@ async function openPlayerModal(pid){
         </div>
         <div class="pm-value">
           <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
-          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Val Δ (турнір · сума турів)</span></div>
+          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Val Δ (турнір · від старту)</span></div>
           <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
           <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
         </div>
