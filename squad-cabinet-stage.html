@@ -993,7 +993,9 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
   const n=mine.length, dgOk=mine.filter(isDG).length>=need;
   const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
-    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}${n?` · DEF/GK ${dgOk?'✓':'✕'}`:''}</div></div>`;
+    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}${n?(n>=max
+      ? ` · ≥${need} DEF/GK у складі (основа або лавка) ${dgOk?'✓':'✕'}`
+      : ` · для ${max}/${max}: ≥${need} DEF/GK у складі (основа або лавка), є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
   const a=inplay?(S.attn||{})[inplay.number]:null;
   const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
             : a.state==='closing' ? 'Усі матчі завершені — розрахунок за ~1 год.'
@@ -1235,7 +1237,7 @@ function viewRoundResult(r){
       const lg=plog[l.player_id], mv=lg? lg.mult-1 : null;
       const mvE = (lg && lg.value_after!=null && mv!=null) ? lg.value_after-Math.round(lg.value_after/lg.mult) : null;
       const mvH = (mv==null||Math.abs(mv)<0.0005) ? '<span class="dim">—</span>' : `<span class="vdelta ${mv>0?'up':'down'}">${fmtDelta({pct:mv,dir:mv>0?'up':'down'})}</span>${mvE!=null?`<small class="vd-eur ${mv>0?'up':'down'}">${eurSgn2(mvE)}</small>`:''}`;
-      const role = l.role==='start' ? 'Старт' : 'Лавка '+(l.bench_order||'');
+      const role = l.role==='start' ? 'Основа' : 'Лавка '+(l.bench_order||'');
       const firstBench = l.role==='bench' && (i===0 || sorted[i-1].role!=='bench');
       return `<tr class="${l.role==='bench'?'bn':''}${(l.state==='played' && !m.inSum)?' nosum':''}${firstBench?' sep':''}" data-p="${l.player_id}">
         <td class="hm">${role}</td>
@@ -1321,7 +1323,7 @@ async function viewSquad(){
 // ── 🚀 бусти туру: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
 const BOOSTS = {
   squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий з усіх 8 гравців, що зіграли за тур (запасні теж, навіть якщо не зайшли на заміну). Капітана й віце обирати не треба.' },
-  squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — старт і лавка. Ідеально 5+3, але можна й менше.' }
+  squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — основа і лавка. Ідеально 5+3, але можна й менше.' }
 };
 // ── ⚡ позиційні бусти (532): 2x FWD / 2x MID / 2x DEF-GK — одна ціль у основі (не капітан/віце), раз за турнір, до трьох в одному турі, не з Автопілотом/All-in ──
 const POSB = {
@@ -1382,11 +1384,11 @@ function lnState(mine){
   const cap = auto ? null : st.find(p=>S.lineup[p.id].cap);
   const vice= auto ? null : st.find(p=>S.lineup[p.id].vice);
   const errs=[];
-  if(st.length<1||st.length>min5) errs.push(`старт 1..${min5}`);
+  if(st.length<1||st.length>min5) errs.push(`основа 1..${min5}`);
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
-  if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK у старті`);
+  if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK в основі`);
   if(!auto && !cap) errs.push('обери капітана');
-  if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 у старті)
+  if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 в основі)
   return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
 }
 
@@ -1404,17 +1406,17 @@ function renderLineup(mine, round){
   const locked = !!(round && S.confOK && confOf(S.me.id, round.id));   // 533: підтверджено → фінально, лише перегляд
   const chip=(ok,txt)=>`<span class="chk ${ok?'ok':'no'}">${ok?'✓':'✕'} ${txt}</span>`;
   const val = `<div class="valid">
-    ${chip(s.st.length>=1&&s.st.length<=s.min5, `Старт ${s.st.length}/${s.min5}`)}
-    ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK у старті`)}
+    ${chip(s.st.length>=1&&s.st.length<=s.min5, `Основа ${s.st.length}/${s.min5}`)}
+    ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK в основі`)}
     ${mine.length>=((S.cfg&&S.cfg.squad_max)||8) ? chip(mine.filter(p=>p.position==='D'||p.position==='G').length>=((S.cfg&&S.cfg.defgk_full_min)||2), `≥${(S.cfg&&S.cfg.defgk_full_min)||2} DEF/GK у складі (основа або лавка)`) : ''}
     ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
     ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`)
-                  : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 у старті)')
+                  : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 в основі)')
                   : chip(false, 'Віце не обраний'))}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
   </div>`;
   const injStart = s.st.filter(p=>p&&p.injury);
-  const injWarn = injStart.length ? `<div class="injwarn">🤕 У старті ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
+  const injWarn = injStart.length ? `<div class="injwarn">🤕 В основі ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
 
   const posBtn = (p,L) => {   // 532: ⚡ 2x … на гравця основи (не капітан/віце; не з Автопілотом/All-in)
     if(locked || !S.posOK || S.boost || L.cap || L.vice) return '';
@@ -1433,10 +1435,10 @@ function renderLineup(mine, round){
     } else if(zone==='bench'){
       ctrl = `<button class="mini ghost" data-benchup="${p.id}" title="раніше на заміну">↑</button>
         <button class="mini ghost" data-benchdown="${p.id}" title="пізніше на заміну">↓</button>
-        <button class="mini" data-role="${p.id}:start">У старт</button>
+        <button class="mini" data-role="${p.id}:start">В основу</button>
         <button class="mini ghost" data-role="${p.id}:out">−</button>`;
     } else {
-      ctrl = `<button class="mini" data-role="${p.id}:start">У старт</button>
+      ctrl = `<button class="mini" data-role="${p.id}:start">В основу</button>
         <button class="mini ghost" data-role="${p.id}:bench">На лаву</button>`;
     }
     const proceeds = Math.round(p.market_value_current*(1-(S.cfg?.sell_pct??0.05)));
@@ -1459,10 +1461,10 @@ function renderLineup(mine, round){
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
   $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
-    `<div class="head2"><h2>Мій склад</h2><span class="sub">старт ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / У старт)</span></div>
+    `<div class="head2"><h2>Мій склад</h2><span class="sub">основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</span></div>
      <div class="squad-wrap">
        <div class="panel">
-         <div class="slot-h"><span>Стартова ${s.min5}</span><span>рейтинг · ціна</span></div>
+         <div class="slot-h"><span>Основа (${s.min5})</span><span>рейтинг · ціна</span></div>
          <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>'}</div>
          ${val}
          ${injWarn}
@@ -1481,7 +1483,7 @@ function renderLineup(mine, round){
        </div>
        <div class="panel">
          ${zoneBlock('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'1 · 2 · 3')}
-         <p class="dim" style="margin:8px 2px 0">Незіграний стартовий → перший з лавки за порядком, хто зіграв (стрілки ↑/↓, <b>без звірки позиції</b>). Лавка очок не дає.</p>
+         <p class="dim" style="margin:8px 2px 0">Незіграний основний → перший з лавки за порядком, хто зіграв (стрілки ↑/↓, <b>без звірки позиції</b>). Лавка очок не дає.</p>
          ${zoneBlock('Поза складом', s.out, 'out')}
        </div>
      </div>`;
@@ -1490,7 +1492,7 @@ function renderLineup(mine, round){
     const [pid,role]=b.dataset.role.split(':');
     if(role==='start'){
       const cnt=mine.filter(p=>S.lineup[p.id].role==='start').length;
-      if(cnt>=(S.cfg?S.cfg.squad_min:5)) return alert('У старті вже максимум');
+      if(cnt>=(S.cfg?S.cfg.squad_min:5)) return alert('В основі вже максимум');
     }
     if(role==='bench'){
       const cnt=mine.filter(p=>S.lineup[p.id].role==='bench').length;
@@ -1540,9 +1542,9 @@ function openLineupReview(mine, round){
   const bench=s.bn.length? s.bn.map((p,i)=>line(p,` <span class="dim">${i+1}-й на заміну</span>`)).join('')
                          : '<div class="dim" style="padding:6px 2px">— лавка порожня</div>';
   modalOpen(`<h3>Підтвердити склад · тур ${round.number}</h3>
-    <div class="msec" style="margin-top:12px">Стартова (${s.st.length})</div>${starters}
+    <div class="msec" style="margin-top:12px">Основа (${s.st.length})</div>${starters}
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
-    <p class="mnote">Незіграний стартовий → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
+    <p class="mnote">Незіграний основний → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
@@ -1610,6 +1612,8 @@ function formChart(p){
 // ── DEF/GK: «досяжність» (SQL 514, рішення Богдана 09.10) ──
 // після набуття слотів до squad_max має вистачати, щоб добрати defgk_full_min DEF/GK: D/G + (max − гравців) ≥ min.
 const isDG = x => x && (x.position==='D' || x.position==='G');
+// 16.10 (відгук Богдана): просте пояснення правила для «Мій склад» і «Ринок» — ≥2 DEF/GK потрібні лише для складу 8/8
+const dgNote = () => { const c=S.cfg||{}, mx=c.squad_max||8; return `щоб мати ${mx}/${mx}, потрібно ≥${c.defgk_full_min||2} DEF/GK у складі (основа або лавка)`; };
 function dgRule(total, dg){                       // → null (ок) або текст причини; total/dg — ПІСЛЯ набуття
   const cfg=S.cfg||{}, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
   if(dg + (max-total) >= need) return null;
@@ -1642,7 +1646,8 @@ function mtile(p){
   const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
   // 514: вільний не-DEF/GK, якого вже не можна взяти через правило DEF/GK → приглушуємо й підписуємо
   let dgb=''; if(S.me && !p.owner_participant_id && !isDG(p)){ const mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
-    if(mine.length && dgRule(mine.length+1, mine.filter(isDG).length)) dgb='<div class="mdgb" title="Решта слотів — лише DEF/GK">лише DEF/GK</div>'; }
+    // 16.10: на повному складі (8/8) купити нікого не можна — підпис «лише DEF/GK» там вводив в оману; показуємо лише коли ще є вільні слоти
+    if(mine.length && mine.length<((S.cfg&&S.cfg.squad_max)||8) && dgRule(mine.length+1, mine.filter(isDG).length)) dgb='<div class="mdgb" title="Решта слотів — лише DEF/GK">лише DEF/GK</div>'; }
   return `<div class="mtile ${o.cls==='mine'?'mine':''}${dgb?' dgblock':''}" data-p="${p.id}">
     <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}
       <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
@@ -1765,8 +1770,8 @@ async function viewMarket(){
     S.f.status = (S.mktSub==='free')?'free':'all';
     const c=S.cfg||{}, hint=`купити зараз (+${Math.round((c.buynow_pct??0.15)*100)}%) або поставити (аукціон ${c.auction_timer_hours??12} год, крок +${Math.round((c.bid_step_pct??0.05)*100)}%)`;
     const sub=(S.mktSub==='free')
-      ? `${hint} · <span id="mcount"></span>`
-      : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint}`;
+      ? `${hint} · <span id="mcount"></span> · ${dgNote()}`
+      : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint} · ${dgNote()}`;
     body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><span class="sub">${sub}</span></div><div class="mgrid" id="mgrid"></div>`;
   } else if(S.mktSub==='shop'){
     // 🏷 ВІТРИНА: лоти за фіксованою ціною (421). Власник бачить свій лот і знімає його; інші — відкривають картку й викуповують миттєво

@@ -190,7 +190,7 @@ table.f1 tbody tr:last-child td{border-bottom:none}
 .rndpts{font-family:var(--mono);font-weight:700;font-size:17px}
 .total{font-family:var(--mono);font-weight:700;font-size:18px;color:var(--gold)}
 .squad-tiles{display:flex;gap:5px;align-items:center}
-.sq-gap{flex:none;width:12px}                                   /* невеликий проміжок: старт 5 | лавка 3 */
+.sq-gap{flex:none;width:12px}                                   /* невеликий проміжок: основа 5 | лавка 3 */
 .stile.bn{opacity:.82}
 .stile .bo{position:absolute;top:-7px;left:-5px;font-size:9px;background:var(--panel2);color:var(--text);
   font-family:var(--mono);font-weight:700;border-radius:4px;padding:0 4px;border:1px solid var(--line)}   /* 1/2/3 = порядок заміни */
@@ -1246,7 +1246,7 @@ function tileOf(l){   // рядок market_squad_live → дані плитки
           pb:posBoostOf(l.participant_id,l.round_id,l.player_id),cap:!!l.is_captain,vice:!!l.is_vice,counted:!!l.counted,order:l.bench_order,known:true,
           kick:(l.state==='pending'? kickInfo(nextFx(pl.club_id,l.round_id)) : null)};
 }
-// стартова 5 обраного туру (лайнап) або володіння (fallback до дедлайну)
+// основа 5 обраного туру (лайнап) або володіння (fallback до дедлайну)
 function startFive(pid){
   const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
   const lr=liveRowsOf(pid,rid);
@@ -1436,7 +1436,7 @@ function renderStandings(){
     </tr>`;
   }).join('');
   t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th>
-    <th>Squad (старт 5 + лавка 3)</th><th title="Squad Price — поточна вартість складу (не залежить від обраного туру)">Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
+    <th>Squad (основа 5 + лавка 3)</th><th title="Squad Price — поточна вартість складу (не залежить від обраного туру)">Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
 }
 
 // 📊 Очки по турах: учасник × УСІ тури обох етапів + Разом (раніше — підвкладка туру)
