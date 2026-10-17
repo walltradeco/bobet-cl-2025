@@ -250,6 +250,7 @@ table.t{width:100%;border-collapse:collapse}
 .rolechip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;vertical-align:middle;border:1px solid var(--line)}
 .rolechip.mn{background:rgba(120,200,160,.14);color:#9fe3c0}.rolechip.bn{background:rgba(255,255,255,.06);color:var(--text-dim)}
 .rolechip.mis{border-color:var(--warn,#f5b84d);color:var(--warn,#f5b84d)}
+.rolechip.mk{background:rgba(235,87,87,.12);color:var(--down);border-color:rgba(235,87,87,.45)}   /* 542: позначка «порушив» */
 .clen-info{font-size:12px;color:var(--text-dim);margin-top:8px}
 .clen-info .cw{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px}
 .clen-info .cw-main{font-size:21px;line-height:1.1;color:var(--gold);font-weight:700}
@@ -378,6 +379,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .stmsg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.45;margin-bottom:12px;border:1px solid}
 .stmsg.ok{background:var(--green-soft);border-color:rgba(24,180,122,.35);color:var(--up);font-weight:600}
 .stmsg.warn{background:rgba(244,196,48,.08);border-color:rgba(244,196,48,.35);color:var(--text)}.stmsg.warn b{color:var(--gold)}
+.stmsg.bad{background:rgba(235,87,87,.08);border-color:rgba(235,87,87,.4);color:var(--text)}.stmsg.bad b{color:var(--down)}   /* 542: борг / склад не зараховано */
 .stconf{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 16px;margin-bottom:12px}
 .stconf .cap b{color:var(--text)}
 .stconf .cfchips{margin:8px 0 6px}
@@ -721,6 +723,7 @@ const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
 const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+window.sb = sb;   // 543: loadQuotes/коридор обміну перевіряють window.sb — раніше його ніхто не виставляв, котирування з БД (market_wage_quotes) не працювали, а UI рахував зарплату лише JS-формулою
 
 const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players:[], bank:null,
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
@@ -832,9 +835,11 @@ async function loadRefs(){
   S.players = await sbSel(`market_players?tournament_id=eq.${S.tour.id}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,injury,shirt_number,sofascore_player_id&order=market_value_current.desc`);
   // 539 ролі: МОЇ контракти (роль + зарплата) — приватна вьюха market_my_contracts; зарплату чужих гравців більше не читаємо (541 її ховає).
   S.myContracts={};
-  try{ (await sbSel(`market_my_contracts?tournament_id=eq.${S.tour.id}&select=player_id,role,wage_per_round`)).forEach(c=>S.myContracts[c.player_id]=c); }
-  catch(e){ try{ (await sbSel(`market_players?tournament_id=eq.${S.tour.id}&owner_participant_id=eq.${S.me.id}&select=id,wage_per_round`)).forEach(c=>S.myContracts[c.id]={player_id:c.id,role:'main',wage_per_round:c.wage_per_round}); }catch(e2){} }   // до 539
-  S.players.forEach(p=>{ const c=S.myContracts[p.id]; if(c){ p.wage_per_round=c.wage_per_round; p.role=c.role||'main'; } });
+  const ctQ=`market_my_contracts?tournament_id=eq.${S.tour.id}&select=player_id,role,wage_per_round`;
+  try{ (await sbSel(ctQ+',marked,marked_round_number')).forEach(c=>S.myContracts[c.player_id]=c); }                       // 542: + позначка «порушив»
+  catch(e0){ try{ (await sbSel(ctQ)).forEach(c=>S.myContracts[c.player_id]=c); }                                           // до 542 колонок marked нема
+  catch(e){ try{ (await sbSel(`market_players?tournament_id=eq.${S.tour.id}&owner_participant_id=eq.${S.me.id}&select=id,wage_per_round`)).forEach(c=>S.myContracts[c.id]={player_id:c.id,role:'main',wage_per_round:c.wage_per_round}); }catch(e2){} } }   // до 539
+  S.players.forEach(p=>{ const c=S.myContracts[p.id]; if(c){ p.wage_per_round=c.wage_per_round; p.role=c.role||'main'; p.marked=!!c.marked; } });
   // тіри (431): мої розблоковані рамки (emerald) + мої картки-предмети (для перемикача дизайну).
   // graceful-degrade — якщо 430/431 ще не залито, картка лишається базовою.
   S.myEmerald=false; S.myCards=[];
@@ -858,6 +863,17 @@ async function loadRefs(){
   // зарплатний бюджет (413/415). Поки не залито → degrade (пікер довжини сховає резерв-перевірку)
   S.wageFree=null;
   try{ let wf=await sb.rpc('market_my_wage_free', { p_tournament:S.tour.id }); if(wf.error||wf.data==null) wf=await sb.rpc('market_wage_free', { p_participant:S.me.id }); S.wageFree = wf.error?null:wf.data; }catch(e){ S.wageFree=null; }   // 539: власна RPC; запасний — до заливки 539
+  // 542 штрафи ролей (Етап Б): МОЇ борги / склади «не зараховано» / виходи (приватні вьюхи за auth.uid()) і, для адміна, лише факт «є борг/подія» по учасниках.
+  // Нема вьюх (542 не залито) або штрафи вимкнено → порожньо, інтерфейс як раніше.
+  S.debts=[]; S.voids=[]; S.exitsP=[]; S.flags=[]; S.penOK=false;
+  if(penOn()){
+    const g=async(q)=>{ try{ return await sbSel(q); }catch(e){ return null; } };
+    const d=await g(`market_my_role_debts?tournament_id=eq.${S.tour.id}&status=eq.open&select=id,round_number,player_id,player_name,amount_eur`);
+    if(d){ S.debts=d; S.penOK=true; }
+    S.voids = (await g(`market_my_lineup_voids?tournament_id=eq.${S.tour.id}&restored_at=is.null&select=round_id,round_number,boosts_returned`))||[];
+    S.exitsP = (await g(`market_my_role_exits?tournament_id=eq.${S.tour.id}&status=eq.pending&select=round_number,player_id,player_name`))||[];
+    if(S.me && S.me.is_admin) S.flags = (await g(`market_role_flags_admin?tournament_id=eq.${S.tour.id}&select=participant_id,display_name,has_debt,has_exit,has_void`))||[];
+  }
   // форма гравця (рейтинги по турах) — для спарклайну плитки й графіка в модалці
   S.form = {};
   try{
@@ -992,7 +1008,10 @@ async function go(tab){
 }
 
 // 535: тур «у грі» (дедлайн минув, результатів нема) — сервер морозить ПРИЙНЯТТЯ/ВИКУП/ставки/продаж, але дозволяє СТВОРЮВАТИ лот, пропозицію трансферу й обмін
-const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>new Date(r.deadline_at)<=n && !r.results_entered_at)||null; };
+const roundStarted=(r,n)=>!r.results_entered_at && (new Date(r.deadline_at)<=(n||new Date()) || !!r.opened_at);   // 545: тур почався = дедлайн минув АБО усі підтвердили (склади відкрито)
+const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>roundStarted(r,n))||null; };
+const prevOpenRound=(round)=>round?((S.rounds||[]).filter(r=>r.number<round.number && !r.results_entered_at).sort((a,b)=>a.number-b.number)[0]||null):null;   // 544: склад на тур підтверджується лише ПІСЛЯ закриття попереднього
+const myConfirmedUpcoming=()=>!!(S.myConfLn && S.myConfLn.size>0);                                                                                       // 545: після власного підтвердження склад і ролі заморожені
 const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
 const EXPIRING_TXT='⏳ Контракт добігає (лишився 1 тур): після закриття туру гравець автоматично стане вільним (власник отримає повну вартість), тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.';
 // ── 🧭 ЄДИНИЙ БЛОК СТАНУ ТУРУ (15.10; рішення Богдана — як у «Predictions & Results» ЄвроСезону). Один над «Мій склад» і «Ринок»:
@@ -1007,7 +1026,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   const rsAll=S.rounds||[], nowD=new Date();
   const firstFut=rsAll.find(r=>new Date(r.deadline_at)>nowD && !r.results_entered_at);
   // сервер (_market_trade_open) морозить ринок, щойно ХОЧА Б ОДИН тур «у грі» (дедлайн минув, результатів нема) — навіть коли вже заведено наступний тур; блок каже те саме
-  const inplay=rsAll.find(r=>new Date(r.deadline_at)<=nowD && !r.results_entered_at);
+  const inplay=rsAll.find(r=>roundStarted(r,nowD));
   const n=mine.length, dgOk=mine.filter(isDG).length>=need;
   const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
     <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}${n?(n>=max
@@ -1034,10 +1053,10 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
     hero=`<div class="stbox off"><div><div class="cap">ринок зачинено</div><div class="t">${rsAll.length?'тур не очікується':'турів нема'}</div><div class="when">${t}</div></div>${right}</div>`;
   }
   // тур у грі: що закрито/відкрито на ринку (текст як був у банері)
-  const inplayMsg = inplay ? `<div class="stmsg warn"><b>Тур ${inplay.number} у грі — ринок частково відкритий.</b> Закриті: купівля, ставки, прийняття угод і продаж. <b>Можна готувати угоди</b> — виставити лот, запропонувати трансфер чи обмін; вони виконаються лише після закриття туру (до розрахунку).${(firstFut&&why)?' '+why:''}</div>` : '';
+  const inplayMsg = inplay ? `<div class="stmsg warn"><b>Тур ${inplay.number} почався${(inplay.opened_at && new Date(inplay.deadline_at)>nowD)?' — усі підтвердили склад, склади відкрито':' — дедлайн минув'}. Ринок повністю закритий:</b> купівля, ставки, продаж, угоди, продовження контрактів і зміна ролей неможливі до закриття туру. Угоди, створені ДО старту, виконаються після закриття.${(firstFut&&why)?' '+why:''}</div>` : '';
   // мій склад підтверджено (фінально) на найближчий тур
-  const locked=!!(firstFut && S.confOK && S.me && confOf(S.me.id, firstFut.id));
-  const lockedMsg = locked ? `<div class="stmsg ok">🔒 Склад на Тур ${firstFut.number} підтверджено — змінити склад і бусти не можна, а гравців зі складу не можна ні продати, ні обміняти (лише адмін може розблокувати).</div>` : '';
+  const locked=!!(firstFut && !inplay && S.confOK && S.me && confOf(S.me.id, firstFut.id));   // 545: коли тур почався, замість «поза складом можна…» діє банер «ринок повністю закритий»
+  const lockedMsg = locked ? `<div class="stmsg ok">🔒 Склад на Тур ${firstFut.number} підтверджено — змінити склад і бусти не можна; гравців зі складу не можна ні продати, ні обміняти, ні продовжити, а ролі всіх твоїх гравців заморожені. Поза складом можна купувати, продавати й продовжувати контракти — до старту туру (лише адмін може розблокувати склад).</div>` : '';
   // хто підтвердив (лише «Мій склад»; як «Підтвердили» в Predictions & Results)
   let conf='';
   const cr=firstFut||inplay;
@@ -1048,7 +1067,28 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
     conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} з ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
-  return hero + inplayMsg + lockedMsg + conf;
+  return hero + inplayMsg + lockedMsg + penBanners() + conf;
+}
+// 542: банери штрафів ролей — МІЙ борг / склад «не зараховано» / вихід гравця (приватне, лише власнику)
+function penBanners(){
+  if(!penOn() || !S.penOK) return '';
+  let h='';
+  const sum=debtSum();
+  if(sum>0){
+    const wf=S.wageFree, lack=(wf!=null && wf<sum)?sum-wf:0;
+    const list=(S.debts||[]).map(d=>`${esc(d.player_name||'гравець')} — ${eur(d.amount_eur)} (Тур ${d.round_number})`).join(', ');
+    h+=`<div class="stmsg bad"><b>💸 Борг за порушення ролі: ${eur(sum)}</b> <span class="dim">${list}</span><br>
+      Борг блокує підтвердження складу на наступний тур, а не сплачений до його дедлайну — склад <b>не зарахується</b> (0 очок, бусти повернуться).
+      ${lack>0?`<b>Не вистачає ${eur(lack)}</b> у зарплатному бюджеті — перелий з трансферного («↔ Переливання») або продай гравця.`:''}
+      <div style="margin-top:8px"><button data-do="paydebt" style="width:auto;padding:9px 20px">Сплатити борг · ${eur(sum)}</button></div></div>`;
+  }
+  (S.voids||[]).filter(v=>{ const r=(S.rounds||[]).find(x=>x.id===v.round_id); return r && !r.results_entered_at; }).forEach(v=>{
+    h+=`<div class="stmsg bad"><b>⚠️ Склад на Тур ${v.round_number} не зараховано</b> — на дедлайні був несплачений борг${v.boosts_returned?'; бусти цього туру повернено':''}. Сплати борг, поки тур не закрито, — склад повернеться.</div>`;
+  });
+  (S.exitsP||[]).forEach(x=>{
+    h+=`<div class="stmsg warn">🚪 <b>${esc(x.player_name||'Гравець')}</b> піде з твого складу після закриття Туру ${x.round_number}: друге порушення ролі «Основний». Вартість повернеться в трансферний бюджет без комісії.</div>`;
+  });
+  return h;
 }
 
 // ── 💰 ДВА БЮДЖЕТИ (трансферний + зарплатний) + переливання (413) ──
@@ -1136,6 +1176,21 @@ function adminConfBlock(){
   return `<div class="stconf" style="margin:0 0 14px"><div class="cap">🔓 Підтвердження складів · Тур ${r.number} · <b>${done} з ${pids.length}</b></div>
     <div class="cfchips">${chips}${done>0?'<button class="mini ghost" data-unconf="all" title="Розблокувати склади всіх (лише адмін)">🔓 Розблокувати всіх</button>':''}</div>
     <div class="when">Підтвердження фінальне. Розблокований учасник змінює склад і підтверджує заново; склади всіх знову приховуються до нових підтверджень.</div></div>`;
+}
+// 542: адмінка — лише ФАКТ «є борг/подія» по учасниках (без ролей, гравців і сум) + «Скасувати»
+function adminPenBlock(){
+  if(!penOn() || !S.penOK || !(S.me && S.me.is_admin)) return '';
+  const rows=(S.flags||[]).filter(f=>f.has_debt||f.has_exit||f.has_void);
+  const body=rows.length ? rows.map(f=>{ const what=[f.has_debt?'є борг':'',f.has_exit?'вихід гравця':'',f.has_void?'склад не зараховано':''].filter(Boolean).join(' · ');
+      return `<span class="cfchip wait">${esc(f.display_name||S.names[f.participant_id]||'учасник')} — ${what} <button class="mini ghost" data-pencancel="${f.participant_id}" title="Скасувати борги, виходи й позначки учасника">Скасувати</button></span>`; }).join('')
+    : '<span class="dim">Боргів і порушень немає.</span>';
+  return `<div class="stconf" style="margin:0 0 14px"><div class="cap">💸 Борги й порушення ролей</div><div class="cfchips">${body}</div>
+    <div class="when">Адмін бачить лише факт (без ролей і сум). «Скасувати» прощає борги, виходи й позначки учасника та повертає його склад, якщо тур ще не закрито.</div></div>`;
+}
+function bindPenCancel(){
+  document.querySelectorAll('[data-pencancel]').forEach(b=>b.onclick=()=>{ const id=b.dataset.pencancel;
+    confirmModal(`Скасувати борги, виходи й позначки «порушив» учасника «${esc(S.names[id]||'учасника')}»? Склад на поточний тур (якщо його не зараховано) повернеться. Дію не можна скасувати.`, 'Скасувати',
+      ()=>act('admin_cancel_role_violations',{p_tournament:S.tour.id,p_participant:id},'Борги й порушення скасовано')); });
 }
 function bindUnconf(round){
   document.querySelectorAll('[data-unconf]').forEach(b=>b.onclick=()=>{
@@ -1424,12 +1479,16 @@ function moveBench(mine, pid, dir){
 // 539 ролі: чип «Роль» біля гравця (бачить лише власник; назва «Роль: …», щоб не плутати зі слотом Основа/Лавка); розбіжність зі слотом підсвічується
 function roleChipHTML(p,zone){ if(!rolesOn()) return '';
   const r=p.role||'main', mis=(zone==='start'&&r==='bench')||(zone==='bench'&&r==='main');
-  const tip=mis?(r==='main'?'Роль: Основний, а зараз на лавці — розбіжність з обіцянкою':'Роль: Лавка, а зараз в основі'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні');
-  return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>`; }
+  const risk=mis && r==='main' && penOn() && !p.injury && (+p.wage_per_round||0)>0;   // 542: «Основний» не в основі → порушення на дедлайні
+  const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде продано після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні');
+  const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
+  return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>${mk}`; }
 function rolesBanner(mine){ if(!rolesOn()) return '';
   const mc=(mine||[]).filter(p=>(p.role||'main')==='main').length, bc=(mine||[]).length-mc;
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
-  return `<div class="mnote" style="margin:8px 0">🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}. Роль — обіцянка при підписанні, бачиш лише ти.</div>`; }
+  const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
+  const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за тур, друге порушення — гравця буде продано.`:'';
+  return `<div class="mnote" style="margin:8px 0">🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}</div>`; }
 function renderLineup(mine, round){
   const s = lnState(mine);
   const locked = !!(round && S.confOK && confOf(S.me.id, round.id));   // 533: підтверджено → фінально, лише перегляд
@@ -1503,7 +1562,9 @@ function renderLineup(mine, round){
                   // 533: «підтверджено» = є підтвердження (після розблокування адміном склад лишається в базі, але його треба підтвердити знову)
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved && (!S.confOK || locked), nTxt=round?' на Тур '+round.number:'';
                   const label = same ? '✓ Склад'+nTxt+' підтверджено' : ((saved && !S.confOK) ? 'Підтвердити зміни складу'+nTxt : 'Підтвердити склад'+nTxt);
-                  return `<button class="btn" id="ln-save" ${(!round||!s.ok||same)?'disabled':''} style="width:100%${same?';opacity:.75':''}">${label}</button>`
+                  const prevO=prevOpenRound(round);
+                  return (prevO && !same ? `<p class="mnote warn" style="margin:0 0 8px">⏳ Склад на Тур ${round.number} можна підтвердити лише після закриття Туру ${prevO.number} — тоді нарахуються борги й автопродажі, і ринок відкриється. Поки можна переглянути й розкласти склад.</p>` : '')
+                       + `<button class="btn" id="ln-save" ${(!round||!s.ok||same||prevO)?'disabled':''} style="width:100%${same?';opacity:.75':''}">${label}</button>`
                        + (same ? (S.confOK ? '<p class="mnote" style="margin:8px 0 0">🔒 Підтвердження фінальне: змінити склад і бусти не можна. Розблокувати може лише адмін.</p>'
                                                 : '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну туру — після змін кнопка знову стане активною.</p>')
                                : (S.confOK && round ? '<p class="mnote warn" style="margin:8px 0 0">⚠️ Підтвердження ФІНАЛЬНЕ: після нього змінити склад і бусти не вийде. Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>' : '')); })()}
@@ -1570,6 +1631,21 @@ function openLineupReview(mine, round){
     (s.cap&&s.cap.id===p.id)?' <b class="capb">© капітан</b>':(s.vice&&s.vice.id===p.id)?' <b class="viceb">V віце</b>':'')).join('');
   const bench=s.bn.length? s.bn.map((p,i)=>line(p,` <span class="dim">${i+1}-й на заміну</span>`)).join('')
                          : '<div class="dim" style="padding:6px 2px">— лавка порожня</div>';
+  // 542: попередження про порушення ролі («Основний» не в основі на дедлайні) + борг блокує підтвердження
+  let penBlk='', blockDebt=false;
+  if(penOn() && S.penOK){
+    const stIds=new Set(s.st.map(x=>x.id));
+    const offMain=mine.filter(x=>(x.role||'main')==='main' && !stIds.has(x.id) && (+x.wage_per_round||0)>0);
+    const viol=offMain.filter(x=>!x.injury), exempt=offMain.filter(x=>x.injury);
+    if(viol.length){
+      penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>
+        <p class="mnote warn">«Основний» поза основою на дедлайні — порушення: борг <b>${Math.round(debtPct()*100)}%</b> зарплати гравця за тур. Друге порушення тим самим гравцем — гравця буде продано після туру.</p>`
+        + viol.map(x=>`<p class="mnote">• <b>${esc(x.name)}</b> — борг ≈ ${eur(Math.round(x.wage_per_round*debtPct()))}${x.marked?' · <b class="warnc">🚩 вже порушував — гравця буде ПРОДАНО після туру</b>':''}</p>`).join('')
+        + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу. Не хочеш порушувати — постав «Основного» в основу або переведи його на «Лавку» у картці гравця (+${Math.round(benchPrem()*100)}% до зарплати).</p>`;
+    }
+    if(exempt.length) penBlk+=`<p class="mnote">ℹ️ Зараз не рахуються через травму/дискваліфікацію: ${exempt.map(x=>esc(x.name)).join(', ')} — якщо до дедлайну одужають, це знову порушення.</p>`;
+    if(debtSum()>0){ blockDebt=true; penBlk=`<p class="mnote warn" style="margin-top:14px">💸 Є несплачений борг ${eur(debtSum())} — спершу сплати його (кнопка «Сплатити борг» над складом), інакше склад підтвердити не можна.</p>`+penBlk; }
+  }
   modalOpen(`<h3>Підтвердити склад · тур ${round.number}</h3>
     <div class="msec" style="margin-top:12px">Основа (${s.st.length})</div>${starters}
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
@@ -1577,8 +1653,9 @@ function openLineupReview(mine, round){
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
+    ${penBlk}
     ${S.confOK?'<p class="mnote warn" style="margin-top:14px">⚠️ Підтвердження ФІНАЛЬНЕ: змінити склад і бусти після нього не вийде (лише адмін розблокує). Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>':''}
-    <div class="macts" style="margin-top:16px"><button data-do="lnyes">Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
+    <div class="macts" style="margin-top:16px"><button data-do="lnyes"${blockDebt?' disabled title="Спершу сплати борг"':''}>Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
   $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
     p_round:round.id, p_participant:S.me.id, p_starters:s.st.map(p=>p.id),
     p_bench:s.bn.map(p=>p.id), p_captain:s.cap?s.cap.id:null, p_vice:s.vice?s.vice.id:null, p_boost:S.boost||null, p_pos_boosts:posPayload()
@@ -2126,6 +2203,10 @@ function wageFor(mv,len,mode){ const c=S.cfg||{}; let base=0;
   return Math.round(base*(1+mk)*mult); }
 // ── 539 ролі: «Основний/Лавка» ──
 function rolesOn(){ return !!(S.cfg && S.cfg.roles_enabled); }
+function penOn(){ return rolesOn() && !!(S.cfg && S.cfg.role_penalties_enabled); }          // 542: штрафи за порушення ролі (аварійний вимикач у конфігу)
+function debtPct(){ const v=S.cfg&&S.cfg.role_debt_pct; return v==null?2:+v; }
+function extSurch(){ const v=S.cfg&&S.cfg.role_extend_surcharge; return v==null?0.25:+v; }
+function debtSum(){ return (S.debts||[]).reduce((a,d)=>a+(+d.amount_eur||0),0); }
 function starCap(){ return +(S.cfg&&S.cfg.star_no_bench_value_eur)||100000000; }
 function benchPrem(){ const v=S.cfg&&S.cfg.bench_wage_premium; return v==null?0.25:+v; }
 function roleLabel(r){ return r==='bench'?'Лавка':'Основний'; }
@@ -2176,7 +2257,7 @@ function updClen(el){
     const benchOk=!(q&&q.bench_allowed===false) && (mv||0)<starCap();
     const cm=el.querySelector('.crole-chip[data-r="main"]'), cb=el.querySelector('.crole-chip[data-r="bench"]');
     if(cm) cm.innerHTML=`Основний<small>${eur(wm)}/тур</small>`;
-    if(cb){ cb.innerHTML=`Лавка<small>${benchOk?eur(wb)+'/тур · +'+Math.round(benchPrem()*100)+'%':'зірка ≥ '+eur(starCap())+' — лише «Основний»'}</small>`; cb.disabled=!benchOk;
+    if(cb){ cb.innerHTML=`Лавка<small>${benchOk?eur(wb)+'/тур · +'+Math.round(benchPrem()*100)+'%':((q&&q.marked)?'позначка «порушив» — лише «Основний»':'зірка ≥ '+eur(starCap())+' — лише «Основний»')}</small>`; cb.disabled=!benchOk;
       if(!benchOk && el.dataset.prole==='bench'){ el.dataset.prole=''; cb.classList.remove('on'); } }
     if(cm&&el.dataset.prole==='main') cm.classList.add('on');
     const need=el.querySelector('.crole-need'); if(need){ const isExtP=el.dataset.ext==='1';
@@ -2194,6 +2275,7 @@ function updClen(el){
     txt+=`<span class="cw-free">зарплатний доступно <b>${eur(wf)}</b> → ${bad?`<b>не вистачає ${eur(res-wf)}</b>`:`лишиться <b>${eur(wf-res)}</b>`}</span>`; }
   txt+=`</div>`;
   if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1})</div>`;
+  if(isExt && q && q.marked) txt+=`<div class="cw-sub"><b class="warnc">🚩 Позначка «порушив»: до зарплати нових турів +${Math.round((q.surcharge??extSurch())*100)}%, «Лавка» недоступна.</b> Продовження скидає позначку.</div>`;
   else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
 }
@@ -2246,20 +2328,23 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    const cinfo=`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`;
+    const cinfo=`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`
+      + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
       : `<p class="mnote">Контракт уже покриває всі тури, що лишились (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
     const lockedP = lnBlocked(p.id), playNow = inPlayRound(), expNow = !!(playNow && expiringP(p));
+    const extBlockF = playNow ? `<p class="mnote warn">⏳ Тур ${playNow.number} почався: контракти не продовжуються до закриття туру.</p>`
+                    : (lockedP ? `<p class="mnote warn">🔒 Гравець у підтвердженому складі — контракт можна продовжити після закриття туру.</p>` : extBlock);
     let right = lockedP
       ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
       : (playNow
-          ? `<p class="mnote">⏳ Тур ${playNow.number} у грі: продаж у ринок закрито. Лот на вітрину чи обмін можна підготувати зараз — вони виконаються після закриття туру.</p>`
+          ? `<p class="mnote warn">⏳ Тур ${playNow.number} почався: ринок повністю закритий (продаж, вітрина, обмін, трансфер) — відкриється після закриття туру.</p>`
           : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
       <p class="mnote">Під час туру (заморозка) продаж у ринок закритий.</p>`);
     if(expNow) right += `<p class="mnote warn">${EXPIRING_TXT}</p>`;
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
-    if(S.listingsReady && !lockedP && !expNow){
+    if(S.listingsReady && !lockedP && !expNow && !playNow){
       const lst=S.listings[p.id];
       if(lst){
         right+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
@@ -2270,14 +2355,22 @@ function actionsHTML(p,ctx){
           ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk)}`;
       }
     }
-    return `<div class="own-grid"><div class="own-col">${cinfo}${extBlock}</div><div class="own-col">${right}</div></div>`;
+    // 543: свідоме переведення «Основний» → «Лавка» посеред контракту (лише у вікні ринку; не порушнику; не зірці); назад — тільки при продовженні
+    if(rolesOn() && (p.role||'main')==='main' && !p.marked && (mv||0)<starCap() && (ci.rl||0)>0 && !playNow && ci.wage && myConfirmedUpcoming()){
+      right+=`<p class="mnote">🔒 Склад підтверджено — ролі заморожені до кінця туру («Перевести на лавку» недоступно).</p>`;
+    } else if(rolesOn() && (p.role||'main')==='main' && !p.marked && (mv||0)<starCap() && (ci.rl||0)>0 && !playNow && ci.wage){
+      const nw=Math.round(ci.wage*(1+benchPrem()));
+      right+=`<div class="macts" style="margin-top:10px"><button class="ghost" data-do="tobench" data-nw="${nw}">Перевести на «Лавку» · ${eur(nw)}/тур</button></div>
+        <p class="mnote">«Лавка»: зарплата +${Math.round(benchPrem()*100)}% на решту контракту (+${eur((nw-ci.wage)*(ci.rl||0))} резерву). Назад на «Основного» — лише при продовженні контракту.</p>`;
+    }
+    return `<div class="own-grid"><div class="own-col">${cinfo}${extBlockF}</div><div class="own-col">${right}</div></div>`;
   }
   if(!free){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
     let h=`<p class="mnote">Власник: <b>${ownerNm}</b>. Угоди <b>публічні</b> — інші теж можуть запропонувати; він обере.</p>`;
     // 535: у турі пропозиції на гравця з останнім туром контракту заборонені (автопродаж при закритті раніше за будь-яку угоду)
     if(inPlayRound() && expiringP(p)) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
-    if(inPlayRound()) h+=`<p class="mnote">⏳ Тур ${inPlayRound().number} у грі: пропозицію можна створити зараз, але прийняти її власник зможе лише після закриття туру (гроші на час пропозиції заморожені).</p>`;
+    if(inPlayRound()) return h+`<p class="mnote warn">⏳ Тур ${inPlayRound().number} почався: угоди закриті — нові пропозиції, лоти й обміни створити не можна до закриття туру.</p>`;
     // пікер довжини контракту — коли ліміти дозволяють набути (викуп-ask або трансфер)
     if(!acquireBlock(p) && ((S.listingsReady&&S.listings[p.id]) || S.transfersReady)) h+=contractPicker(mv,0,p.id);
     // ВІТРИНА ask (421): власник виставив за фіксованою ціною → миттєвий викуп
@@ -2307,7 +2400,7 @@ function actionsHTML(p,ctx){
     return h;
   }
   const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
-  if(inPlayRound()) return `<p class="mnote warn">⏳ Тур ${inPlayRound().number} у грі: купівля, ставки й викуп вільних гравців закриті до розрахунку — відкриються після закриття туру.</p>`;
+  if(inPlayRound()) return `<p class="mnote warn">⏳ Тур ${inPlayRound().number} почався: купівля, ставки й викуп вільних гравців закриті до закриття туру.</p>`;
   if(au){
     const iLead=au.leader_participant_id===S.me.id;
     const minBid=Math.ceil(au.current_bid*(1+(cfg.bid_step_pct??0.05)));
@@ -2594,7 +2687,7 @@ async function openPlayerModal(pid){
     : [[card.goals??'—','Голи'],[card.assists??'—','Асисти'],[p.appearances??'—','Матчі']];
   const inj = card.injury ? `<div class="pm-injury"><span class="em">🤕</span><b>Травмований</b><span>· ${esc(card.injury.note||card.injury.expected_return||card.injury.status||'')}</span></div>` : '';
   const roleBox = ctx.owned ? (rolesOn()
-    ? `<div class="pm-box"><span>Роль контракту</span><strong>${roleLabel(p.role||'main')}</strong></div>`   // 539: реальна роль (приватна), не підказка К/V
+    ? `<div class="pm-box"><span>Роль контракту</span><strong>${roleLabel(p.role||'main')}${(penOn()&&p.marked)?' · 🚩 порушив':''}</strong></div>`   // 539: реальна роль (приватна), не підказка К/V; 542: позначка
     : `<div class="pm-box"><span>Роль у складі</span><strong><span class="roleI">©</span> Капітан <span class="roleI v">V</span> Віце</strong></div>`) : '';
   // очки в турнірі (434) — НАШ турнір (не плутати з SofaScore-статою нижче); чисті, без капітанського ×2
   const sp = (S.stats&&S.stats[p.id]) || null;
@@ -2663,6 +2756,8 @@ function bindModalActions(p){
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
       confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} тур</b> (${eur(qWage(p.id,len,p.market_value_current)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='tobench'){ const nw=+b.dataset.nw; confirmModal(`Перевести <b>${esc(p.name)}</b> з «Основного» на «Лавку»?<br>Зарплата стане <b>${eur(nw)}</b>/тур на решту контракту. Повернути «Основного» можна лише при продовженні контракту.`, 'Перевести на «Лавку»',
+      ()=>act('market_role_to_bench',{p_player:p.id},'Переведено на «Лавку»'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='extend'){ if(needRole()) return; const ra=roleArgs(); const len=selectedLen(), ci=contractInfo(p), w=qWage(p.id,len,p.market_value_current), em=S.cfg?.contract_ext_mult??1;
@@ -2951,12 +3046,17 @@ function viewAdmin(){
     ['⚖ Розв\'язати спірне','Аукціон / трансфер вручну, коригування пулу, фонд.'],
   ];
   $('view').innerHTML = `<div class="head2"><h2>Адмінка</h2><span class="sub">патерн BoBet/PSL · заморозка авто (дедлайн → усі результати)</span></div>
-    ${adminConfBlock()}
+    ${adminConfBlock()}${adminPenBlock()}
     <div class="adm-grid">${cards.map(([h,p])=>`<div class="acard"><h3>${h}</h3><p>${p}</p><span class="lk">готуємо →</span></div>`).join('')}</div>
     <p class="dim" style="margin-top:12px">Пул зараз: <b>${S.players.length}</b> гравців · турів: <b>${S.rounds.length}</b>. Дії адмінки — наступний крок.</p>`;
   { const r=lnRound(); if(r) bindUnconf(r); }
+  bindPenCancel();
 }
 
+// 542: «Сплатити борг» з банера (делегування: банер є і на «Мій склад», і на «Ринок»)
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-do="paydebt"]'); if(!b) return;
+  const sum=debtSum(); confirmModal(`Сплатити борг <b>${eur(sum)}</b> із зарплатного бюджету? Він спишеться одразу; склад, який не зарахували, повернеться (якщо тур ще не закрито).`, 'Сплатити · '+eur(sum),
+    ()=>act('market_pay_debt',{p_tournament:S.tour.id},'Борг сплачено')); });
 sb.auth.onAuthStateChange((_e, session)=>{ if(session) boot(); });
 boot();
 </script>
