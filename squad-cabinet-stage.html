@@ -137,6 +137,20 @@ table.t{width:100%;border-collapse:collapse}
 .subtabs button{background:var(--panel);color:var(--text-dim);border:1px solid var(--line);
   border-radius:9px;padding:7px 14px;font-family:var(--mono);font-size:13.5px;font-weight:600}
 .subtabs button.on{background:var(--accent-d);color:#dff5ea;border-color:var(--accent-d)}
+/* 🎯 підказка «Челенджі» на Ринку (19.10): наведення/фокус/клік (дотик) показує список; рядок вкладок + підказка в одному flex */
+.subbar{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;margin-bottom:14px}
+.subbar .subtabs{margin-bottom:0}
+.chtipw{position:relative;margin-left:auto}
+.chtipbtn{background:var(--panel);color:var(--gold);border:1px solid var(--line);border-radius:9px;padding:7px 14px;font-family:var(--mono);font-size:13.5px;font-weight:600;cursor:help}
+.chtipw:hover .chtipbtn,.chtipw.open .chtipbtn{border-color:var(--gold)}
+.chtip{display:none;position:absolute;right:0;top:calc(100% + 6px);z-index:40;width:min(440px,88vw);background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;box-shadow:0 12px 32px rgba(0,0,0,.45);font-size:13px;line-height:1.4}
+.chtipw:hover .chtip,.chtipw:focus-within .chtip,.chtipw.open .chtip{display:block}
+.chth{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+.chtip p{margin:0 0 8px;color:var(--text-dim)}
+.chtr{display:flex;gap:8px;padding:5px 0;border-top:1px solid var(--line)}
+.chtr.done{opacity:.72}
+.chtn small{display:block;color:var(--text-dim)} .chtn i{color:var(--gold);font-style:normal;font-weight:700} .chtn u{color:var(--accent);text-decoration:none}
+.chtip .chtf{margin:8px 0 0;font-family:var(--mono);color:var(--text)}
 .soon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--text-dim)}
 .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--panel2);
   border:1px solid var(--line);color:var(--text-dim)}
@@ -434,7 +448,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 @media(min-width:820px){.squad-wrap{grid-template-columns:1.5fr 1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
 .slot-h{font-family:var(--mono);font-weight:700;font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--dim);margin:2px 2px 10px;display:flex;justify-content:space-between}
+  color:var(--dim);margin:2px 2px 10px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .plist{display:grid;gap:8px}
 .pcard{display:grid;grid-template-columns:1fr auto;gap:11px;align-items:center;background:var(--panel2);
   border:1px solid var(--line);border-radius:10px;padding:9px 12px;border-left:3px solid var(--club,var(--line))}
@@ -745,6 +759,9 @@ const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
 function eur(v){ return v==null?'—':'€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
+// межі ПОЛЯ ВВОДУ суми (трансфер/ставка/вітрина/контр): мінімум округлюємо ВГОРУ, максимум ВНИЗ до 0,01M — інакше показана межа («мін 14.9») відхиляється (точний мін 14 904 750)
+const mCeil=v=>(Math.ceil(v/1e4)/100).toFixed(2), mFloor=v=>(Math.floor(v/1e4)/100).toFixed(2), eurUp=v=>'€'+mCeil(v)+'M', eurDown=v=>'€'+mFloor(v)+'M';
+const pOchk=n=>{ const a=Math.abs(n)%100, b=a%10; return (a>10&&a<15)?'очок':(b===1?'очко':(b>1&&b<5?'очки':'очок')); };   // 1 очко · 2–4 очки · 5+ очок
 function lastName(f){ const p=(f||'').trim().split(/\s+/); return p[p.length-1]||f; }
 // колір клубу за реальною назвою (market_clubs) — та сама мапа, що на публічній борді
 const CLUB={'Arsenal':'#ef0107','Atletico':'#cb3524','Barcelona':'#a50044','Bayern':'#dc052d',
@@ -1076,7 +1093,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
     const chips=pids.map(id=>{ const ok=confOf(id,cr.id); return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✓':'○'} ${esc(S.names[id])}</span>`; }).join('');
     const note = all ? '🔓 Усі підтвердили — склади, капітани й бусти відкрито.'
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
-    conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} з ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
+    conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} із ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
   return hero + inplayMsg + lockedMsg + penBanners() + conf;
 }
@@ -1481,7 +1498,7 @@ function challengesBlock(s, round){
       <span class="cp">${aw?'✓':'+'+d.points}</span></div>`).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🎯 Челенджі</span><span>раз за турнір кожен · очки одразу при відкритті складів</span></div>
     <div class="chl">${rows}</div>
-    <p class="dim" style="margin:8px 2px 0">${act?(nOk?`Зараз склад виконує ${nOk} — це <b>+${got}</b> очок після відкриття складів (якщо не змінити склад і не виконано раніше). `:'Складай лайнап під умови — галочка з\'явиться, коли склад зібрано. '):'Челенджі в цьому турі ще не діють. '}«Основа» і «лавка» — це слоти складу (5 + запасні), не контрактні ролі.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">${act?(nOk?`Зараз склад виконує ${nOk} — це <b>+${got}</b> ${pOchk(got)} після відкриття складів (якщо не змінити склад і не виконано раніше). `:'Складай лайнап під умови — галочка з\'явиться, коли склад зібрано. '):'Челенджі в цьому турі ще не діють. '}«Основа» і «лавка» — це слоти складу (5 + запасні), не контрактні ролі.</p></div>`;
 }
 function challengesModalHtml(s, round){
   const list=chStatus(s.st, s.bn, round); if(!list.length) return '';
@@ -1936,14 +1953,28 @@ function bindFilters(){
   paint($('fill-r'),rmin,+S.f.rMin,+S.f.rMax); paint($('fill-p'),pmin,+S.f.pMin,+S.f.pMax);
 }
 
+// 🎯 підказка «Челенджі» на Ринку (вимога Богдана 19.10): що ще можна взяти складом; рахується по ПІДТВЕРДЖЕНОМУ складу, тож купівлі/обміни міняють умови
+function chTipHTML(){
+  if(!S.chOK || !(S.chDefs||[]).length) return '';
+  const done=chDoneMap(), c=S.chCfg, first=(c&&c.first_round)||1, off=!!(c&&c.enabled===false);
+  const act=S.chDefs.filter(d=>d.active);
+  const rows=act.map(d=>{ const aw=done[d.key];
+    return `<div class="chtr${aw?' done':''}"><span>${aw?'✅':'○'}</span><span class="chtn"><b>${esc(d.title)}</b> <i>+${d.points}</i><small>${esc(d.description)}${aw?` · <u>виконано в Турі ${aw.round_number}</u>`:''}</small></span></div>`; }).join('');
+  const left=act.filter(d=>!done[d.key]).reduce((a,d)=>a+(+d.points||0),0);
+  return `<span class="chtipw"><button type="button" class="chtipbtn" aria-haspopup="true">🎯 Челенджі</button><div class="chtip" role="tooltip">
+    <div class="chth">🎯 Челенджі — додаткові очки за склад${off?' <span class="warnc">(вимкнено)</span>':''}</div>
+    <p>Раз за турнір кожен; рахуються по <b>підтвердженому складу</b> (основа 5 + лавка) одразу, коли склади відкрито${first>1?`, з Туру ${first}`:''}. Купівля, обмін і продаж міняють склад — звір умови перед підтвердженням.</p>
+    ${rows}<p class="chtf">Ще можна взяти: <b>+${left}</b> ${pOchk(left)}</p></div></span>`;
+}
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
 async function viewMarket(){
+  if(!S.chDefs) await loadChallenges();   // 19.10: підказка «Челенджі» потребує довідника й моїх нарахувань навіть якщо «Мій склад» ще не відкривали
   if(S.mktSub==='bids' || S.mktSub==='transfers') S.mktSub='deals';       // старі назви вкладок (до об'єднання)
   const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length
                +(S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id).length;
   const shopAll=Object.values(S.listings||{});
   const subs=[['free','Вільні'],['all','Усі гравці'],['shop','Вітрина'+(shopAll.length?` (${shopAll.length})`:'')],['deals','Мої угоди'+(inCount?` (${inCount})`:'')]];
-  const bar=`<div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>`;
+  const bar=`<div class="subbar"><div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>${chTipHTML()}</div>`;
   let body='';
   if(S.mktSub==='free'||S.mktSub==='all'){
     await loadCardMeta();
@@ -2009,6 +2040,7 @@ async function viewMarket(){
   $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+rolesBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
+  const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
   if(S.mktSub==='deals'){ bindTransfers(); bindExchanges(); }
   if(S.mktSub==='shop'||S.mktSub==='deals'){
@@ -2051,15 +2083,15 @@ function bindTransfers(){
 }
 function openCounterModal(tid,min){
   modalOpen(`<h3>Контрпропозиція</h3>
-    <p class="mnote">Своя сума (обмін 1↔1 — фаза 2; тут лише гроші). Мінімум ${eur(min)}.</p>
+    <p class="mnote">Своя сума (тут лише гроші; обмін гравців — у картці гравця). Мінімум ${eurUp(min)}.</p>
     <div class="mamt" data-ref="${tid}" data-min="${min}">
-      <span class="dim">Контрсума · €млн (мін ${(min/1e6).toFixed(1)})</span>
-      <input id="amtInp" inputmode="decimal" value="${(min/1e6).toFixed(1)}">
+      <span class="dim">Контрсума · €млн (мін ${mCeil(min)})</span>
+      <input id="amtInp" inputmode="decimal" value="${mCeil(min)}">
       <button data-do="counter">Надіслати</button></div>`);
   const box=$('mhost').querySelector('.mamt');
   $('mhost').querySelector('[data-do="counter"]').onclick=async()=>{
     const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
-    if(!eurv||eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
+    if(!eurv||eurv<min){ alert('Замало — мінімум '+eurUp(min)); return; }
     modalClose();
     await act('market_respond_transfer',{p_transfer:tid,p_action:'counter',p_amount:eurv},'Контрпропозицію надіслано');
   };
@@ -2153,6 +2185,7 @@ function modalOpen(html){
 function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
 // Esc закриває відкриту модалку — так само, як ✕ і клік повз вікно (на борді вже було; рішення Богдана 11.10)
 document.addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('mhost').classList.contains('hide')) modalClose(); });
+document.addEventListener('click',e=>{ document.querySelectorAll('.chtipw.open').forEach(w=>{ if(!w.contains(e.target)) w.classList.remove('open'); }); });   // підказка «Челенджі» на Ринку
 // стилізоване підтвердження (замість системного confirm())
 function confirmModal(msg, okLabel, onOk, onCancel){
   modalOpen(`<h3>Підтвердження</h3>
@@ -2164,8 +2197,8 @@ function confirmModal(msg, okLabel, onOk, onCancel){
 
 function amountUI(label,minEur,kind,ref,maxEur){
   return `<div class="mamt" data-kind="${kind}" data-ref="${ref}" data-min="${minEur}" data-max="${maxEur||0}">
-    <span class="dim">${label} · €млн (мін ${(minEur/1e6).toFixed(1)}${maxEur?` · макс ${(maxEur/1e6).toFixed(1)}`:''})</span>
-    <input id="amtInp" inputmode="decimal" value="${(minEur/1e6).toFixed(1)}">
+    <span class="dim">${label} · €млн (мін ${mCeil(minEur)}${maxEur?` · макс ${mFloor(maxEur)}`:''})</span>
+    <input id="amtInp" inputmode="decimal" value="${mCeil(minEur)}">
     <button data-do="amt">OK</button></div>`;
 }
 // JS-аналог _market_exchange_reason (412): склад pid БЕЗ outP + inP легальний?
@@ -2415,7 +2448,7 @@ function actionsHTML(p,ctx){
       : (playNow
           ? `<p class="mnote warn">⏳ Тур ${playNow.number} почався: ринок повністю закритий (продаж, вітрина, обмін, трансфер) — відкриється після закриття туру.</p>`
           : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
-      <p class="mnote">Під час туру (заморозка) продаж у ринок закритий.</p>`);
+      <p class="mnote">Продаж у ринок працює лише між турами; коли тур почався (заморозка), він закритий.</p>`);
     if(expNow) right += `<p class="mnote warn">${EXPIRING_TXT}</p>`;
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
     if(S.listingsReady && !lockedP && !expNow && !playNow){
@@ -2828,13 +2861,13 @@ function bindModalActions(p){
     if(kind==='sell'){ if(lnBlocked(p.id)) return alert(lnMsg()); const amt=+b.dataset.amt; confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> (−5%)?`, 'Продати · '+eur(amt),
       ()=>act('market_sell',{p_player:p.id},'Продано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
-      confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} тур</b> (${eur(qWage(p.id,len,p.market_value_current)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
+      confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} тур</b> (${eur(qWageR(p.id,len,p.market_value_current,ra.p_role)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='tobench'){ const nw=+b.dataset.nw; confirmModal(`Перевести <b>${esc(p.name)}</b> з «Основного» на «Лавку»?<br>Зарплата стане <b>${eur(nw)}</b>/тур на решту контракту. Повернути «Основного» можна лише при продовженні контракту.`, 'Перевести на «Лавку»',
       ()=>act('market_role_to_bench',{p_player:p.id},'Переведено на «Лавку»'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
-    if(kind==='extend'){ if(needRole()) return; const ra=roleArgs(); const len=selectedLen(), ci=contractInfo(p), w=qWage(p.id,len,p.market_value_current), em=S.cfg?.contract_ext_mult??1;
+    if(kind==='extend'){ if(needRole()) return; const ra=roleArgs(); const len=selectedLen(), ci=contractInfo(p), w=qWageR(p.id,len,p.market_value_current,ra.p_role), em=S.cfg?.contract_ext_mult??1;
       confirmModal(`Продовжити <b>${esc(p.name)}</b> ще на <b>${len} ${turW(len)}</b>?<br>Було: ${ci.rl} × ${eur(ci.wage)}. Додасться: ${len} × ${eur(w)} (×${em}). Стане: <b>${(ci.rl||0)+len} ${turW((ci.rl||0)+len)}</b>. Додатково заморозиться ${eur(w*len)}.`, 'Продовжити',
       ()=>act('market_extend_contract',{p_player:p.id,p_length:len,...ra},'Контракт продовжено'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buylist'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
@@ -2852,8 +2885,8 @@ function bindModalActions(p){
     if(kind==='amt'){
       const box=b.closest('.mamt'), min=+box.dataset.min;
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
-      if(!eurv || eurv<min){ alert('Замало — мінімум '+eur(min)); return; }
-      const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eur(mxv)+' ('+winTxt()+')'); return; }
+      if(!eurv || eurv<min){ alert('Замало — мінімум '+eurUp(min)); return; }
+      const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eurDown(mxv)+' ('+winTxt()+')'); return; }
       const len=selectedLen();   // 508: довжина контракту з пікера модалки (ставка/старт аукціону)
       if(box.dataset.kind!=='list' && needRole()) return; const ra=box.dataset.kind==='list'?{}:roleArgs();   // 539: роль (вітрина-лот її не потребує)
       modalClose();
