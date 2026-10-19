@@ -585,7 +585,7 @@ function stageRounds(stage){
 function stageSum(stage){   // сума очок кожного учасника за тури стейджа (очки матчів + 💎 бонус «Менеджер туру», 528)
   const nums=new Set(stageRounds(stage).map(r=>r.number));
   const sum={}; S.lb.forEach(p=>sum[p.participant_id]=0);
-  S.scores.forEach(s=>{ if(nums.has(s.round_number) && sum[s.participant_id]!=null) sum[s.participant_id]+=(s.points||0)+(s.mgmt_points||0)+(s.challenge_points||0); });
+  S.scores.forEach(s=>{ if(nums.has(s.round_number) && sum[s.participant_id]!=null) sum[s.participant_id]+=(s.points||0)+(s.mgmt_points||0)+(s.challenge_points||0)+(s.rival_points||0); });
   return sum;
 }
 // 💎 менеджмент бюджету (528): +3/+2/+1 за тур («Менеджер туру») і наскрізна 10/8/6/4/2 за турнір («Менеджер турніру», у General).
@@ -644,6 +644,38 @@ function chBadge(pid,rid){   // 🎯 без рамки; лише коли в ц�
 function chChip(pid,rid){    // матриця «Points by round»: 🎯+N без рамки, деталі в title
   const a=chAwardsOf(pid,rid); if(!a.length) return '';
   return `<span class="mgn" title="${esc('Челенджі: '+a.map(x=>x.title+' +'+x.awarded_points).join(' · '))}">🎯+${a.reduce((x,y)=>x+(y.awarded_points||0),0)}</span>`;
+}
+// ⚔️ Rivals (552): іконка на картці учасника (по наведенню — його дуелі за турнір), чіп у «Points by round», номінація «Rivals — найбільше перемог» на Leaderboard
+const RV_LBL={win:'переміг',draw:'нічия',loss:'поразка',nobody:'Нікого',void:'склад не зараховано',pending:'очікує'};
+function rvRowsOf(pid){ return (S.rvBoard||[]).filter(x=>x.chooser_participant===pid).slice().sort((a,b)=>a.round_number-b.round_number); }
+function rvRowTxt(x){ const opp=x.is_nobody?'Нікого':esc(x.opponent_name||'—'); const res=x.scored?(x.status==='nobody'?'Нікого · 0':`${RV_LBL[x.status]||x.status} +${x.points}/2${x.status==='draw'&&x.opp_counted===false?' (суперник без складу)':''}`):'очікує'; return `Тур ${x.round_number}: ${x.is_nobody?'<i>Нікого</i>':'проти '+opp} · <span class="${x.status}">${res}</span>`; }
+function rvBadge(pid){   // ⚔️ без рамки; лише коли є дуелі (склади відкрито); підказка — усі дуелі учасника, як у ЄвроСезоні
+  if(!S.rvReady) return '';
+  const rows=rvRowsOf(pid); if(!rows.length) return '';
+  const got=rows.reduce((a,x)=>a+(x.scored?(x.points||0):0),0);
+  return `<span class="mgb" tabindex="0">⚔️<span class="mgb-tip"><div class="r"><b>Rivals</b> · очки за дуелі +${got}</div>${rows.map(x=>`<div class="r">${rvRowTxt(x)}</div>`).join('')}<div class="r mgnote">Дуель на тур: очки матчів проти обраного суперника. Виграв +2 · нічия +1 · програв 0; суперник раз за турнір.</div></span></span>`;
+}
+function rvChip(pid,rid){    // матриця «Points by round»: ⚔️+N без рамки, деталі в title
+  if(!S.rvReady) return '';
+  const x=(S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid && r.scored && r.points>0); if(!x) return '';
+  return `<span class="mgn" title="${esc('Rivals: '+(x.is_nobody?'Нікого':'проти '+x.opponent_name)+' · '+(RV_LBL[x.status]||x.status)+' +'+x.points)}">⚔️+${x.points}</span>`;
+}
+// номінація «⚔️ Rivals — найбільше перемог за турнір» (як в ЄвроСезоні: лише титул і таблиця; золото лише 1-му місцю, усім, хто ділить найкраще число)
+function rvNomCard(title){
+  const done=(S.rvBoard||[]).filter(x=>x.scored); const lastRound=Math.max(0,...done.map(x=>x.round_number));
+  if(!done.length) return `<div class="lbcard roseh cmp"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру з дуелями.</div></div>`;
+  const total=Math.max((S.mgCfg&&S.mgCfg.total)||6,(S.rounds||[]).length);
+  const st={}; S.lb.forEach(p=>st[p.participant_id]={w:0,d:0,l:0,pts:0});
+  done.forEach(x=>{ const o=st[x.chooser_participant]; if(!o) return; if(x.status==='win') o.w++; else if(x.status==='draw') o.d++; else if(x.status==='loss') o.l++; o.pts+=x.points||0; });
+  const ord=S.lb.slice().sort((a,b)=>(st[b.participant_id].w-st[a.participant_id].w)||(st[b.participant_id].pts-st[a.participant_id].pts)||String(a.display_name).localeCompare(String(b.display_name),'uk'));
+  const best=Math.max(0,...ord.map(p=>st[p.participant_id].w));
+  const rows=ord.map((p,i)=>{ const o=st[p.participant_id], gold=best>0 && o.w===best;
+    const prev=ord.findIndex(q=>st[q.participant_id].w===o.w);   // спільне місце при рівності
+    return `<div class="lbr bk mg ${gold?'p1':''}" onclick="openSquad('${p.participant_id}')">
+      <div class="rnk">${gold?`<span class="crown">${medal[0]}</span>`:(prev+1)}</div>
+      <div class="nm">${esc(p.display_name)}<span class="bsub">перемог ${o.w} · нічиїх ${o.d} · поразок ${o.l} · очок ⚔️ ${o.pts}</span></div>
+      <div class="pts">${o.w}<small>перемог</small></div></div>`; }).join('');
+  return `<div class="lbcard roseh cmp"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${lastRound} з ${total}</span></div>${rows}</div>`;
 }
 function renderCh(){
   const host=$('secCh'); if(!host) return;
@@ -994,8 +1026,9 @@ function renderLB(){
       ${lbCard('goldh','General', tot, true)}
     </div>
     ${S.mgReady && S.mgs ? `<div class="mgblock">${mgTotalCard('💼 Manager of the tournament')}</div>` : ''}
+    ${S.rvReady ? `<div class="mgblock">${rvNomCard('⚔️ Rivals — найбільше перемог за турнір')}</div>` : ''}
     <div class="hint">${S.mgReady
-      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
+      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
       : 'Наскрізний залік · General = сума всіх турів'} · рівні очки → ділять місце · клік на учасника → його склад</div>`;
 }
 // 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
@@ -1122,9 +1155,10 @@ async function loadDynamic(){
   S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
   S.names={}; S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
   // mgmt_points (528) — бонус «Менеджер туру»; нема колонки (528 не залито) → без нього
-  try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points`); }   // challenge_points — з SQL 547
+  try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points,rival_points`); }   // rival_points — з SQL 552
+  catch(eR){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points`); }   // challenge_points — з SQL 547
   catch(e0){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points`); }
-  catch(e){ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`); } }
+  catch(e){ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`); } } }
   // 🎯 челенджі (547): довідник + хто виконав; нема вьюх (547 не залито) → вкладка/іконка ховаються
   S.chReady=false; S.chDefs=[]; S.chAwards=[]; S.chCfg=null;
   try{
@@ -1133,6 +1167,11 @@ async function loadDynamic(){
     try{ S.chCfg=(await sbGet(`market_challenge_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null; }catch(e1){}
     S.chReady=S.chDefs.length>0;
   }catch(e){}
+  // ⚔️ Rivals (552): дошка дуелей (публічна ПІСЛЯ відкриття складів) і налаштування; нема вьюх (552 не залито) або Rivals вимкнено → іконка/номінація ховаються
+  S.rvReady=false; S.rvBoard=[]; S.rvCfg=null;
+  try{ S.rvCfg=(await sbGet(`market_rival_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null;
+    S.rvBoard=await sbGet(`market_rival_board?tournament_id=eq.${S.tournament}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored&order=round_number.asc`);
+    S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
   // менеджмент (528): рядки туру (рахунок/місце/очки) і наскрізна; нема вьюх → вкладка «General · Management» прихована
   S.mg=[]; S.mgs=[]; S.mgReady=false;
   try{
@@ -1242,9 +1281,9 @@ function deltaMark(pid){
 function roundPtsParts(pid){
   const rid=(S.rounds.find(r=>r.number===S.tour)||{}).id;
   const row=S.scores.find(s=>s.participant_id===pid && s.round_id===rid);
-  return {m:row? row.points||0 : 0, g:row? row.mgmt_points||0 : 0, c:row? row.challenge_points||0 : 0};
+  return {m:row? row.points||0 : 0, g:row? row.mgmt_points||0 : 0, c:row? row.challenge_points||0 : 0, r:row? row.rival_points||0 : 0};
 }
-function roundPts(pid){ const x=roundPtsParts(pid); return x.m+x.g+x.c; }
+function roundPts(pid){ const x=roundPtsParts(pid); return x.m+x.g+x.c+x.r; }
 // Val Δ складу ОБРАНОГО туру = СУМА відсотків руху ціни ЦЬОГО туру по 8 гравцях ЛАЙНАПУ цього туру (п.3 відгуку 12.10; раніше — від старту по поточних власниках):
 // вартість гравця не має впливати — дешевий і дорогий важать однаково (рішення 10.10); не грав — 0; розстановка прихована (до дедлайну) або тур без цінового руху → «–»;
 // старі тури не міняються після трансферів (лайнап і журнал цін — знімки туру)
@@ -1428,9 +1467,9 @@ function renderTopCards(){
   host.innerHTML=order.map(p=>{
     const pid=p.participant_id, best=mx>0 && rp[pid]===mx;
     return `<div class="tc ${best?'p1':''}">
-      <div class="tc-top"><span>${mgBadge(pid,rid)}${chBadge(pid,rid)}</span></div>
+      <div class="tc-top"><span>${mgBadge(pid,rid)}${chBadge(pid,rid)}${rvBadge(pid)}</span></div>
       <div class="tc-nm">${esc(p.display_name)}</div>
-      <div class="tc-pts tnum" title="Очки за Тур ${S.tour}: матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 '+roundPtsParts(pid).g:''}${roundPtsParts(pid).c?' + 🎯 '+roundPtsParts(pid).c:''}. Сума очок усіх турів — у Leaderboard">${rp[pid]}</div></div>`;
+      <div class="tc-pts tnum" title="Очки за Тур ${S.tour}: матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 '+roundPtsParts(pid).g:''}${roundPtsParts(pid).c?' + 🎯 '+roundPtsParts(pid).c:''}${roundPtsParts(pid).r?' + ⚔️ '+roundPtsParts(pid).r:''}. Сума очок усіх турів — у Leaderboard">${rp[pid]}</div></div>`;
   }).join('');
 }
 // підсумок туру під таблицею (як «Boosts» у ЄвроСезоні): капітани, віце, хто який буст на кого поставив. Лише коли склади відкрито
@@ -1504,8 +1543,8 @@ function renderPts(){
     const cells=rs.map(r=>{
       const row=S.scores.find(s=>s.participant_id===p.participant_id && s.round_id===r.id);
       const v=row? (row.points||0) : null;
-      if(v!=null) sum+=v+(row.mgmt_points||0)+(row.challenge_points||0);   // 💎 і 🎯 додаються до суми, але в клітинці показуються окремими значками
-      return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}${mgChip(p.participant_id,r.id)}${chChip(p.participant_id,r.id)}</td>`;
+      if(v!=null) sum+=v+(row.mgmt_points||0)+(row.challenge_points||0)+(row.rival_points||0);   // 💎, 🎯 і ⚔️ додаються до суми, але в клітинці показуються окремими значками
+      return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}${mgChip(p.participant_id,r.id)}${chChip(p.participant_id,r.id)}${rvChip(p.participant_id,r.id)}</td>`;
     }).join('');
     const fp=finPts(p.participant_id); sum+=fp;
     return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}${hasFin?`<td class="pn tnum">${fp>0?'+'+fp:'·'}</td>`:''}<td class="total tnum">${sum}</td></tr>`;
@@ -1597,7 +1636,8 @@ function openSquad(pid){
       <div class="m" title="На скільки € змінилась вартість 8 гравців складу за цей тур"><span>Δ € тура</span><b class="tnum ${vd.dirE||'eq'}">${valEurTxt(vd)}</b></div>
       <div class="m" title="Сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)"><span>Σ % гравців</span><b class="tnum ${vd.dir||'eq'}">${valPctTxt(vd)}</b></div>
       ${(S.mgReady && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m" title="${esc(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}"><span>💎 Рахунок</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
-      <div class="m" title="Матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 менеджмент '+roundPtsParts(pid).g:''}"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
+      ${(()=>{ const x=S.rvReady && (S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid); return x? `<div class="m" title="Rivals · дуель туру: очки матчів проти обраного суперника. Виграв +2 · нічия +1 · програв 0"><span>⚔️ Rivals</span><b class="tnum">${x.is_nobody?'Нікого':esc(x.opponent_name||'—')}<small style="display:block;font-weight:500">${x.scored?(x.status==='nobody'?'0':(RV_LBL[x.status]||x.status)+' +'+x.points):'очікує'}</small></b></div>` : ''; })()}
+      <div class="m" title="Матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 менеджмент '+roundPtsParts(pid).g:''}${roundPtsParts(pid).c?' + 🎯 '+roundPtsParts(pid).c:''}${roundPtsParts(pid).r?' + ⚔️ '+roundPtsParts(pid).r:''}"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
     </div>`+(boostOf(pid,rid)?`<div class="boline">${BO[boostOf(pid,rid).boost].ico} <b>${BO[boostOf(pid,rid).boost].name}</b>${boostFx(boostOf(pid,rid))?' · '+boostFx(boostOf(pid,rid)):''}</div>`:'')+bodyHtml;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>el.onclick=()=>openBoardCard(el.dataset.p));
   document.getElementById('ovl').classList.add('on'); embedPlace();
