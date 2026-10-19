@@ -444,6 +444,12 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .head2{display:flex;align-items:baseline;gap:10px;margin:6px 2px 12px;flex-wrap:wrap}
 .head2 h2{font-size:17px;font-weight:700;margin:0}
 .head2 .sub{color:var(--dim);font-size:12px}
+/* 19.10: Ринок — заголовок списку + усі пояснення (підказка купівлі/аукціону, DEF/GK, ролі) в 2 рядки праворуч від назви */
+.head2x{display:flex;align-items:flex-start;gap:4px 16px;margin:6px 2px 12px;flex-wrap:wrap}
+.head2x h2{font-size:17px;font-weight:700;margin:0;white-space:nowrap}
+.head2x .subx{flex:1;min-width:300px;color:var(--dim);font-size:12px;line-height:1.5}
+.subx1{color:var(--dim);font-size:12px;line-height:1.5;margin:0 2px 10px}
+.subx b,.subx1 b{color:var(--text)}
 .squad-wrap{display:grid;grid-template-columns:1fr;gap:16px}
 @media(min-width:820px){.squad-wrap{grid-template-columns:1.5fr 1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
@@ -476,11 +482,14 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .bcard.on{background:var(--green-soft);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .bcard.on .bst{color:var(--up)}
 /* 🎯 челенджі (547) */
-.chl{display:grid;gap:8px;margin-top:8px}
-.chr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.chl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}   /* 19.10: 2 челенджі в ряд; на вузьких екранах — один */
+@media (max-width:820px){.chl{grid-template-columns:1fr}}
+.chr{display:flex;gap:9px;align-items:flex-start;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
 .chr .ci{font-size:16px;line-height:1.25;width:20px;text-align:center;flex:none;color:var(--text-dim)}
 .chr .cb{flex:1;min-width:0}.chr .ct{font-weight:700;font-size:14px}.chr .cd{font-size:12.5px;color:var(--text-dim);line-height:1.4;margin-top:2px}
-.chr .cs{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);margin-top:4px}
+.chr .cs{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);margin-top:3px}
+.chr .cl{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--dim);margin-right:5px;white-space:nowrap}
+.chlegend{margin:6px 2px 0;font-size:12px;color:var(--text-dim)}.chlegend b{color:var(--text)}
 .chr .cp{font-family:var(--mono);font-weight:700;color:var(--gold);white-space:nowrap;margin-left:6px}
 .chr.ok{border-color:var(--gold)}.chr.ok .ci{color:var(--gold)}.chr.ok .cs{color:var(--gold)}
 .chr.done{border-color:var(--accent);background:var(--green-soft)}.chr.done .ci{color:var(--up)}.chr.done .cs{color:var(--up)}
@@ -1493,10 +1502,11 @@ function challengesBlock(s, round){
   const act=chActive(round), got=list.filter(x=>x.state==='ok').reduce((a,x)=>a+x.d.points,0), nOk=list.filter(x=>x.state==='ok').length;
   const rows=list.map(({d,aw,r,state})=>`<div class="chr ${state}">
       <span class="ci">${state==='done'?'✓':state==='ok'?'✅':'○'}</span>
-      <div class="cb"><div class="ct">${esc(d.title)}</div><div class="cd">${esc(d.description)}</div>
-        <div class="cs">${aw?`виконано в Турі ${aw.round_number} · +${aw.awarded_points}`:(state==='ok'?'зібрано · очки нарахуються, коли склади відкриються':(act?esc(r.hint):'діє з Туру '+((S.chCfg&&S.chCfg.first_round)||1)))}</div></div>
+      <div class="cb"><div class="ct">${esc(d.title)}</div><div class="cd"><span class="cl">Умова</span>${esc(d.description)}</div>
+        <div class="cs">${aw?`<span class="cl">Статус</span>виконано в Турі ${aw.round_number} · +${aw.awarded_points}`:(state==='ok'?'<span class="cl">Твій склад</span>зібрано · очки нарахуються, коли склади відкриються':(act?`<span class="cl" title="поточний стан твого складу">Твій склад</span>${esc(r.hint)}`:'<span class="cl">Статус</span>діє з Туру '+((S.chCfg&&S.chCfg.first_round)||1)))}</div></div>
       <span class="cp">${aw?'✓':'+'+d.points}</span></div>`).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🎯 Челенджі</span><span>раз за турнір кожен · очки одразу при відкритті складів</span></div>
+    <p class="chlegend"><b>Умова</b> — що треба зібрати · <b>Твій склад</b> — поточний стан (змінюється, поки ти збираєш лайнап)</p>
     <div class="chl">${rows}</div>
     <p class="dim" style="margin:8px 2px 0">${act?(nOk?`Зараз склад виконує ${nOk} — це <b>+${got}</b> ${pOchk(got)} після відкриття складів (якщо не змінити склад і не виконано раніше). `:'Складай лайнап під умови — галочка з\'явиться, коли склад зібрано. '):'Челенджі в цьому турі ще не діють. '}«Основа» і «лавка» — це слоти складу (5 + запасні), не контрактні ролі.</p></div>`;
 }
@@ -1573,12 +1583,13 @@ function roleChipHTML(p,zone){ if(!rolesOn()) return '';
   const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде продано після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні');
   const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
   return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>${mk}`; }
-function rolesBanner(mine){ if(!rolesOn()) return '';
+function rolesNoteInner(mine){ if(!rolesOn()) return '';
   const mc=(mine||[]).filter(p=>(p.role||'main')==='main').length, bc=(mine||[]).length-mc;
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
   const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
   const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за тур, друге порушення — гравця буде продано.`:'';
-  return `<div class="mnote" style="margin:8px 0">🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}</div>`; }
+  return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}`; }
+function rolesBanner(mine){ const t=rolesNoteInner(mine); return t?`<div class="mnote" style="margin:8px 0">${t}</div>`:''; }
 function renderLineup(mine, round){
   const s = lnState(mine);
   const locked = !!(round && S.confOK && confOf(S.me.id, round.id));   // 533: підтверджено → фінально, лише перегляд
@@ -1983,7 +1994,8 @@ async function viewMarket(){
     const sub=(S.mktSub==='free')
       ? `${hint} · <span id="mcount"></span> · ${dgNote()}`
       : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint} · ${dgNote()}`;
-    body = filterBar()+`<div class="head2" style="margin-top:2px"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><span class="sub">${sub}</span></div><div class="mgrid" id="mgrid"></div>`;
+    const rolesIn = rolesNoteInner((S.players||[]).filter(x=>x.owner_participant_id===S.me.id));
+    body = filterBar()+`<div class="head2x"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><div class="subx"><div>${sub}</div>${rolesIn?`<div>${rolesIn}</div>`:''}</div></div><div class="mgrid" id="mgrid"></div>`;   // 19.10: усі пояснення — в 2 рядки праворуч від заголовка
   } else if(S.mktSub==='shop'){
     // 🏷 ВІТРИНА: лоти за фіксованою ціною (421). Власник бачить свій лот і знімає його; інші — відкривають картку й викуповують миттєво
     if(!S.listingsReady){
@@ -2037,7 +2049,7 @@ async function viewMarket(){
          <div class="msec" style="margin-top:16px">Моя вітрина${myShop.length?` · ${myShop.length}`:''}</div>${shopHtml}`;
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+rolesBanner(mineM)+budgetPanel()+bar+body;   // одна інформація на «Мій склад» і «Ринок»
+  $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+budgetPanel()+bar+((S.mktSub==='free'||S.mktSub==='all')?'':(rolesNoteInner(mineM)?`<div class="subx1">${rolesNoteInner(mineM)}</div>`:''))+body;   // одна інформація на «Мій склад» і «Ринок»; 19.10: текст про ролі — в заголовку списку гравців (2 рядки), на «Вітрина»/«Мої угоди» — один рядок під вкладками
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
