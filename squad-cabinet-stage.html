@@ -411,6 +411,8 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .rrt tr:last-child td{border-bottom:none}
 .rrt .r{text-align:right}.rrt .c{text-align:center}
 .rrt tr.bn td{opacity:.78}.rrt tr.nosum td{opacity:.55}
+.rrt.allin tr.bn td{opacity:1}.rrt.allin tr.nosum td{opacity:.55}   /* 🔥 All-in: усі 8 однакової яскравості — очки лавки теж у сумі */
+.rrt .aib{font-size:12px;margin-left:2px;cursor:help}
 .rrt tr.sep td{border-top:2px solid var(--line)}
 .rrt .pn b{font-weight:600}.rrt .pn .cl{color:var(--text-dim);font-size:12px;margin-left:6px}
 .rrt .mul{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--gold)}
@@ -459,6 +461,15 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .bcard .bst{font-family:var(--mono);font-size:11px;color:var(--dim);margin-top:2px}
 .bcard.on{background:var(--green-soft);border-color:var(--accent);box-shadow:0 0 0 1px var(--accent) inset}
 .bcard.on .bst{color:var(--up)}
+/* 🎯 челенджі (547) */
+.chl{display:grid;gap:8px;margin-top:8px}
+.chr{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
+.chr .ci{font-size:16px;line-height:1.25;width:20px;text-align:center;flex:none;color:var(--text-dim)}
+.chr .cb{flex:1;min-width:0}.chr .ct{font-weight:700;font-size:14px}.chr .cd{font-size:12.5px;color:var(--text-dim);line-height:1.4;margin-top:2px}
+.chr .cs{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);margin-top:4px}
+.chr .cp{font-family:var(--mono);font-weight:700;color:var(--gold);white-space:nowrap;margin-left:6px}
+.chr.ok{border-color:var(--gold)}.chr.ok .ci{color:var(--gold)}.chr.ok .cs{color:var(--gold)}
+.chr.done{border-color:var(--accent);background:var(--green-soft)}.chr.done .ci{color:var(--up)}.chr.done .cs{color:var(--up)}
 .bcard:disabled{opacity:.5;cursor:not-allowed}
 .bcard.used .bst{color:var(--down)}
 .chk{font-size:12px;color:var(--text-dim);border:1px solid var(--line);border-radius:20px;padding:3px 10px;
@@ -1314,12 +1325,13 @@ function viewRoundResult(r){
       const mvH = (mv==null||Math.abs(mv)<0.0005) ? '<span class="dim">—</span>' : `<span class="vdelta ${mv>0?'up':'down'}">${fmtDelta({pct:mv,dir:mv>0?'up':'down'})}</span>${mvE!=null?`<small class="vd-eur ${mv>0?'up':'down'}">${eurSgn2(mvE)}</small>`:''}`;
       const role = l.role==='start' ? 'Основа' : 'Лавка '+(l.bench_order||'');
       const firstBench = l.role==='bench' && (i===0 || sorted[i-1].role!=='bench');
+      const aiB = !!(bo && bo.boost==='squad_all_in' && l.role==='bench' && m.inSum && m.pts!=null);   // All-in: очки лавки зараховано — позначаємо 🔥 і не притушуємо рядок
       return `<tr class="${l.role==='bench'?'bn':''}${(l.state==='played' && !m.inSum)?' nosum':''}${firstBench?' sep':''}" data-p="${l.player_id}">
         <td class="hm">${role}</td>
         <td class="pn"><span class="bno">${l.role==='bench'?'Л'+(l.bench_order||'')+' · ':''}</span><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubName(p.club_id))}</span></td>
         <td>${stIc}</td><td class="r tnum hm">${l.avg_rating!=null?Number(l.avg_rating).toFixed(1):'—'}</td>
         <td class="r tnum">${m.raw!=null?m.raw:'—'}</td><td class="c mul">${mul||''}</td>
-        <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b></td><td class="r">${mvH}</td></tr>`;
+        <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b>${aiB?' <span class="aib" title="🔥 All-in: очки лавки зараховано в суму">🔥</span>':''}</td><td class="r">${mvH}</td></tr>`;
     }).join('');
     const rsRow=(rr.rs||[]).find(x=>x.round_id===r.id && x.participant_id===who);
     const allRs=(rr.rs||[]).filter(x=>x.round_id===r.id), totOf=x=>(x.points||0)+(x.mgmt_points||0);
@@ -1341,9 +1353,10 @@ function viewRoundResult(r){
         ${place?`<div class="rr-m"><div class="k">місце в турі</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі + 💎</div></div>`:''}
         ${grow?`<div class="rr-m"><div class="k">приріст складу</div><div class="v ${grow.eur>0?'up':grow.eur<0?'down':''}">${eurSgn(grow.eur)}</div><div class="s">${grow.start?(grow.eur>0?'+':grow.eur<0?'−':'')+Math.abs(grow.eur/grow.start*100).toFixed(1)+'% вартості складу':'вартість 8 гравців за тур'}${mg?` · 💎 менеджмент: ${mg.points>0?'+'+mg.points:'0'} (місце ${mg.place})`:''}</div></div>
         <div class="rr-m"><div class="k">Σ % гравців</div><div class="v ${grow.pct>0?'up':grow.pct<0?'down':''}">${ppSgn(grow.pct)}</div><div class="s">сума % руху ціни 8 гравців (не % складу)</div></div>`:''}
+        ${challengesRoundCard(r)}
         <div class="rr-m"><div class="k">бусти й К/V</div><div class="v" style="font-size:15px;line-height:1.35">${[boostTxt,posTxt].filter(Boolean).join('<br>')||'<span class="dim">бустів нема</span>'}</div><div class="s">${cvTxt||'Автопілот: ×2 отримує найкращий'}</div></div>
       </div>
-      <div class="rr-wrap"><table class="rrt"><thead><tr><th class="hm">Роль</th><th>Гравець</th><th>Стан</th><th class="r hm">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В сумі очок</th><th class="r">Ціна</th></tr></thead>
+      <div class="rr-wrap"><table class="rrt${(bo&&bo.boost==='squad_all_in')?' allin':''}"><thead><tr><th class="hm">Роль</th><th>Гравець</th><th>Стан</th><th class="r hm">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В сумі очок</th><th class="r">Ціна</th></tr></thead>
         <tbody>${tr}<tr class="tot"><td colspan="6">Разом в сумі очок (за гравцями)</td><td class="r tnum">${sum}</td><td></td></tr></tbody></table></div>
       <p class="rr-note">«В сумі очок»: основа — коли зіграв; лавка — коли визначена заміна${(bo&&bo.boost==='squad_all_in')?' (🔥 All-in — очки дають усі 8)':''}; ×2 — капітан/віце (кращий із пари), Автопілот чи позиційний буст. Ціна — зміна вартості гравця за цей тур: % і в €. Клік на гравця — детальна картка.</p>`;
   }
@@ -1368,6 +1381,7 @@ async function viewSquad(){
   const round = S.rounds.find(r => new Date(r.deadline_at) > new Date()) || null;
   clearTimeout(S.rrTimer);
   await loadRR();
+  await loadChallenges();
   // вибраний чіп туру (15.10): за замовчуванням — відкритий тур для виставлення; тури без виставлення — результат; коли відкритого нема — останній створений
   let cur = S.rounds.find(r=>r.id===S.ctour) || null;
   if(!cur && !round && S.rounds.length) cur = S.rounds.slice().sort((a,b)=>b.number-a.number)[0];
@@ -1423,6 +1437,65 @@ function posBlock(mine, round){
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>⚡ Позиційні бусти</span><span>1 раз за турнір кожен · до 3 в одному турі</span></div>
     <div class="bgrid">${cards}</div>
     <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього (не на капітана чи віце). Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до дедлайну можна змінити.</p></div>`;
+}
+// ── 🎯 Челенджі (547): окремий шлях очок за композицію складу; РАЗ ЗА ТУРНІР кожен; нараховується одразу при відкритті складів ──
+// «основа/лавка» тут = СЛОТИ складу (5 + запасні), а не контрактна роль «Основний/Лавка». Правила — дзеркало _market_challenge_hits (SQL 547).
+function chMetrics(st, bn){
+  const all=[...st,...bn], lg=p=>(S.clubs[p.club_id]||{}).league||'', cnt=(a,f)=>a.filter(f).length, dist=(a,f)=>new Set(a.map(f)).size, isDG=p=>p.position==='D'||p.position==='G';
+  return { nAll:all.length, nStart:st.length, lgStart:dist(st,lg), lgAll:dist(all,lg), clAll:dist(all,p=>p.club_id),
+           m:cnt(all,p=>p.position==='M'), dg:cnt(all,isDG), f:cnt(all,p=>p.position==='F'), dgS:cnt(st,isDG), fS:cnt(st,p=>p.position==='F'), mS:cnt(st,p=>p.position==='M') };
+}
+const CH_RULES = {
+  mosaic5:    m=>({ ok:m.nStart===5&&m.lgStart===5, hint:`ліг в основі: ${m.lgStart}/5` }),
+  world6:     m=>({ ok:m.nAll>=6&&m.lgAll>=6, hint:`ліг у складі: ${m.lgAll}/6${m.nAll<6?' · потрібно щонайменше 6 гравців':''}` }),
+  clubs8:     m=>({ ok:m.nAll===8&&m.clAll===8, hint:`різних клубів: ${m.clAll}/8${m.nAll<8?' · потрібно рівно 8 гравців':''}` }),
+  mid5:       m=>({ ok:m.nAll===8&&m.m>=5, hint:`MID: ${m.m}/5${m.nAll<8?' · потрібно 8 гравців':''}` }),
+  classic332: m=>({ ok:m.nAll===8&&m.dg===3&&m.m===3&&m.f===2, hint:`DEF/GK ${m.dg}/3 · MID ${m.m}/3 · FWD ${m.f}/2${m.nAll<8?' · потрібно 8 гравців':''}` }),
+  wall4dg:    m=>({ ok:m.nStart===5&&m.dgS===4&&m.fS===1, hint:`в основі DEF/GK ${m.dgS}/4 · FWD ${m.fS}/1` }),
+  attack3:    m=>({ ok:m.nStart===5&&m.fS>=3, hint:`FWD в основі: ${m.fS}/3` }),
+  formation221: m=>({ ok:m.nStart===5&&m.mS===2&&m.dgS===2&&m.fS===1, hint:`в основі MID ${m.mS}/2 · DEF/GK ${m.dgS}/2 · FWD ${m.fS}/1` })
+};
+// челенджі (547): довідник, налаштування турніру й мої нарахування; немає таблиць (547 не залито) → блок ховається
+async function loadChallenges(){
+  S.chOK = true; S.chDefs = []; S.chCfg = null; S.chAwards = [];
+  try{
+    S.chDefs = await sbSel('market_challenges?select=key,sort,title,description,points,active&order=sort.asc');
+    S.chCfg = (await sbSel(`market_challenge_settings?tournament_id=eq.${S.tour.id}&select=enabled,first_round`))[0] || null;
+    S.chAwards = await sbSel(`market_challenge_board?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=challenge_key,round_number,awarded_points`);
+  }catch(e){ S.chOK=false; }
+}
+function chDoneMap(){ const o={}; (S.chAwards||[]).forEach(a=>o[a.challenge_key]=a); return o; }
+function chActive(round){ const c=S.chCfg; return !!(round && (!c || c.enabled!==false) && round.number >= ((c&&c.first_round)||1)); }
+function chStatus(st, bn, round){   // → [{d, aw, r, state:'done'|'ok'|''}]
+  if(!S.chOK || !(S.chDefs||[]).length) return [];
+  const m=chMetrics(st,bn), done=chDoneMap(), act=chActive(round);
+  return S.chDefs.filter(d=>d.active).map(d=>{ const aw=done[d.key], r=(CH_RULES[d.key]||(()=>({ok:false,hint:''})))(m); return { d, aw, r, state: aw?'done':(act&&r.ok?'ok':'') }; });
+}
+function challengesBlock(s, round){
+  const list=chStatus(s.st, s.bn, round); if(!list.length) return '';
+  const act=chActive(round), got=list.filter(x=>x.state==='ok').reduce((a,x)=>a+x.d.points,0), nOk=list.filter(x=>x.state==='ok').length;
+  const rows=list.map(({d,aw,r,state})=>`<div class="chr ${state}">
+      <span class="ci">${state==='done'?'✓':state==='ok'?'✅':'○'}</span>
+      <div class="cb"><div class="ct">${esc(d.title)}</div><div class="cd">${esc(d.description)}</div>
+        <div class="cs">${aw?`виконано в Турі ${aw.round_number} · +${aw.awarded_points}`:(state==='ok'?'зібрано · очки нарахуються, коли склади відкриються':(act?esc(r.hint):'діє з Туру '+((S.chCfg&&S.chCfg.first_round)||1)))}</div></div>
+      <span class="cp">${aw?'✓':'+'+d.points}</span></div>`).join('');
+  return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🎯 Челенджі</span><span>раз за турнір кожен · очки одразу при відкритті складів</span></div>
+    <div class="chl">${rows}</div>
+    <p class="dim" style="margin:8px 2px 0">${act?(nOk?`Зараз склад виконує ${nOk} — це <b>+${got}</b> очок після відкриття складів (якщо не змінити склад і не виконано раніше). `:'Складай лайнап під умови — галочка з\'явиться, коли склад зібрано. '):'Челенджі в цьому турі ще не діють. '}«Основа» і «лавка» — це слоти складу (5 + запасні), не контрактні ролі.</p></div>`;
+}
+function challengesModalHtml(s, round){
+  const list=chStatus(s.st, s.bn, round); if(!list.length) return '';
+  const ok=list.filter(x=>x.state==='ok'), done=list.filter(x=>x.state==='done');
+  const body = ok.length ? ok.map(x=>`<p class="mnote">✅ <b>${esc(x.d.title)}</b> — ${esc(x.d.description)} <b>+${x.d.points}</b> нарахується, коли склади відкриються.</p>`).join('')
+                         : '<p class="mnote">Жоден новий челендж цим складом не зібрано.</p>';
+  return `<div class="msec" style="margin-top:14px">🎯 Челенджі</div>${body}${done.length?`<p class="mnote dim">Уже виконано раніше: ${done.map(x=>esc(x.d.title)).join(', ')}.</p>`:''}`;
+}
+function challengesRoundCard(r){   // результат туру: що виконано саме в цьому турі
+  if(!S.chOK || !(S.chDefs||[]).length) return '';
+  const hit=(S.chAwards||[]).filter(a=>a.round_number===r.number);
+  if(!hit.length && !chActive(r)) return '';
+  const names=hit.map(a=>{ const d=S.chDefs.find(x=>x.key===a.challenge_key)||{}; return `${esc(d.title||a.challenge_key)} <b>+${a.awarded_points}</b>`; });
+  return `<div class="rr-m"><div class="k">🎯 челенджі</div><div class="v" style="font-size:15px;line-height:1.35">${names.length?names.join('<br>'):'<span class="dim">не виконано</span>'}</div><div class="s">${names.length?'нараховано при відкритті складів':'раз за турнір кожен'}</div></div>`;
 }
 const stageOfNum = n => n <= ((S.cfg && S.cfg.stage1_last_round) || 5) ? 1 : 2;
 function boostUsedElsewhere(key, round){   // уже використано/заплановано в ІНШОМУ турі цього ж етапу?
@@ -1557,7 +1630,7 @@ function renderLineup(mine, round){
          ${val}
          ${injWarn}
          ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
-         ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}
+         ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}${challengesBlock(s, round)}
          ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos);
                   // 533: «підтверджено» = є підтвердження (після розблокування адміном склад лишається в базі, але його треба підтвердити знову)
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved && (!S.confOK || locked), nTxt=round?' на Тур '+round.number:'';
@@ -1653,6 +1726,7 @@ function openLineupReview(mine, round){
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
+    ${challengesModalHtml(s, round)}
     ${penBlk}
     ${S.confOK?'<p class="mnote warn" style="margin-top:14px">⚠️ Підтвердження ФІНАЛЬНЕ: змінити склад і бусти після нього не вийде (лише адмін розблокує). Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>':''}
     <div class="macts" style="margin-top:16px"><button data-do="lnyes"${blockDebt?' disabled title="Спершу сплати борг"':''}>Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
