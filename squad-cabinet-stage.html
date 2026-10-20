@@ -131,7 +131,8 @@ button.mini.sell{color:var(--text-dim);font-weight:400}
 table.t{width:100%;border-collapse:collapse}
 .t th,.t td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;font-variant-numeric:tabular-nums}
 .t th{font-size:11px;text-transform:uppercase;color:var(--text-dim);font-weight:600;letter-spacing:.03em}
-.t td.n{text-align:right;white-space:nowrap}
+.t th.n,.t td.n{text-align:right}   /* 20.10: заголовок числової колонки вирівняно разом зі значеннями */
+.t td.n{white-space:nowrap}
 .filterbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;align-items:center}
 .subtabs{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:14px}
 .subtabs button{background:var(--panel);color:var(--text-dim);border:1px solid var(--line);
@@ -189,7 +190,7 @@ table.t{width:100%;border-collapse:collapse}
 .mtile.dgblock{opacity:.55}
 .mdgb{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:-2px 0 4px}
 .mtile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;
-  cursor:pointer;transition:border-color .12s,transform .12s;text-align:center}
+  cursor:pointer;transition:border-color .12s,transform .12s;text-align:center;display:flex;flex-direction:column}   /* 20.10: статус притиснуто донизу — без порожнього місця під ним */
 .mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
 .mtile.mine{border-color:rgba(244,196,48,.45)}
 .mtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
@@ -207,14 +208,12 @@ table.t{width:100%;border-collapse:collapse}
 .mav img{width:100%;height:100%;object-fit:cover;object-position:center 15%}
 .mtile .mnm{font-weight:700;font-size:14px;line-height:1.2}
 .mtile .mclub{font-size:12px;color:var(--text-dim);margin-top:2px}
+.mtile .mlg{font-size:10.5px;color:var(--text-dim);opacity:.7;margin-top:1px}
 .mrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}
 .mtrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}   /* окремий клас: .mrow ще й рядок матчів (grid + hover-підсвітка) */
 .rpill{background:var(--panel2);border-radius:7px;padding:2px 9px;font-weight:800;color:var(--up);font-size:14px}
 .mprice{color:var(--text);font-weight:700;font-size:14px}
-.spark{display:flex;gap:3px;justify-content:center;align-items:flex-end;height:22px;margin-top:10px}
-.spark i{width:6px;background:var(--up);border-radius:2px;opacity:.85}
-.spark.empty{color:var(--text-dim);font-size:10px;height:22px;align-items:center}
-.mstatus{margin-top:9px;padding-top:8px;border-top:1px solid var(--line);font-size:12px;
+.mstatus{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);font-size:12px;
   color:var(--text-dim);display:flex;align-items:center;justify-content:center;gap:5px}
 .mlistb{display:inline-block;margin:0 0 6px;padding:2px 8px;border:1px solid var(--gold);border-radius:999px;color:var(--gold);font-family:var(--mono);font-size:11px;font-weight:700;white-space:nowrap}
 .shoprow.mine td{background:rgba(244,196,48,.05)}
@@ -230,6 +229,12 @@ table.t{width:100%;border-collapse:collapse}
 .modal .mx{position:absolute;top:12px;right:14px;color:var(--text-dim);background:none;border:0;
   font-size:20px;cursor:pointer;padding:2px 6px;font-weight:400}
 .modal h3{margin:0;font-size:22px}
+/* 20.10: модалка «Підтвердити склад» — широка, 2 колонки (ліворуч склад і бусти, праворуч челенджі/Rivals/порушення), кнопки внизу на всю ширину; на вузьких екранах — 1 колонка */
+.modal.cfmodal{max-width:min(1040px,96vw)}
+.cfgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 30px;align-items:start}
+.cfcol{min-width:0}
+@media(max-width:860px){.cfgrid{grid-template-columns:1fr}}
+.cfbottom{margin-top:14px;padding-top:4px;border-top:1px solid var(--line)}
 .mhead{display:flex;gap:14px;align-items:center}
 .mmeta{font-size:13px;color:var(--text-dim);margin-top:4px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .mbig{margin-left:auto;text-align:right}
@@ -261,6 +266,7 @@ table.t{width:100%;border-collapse:collapse}
 .crole-chip.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}.crole-chip.on small{color:#06120c}
 .crole-chip:disabled{opacity:.42;cursor:not-allowed}
 .crole-need{font-size:12px;color:var(--warn,#f5b84d);margin-top:6px}
+.crole-note{font-size:11.5px;color:var(--text-dim);margin-top:7px;line-height:1.4}.crole-note b{color:var(--text)}
 .rolechip{display:inline-block;margin-left:6px;padding:1px 7px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.02em;vertical-align:middle;border:1px solid var(--line)}
 .rolechip.mn{background:rgba(120,200,160,.14);color:#9fe3c0}.rolechip.bn{background:rgba(255,255,255,.06);color:var(--text-dim)}
 .rolechip.mis{border-color:var(--warn,#f5b84d);color:var(--warn,#f5b84d)}
@@ -524,6 +530,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .chr.ok{border-color:var(--gold)}.chr.ok .ci{color:var(--gold)}.chr.ok .cs{color:var(--gold)}
 .chr.done{border-color:var(--accent);background:var(--green-soft)}.chr.done .ci{color:var(--up)}.chr.done .cs{color:var(--up)}
 .bcard:disabled{opacity:.5;cursor:not-allowed}
+div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, який ще можна поставити — звичайний колір (ставиться кнопкою ⚡ біля гравця, не кліком по картці); тьмяні лише використані/недоступні */
 .bcard.used .bst{color:var(--down)}
 .chk{font-size:12px;color:var(--text-dim);border:1px solid var(--line);border-radius:20px;padding:3px 10px;
   display:flex;gap:5px;align-items:center;background:var(--panel2)}
@@ -602,7 +609,13 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-value .metric strong{font-family:var(--mono);font-weight:700;font-size:25px;display:block;line-height:1}
 .pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
 .pm-value .metric span{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:5px;display:block}
-.pm-perf{display:grid;grid-template-columns:1fr 176px;gap:16px;align-items:center;border-bottom:1px solid var(--line);padding-bottom:8px}
+.pm-toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px 24px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}   /* 20.10: вартість · Val Δ · очки — ліворуч, голи/асисти/матчі ліги — праворуч */
+.pm-toprow .pm-value{padding:10px 0 0;gap:10px 30px}
+.pm-sbox{padding-top:10px}
+.pm-sbox .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px;text-align:center}
+.pm-sbox .pm-seasons{grid-template-columns:repeat(3,66px)}
+.pm-midrow{display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start;padding-top:10px}   /* форма ~60% ліворуч; статус і роль контракту — праворуч, одне під одним */
+.pm-side{display:flex;flex-direction:column;gap:8px}
 .frows{display:flex;flex-direction:column;gap:3px}
 .frow{display:grid;grid-template-columns:44px 1fr 44px 40px 40px 44px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;padding:3px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel2)}
 .frow .fd,.frow .fu,.frow .fm{color:var(--text-dim)} .frow .fo{font-family:var(--body,inherit);font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .frow .fo i{color:var(--text-dim);font-style:normal;font-size:11px}
@@ -612,8 +625,8 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .pm-seasons>div{text-align:center;border-left:1px solid var(--line)}
 .pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
 .pm-seasons span{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim)}
-.pm-inforow{display:grid;grid-template-columns:1.6fr 1fr;gap:8px;padding-top:10px}
-.pm-inforow.has-role{grid-template-columns:1.15fr .85fr 1fr 1.6fr}
+.pm-inforow{display:grid;grid-template-columns:1fr;gap:8px;padding-top:10px}
+.pm-inforow.has-role{grid-template-columns:1fr 1.5fr}
 .pm-inforow.has-role .pm-design{grid-column:auto}
 .own-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:6px 18px;align-items:start}
 .own-col .clen{margin-top:0}
@@ -640,7 +653,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
   .modal.pmodal{max-width:100%}
   .pm-body{grid-template-columns:1fr}
   .pm-cardside{max-width:220px;margin:0 auto}
-  .pm-perf{grid-template-columns:1fr} .pm-inforow,.pm-inforow.has-role{grid-template-columns:1fr}
+  .pm-midrow,.pm-inforow,.pm-inforow.has-role{grid-template-columns:1fr} .pm-toprow{flex-direction:column}
 }
 
 /* мінікартка/повна: рамка(webp) + фото/монограма + дані overlay (масштаб transform) */
@@ -793,7 +806,7 @@ const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players
   mktSub:'free', form:{}, rBounds:[6,10], pBounds:[0,150000000], transfers:[], transfersReady:false,
   listings:{}, listingsReady:false, cards:{}, stats:{}, statsReady:false,
   colF:{ q:'', pos:'', club:'', status:'all', sort:'rating', coll:'', rarity:'' },
-  f:{ q:'', league:'', club:'', pos:'', coll:'', rarity:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating', onlyPlayed:false } };
+  f:{ q:'', league:'', club:'', pos:'', coll:'', rarity:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
@@ -810,6 +823,12 @@ const CLUB={'Arsenal':'#ef0107','Atletico':'#cb3524','Barcelona':'#a50044','Baye
  'Real Madrid':'#3f6fbf','Roma':'#8e1f2f','Shakhtar':'#f37021',
  'Brentford':'#e30613','Everton':'#274488','Tottenham':'#3a4f94','Betis':'#0bb363','Athletic':'#ee2523','Polissya':'#2e9b4f'};
 function clubName(cid){ return (S.clubs[cid]||{}).name||''; }
+// 20.10 (Богдан): ліги скрізь англійською, біля клубу; у БД значення українські (АПЛ, Бундесліга, Ла Ліга, Ліга 1, Серія А, УПЛ) — міняємо лише показ
+const LEAGUE_EN={'АПЛ':'Premier League','Бундесліга':'Bundesliga','Ла Ліга':'La Liga','Ліга 1':'Ligue 1','Серія А':'Serie A','УПЛ':'UPL'};
+const SEASON_LABEL='26/27';   // сезон сезонної статистики (SofaScore, ліга клубу) — змінити при новому сезоні
+function leagueEn(l){ return LEAGUE_EN[l]||l||''; }
+function clubLeague(cid){ return leagueEn((S.clubs[cid]||{}).league); }
+function clubWithLeague(cid){ const n=clubName(cid), l=clubLeague(cid); return l?`${n} · ${l}`:n; }
 function clubCol(cid){ return CLUB[clubName(cid)]||'var(--line)'; }
 // зворотний відлік до дедлайну: «Nд ГГ:ХХ»
 function countdown(iso){ const ms=new Date(iso)-new Date(); if(ms<=0) return 'дедлайн минув';
@@ -925,6 +944,9 @@ async function loadRefs(){
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
   const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name`);
   S.names = {}; lb.forEach(p=>S.names[p.participant_id]=p.display_name);
+  // 20.10: «💼 Приріст за тури» у шапці = те саме число, що йде в 💼 «Менеджер турніру» (Σ Δ€ складу по ЗАКРИТИХ турах; публічна вьюха). Лише показ — формул не чіпає. Нема вьюхи → блок ховається.
+  S.mgStand=null;
+  try{ S.mgStand = await sbSel(`market_mgmt_standings?tournament_id=eq.${S.tour.id}&select=participant_id,rounds_done,delta_eur,place,projected_points,final_points,is_final`); }catch(e){ S.mgStand=null; }
   // свої баланси: трансферний/зарплатний + доступне/заморожене (RLS + RPC: лише свої; публічна лише сума Банку, 510)
   const b = await sbSel(`market_budget?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=bank_eur,wage_bank_eur`);
   S.bank = b.length? b[0].bank_eur : null;
@@ -1071,10 +1093,13 @@ function renderHeader(){
   const pr=$('h-price'); if(pr) pr.textContent=eur(price);
   const pp=$('h-price-parts'); if(pp) pp.innerHTML = start
     ? col('Старт', e1(start), '', 'Вартість гравців твого нинішнього складу на старті турніру (зафіксована; до першого матчу = поточна)')
-      + col('Зміна', moved? `${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dPct)}${Math.abs(dPct).toFixed(1)}%` : 'без змін', moved? (dEur>=0?'up':'down') : '',
+      + col('Зміна від старту', moved? `${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dPct)}${Math.abs(dPct).toFixed(1)}%` : 'без змін', moved? (dEur>=0?'up':'down') : '',
             `Зміна вартості складу від старту: ${eur(start)} → ${eur(price)}. % — частка від вартості складу на старті`)
       + (moved? col('Σ % гравців', `${dpSum>=0?'▲':'▼'} ${ppSgn(dpSum)}`, dpSum>=0?'up':'down',
             'Сума відсотків зміни вартості кожного з твоїх гравців від старту (ціна гравця не впливає; дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша. Те саме, що Σ % гравців на борді') : '')
+      + (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
+          const n=(S.mgStand||[]).length, d=+ms.delta_eur||0, tip='Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.';
+          return col('💼 Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)} · ${ms.place} з ${n}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })()
     : '';
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
@@ -1443,7 +1468,7 @@ function viewRoundResult(r){
       const aiB = !!(bo && bo.boost==='squad_all_in' && l.role==='bench' && m.inSum && m.pts!=null);   // All-in: очки лавки зараховано — позначаємо 🔥 і не притушуємо рядок
       return `<tr class="${l.role==='bench'?'bn':''}${(l.state==='played' && !m.inSum)?' nosum':''}${firstBench?' sep':''}" data-p="${l.player_id}">
         <td class="hm">${role}</td>
-        <td class="pn"><span class="bno">${l.role==='bench'?'Л'+(l.bench_order||'')+' · ':''}</span><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubName(p.club_id))}</span></td>
+        <td class="pn"><span class="bno">${l.role==='bench'?'Л'+(l.bench_order||'')+' · ':''}</span><b>${esc(p.name||'—')}</b> <span class="pos ${p.position}">${posCat(p.position)}</span><span class="cl">${esc(clubWithLeague(p.club_id))}</span></td>
         <td>${stIc}</td><td class="r tnum hm">${l.avg_rating!=null?Number(l.avg_rating).toFixed(1):'—'}</td>
         <td class="r tnum">${m.raw!=null?m.raw:'—'}</td><td class="c mul">${mul||''}</td>
         <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b>${aiB?' <span class="aib" title="🔥 All-in: очки лавки зараховано в суму">🔥</span>':''}</td><td class="r">${mvH}</td></tr>`;
@@ -1548,9 +1573,11 @@ function posBlock(mine, round){
     const b=POSB[k], used=posUsedElsewhere(k, round), pid=S.pos[k], pl=pid && mine.find(p=>p.id===pid), on=!!pl;
     const state = on ? 'on' : (used!=null ? 'used' : '');
     const st = on ? `Обрано: ${esc(lastName(pl.name))} (клік — зняти)` : (used!=null ? `Використано в Турі ${used}` : (S.boost ? 'Недоступний з Автопілотом/All-in' : 'Доступний — натисни «⚡» на гравці основи'));
-    return `<button type="button" class="bcard ${state}" ${on?`data-posclear="${k}"`:'disabled'}>
-      <span class="bh"><span class="bico">⚡</span>${b.name}</span>
-      <span class="bds">${b.desc}</span><span class="bst">${st}</span></button>`;
+    const inner=`<span class="bh"><span class="bico">⚡</span>${b.name}</span>
+      <span class="bds">${b.desc}</span><span class="bst">${st}</span>`;
+    if(on) return `<button type="button" class="bcard on" data-posclear="${k}">${inner}</button>`;
+    if(used==null && !S.boost) return `<div class="bcard avail">${inner}</div>`;   // доступний: НЕ disabled (інакше тьмяний, як «використано»)
+    return `<button type="button" class="bcard ${state}" disabled>${inner}</button>`;
   }).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>⚡ Позиційні бусти</span><span>1 раз за турнір кожен · до 3 в одному турі</span></div>
     <div class="bgrid">${cards}</div>
@@ -1790,14 +1817,14 @@ function moveBench(mine, pid, dir){
 function roleChipHTML(p,zone){ if(!rolesOn()) return '';
   const r=p.role||'main', mis=(zone==='start'&&r==='bench')||(zone==='bench'&&r==='main');
   const risk=mis && r==='main' && penOn() && !p.injury && (+p.wage_per_round||0)>0;   // 542: «Основний» не в основі → порушення на дедлайні
-  const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде продано після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні');
-  const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
+  const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде автоматично продано відразу після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні');
+  const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
   return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>${mk}`; }
 function rolesNoteInner(mine){ if(!rolesOn()) return '';
   const mc=(mine||[]).filter(p=>(p.role||'main')==='main').length, bc=(mine||[]).length-mc;
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
   const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
-  const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за тур, друге порушення — гравця буде продано.`:'';
+  const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за тур, друге порушення — гравця буде автоматично продано відразу після туру.`:'';
   return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}`; }
 function rolesBanner(mine){ const t=rolesNoteInner(mine); return t?`<div class="mnote" style="margin:8px 0">${t}</div>`:''; }
 function renderLineup(mine, round){
@@ -1824,7 +1851,7 @@ function renderLineup(mine, round){
     return `<button class="mini ${on?'on':'ghost'}" data-pos="${p.id}" ${dis?'disabled':''} title="${dis?POSB[k].name+': використано в Турі '+used:POSB[k].desc}">⚡ ${POSB[k].name}</button>`;
   };
   const row = (p, zone, idx) => {
-    const L=S.lineup[p.id], cl=clubName(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
+    const L=S.lineup[p.id], cl=clubWithLeague(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
     let ctrl='';
     if(!round || locked){ ctrl=''; }
     else if(zone==='start'){
@@ -1856,11 +1883,12 @@ function renderLineup(mine, round){
     </div>`;
   };
 
+  const capNote = `<p class="dim" style="margin:10px 0 0">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>`;
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
-  $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + rolesBanner(mine) + budgetPanel() +
-    `<div class="head2"><h2>Мій склад</h2><span class="sub">основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</span></div>
+  $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
+    `<div class="head2x"><h2>Мій склад</h2><div class="subx"><div>основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</div>${rolesNoteInner(mine)?`<div>${rolesNoteInner(mine)}</div>`:''}</div></div>
      <div class="squad-wrap">
        <div class="panel">
          <div class="slot-h"><span>Основа (${s.min5})</span><span>рейтинг · ціна</span></div>
@@ -1868,7 +1896,8 @@ function renderLineup(mine, round){
          ${val}
          ${injWarn}
          ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
-         ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}${challengesBlock(s, round)}${rivalBox(round)}
+         ${capNote}
+         ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}${rivalBox(round)}
          ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos);
                   // 533: «підтверджено» = є підтвердження (після розблокування адміном склад лишається в базі, але його треба підтвердити знову)
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved && (!S.confOK || locked), nTxt=round?' на Тур '+round.number:'';
@@ -1880,12 +1909,12 @@ function renderLineup(mine, round){
                                                 : '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну туру — після змін кнопка знову стане активною.</p>')
                                : (S.confOK && round ? '<p class="mnote warn" style="margin:8px 0 0">⚠️ Підтвердження ФІНАЛЬНЕ: після нього змінити склад і бусти не вийде. Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>' : '')); })()}
          ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
-         <p class="dim" style="margin-top:8px">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>
        </div>
        <div class="panel">
          ${zoneBlock('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'1 · 2 · 3')}
          <p class="dim" style="margin:8px 2px 0">Незіграний основний → перший з лавки за порядком, хто зіграв (стрілки ↑/↓, <b>без звірки позиції</b>). Лавка очок не дає.</p>
          ${zoneBlock('Поза складом', s.out, 'out')}
+         ${challengesBlock(s, round)}
        </div>
      </div>`;
 
@@ -1937,7 +1966,7 @@ function openLineupReview(mine, round){
   const s=lnState(mine);
   const line=(p,extra)=>`<div class="lrow" style="cursor:default">
     <span class="pos ${p.position}">${p.position}</span>
-    <span class="lnm">${esc(p.name)}${extra||''}<span class="lclub">${esc((S.clubs[p.club_id]||{}).name||'')}</span></span>
+    <span class="lnm">${esc(p.name)}${extra||''}<span class="lclub">${esc(clubWithLeague(p.club_id))}</span></span>
     <span class="lrt">★${p.season_avg_rating??'—'}</span></div>`;
   const starters=s.st.map(p=>line(p,
     (s.cap&&s.cap.id===p.id)?' <b class="capb">© капітан</b>':(s.vice&&s.vice.id===p.id)?' <b class="viceb">V віце</b>':'')).join('');
@@ -1951,25 +1980,30 @@ function openLineupReview(mine, round){
     const viol=offMain.filter(x=>!x.injury), exempt=offMain.filter(x=>x.injury);
     if(viol.length){
       penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>
-        <p class="mnote warn">«Основний» поза основою на дедлайні — порушення: борг <b>${Math.round(debtPct()*100)}%</b> зарплати гравця за тур. Друге порушення тим самим гравцем — гравця буде продано після туру.</p>`
-        + viol.map(x=>`<p class="mnote">• <b>${esc(x.name)}</b> — борг ≈ ${eur(Math.round(x.wage_per_round*debtPct()))}${x.marked?' · <b class="warnc">🚩 вже порушував — гравця буде ПРОДАНО після туру</b>':''}</p>`).join('')
+        <p class="mnote warn">«Основний» поза основою на дедлайні — порушення: борг <b>${Math.round(debtPct()*100)}%</b> зарплати гравця за тур. Друге порушення тим самим гравцем — гравця буде автоматично продано відразу після туру.</p>`
+        + viol.map(x=>`<p class="mnote">• <b>${esc(x.name)}</b> — борг ≈ ${eur(Math.round(x.wage_per_round*debtPct()))}${x.marked?' · <b class="warnc">🚩 вже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після туру</b>':''}</p>`).join('')
         + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу. Не хочеш порушувати — постав «Основного» в основу або переведи його на «Лавку» у картці гравця (+${Math.round(benchPrem()*100)}% до зарплати).</p>`;
     }
     if(exempt.length) penBlk+=`<p class="mnote">ℹ️ Зараз не рахуються через травму/дискваліфікацію: ${exempt.map(x=>esc(x.name)).join(', ')} — якщо до дедлайну одужають, це знову порушення.</p>`;
     if(debtSum()>0){ blockDebt=true; penBlk=`<p class="mnote warn" style="margin-top:14px">💸 Є несплачений борг ${eur(debtSum())} — спершу сплати його (кнопка «Сплатити борг» над складом), інакше склад підтвердити не можна.</p>`+penBlk; }
   }
   modalOpen(`<h3>Підтвердити склад · тур ${round.number}</h3>
+    <div class="cfgrid"><div class="cfcol">
     <div class="msec" style="margin-top:12px">Основа (${s.st.length})</div>${starters}
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
     <p class="mnote">Незіграний основний → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст туру</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
+    </div><div class="cfcol">
     ${challengesModalHtml(s, round)}
     ${rivalsModalHtml(round)}
     ${penBlk}
+    </div></div>
+    <div class="cfbottom">
     ${S.confOK?'<p class="mnote warn" style="margin-top:14px">⚠️ Підтвердження ФІНАЛЬНЕ: змінити склад і бусти після нього не вийде (лише адмін розблокує). Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>':''}
-    <div class="macts" style="margin-top:16px"><button data-do="lnyes"${blockDebt?' disabled title="Спершу сплати борг"':''}>Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div>`);
+    <div class="macts" style="margin-top:16px"><button data-do="lnyes"${blockDebt?' disabled title="Спершу сплати борг"':''}>Підтвердити склад</button><button class="ghost" data-do="lnno">Назад</button></div></div>`);
+  { const cfm=$('mhost').querySelector('.modal'); if(cfm) cfm.classList.add('cfmodal'); }
   $('mhost').querySelector('[data-do="lnyes"]').onclick=async()=>{ modalClose(); await act('market_set_lineup', {
     p_round:round.id, p_participant:S.me.id, p_starters:s.st.map(p=>p.id),
     p_bench:s.bn.map(p=>p.id), p_captain:s.cap?s.cap.id:null, p_vice:s.vice?s.vice.id:null, p_boost:S.boost||null, p_pos_boosts:posPayload()
@@ -2006,14 +2040,6 @@ function ownerInfo(p){
   const au=S.auctions.find(a=>a.player_id===p.id);
   if(au) return { cls:'free', txt:'🔨 аукціон · '+eur(au.current_bid), dot:'<span class="dot g"></span>' };
   return { cls:'free', txt:'✅ Вільний', dot:'<span class="dot g"></span>' };
-}
-function sparkTile(p){
-  const arr=(S.form[p.id]||[]).filter(v=>v!=null).slice(-6);
-  if(!arr.length) return `<div class="spark empty">форма —</div>`;
-  return `<div class="spark">${arr.map(v=>{
-    const h=Math.max(3,Math.round((Math.min(10,Math.max(5,v))-5)/5*22));
-    return `<i style="height:${h}px"></i>`;
-  }).join('')}</div>`;
 }
 function formChart(p){
   const last=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
@@ -2075,10 +2101,10 @@ function mtile(p){
     ${avatar(p,76)}
     <div class="mnm">${esc(p.name)}</div>
     <div class="mclub">${esc(cl.name||'')}</div>
+    <div class="mlg">${esc(leagueEn(cl.league))}</div>
     ${dgb}
     <div class="mtrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span></div>
     ${startWas(p,'center')}
-    ${sparkTile(p)}
     <div class="mstatus ${o.cls}">${o.dot}${o.txt}</div>
   </div>`;
 }
@@ -2112,7 +2138,6 @@ function marketList(){
   if(f.rMax!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating <= f.rMax);
   if(f.pMin!=null) list=list.filter(p=>(p.market_value_current||0) >= f.pMin);
   if(f.pMax!=null) list=list.filter(p=>(p.market_value_current||0) <= f.pMax);
-  if(f.onlyPlayed) list=list.filter(p=>((S.stats[p.id]||{}).rounds_played||0)>0);
   const s=f.sort;
   const scoredOf=p=>{ const st=S.stats[p.id]; return st&&st.rounds_played>0?st.scored_points:-1; };
   list.sort((a,b)=>{
@@ -2128,13 +2153,13 @@ function filterBar(){
   const f=S.f;
   // показуємо лише клуби з гравцями в пулі (порожні засіяні клуби ховаємо; з'являться самі, коли додамо гравців)
   const activeClubs=new Set(S.players.map(p=>p.club_id));
-  const leagues=[...new Set(Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).map(c=>c.league))].sort();
+  const leagues=[...new Set(Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).map(c=>c.league))].sort((a,b)=>leagueEn(a).localeCompare(leagueEn(b)));
   const clubs=Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
   const rB=S.rBounds, pB=S.pBounds;
   return `<div class="mfilters">
     <div class="mf search"><input id="f-q" placeholder="Пошук по імені (англ.)" value="${esc(f.q)}"></div>
-    <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,f.league)).join('')}</select></div>
+    <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,leagueEn(l),f.league)).join('')}</select></div>
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
     <div class="mf"><select id="f-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select></div>
     <div class="mf range"><label>Рейтинг</label><div class="rng">
@@ -2148,7 +2173,6 @@ function filterBar(){
       <input type="range" id="f-pmax" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMax}"></div>
       <span class="rv" id="rv-p">${eur(f.pMin)}–${eur(f.pMax)}</span></div>
     <div class="msort"><span>Сортувати</span><select id="f-sort">${[['rating','за рейтингом'],['points','за очками'],['price','за ціною'],['val','за Val Δ'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
-    <label class="mf chk"><input type="checkbox" id="f-played" ${f.onlyPlayed?'checked':''}> лише заіграні</label>
   </div>`;
 }
 function renderGrid(){
@@ -2165,7 +2189,6 @@ function bindFilters(){
   const bind=(id,fn)=>{ const el=$(id); if(el) el.onchange=e=>{ fn(e.target.value); renderGrid(); }; };
   bind('f-league',v=>S.f.league=v); bind('f-club',v=>S.f.club=v);
   bind('f-pos',v=>S.f.pos=v); bind('f-sort',v=>S.f.sort=v);
-  const pl=$('f-played'); if(pl) pl.onchange=()=>{ S.f.onlyPlayed=pl.checked; renderGrid(); };
   const paint=(el,inp,a,b)=>{ if(!el||!inp) return; const lo=+inp.min,hi=+inp.max,pc=v=>hi>lo?((v-lo)/(hi-lo))*100:0; el.style.left=pc(a)+'%'; el.style.width=Math.max(0,pc(b)-pc(a))+'%'; };
   const rmin=$('f-rmin'), rmax=$('f-rmax');
   const syncR=()=>{ let a=+rmin.value,b=+rmax.value; if(a>b){[a,b]=[b,a];} S.f.rMin=a;S.f.rMax=b; $('rv-r').textContent=a.toFixed(1)+'–'+b.toFixed(1); paint($('fill-r'),rmin,a,b); renderGrid(); };
@@ -2220,7 +2243,7 @@ async function viewMarket(){
           rows.map(({l,p})=>{
             const mv=p.market_value_current||0, mine=l.seller_participant===S.me.id, pct=mv? Math.round((l.ask_price/mv-1)*100) : 0;
             const stale=(+l.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+l.ask_price>winMaxEur(mv));
-            return `<tr class="shoprow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name)}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')} · ${posCat(p.position)}</span></td>
+            return `<tr class="shoprow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name)}</b> <span class="dim">${esc(clubWithLeague(p.club_id))} · ${posCat(p.position)}</span></td>
               <td class="n">${eur(mv)}</td><td class="n"><b>${eur(l.ask_price)}</b> <span class="dim">${pct>0?'+':''}${pct}%</span>${stale?' <span class="warnc" title="Вартість змінилась — ціна поза вікном, лот застарів">🕓 застарів</span>':''}</td>
               <td>${mine?'<b style="color:var(--gold)">ти</b>':esc(S.names[l.seller_participant]||'—')}</td>
               <td class="n">${mine?`<button class="mini ghost" data-unlistp="${p.id}">Зняти</button>`:`<button class="mini" data-open="${p.id}">Відкрити</button>`}</td></tr>`;
@@ -2244,20 +2267,20 @@ async function viewMarket(){
     const bidsHtml = myBids.length
       ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт · надбавка · роль</th><th class="n">До</th></tr></thead><tbody>${
         myBids.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{}, my=(S.myAuc||[]).find(x=>x.auction_id===a.id);
-          return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+          return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
             <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,my&&my.leader_role)}</td><td class="n">${aucDt(a)}</td></tr>`;
         }).join('')}</tbody></table>` : none;
     const outbid = outbidList();
     const outHtml = outbid.length
       ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Поточна</th><th class="n">Умови лідера</th><th class="n">До</th><th></th></tr></thead><tbody>${
         outbid.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
-          return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+          return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
             <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">Перебити</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const shopHtml = !S.listingsReady ? '<div class="dim" style="padding:6px 2px">Вітрина зʼявиться після заливки 421.</div>'
       : myShop.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th></th></tr></thead><tbody>${
         myShop.map(l=>{ const p=S.players.find(x=>x.id===l.player_id)||{};
-          return `<tr class="shoprow mine" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc((S.clubs[p.club_id]||{}).name||'')}</span></td>
+          return `<tr class="shoprow mine" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
             <td class="n">${eur(p.market_value_current)}</td><td class="n"><b>${eur(l.ask_price)}</b></td><td class="n"><button class="mini ghost" data-unlistp="${p.id}">Зняти</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const tradeIntro = (S.transfersReady||S.exchangesReady)
@@ -2291,7 +2314,7 @@ async function viewMarket(){
 function transferRow(t){
   const p=S.players.find(x=>x.id===t.player_id)||{};
   const evT=(S.wev||[]).find(e=>e.transfer_id===t.id), ofT=(S.wof||[]).find(e=>e.transfer_id===t.id);   // 553: подія (я власник) / моя пропозиція з надбавкою
-  const cl=(S.clubs[p.club_id]||{}).name||'';
+  const cl=clubWithLeague(p.club_id);
   const iAmSeller=t.from_participant===S.me.id;
   const other=iAmSeller?t.to_participant:t.from_participant;
   const otherName=esc(S.names[other]||'—');
@@ -2389,7 +2412,7 @@ function xCashLine(x, iAmFrom){
 }
 function exchangeRow(x){
   const off=S.players.find(p=>p.id===x.offered_player)||{}, want=S.players.find(p=>p.id===x.wanted_player)||{};
-  const offCl=(S.clubs[off.club_id]||{}).name||'', wantCl=(S.clubs[want.club_id]||{}).name||'';
+  const offCl=clubWithLeague(off.club_id), wantCl=clubWithLeague(want.club_id);
   const iAmFrom=x.from_participant===S.me.id;
   const other=iAmFrom?x.to_participant:x.from_participant, otherName=esc(S.names[other]||'—');
   const mine=x.awaiting_participant===S.me.id;
@@ -2612,7 +2635,7 @@ function exchangeUI(p){
   const mine=S.players.filter(x=>x.owner_participant_id===S.me.id && !lnBlocked(x.id) && !(inPlayRound() && expiringP(x)));   // 534/535: гравці з підтвердженого складу й (у турі) з останнім туром контракту в обміні не беруть участі
   if(!mine.length) return `<div class="msec" style="margin-top:14px">🔄 Обмін</div><p class="mnote">У тебе немає гравців для обміну${S.myConfLn&&S.myConfLn.size?' (гравці з підтвердженого складу заблоковані)':''}.</p>`;
   const sel='width:100%;padding:8px;border-radius:8px;background:var(--panel-2,#122);color:inherit;border:1px solid var(--line,#333)';
-  const opts=mine.map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc((S.clubs[x.club_id]||{}).name||'')} · ${eur(x.market_value_current)}</option>`).join('');
+  const opts=mine.map(x=>`<option value="${x.id}">${esc(x.name)} · ${esc(clubWithLeague(x.club_id))} · ${eur(x.market_value_current)}</option>`).join('');
   return `<div class="xbox" data-want="${p.id}" data-owner="${p.owner_participant_id}">
     <div class="msec" style="margin-top:16px">🔄 Обмін на цього гравця (1↔1 + доплата)</div>
     <label class="dim">Твій гравець на обмін</label>
@@ -2718,7 +2741,8 @@ function needRole(box){ if(!rolesOn()) return false; const el=box||$('mhost').qu
 function roleChips(){ if(!rolesOn()) return '';
   return `<div class="crole"><div class="clab"><b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). Обери обов'язково.</div>
     <div class="crole-row"><button type="button" class="crole-chip" data-r="main">Основний</button><button type="button" class="crole-chip" data-r="bench">Лавка</button></div>
-    <div class="crole-need"></div></div>`; }
+    <div class="crole-need"></div>
+    <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id))}</div></div>`; }
 function qWageR(pid,len,mv,role){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes.find(x=>x.len===len);
   const base=e?+e.wage:wageFor(mv,len,defMode(pid));
   if(role!=='bench') return base;
@@ -2831,7 +2855,7 @@ function actionsHTML(p,ctx){
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
     const cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`
-      + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
+      + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
       : `<p class="mnote">Контракт уже покриває всі тури, що лишились (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
@@ -3007,7 +3031,7 @@ function ownerHist(card,p){
 }
 // форма списком (рішення Богдана 14.10: без графіка): 5 останніх матчів — дата · суперник · турнір · рахунок · хвилини · оцінка; найсвіжіший зверху
 function formList(card, fallbackForm){
-  const title='<div class="section-label" style="color:var(--text-dim);font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Форма · рейтинги за 5 останніх матчів</div>';
+  const title='<div class="section-label" style="color:var(--text-dim);font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px">Форма · 5 останніх матчів · усі змагання</div>';
   const rr=(card&&card.recent_ratings||[]).slice(0,5).map(Number), ff=Array.isArray(card&&card.recent_form)?card.recent_form:[];
   const cls=r=>r>=8?'hi':r>=7?'mid':r>=6.5?'lo':'bad';
   if(!rr.length){
@@ -3179,7 +3203,7 @@ async function openPlayerModal(pid){
     card.country?`<span class="fl">${flagEmoji(card.country)}</span><b>${esc(card.country)}</b>`:'',
     card.age!=null?`<span>Вік ${card.age}</span>`:'',
     card.shirt_number!=null?`<span>№${card.shirt_number}</span>`:'',
-    `<span class="club"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(cl.name||'')}</span>`,
+    `<span class="club"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(cl.name||'')}${cl.league?` · ${esc(leagueEn(cl.league))}`:''}</span>`,
     `<span class="pbadge ${p.position}">${posCat(p.position)}</span>`
   ].filter(Boolean).join('');
   // форма: recent_ratings (idx0=найсвіжіший → розвертаємо) або S.form
@@ -3200,6 +3224,7 @@ async function openPlayerModal(pid){
   const sp = (S.stats&&S.stats[p.id]) || null;
   const ptScored  = sp && sp.rounds_played>0  ? sp.scored_points  : '—';
   const ptFielded = sp && sp.fielded_rounds>0 ? sp.fielded_points : '—';
+  const lgEn=leagueEn(cl.league);
   const html = `<div class="pm-fit">
     <header class="pm-head"><div class="pm-head1">
       <div class="pm-title">Детальна картка гравця</div>
@@ -3214,21 +3239,29 @@ async function openPlayerModal(pid){
       <section class="pm-data">
         <div class="pm-identity">
           <div><h2>${esc(p.name)}</h2><div class="pm-metarow">${meta}</div></div>
-          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг</span></div>
+          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${lgEn?' · '+esc(lgEn):''}</span></div>
         </div>
-        <div class="pm-value">
-          <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
-          <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Val Δ (турнір · від старту)</span></div>
-          <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
-          <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
+        <div class="pm-toprow">
+          <div class="pm-value">
+            <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
+            <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Val Δ (турнір · від старту)</span></div>
+            <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
+            <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
+          </div>
+          <div class="pm-sbox" title="Сезонна статистика — лише матчі національної ліги клубу">
+            <div class="pm-sl">${lgEn?esc(lgEn)+' ':''}${SEASON_LABEL}</div>
+            <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
+          </div>
         </div>
-        <div class="pm-perf">${formList(card, form)}
-          <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
+        <div class="pm-midrow">
+          ${formList(card, form)}
+          <div class="pm-side">
+            <div class="pm-box"><span>Статус</span><strong><span class="sdot"></span>${o.txt.replace(/^[★✅🔨]\s*/u,'')}</strong></div>
+            ${roleBox}
+          </div>
         </div>
         <div class="pm-inforow ${ctx.owned?'has-role':''}">
           <div class="pm-box"><span>Історія власників</span><strong>${ownerHist(card,p)}</strong></div>
-          <div class="pm-box"><span>Статус</span><strong><span class="sdot"></span>${o.txt.replace(/^[★✅🔨]\s*/u,'')}</strong></div>
-          ${roleBox}
           ${ctx.owned?designSwitcher(p,card):''}
         </div>
       </section>
@@ -3410,7 +3443,7 @@ function statRows(list, valFn){
   return list.map((p,i)=>`<div class="strow" data-p="${p.id}">
     <span class="rk">${i+1}</span>
     <span class="nm">${esc(lastName(p.name)||p.name||'—')}</span>
-    <span class="cl"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc((S.clubs[p.club_id]||{}).name||'')}</span>
+    <span class="cl"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(clubWithLeague(p.club_id))}</span>
     <span class="vv">${valFn(p)}</span></div>`).join('');
 }
 // журнал цін ОДНОГО туру (market_price_log: оцінка, очки гравця, множник ціни) для фільтра «Тур» у «Статистиці»; кеш S.plogBy[round_id] (null = помилка)
@@ -3464,13 +3497,13 @@ function viewStats(){
   const empty=`<div class="dim" style="padding:12px 14px">${tourLoading?'Завантаження…':tourErr?'Не вдалося завантажити дані туру':rnd?(filtered?'За цим фільтром у '+tn+' нікого немає':tn+': даних ще немає (матчі не зіграні)'):filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних турів)'}</div>`;
   const board=(title,sub,rows)=>`<div class="statcard"><div class="sthead"><b>${title}</b><span>${sub}</span></div>${rows||empty}</div>`;
   const opt=(v,tx,cur)=>`<option value="${esc(v)}" ${String(cur)===String(v)?'selected':''}>${esc(tx)}</option>`;
-  const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort();
+  const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort((a,b)=>leagueEn(a).localeCompare(leagueEn(b)));
   const clubs=Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id) && (!F.league || c.league===F.league)).sort((a,b)=>a.name.localeCompare(b.name));
   const started=(S.rounds||[]).filter(r=>new Date(r.deadline_at)<=new Date()).sort((a,b)=>a.number-b.number);   // тури, що вже стартували (у грі або закриті)
   const fbar=`<div class="mfilters">
     <div class="mf"><select id="sf-round"><option value="">Тур: весь турнір</option>${started.map(r=>opt(r.id,'Тур '+r.number+(r.results_entered_at?'':' · у грі'),F.round)).join('')}</select></div>
     <div class="mf search"><input id="sf-q" placeholder="Пошук по імені (англ.)" value="${esc(F.q||'')}"></div>
-    <div class="mf"><select id="sf-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,l,F.league)).join('')}</select></div>
+    <div class="mf"><select id="sf-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,leagueEn(l),F.league)).join('')}</select></div>
     <div class="mf"><select id="sf-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,F.club)).join('')}</select></div>
     <div class="mf"><select id="sf-pos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),F.pos)).join('')}</select></div>
     <div class="mf"><select id="sf-own">${[['','Власник: усі'],['free','Вільні'],['owned','У складах'],['mine','Мої']].map(([v,tx])=>opt(v,tx,F.own)).join('')}</select></div>

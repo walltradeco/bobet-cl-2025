@@ -56,6 +56,8 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .lbcard.mgwait{opacity:.5}
 .lbcard.mgwait .bankhint{padding:22px 18px}
 .mgblock{margin-top:26px}
+/* 20.10: «Manager of the tournament» і «Rivals» — ДВІ КОЛОНКИ поруч (як MVP/Rivals в ЄвроСезоні); на вузькому екрані — одна */
+.nomgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px;align-items:start;margin-top:26px}
 /* 🎯 General Challenges (547) */
 .chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:10px}
 .chc{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
@@ -260,6 +262,10 @@ table.bb .bp small{color:var(--muted);font-weight:400;font-size:12px}
 .ovl{position:fixed;inset:0;background:rgba(4,9,6,.76);backdrop-filter:blur(5px);z-index:60;display:none;
   align-items:flex-start;justify-content:center;padding:6vh 16px 40px;overflow:auto}
 .ovl.on{display:flex}
+.ovl-card.wide{max-width:1020px}   /* 20.10: вікно складу — ширше, Основа й Лавка поруч (без прокрутки) */
+.sqcols{display:grid;grid-template-columns:1fr 1fr;gap:0 18px;align-items:start}
+.sqcols .slot-h:first-child{margin-top:4px}
+@media(max-width:780px){.sqcols{grid-template-columns:1fr}}
 .ovl-card{background:var(--panel);border:1px solid var(--line);border-radius:15px;max-width:520px;width:100%;
   padding:17px 18px 20px;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:pop .16s ease}
 @keyframes pop{from{opacity:0;transform:translateY(10px) scale(.985)}to{opacity:1}}
@@ -439,6 +445,7 @@ table.grid{min-width:0}
 .pm-value .metric.delta strong{color:var(--up)} .pm-value .metric.delta.down strong{color:var(--down)}
 .pm-value .metric span{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:5px;display:block}
 .pm-perf{display:grid;grid-template-columns:1fr 176px;gap:16px;align-items:end;border-bottom:1px solid var(--line);padding-bottom:8px}
+.pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px;text-align:center}
 .pm-seasons{display:grid;grid-template-columns:repeat(3,1fr)}
 .pm-seasons>div{text-align:center;border-left:1px solid var(--line)}
 .pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
@@ -663,7 +670,7 @@ function rvChip(pid,rid){    // матриця «Points by round»: ⚔️+N б�
 // номінація «⚔️ Rivals — найбільше перемог за турнір» (як в ЄвроСезоні: лише титул і таблиця; золото лише 1-му місцю, усім, хто ділить найкраще число)
 function rvNomCard(title){
   const done=(S.rvBoard||[]).filter(x=>x.scored); const lastRound=Math.max(0,...done.map(x=>x.round_number));
-  if(!done.length) return `<div class="lbcard roseh cmp"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру з дуелями.</div></div>`;
+  if(!done.length) return `<div class="lbcard cmp"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру з дуелями.</div></div>`;
   const total=Math.max((S.mgCfg&&S.mgCfg.total)||6,(S.rounds||[]).length);
   const st={}; S.lb.forEach(p=>st[p.participant_id]={w:0,d:0,l:0,pts:0});
   done.forEach(x=>{ const o=st[x.chooser_participant]; if(!o) return; if(x.status==='win') o.w++; else if(x.status==='draw') o.d++; else if(x.status==='loss') o.l++; o.pts+=x.points||0; });
@@ -675,7 +682,7 @@ function rvNomCard(title){
       <div class="rnk">${gold?`<span class="crown">${medal[0]}</span>`:(prev+1)}</div>
       <div class="nm">${esc(p.display_name)}<span class="bsub">перемог ${o.w} · нічиїх ${o.d} · поразок ${o.l} · очок ⚔️ ${o.pts}</span></div>
       <div class="pts">${o.w}<small>перемог</small></div></div>`; }).join('');
-  return `<div class="lbcard roseh cmp"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${lastRound} з ${total}</span></div>${rows}</div>`;
+  return `<div class="lbcard cmp"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${lastRound} з ${total}</span></div>${rows}</div>`;
 }
 function renderCh(){
   const host=$('secCh'); if(!host) return;
@@ -703,6 +710,11 @@ function finPts(pid){ const f=S.mgs.find(x=>x.participant_id===pid); return (f&&
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 function lastName(full){ const p=(full||'').trim().split(/\s+/); return p[p.length-1]||full; }
 function clubName(cid){ return (S.clubs[cid]||{}).name||''; }
+// 20.10 (Богдан): ліги скрізь англійською, біля клубу; у БД значення українські — міняємо лише показ
+const LEAGUE_EN={'АПЛ':'Premier League','Бундесліга':'Bundesliga','Ла Ліга':'La Liga','Ліга 1':'Ligue 1','Серія А':'Serie A','УПЛ':'UPL'};
+const SEASON_LABEL='26/27';   // сезон сезонної статистики (SofaScore, ліга клубу) — змінити при новому сезоні
+function leagueEn(l){ return LEAGUE_EN[l]||l||''; }
+function clubLg(cid){ const n=clubName(cid), l=leagueEn((S.clubs[cid]||{}).league); return l?`${n} · ${l}`:n; }
 function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
 // ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ──
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
@@ -918,7 +930,7 @@ function formSvg(arr, meta){
   const P=a.map((v,i)=>[pad+i*(W-2*pad)/Math.max(1,a.length-1), H-16-((v-mn)/Math.max(0.1,mx-mn))*(H-30)]);
   const line=P.map(p=>p[0].toFixed(0)+' '+p[1].toFixed(0)).join(' L ');
   const dots=P.map((p,i)=>`<text x="${p[0].toFixed(0)}" y="${(p[1]-9).toFixed(0)}" text-anchor="middle" fill="#b5c8bd" font-size="10" font-family="var(--mono)">${a[i]}</text><circle cx="${p[0].toFixed(0)}" cy="${p[1].toFixed(0)}" r="4" fill="#9ce1a8" stroke="#102019" stroke-width="2"/>`).join('');
-  return `<div><div style="color:var(--text-dim);font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Форма · рейтинги за 5 останніх матчів</div>
+  return `<div><div style="color:var(--text-dim);font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Форма · 5 останніх матчів · усі змагання</div>
     <svg viewBox="0 0 ${W} ${H}" width="100%" height="${H}" preserveAspectRatio="none">
       <defs><linearGradient id="sqar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#26c281" stop-opacity=".34"/><stop offset="1" stop-color="#26c281" stop-opacity="0"/></linearGradient></defs>
       <path d="M ${line} L ${P[P.length-1][0].toFixed(0)} ${H} L ${P[0][0].toFixed(0)} ${H} Z" fill="url(#sqar)"/>
@@ -939,7 +951,7 @@ async function openBoardCard(pid){
     card.country?`<span class="fl">${flagEmoji(card.country)}</span><b>${esc(card.country)}</b>`:'',
     card.age!=null?`<span>Вік ${card.age}</span>`:'',
     card.shirt_number!=null?`<span>№${card.shirt_number}</span>`:'',
-    `<span class="club"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(cl.name||'')}</span>`,
+    `<span class="club"><span class="crest" style="background:${clubCol(p.club_id)}"></span>${esc(cl.name||'')}${cl.league?` · ${esc(leagueEn(cl.league))}`:''}</span>`,
     `<span class="pbadge ${p.position}">${posCat(p.position)}</span>`
   ].filter(Boolean).join('');
   const form = (card.recent_ratings&&card.recent_ratings.length)
@@ -970,7 +982,7 @@ async function openBoardCard(pid){
       <section class="pm-data">
         <div class="pm-identity">
           <div><h2>${esc(p.name)}</h2><div class="pm-metarow">${meta}</div></div>
-          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг</span></div>
+          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${cl.league?' · '+esc(leagueEn(cl.league)):''}</span></div>
         </div>
         <div class="pm-value">
           <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
@@ -981,7 +993,7 @@ async function openBoardCard(pid){
           <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
         </div>
         <div class="pm-perf">${formSvg(form, formMeta)}
-          <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
+          <div title="Сезонна статистика — лише матчі національної ліги клубу"><div class="pm-sl">${cl.league?esc(leagueEn(cl.league))+' ':''}${SEASON_LABEL}</div><div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div></div>
         </div>
         <div class="pm-inforow">
           <div class="pm-box"><span>Історія власників</span><strong>${boardOwnerHist(card,p)}</strong></div>
@@ -1025,8 +1037,7 @@ function renderLB(){
       ${one? '' : lbCard('blueh','Rounds '+(stage1Max()+1)+'-'+stage2End(), s2, false)}
       ${lbCard('goldh','General', tot, true)}
     </div>
-    ${S.mgReady && S.mgs ? `<div class="mgblock">${mgTotalCard('💼 Manager of the tournament')}</div>` : ''}
-    ${S.rvReady ? `<div class="mgblock">${rvNomCard('⚔️ Rivals — найбільше перемог за турнір')}</div>` : ''}
+    ${(S.mgReady && S.mgs) || S.rvReady ? `<div class="nomgrid">${S.mgReady && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}</div>` : ''}
     <div class="hint">${S.mgReady
       ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
       : 'Наскрізний залік · General = сума всіх турів'} · рівні очки → ділять місце · клік на учасника → його склад</div>`;
@@ -1059,11 +1070,12 @@ function renderBank(){
 }
 // 💼 «Менеджер турніру» (наскрізна): одна картка для Leaderboard і вкладки Management. Підпис — лише СУМАРНИЙ приріст складу (рішення Богдана 15.10:
 // розклад по турах — у подіумах турів; «за N тур» і «💎 очки за тури» прибрано). Не-eur режим (score) лишає рахунок — він вирішує місця.
-function mgTotalCard(title){
+function mgTotalCard(title, nom){
+  const cls = nom ? 'lbcard cmp' : 'lbcard roseh cmp';   // nom: номінація в «Таблиці» (нейтральний заголовок, як в ЄвроСезоні)
   const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6};
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
   const done=Math.max(0,...S.mgs.map(x=>x.rounds_done||0));
-  if(!done) return `<div class="lbcard roseh cmp"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру.</div></div>`;
+  if(!done) return `<div class="${cls}"><div class="bh">${title}</div><div class="bankhint">Зʼявиться після першого закритого туру.</div></div>`;
   const rows=[...S.mgs].sort((a,b)=>(a.place-b.place)||byName(a,b)).map(x=>{
     const pl=x.place-1, pc=pl===0?'p1':pl===1?'p2':pl===2?'p3':'';
     const rank=pl<3?`<span class="crown">${medal[pl]}</span>`:x.place;
@@ -1072,7 +1084,7 @@ function mgTotalCard(title){
       <div class="rnk">${rank}</div>
       <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span></div>
       <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
-  return `<div class="lbcard roseh cmp"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
+  return `<div class="${cls}"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
 }
 // 💎 Менеджмент (528): як це працює · 💼 наскрізна «Менеджер турніру» (прогноз → підсумок) · подіум КОЖНОГО закритого туру
 function renderMg(){
@@ -1579,6 +1591,7 @@ async function openMatch(fid){
   const rnd=S.rounds.find(r=>r.id===f.round_id)||{};
   const ki=kickInfo(f), when=new Date(f.kickoff_at);
   const wd=when.toLocaleDateString('uk-UA',{weekday:'short',day:'2-digit',month:'2-digit',timeZone:KYIV}), hm=when.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:KYIV});
+  const oc=document.querySelector('.ovl-card'); if(oc) oc.classList.remove('wide');
   document.getElementById('ovlT').textContent=clubName(f.home_club_id)+' — '+clubName(f.away_club_id);
   document.getElementById('ovlS').textContent='Тур '+(rnd.number||'')+' · '+wd+' о '+hm+' (Київ)'+((f.home_score!=null&&f.away_score!=null)?' · рахунок '+f.home_score+':'+f.away_score:'');
   document.getElementById('ovlB').innerHTML='<div class="hint" style="padding:14px 2px">завантаження…</div>';
@@ -1591,7 +1604,7 @@ async function openMatch(fid){
   document.getElementById('ovlB').innerHTML = rows.length
     ? `<div class="slot-h"><span>Гравці пулу</span><span>оцінка → очки</span></div><div class="plist">${rows.map(r=>{ const pl=pb[r.player_id]||S.pById[r.player_id]||{}, o=own(r.player_id);
         return `<div class="pcard" data-p="${r.player_id}" style="--club:${clubCol(pl.club_id)}"><div><div class="nm">${esc(lastName(pl.name||'—'))}${o?` <span class="capB">${esc(o)}</span>`:''}</div>
-        <div class="meta">${posShort[pl.position]||pl.position||''} · ${esc(clubName(pl.club_id))}</div></div>
+        <div class="meta">${posShort[pl.position]||pl.position||''} · ${esc(clubLg(pl.club_id))}</div></div>
         <div class="rt"><div class="big tnum">${ptsOf(+r.rating)}</div><div class="pr">оцінка ${fmtR(r.rating)}</div></div></div>`; }).join('')}</div>`
     : `<div class="hint" style="padding:14px 2px">${off||'Матч ще не зіграний або оцінки ще не зібрані — зʼявляться після завершення матчу.'} Показуємо лише гравців пулу.</div>`;
   document.getElementById('ovlB').querySelectorAll('.pcard[data-p]').forEach(el=>{ if(S.pById[el.dataset.p]) el.onclick=()=>openBoardCard(el.dataset.p); });
@@ -1611,22 +1624,23 @@ function openSquad(pid){
     const bo=boostOf(pid,rid);
     const start=lr.filter(l=>l.role==='start').map(l=>pcardLive(l,bo));
     const bench=lr.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0)).map(l=>pcardLive(l,bo));
-    bodyHtml=`<div class="slot-h"><span>Основа</span><span>оцінка · очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
-      + (bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни · очки в суму — коли заміна визначена</span></div><div class="plist">${bench.join('')}</div>`:'');
+    bodyHtml=`<div class="sqcols"><div><div class="slot-h"><span>Основа</span><span>оцінка · очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div></div>`
+      + `<div>${bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни · очки в суму — коли заміна визначена</span></div><div class="plist">${bench.join('')}</div>`:''}</div></div>`;
   }else if(line.length){
     const bo=boostOf(pid,rid), tgt=(bo&&bo.boost==='squad_autopilot')?bo.target_player:null, allin=!!(bo&&bo.boost==='squad_all_in');
     const start=line.filter(l=>l.role==='start').map(l=>pcard(l.player_id,rid,l.is_captain||l.player_id===tgt,l.is_vice,null,{auto:l.player_id===tgt}));
     const bench=line.filter(l=>l.role==='bench').sort((a,b)=>(a.bench_order||0)-(b.bench_order||0))
                     .map(l=>pcard(l.player_id,rid,false,false,l.bench_order,{counted:allin}));
-    bodyHtml=`<div class="slot-h"><span>Основа</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div>`
-      + (bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:'');
+    bodyHtml=`<div class="sqcols"><div><div class="slot-h"><span>Основа</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div></div>`
+      + `<div>${bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:''}</div></div>`;
   }else{
     const own=S.players.filter(x=>x.owner_participant_id===pid);
     const o5=own.slice(0,5), ob=own.slice(5,8);   // до дедлайну справжня розстановка прихована → поділ умовний (як у таблиці)
-    bodyHtml=`<div class="slot-h"><span>Основа (${o5.length})</span><span>розстановка — після дедлайну</span></div>`
-      +`<div class="plist">${o5.length? o5.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div>`
-      +(ob.length?`<div class="slot-h"><span>Лавка (${ob.length})</span><span>порядок заміни — після дедлайну</span></div><div class="plist">${ob.map(x=>ownCard(x)).join('')}</div>`:'');
+    bodyHtml=`<div class="sqcols"><div><div class="slot-h"><span>Основа (${o5.length})</span><span>розстановка — після дедлайну</span></div>`
+      +`<div class="plist">${o5.length? o5.map(x=>ownCard(x)).join('') : '<div class="meta">склад ще не зібрано</div>'}</div></div>`
+      +`<div>${ob.length?`<div class="slot-h"><span>Лавка (${ob.length})</span><span>порядок заміни — після дедлайну</span></div><div class="plist">${ob.map(x=>ownCard(x)).join('')}</div>`:''}</div></div>`;
   }
+  const oc=document.querySelector('.ovl-card'); if(oc) oc.classList.add('wide');
   document.getElementById('ovlT').textContent='Склад · '+p.display_name;
   document.getElementById('ovlS').textContent='Тур '+S.tour+' · без бюджетів';
   document.getElementById('ovlB').innerHTML=
@@ -1661,7 +1675,7 @@ function pcardLive(l,bo){
   const rt = (l.state==='played' && l.avg_rating!=null)? ' · оцінка '+fmtR(l.avg_rating) : '';
   return `<div class="pcard" data-p="${l.player_id}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${dim||l.state==='dnp'?';opacity:.6':''}">
     <div><div class="nm">${lastName(pl.name)} ${tag}</div>
-    <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${bench&&l.bench_order!=null?' · лавка '+l.bench_order:''}${rt}</div>${priceLineRound(l.player_id,l.round_id)}</div>
+    <div class="meta">${posShort[pl.position]||pl.position||''} · ${esc(clubLg(pl.club_id))}${bench&&l.bench_order!=null?' · лавка '+l.bench_order:''}${rt}</div>${priceLineRound(l.player_id,l.round_id)}</div>
     <div class="rt"><div class="big tnum"${dim?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${sub}</div></div></div>`;
 }
 function pcard(playerId,rid,cap,vice,benchOrder,opt){
@@ -1672,13 +1686,13 @@ function pcard(playerId,rid,cap,vice,benchOrder,opt){
   const tag=opt.auto?'<span class="capB">🤖 ×2</span>':(cap?'<span class="capB">К ×2</span>':(vice?'<span class="capB">V</span>':''))+(benchOrder!=null&&opt.counted?'<span class="capB">🔥</span>':'');
   return `<div class="pcard" data-p="${playerId}" title="Картка гравця" style="--club:${clubCol(pl.club_id)}${dim?';opacity:.6':''}">
     <div><div class="nm">${lastName(pl.name)} ${tag}</div>
-    <div class="meta">${posShort[pl.position]||pl.position||''} · ${clubName(pl.club_id)}${benchOrder!=null?' · лавка '+benchOrder:''}</div></div>
+    <div class="meta">${posShort[pl.position]||pl.position||''} · ${esc(clubLg(pl.club_id))}${benchOrder!=null?' · лавка '+benchOrder:''}</div></div>
     <div class="rt"><div class="big tnum"${dim?' style="color:var(--dim)"':''}>${val}</div><div class="pr">${(benchOrder!=null&&!opt.counted)?'':'оч. туру'}</div></div></div>`;
 }
 function ownCard(x){
   return `<div class="pcard" data-p="${x.id}" title="Картка гравця" style="--club:${clubCol(x.club_id)}">
     <div><div class="nm">${lastName(x.name)}</div>
-    <div class="meta">${posShort[x.position]||x.position||''} · ${clubName(x.club_id)}</div></div>
+    <div class="meta">${posShort[x.position]||x.position||''} · ${esc(clubLg(x.club_id))}</div></div>
     <div class="rt"><div class="big tnum">${eur(x.market_value_current)}</div>${startWas(x,'right')}<div class="pr">★${x.season_avg_rating??'—'}</div></div></div>`;
 }
 function closeM(){ document.getElementById('ovl').classList.remove('on'); }
