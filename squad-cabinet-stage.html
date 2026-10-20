@@ -2883,7 +2883,7 @@ function updClen(el){
   const mv=+el.dataset.mv||0, len=+el.dataset.len||1, pid=el.dataset.pid;
   const prole=el.dataset.prole||'', isBench=prole==='bench';
   const w0=pid?qWageR(pid,len,mv,isBench?'bench':'main'):Math.round(wageFor(mv,len,'first')*(isBench?1+benchPrem():1)), q=pid&&S.quotes[pid];
-  const xb=el.closest('.xbox'), tb=el.closest('.ptab-body'), pctA=(!xb&&!tb&&el.dataset.ext!=='1')?aucPctOf():0, pctX=xb?wpctOf(xb):pctA, pctT=(!xb&&tb)?wpctOf(tb):0;   // 20.10: надбавка «Домовитись з гравцем» — враховується в показі контракту
+  const xb=el.closest('.xbox'), tb=el.closest('.ptab-body'), pctA=(!xb&&!tb&&el.dataset.ext!=='1')?aucPctOf():0, pctT=(!xb&&tb&&el.dataset.ext!=='1')?wpctOf(tb):0, pctX=xb?wpctOf(xb):(tb?pctT:pctA);   // 20.10: надбавка «Домовитись з гравцем» — враховується в показі контракту
   const w=pctX>0?Math.round(w0*(1+pctX)):w0, res=w*len;
   if(rolesOn()){   // ціни ОБОХ ролей поруч; «Лавка» недоступна для зірок; попередження, коли «Основних» більше 5
     const wm=pid?qWageR(pid,len,mv,'main'):wageFor(mv,len,'first'), wb=pid?qWageR(pid,len,mv,'bench'):Math.round(wageFor(mv,len,'first')*(1+benchPrem()));
@@ -2912,8 +2912,8 @@ function updClen(el){
   if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1})</div>`;
   if(isExt && q && q.marked) txt+=`<div class="cw-sub"><b class="warnc">🚩 Позначка «порушив»: до зарплати нових турів +${Math.round((q.surcharge??extSurch())*100)}%, «Лавка» недоступна.</b> Продовження скидає позначку.</div>`;
   else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
-  if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> (${xb?'«Домовитись з гравцем»':'ставка на аукціоні; «Купити зараз» — без надбавки'}): база ${eur(w0)}/тур × ${(1+pctX).toFixed(2)} = <b>${eur(w)}</b>/тур.</div>`;
-  if(pctT>0){ const w2=Math.round(w0*(1+pctT)), r2=w2*len; txt+=`<div class="cw-sub">Для пропозиції «Домовитись з гравцем» (надбавка <b>+${Math.round(pctT*100)}%</b>): <b>${eur(w2)}</b>/тур × ${len} = резерв <b>${eur(r2)}</b>${(wf!=null&&r2>wf)?` · <b class="warnc">не вистачає ${eur(r2-wf)}</b>`:''}. Викуп з вітрини — без надбавки.</div>`; }
+  if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> (${xb||pctT>0?'«Домовитись з гравцем» — на весь контракт':'ставка на аукціоні; «Купити зараз» — без надбавки'}): база ${eur(w0)}/тур × ${(1+pctX).toFixed(2)} = <b>${eur(w)}</b>/тур.</div>`;
+  if(pctT>0 && tb && tb.querySelector('[data-do="buylist"]')){ const r0=w0*len; txt+=`<div class="cw-sub">Викуп з вітрини — без надбавки: <b>${eur(w0)}</b>/тур × ${len} = резерв <b>${eur(r0)}</b>${(wf!=null&&r0>wf)?` · <b class="warnc">не вистачає ${eur(r0-wf)}</b>`:''}.</div>`; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
   if(typeof sumRefresh==='function') sumRefresh();
   if(typeof aucRefresh==='function') aucRefresh();   // 556: форма аукціону залежить від довжини/ролі
