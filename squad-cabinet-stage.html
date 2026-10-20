@@ -333,7 +333,10 @@ table.t{width:100%;border-collapse:collapse}
 .trow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
 .trow .tinfo{flex:1;min-width:230px;font-size:14px}
-.trow .tctrl{display:flex;gap:6px}
+.trow .tctrl{display:flex;gap:6px;flex-wrap:wrap}
+.trow.wev{border-left:3px solid var(--gold);background:rgba(230,193,75,.07)}
+.wpct{margin-top:8px}
+.wpct select{margin-left:6px}
 .trow .tctrl button{padding:6px 12px;font-size:13px}
 
 /* ── ЕКРАН ВХОДУ = BoBet/ЄвроСезон (спільна брама всіх ліг, НЕ дизайн турніру) ──
@@ -945,6 +948,13 @@ async function loadRefs(){
     S.transfers = await sbSel(`market_transfers?tournament_id=eq.${S.tour.id}&status=eq.pending&select=id,player_id,to_participant,from_participant,amount,awaiting_participant,status,created_at&order=created_at.desc`);
     S.transfersReady=true;
   }catch(e){ S.transfers=[]; S.transfersReady=false; }
+  // 553: події «гравець просить піти» — приватні вьюхи (власник / пропонувач). Поки SQL 553 не залито — degrade (нічого не показуємо)
+  S.wev=[]; S.wof=[]; S.wevReady=false;
+  try{
+    S.wev = await sbSel(`market_my_wage_events?tournament_id=eq.${S.tour.id}&status=eq.open&select=*`);
+    S.wof = await sbSel(`market_my_wage_offers?tournament_id=eq.${S.tour.id}&status=eq.open&select=*`);
+    S.wevReady=true;
+  }catch(e){ S.wev=[]; S.wof=[]; S.wevReady=false; }
   // обмін 1↔1 + двостороння доплата (412; таблиця публічна). Поки 412 не залито → degrade
   S.exchanges=[]; S.exchangesReady=false;
   try{
@@ -1120,9 +1130,17 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
     conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} із ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
-  return hero + inplayMsg + lockedMsg + penBanners() + conf;
+  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + conf;
 }
 // 542: банери штрафів ролей — МІЙ борг / склад «не зараховано» / вихід гравця (приватне, лише власнику)
+// 553: невирішена подія «гравець просить піти» (м'яч у мене) блокує підтвердження складу
+function evBanners(){
+  if(!S.wevReady) return '';
+  return (S.wev||[]).filter(e=>e.ball_with_owner).map(e=>`<div class="stmsg bad"><b>🗣 ${esc(e.player_name)} просить піти</b> — ${esc(e.offerer_name)} пропонує ${eur(e.amount)} і надбавку +${Math.round((+e.surcharge_pct||0)*100)}% до зарплати.
+    Поки подію не розв'язано, склад на наступний тур <b>підтвердити не можна</b>; без відповіді до старту туру пропозиція відхиляється сама (без штрафу). Варіанти: продати, контр, утримати (продовження/перепідписання з надбавкою), вільний ринок.
+    <div style="margin-top:8px"><button data-do="evopen" style="width:auto;padding:9px 20px">Розв'язати в «Мої угоди»</button></div></div>`).join('');
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-do="evopen"]'); if(!b) return; S.mktSub='deals'; go('market'); });
 function penBanners(){
   if(!penOn() || !S.penOK) return '';
   let h='';
@@ -2205,6 +2223,7 @@ async function viewMarket(){
 // ── рядок трансферу + дії (Так/Ні/Контр) ──
 function transferRow(t){
   const p=S.players.find(x=>x.id===t.player_id)||{};
+  const evT=(S.wev||[]).find(e=>e.transfer_id===t.id), ofT=(S.wof||[]).find(e=>e.transfer_id===t.id);   // 553: подія (я власник) / моя пропозиція з надбавкою
   const cl=(S.clubs[p.club_id]||{}).name||'';
   const iAmSeller=t.from_participant===S.me.id;
   const other=iAmSeller?t.to_participant:t.from_participant;
@@ -2214,6 +2233,18 @@ function transferRow(t){
     ? `<b>${otherName}</b> хоче купити твого <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> за <b class="mprice">${eur(t.amount)}</b>`
     : `Твоя пропозиція на <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> → <b>${otherName}</b> · <b class="mprice">${eur(t.amount)}</b>`;
   const minC=Math.ceil((p.market_value_current||0)*(S.cfg?.transfer_min_pct??0.75));
+  if(iAmSeller && evT){   // 553: «гравець просить піти» — відхилити не можна
+    const pctE=Math.round((+evT.surcharge_pct||0)*100), roleE=evT.offered_role?` · обіцяє роль «${roleLabel(evT.offered_role)}»`:'';
+    const infoE=`🗣 <b>${esc(p.name||'?')}</b> <span class="dim">${esc(cl)}</span> <b>просить піти</b>: <b>${otherName}</b> пропонує <b class="mprice">${eur(t.amount)}</b> · надбавка до зарплати <b class="warnc">+${pctE}%</b>${roleE}`;
+    const ctrlE = evT.ball_with_owner
+      ? `<div class="tctrl"><button data-tr-acc="${t.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Продати</button>
+          <button class="ghost" data-tr-cnt="${t.id}" data-min="${minC}">Контр</button>
+          <button class="ghost" data-ev-hold="${t.id}">Утримати</button>
+          <button class="ghost" data-ev-free="${t.id}">Вільний ринок −${Math.round((S.cfg?.sell_pct??0.05)*100)}%</button></div>`
+      : `<div class="tctrl"><span class="pill">чекає ${otherName}</span></div>`;
+    return `<div class="trow wev"><span class="tinfo">${infoE}</span>${ctrlE}</div>`;
+  }
+  const ofTag = (!iAmSeller && ofT) ? ` <span class="pill" title="Надбавка до зарплати заморожена з твого зарплатного бюджету до відповіді">надбавка +${Math.round((+ofT.surcharge_pct||0)*100)}% · заморожено ${eur(ofT.frozen_wage)}</span>` : '';
   const ctrl = mine
     ? `<div class="tctrl"><button data-tr-acc="${t.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Прийняти</button>
         <button class="ghost" data-tr-cnt="${t.id}" data-min="${minC}">Контр</button>
@@ -2221,7 +2252,7 @@ function transferRow(t){
     : (!iAmSeller
         ? `<div class="tctrl"><span class="pill">чекає ${otherName}</span><button class="ghost" data-tr-cancel="${t.id}">Відкликати</button></div>`
         : `<span class="pill">чекає ${otherName}</span>`);
-  return `<div class="trow"><span class="tinfo">${info}</span>${ctrl}</div>`;
+  return `<div class="trow"><span class="tinfo">${info}${ofTag}</span>${ctrl}</div>`;
 }
 function bindTransfers(){
   document.querySelectorAll('[data-tr-acc]').forEach(b=>b.onclick=()=>{ const t=(S.transfers||[]).find(x=>x.id===b.dataset.trAcc); if(t && t.from_participant===S.me.id && lnBlocked(t.player_id)) return alert(lnMsg()); confirmModal('Прийняти трансфер? Гравець і гроші переходять одразу.', 'Прийняти',
@@ -2229,8 +2260,39 @@ function bindTransfers(){
   document.querySelectorAll('[data-tr-rej]').forEach(b=>b.onclick=()=>confirmModal('Відхилити пропозицію?', 'Відхилити',
     ()=>act('market_respond_transfer',{p_transfer:b.dataset.trRej,p_action:'reject'},'Відхилено')));
   document.querySelectorAll('[data-tr-cnt]').forEach(b=>b.onclick=()=>openCounterModal(b.dataset.trCnt,+b.dataset.min));
+  document.querySelectorAll('[data-ev-hold]').forEach(b=>b.onclick=()=>openHoldModal(b.dataset.evHold));
+  document.querySelectorAll('[data-ev-free]').forEach(b=>b.onclick=()=>{ const e=(S.wev||[]).find(x=>x.transfer_id===b.dataset.evFree); if(!e) return;
+    const p=S.players.find(x=>x.id===e.player_id)||{}, pr=Math.round((p.market_value_current||0)*(1-(S.cfg?.sell_pct??0.05)));
+    confirmModal(`Продати <b>${esc(p.name||'?')}</b> у вільний ринок за <b>${eur(pr)}</b> (−${Math.round((S.cfg?.sell_pct??0.05)*100)}%)? Пропозицію <b>${esc(e.offerer_name)}</b> буде відхилено, гравець піде у вільні.`,
+      'Продати · '+eur(pr), ()=>act('market_event_free_sell',{p_transfer:e.transfer_id},'Продано у вільний ринок')); });
   document.querySelectorAll('[data-tr-cancel]').forEach(b=>b.onclick=()=>confirmModal('Відкликати свою пропозицію? Заморожена сума звільниться.', 'Відкликати',
     ()=>act('market_cancel_transfer',{p_transfer:b.dataset.trCancel},'Пропозицію відкликано')));
+}
+// 553: «Утримати» гравця, який просить піти: (а) контракт можна подовжити → продовж ≥1 тур, надбавка на нові тури; (б) контракт до кінця турніру → перепідписати той самий залишок з надбавкою на ВСІ тури
+function openHoldModal(tid){
+  const ev=(S.wev||[]).find(e=>e.transfer_id===tid); if(!ev) return;
+  const p=S.players.find(x=>x.id===ev.player_id)||{}, ci=contractInfo(p), mv=p.market_value_current||0;
+  const pct=Math.round((+ev.surcharge_pct||0)*100), left=+ev.contract_rounds_left||0, stage=+ev.stage_left||0, canExt=left<stage;
+  const head=`<h3>🗣 ${esc(p.name||'?')} просить піти</h3>
+    <p class="mnote"><b>${esc(ev.offerer_name)}</b> пропонує <b>${eur(ev.amount)}</b> і надбавку до зарплати <b>+${pct}%</b>${ev.offered_role?` (обіцяє роль «${roleLabel(ev.offered_role)}»)`:''}. Щоб утримати гравця:</p>`;
+  let body;
+  if(canExt){
+    body=`<p class="mnote">Контракт можна подовжити — обери, на скільки турів (мінімум 1). Надбавка <b>+${pct}%</b> піде на <b>нові</b> тури (×${S.cfg?.contract_ext_mult??1} + ${pct}%), старі лишаються по-старому.</p>`
+      + contractPicker(mv,0,p.id,{extend:true,left,oldWage:ci.wage||0,max:Math.max(1,stage-left)})
+      + `<div class="macts"><button data-do="hold">Утримати</button></div>`;
+  } else {
+    const nw=ci.wage?Math.ceil(ci.wage*(1+(+ev.surcharge_pct||0))):0;
+    body=`<p class="mnote">Контракт уже до кінця турніру (лишилось <b>${left}</b> ${turW(left)}) — подовжувати нікуди. Щоб утримати, <b>перепідпиши</b> ті самі ${left} ${turW(left)} із зарплатою <b>+${pct}%</b> на <b>всі</b> ці тури${ci.wage?`: ${eur(ci.wage)} → <b>${eur(nw)}</b>/тур (різниця ${eur((nw-ci.wage)*left)} має бути у вільному зарплатному)`:''}.</p>`
+      + (rolesOn()?`<div class="clen" data-len="1" data-ext="1" data-pid="${p.id}" data-mv="${mv}" data-left="${left}" data-oldwage="${ci.wage||0}">${roleChips()}<div class="clen-info"></div></div>`:'')
+      + `<div class="macts"><button data-do="hold">Перепідписати з +${pct}%</button></div>`;
+  }
+  modalOpen(head+body);
+  wireClen($('mhost'));
+  $('mhost').querySelector('[data-do="hold"]').onclick=async()=>{
+    if(needRole()) return; const ra=roleArgs(), len=canExt?selectedLen():0;
+    modalClose();
+    await act('market_event_hold',{p_transfer:tid,p_length:len,...ra},canExt?'Контракт продовжено, гравця утримано':'Контракт перепідписано, гравця утримано');
+  };
 }
 function openCounterModal(tid,min){
   modalOpen(`<h3>Контрпропозиція</h3>
@@ -2346,12 +2408,24 @@ function confirmModal(msg, okLabel, onOk, onCancel){
   $('mhost').querySelector('[data-do="cno"]').onclick=()=>{ if(onCancel) onCancel(); else modalClose(); };
 }
 
-function amountUI(label,minEur,kind,ref,maxEur){
+function amountUI(label,minEur,kind,ref,maxEur,extra){
   return `<div class="mamt" data-kind="${kind}" data-ref="${ref}" data-min="${minEur}" data-max="${maxEur||0}">
     <span class="dim">${label} · €млн (мін ${mCeil(minEur)}${maxEur?` · макс ${mFloor(maxEur)}`:''})</span>
     <input id="amtInp" inputmode="decimal" value="${mCeil(minEur)}">
+    ${extra||''}
     <button data-do="amt">OK</button></div>`;
 }
+// 553: надбавка до зарплати в пропозиції трансферу = подія «гравець просить піти» (приховано, поки SQL 553 не залито або вимкнено в конфігу)
+function wagePctOn(){ return !!S.wevReady && !(S.cfg && S.cfg.wage_events_enabled===false); }
+function wagePctUI(){
+  if(!wagePctOn()) return '';
+  const step=Math.round((+(S.cfg&&S.cfg.wage_offer_step_pct)||0.05)*100), max=Math.round((+(S.cfg&&S.cfg.wage_offer_max_pct)||0.5)*100);
+  const lo=(S.cfg&&S.cfg.wage_event_limit_offerer)||3, lw=(S.cfg&&S.cfg.wage_event_limit_owner)||2;
+  let opts='<option value="0">без надбавки</option>'; for(let v=step; v<=max; v+=step) opts+=`<option value="${v}">+${v}%</option>`;
+  return `<div class="wpct"><label class="dim">🗣 Надбавка до зарплати гравця <select id="wagePct">${opts}</select></label>
+    <p class="mnote" style="margin:4px 0 0">З надбавкою це <b>подія «гравець просить піти»</b>: власник не може просто відхилити — мусить продати, зробити контр, утримати (продовжити чи перепідписати з надбавкою) або продати у вільний ринок. Ти платиш +X% до зарплати гравця на весь контракт; надбавка <b>заморожується</b> з зарплатного до відповіді. Ліміт: ${lo} події за вікно туру; на одного власника — не більше ${lw} активних. Не діє, якщо власник уже підтвердив склад.</p></div>`;
+}
+function wageArg(){ const el=$('mhost').querySelector('#wagePct'); const v=el?+el.value:0; return v>0?{p_wage_pct:v/100}:{}; }
 // JS-аналог _market_exchange_reason (412): склад pid БЕЗ outP + inP легальний?
 function exchangeBlock(pid,outP,inP){
   const cfg=S.cfg||{}, roster=S.players.filter(x=>x.owner_participant_id===pid && x.id!==outP.id);
@@ -2648,7 +2722,7 @@ function actionsHTML(p,ctx){
       else {
         const minT=Math.ceil(mv*winMinPct()), maxT=winMaxEur(mv);
         h+=`<p class="mnote">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті.</p>
-          ${amountUI('Запропонувати трансфер ('+winTxt()+')',minT,'propose',p.id,maxT)}`;
+          ${amountUI('Запропонувати трансфер ('+winTxt()+')',minT,'propose',p.id,maxT,wagePctUI())}`;
       }
     }
     // ОБМІН 1↔1 + двостороння доплата
@@ -3040,10 +3114,11 @@ function bindModalActions(p){
       const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eurDown(mxv)+' ('+winTxt()+')'); return; }
       const len=selectedLen();   // 508: довжина контракту з пікера модалки (ставка/старт аукціону)
       if(box.dataset.kind!=='list' && needRole()) return; const ra=box.dataset.kind==='list'?{}:roleArgs();   // 539: роль (вітрина-лот її не потребує)
+      const wg=box.dataset.kind==='propose'?wageArg():{};   // 553: до закриття модалки читаємо надбавку
       modalClose();
       if(box.dataset.kind==='auc') await act('market_start_auction',{p_player:box.dataset.ref,p_amount:eurv,p_length:len,...ra},'Аукціон почато');
       else if(box.dataset.kind==='bid') await act('market_place_bid',{p_auction:box.dataset.ref,p_amount:eurv,p_length:len,...ra},'Ставку зроблено');
-      else if(box.dataset.kind==='propose') await act('market_propose_transfer',{p_player:box.dataset.ref,p_amount:eurv,p_length:len,...ra},'Пропозицію надіслано');
+      else if(box.dataset.kind==='propose') await act('market_propose_transfer',{p_player:box.dataset.ref,p_amount:eurv,p_length:len,...ra,...wg},'Пропозицію надіслано');
       else if(box.dataset.kind==='list') await act('market_list_player',{p_player:box.dataset.ref,p_ask:eurv},'Виставлено за '+eur(eurv));
     }
   });
