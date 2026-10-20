@@ -365,8 +365,8 @@ table.t{width:100%;border-collapse:collapse}
 .xr:last-child{border-bottom:0} .xr span{color:var(--text-dim)} .xr b{font-weight:600;text-align:right} .xr .up{color:var(--up)} .xr .down{color:var(--down)}
 .xdelta{margin-top:8px;font-size:12.5px;color:var(--text-dim)} .xdelta b{color:var(--text)}
 .psum{flex:1 1 100%;margin-top:10px;padding:10px 12px;border:1px solid var(--accent-d,var(--line));border-radius:10px;background:rgba(38,194,129,.06);font-size:12.5px;line-height:1.55}
-.psum .ph{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:4px}
-.psum:empty{display:none} .mamt .wpct{flex:1 1 100%} .mamt .psum{flex:1 1 320px} .mamt>button[data-do="amt"]{flex:none;align-self:flex-end;min-width:70px}
+.psum .ph{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 8px 0 0;display:inline-block} .psum .psep{color:var(--text-dim)} .infoi{cursor:help;color:var(--text-dim);white-space:nowrap}
+.psum:empty{display:none} .mamt .wpct{display:contents} .mamt .wmodes{flex:1 1 auto;margin:0} .mamt .wm-player{flex:1 1 100%} .vcard .mamt .dim{flex:0 1 auto;min-width:0} .mamt .psum{flex:1 1 320px} .mamt>button[data-do="amt"]{flex:none;align-self:flex-end;min-width:70px}
 .vhead{display:flex;gap:4px 14px;align-items:center;flex-wrap:wrap} .vhead .msec{margin:0} .vhead .mnote{margin:0;flex:1 1 260px;line-height:1.35} .vhead .vbtn{flex:none;margin-left:auto;padding:9px 16px}
 @media(max-width:560px){.xcmp{grid-template-columns:1fr}}
 .agres{margin:4px 0 8px;padding:8px 10px;border-left:3px solid var(--teal);background:rgba(111,176,201,.08);border-radius:6px;font-size:13px}
@@ -374,7 +374,7 @@ table.t{width:100%;border-collapse:collapse}
 /* 556: два режими пропозиції («Домовитись з учасником» / «Домовитись з гравцем») і форма аукціону */
 .wmodes{display:flex;gap:6px 10px;margin:6px 0;align-items:center;flex-wrap:wrap}
 .wmodes .wm-member{flex:1 1 260px;margin:0;line-height:1.35}
-.wm-player{display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap} .wm-player .wm-pnote{flex:1 1 300px;margin:0;line-height:1.4}
+.wm-player{display:flex;gap:6px 14px;align-items:flex-start;flex-wrap:wrap} .wm-player .wm-pnote{flex:1 1 300px;margin:0;line-height:1.4}
 .wmode{flex:0 0 auto;padding:8px 16px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);cursor:pointer;font-weight:700;font-size:13px;line-height:1.25}
 .wmode.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}
 .wpct .hide{display:none!important}
@@ -2660,7 +2660,7 @@ function wagePctUI(){
   return `<div class="wpct" data-mode="member">
     <div class="wmodes"><button type="button" class="wmode on" data-m="member">Домовитись з учасником</button><button type="button" class="wmode" data-m="player">Домовитись з гравцем</button><span class="mnote wm-member">Звичайна пропозиція: власник може прийняти, відхилити або зробити контр. Без надбавки.</span></div>
     <div class="wm-player hide"><label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати гравця <select id="wagePct">${opts}</select></label>
-      <span class="mnote wm-pnote">Це <b>«Домовитись з гравцем»</b>: для власника гравець <b>хоче піти</b> — він не може просто відхилити, а мусить продати, зробити контр, утримати (продовжити чи перепідписати з надбавкою) або продати у вільний ринок. Ти платиш +X% до зарплати гравця на весь контракт; надбавка <b>заморожується</b> з зарплатного до відповіді. Ліміт: ${lo} таких пропозиції за вікно туру; на одного власника — не більше ${lw} активних; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).</span></div></div>`;
+      <span class="mnote wm-pnote">Для власника гравець <b>хоче піти</b>: він не може просто відхилити — мусить продати, зробити контр, утримати (з надбавкою) або продати у вільний ринок. Надбавка +X% до зарплати гравця — на весь контракт, <b>заморожується</b> з зарплатного до відповіді. <span class="infoi" title="Ліміти: ${lo} таких пропозиції за вікно туру; на одного власника — не більше ${lw} активних; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).">ℹ️ ліміти</span></span></div></div>`;
 }
 // scope — форма (трансфер .mamt / обмін .xbox): у модалці їх дві
 function wageArg(scope){ const box=(scope||$('mhost')).querySelector('.wpct'); if(!box||box.dataset.mode!=='player') return {}; const el=box.querySelector('#wagePct'); const v=el?+el.value:0; return v>0?{p_wage_pct:v/100}:{}; }
@@ -2695,7 +2695,7 @@ function sumRefresh(){
     const wfTxt=(wf!=null)?` · зарплатний доступно ${eur(wf)} → ${res>wf?`<b class="warnc">не вистачає ${eur(res-wf)}</b>`:`лишиться ${eur(wf-res)}`}`:'';
     rows.push(`Контракт: <b>${len} ${turW(len)}</b>${roleTxt} × ${num(w2)}/тур${pct>0?` <span class="dim">(база ${eur(base)} + надбавка +${Math.round(pct*100)}%)</span>`:''} = резерв ${num(res)}${wfTxt}`);
     if(pct>0) rows.push(`Одразу заморозиться надбавка ${num(extra)} з зарплатного (до відповіді власника); решта резерву — коли він прийме.`);
-    box.innerHTML=`<div class="ph">📋 Твоя пропозиція</div>`+rows.map(r=>`<div>${r}</div>`).join('');
+    box.innerHTML=`<b class="ph">📋 Твоя пропозиція:</b> `+rows.map(r=>`<span class="pr">${r}</span>`).join('<span class="psep"> · </span>');   // 20.10: у ряд, що вміщається
   });
 }
 document.addEventListener('change',e=>{ if(e.target&&(e.target.id==='wagePct'||e.target.id==='aucPct')) propRefresh(); });
