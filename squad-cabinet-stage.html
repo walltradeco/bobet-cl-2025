@@ -1136,7 +1136,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
 // 553: невирішена подія «гравець просить піти» (м'яч у мене) блокує підтвердження складу
 function evBanners(){
   if(!S.wevReady) return '';
-  return (S.wev||[]).filter(e=>e.ball_with_owner).map(e=>`<div class="stmsg bad"><b>🗣 ${esc(e.player_name)} просить піти</b> — ${esc(e.offerer_name)} пропонує ${eur(e.amount)} і надбавку +${Math.round((+e.surcharge_pct||0)*100)}% до зарплати.
+  return (S.wev||[]).filter(e=>e.ball_with_owner).map(e=>`<div class="stmsg bad"><b>🗣 ${esc(e.player_name)} просить піти</b> — ${esc(e.offerer_name)} пропонує ${e.kind==='exchange'?`обмін на свого ${esc(e.offered_player_name||'гравця')}`:eur(e.amount)} і надбавку +${Math.round((+e.surcharge_pct||0)*100)}% до зарплати.
     Поки подію не розв'язано, склад на наступний тур <b>підтвердити не можна</b>; без відповіді до старту туру пропозиція відхиляється сама (без штрафу). Варіанти: продати, контр, утримати (продовження/перепідписання з надбавкою), вільний ринок.
     <div style="margin-top:8px"><button data-do="evopen" style="width:auto;padding:9px 20px">Розв'язати в «Мої угоди»</button></div></div>`).join('');
 }
@@ -2269,12 +2269,13 @@ function bindTransfers(){
     ()=>act('market_cancel_transfer',{p_transfer:b.dataset.trCancel},'Пропозицію відкликано')));
 }
 // 553: «Утримати» гравця, який просить піти: (а) контракт можна подовжити → продовж ≥1 тур, надбавка на нові тури; (б) контракт до кінця турніру → перепідписати той самий залишок з надбавкою на ВСІ тури
-function openHoldModal(tid){
-  const ev=(S.wev||[]).find(e=>e.transfer_id===tid); if(!ev) return;
+function openHoldModal(tid,kind){
+  const isX=kind==='x';
+  const ev=(S.wev||[]).find(e=>isX?e.exchange_id===tid:e.transfer_id===tid); if(!ev) return;
   const p=S.players.find(x=>x.id===ev.player_id)||{}, ci=contractInfo(p), mv=p.market_value_current||0;
   const pct=Math.round((+ev.surcharge_pct||0)*100), left=+ev.contract_rounds_left||0, stage=+ev.stage_left||0, canExt=left<stage;
   const head=`<h3>🗣 ${esc(p.name||'?')} просить піти</h3>
-    <p class="mnote"><b>${esc(ev.offerer_name)}</b> пропонує <b>${eur(ev.amount)}</b> і надбавку до зарплати <b>+${pct}%</b>${ev.offered_role?` (обіцяє роль «${roleLabel(ev.offered_role)}»)`:''}. Щоб утримати гравця:</p>`;
+    <p class="mnote"><b>${esc(ev.offerer_name)}</b> пропонує ${isX?`обмін на свого <b>${esc(ev.offered_player_name||'гравця')}</b>`:`<b>${eur(ev.amount)}</b>`} і надбавку до зарплати <b>+${pct}%</b>${ev.offered_role?` (обіцяє роль «${roleLabel(ev.offered_role)}»)`:''}. Щоб утримати гравця:</p>`;
   let body;
   if(canExt){
     body=`<p class="mnote">Контракт можна подовжити — обери, на скільки турів (мінімум 1). Надбавка <b>+${pct}%</b> піде на <b>нові</b> тури (×${S.cfg?.contract_ext_mult??1} + ${pct}%), старі лишаються по-старому.</p>`
@@ -2291,7 +2292,7 @@ function openHoldModal(tid){
   $('mhost').querySelector('[data-do="hold"]').onclick=async()=>{
     if(needRole()) return; const ra=roleArgs(), len=canExt?selectedLen():0;
     modalClose();
-    await act('market_event_hold',{p_transfer:tid,p_length:len,...ra},canExt?'Контракт продовжено, гравця утримано':'Контракт перепідписано, гравця утримано');
+    await act(isX?'market_event_hold_x':'market_event_hold',isX?{p_exchange:tid,p_length:len,...ra}:{p_transfer:tid,p_length:len,...ra},canExt?'Контракт продовжено, гравця утримано':'Контракт перепідписано, гравця утримано');
   };
 }
 function openCounterModal(tid,min){
@@ -2323,9 +2324,22 @@ function exchangeRow(x){
   const iAmFrom=x.from_participant===S.me.id;
   const other=iAmFrom?x.to_participant:x.from_participant, otherName=esc(S.names[other]||'—');
   const mine=x.awaiting_participant===S.me.id;
+  const evX=(S.wev||[]).find(e=>e.exchange_id===x.id), ofX=(S.wof||[]).find(e=>e.exchange_id===x.id);   // 554: подія (я власник wanted) / моя пропозиція з надбавкою
   const info = iAmFrom
     ? `🔄 Твій <b>${esc(off.name||'?')}</b> <span class="dim">${esc(offCl)}</span> ↔ <b>${esc(want.name||'?')}</b> <span class="dim">${esc(wantCl)}</span> · <b>${otherName}</b> · ${xCashLine(x,iAmFrom)}`
     : `🔄 <b>${otherName}</b>: <b>${esc(off.name||'?')}</b> <span class="dim">${esc(offCl)}</span> ↔ твій <b>${esc(want.name||'?')}</b> <span class="dim">${esc(wantCl)}</span> · ${xCashLine(x,iAmFrom)}`;
+  if(!iAmFrom && evX){   // 554: «гравець просить піти» в обміні — відхилити не можна
+    const pctE=Math.round((+evX.surcharge_pct||0)*100), roleE=evX.offered_role?` · обіцяє роль «${roleLabel(evX.offered_role)}»`:'';
+    const infoE=`🗣 <b>${esc(want.name||'?')}</b> <span class="dim">${esc(wantCl)}</span> <b>просить піти</b>: <b>${otherName}</b> пропонує обмін на свого <b>${esc(off.name||'?')}</b> <span class="dim">${esc(offCl)}</span> · ${xCashLine(x,iAmFrom)} · надбавка до зарплати <b class="warnc">+${pctE}%</b>${roleE}`;
+    const ctrlE = evX.ball_with_owner
+      ? `<div class="tctrl"><button data-xc-acc="${x.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Прийняти</button>
+          <button class="ghost" data-xc-cnt="${x.id}" data-xc-from="0">Контр</button>
+          <button class="ghost" data-ev-hold-x="${x.id}">Утримати</button>
+          <button class="ghost" data-ev-free-x="${x.id}">Вільний ринок −${Math.round((S.cfg?.sell_pct??0.05)*100)}%</button></div>`
+      : `<div class="tctrl"><span class="pill">чекає ${otherName}</span></div>`;
+    return `<div class="trow wev"><span class="tinfo">${infoE}</span>${ctrlE}</div>`;
+  }
+  const ofXTag = (iAmFrom && ofX) ? ` <span class="pill" title="Надбавка до зарплати заморожена з твого зарплатного бюджету до відповіді">надбавка +${Math.round((+ofX.surcharge_pct||0)*100)}% · заморожено ${eur(ofX.frozen_wage)}</span>` : '';
   const ctrl = mine
     ? `<div class="tctrl"><button data-xc-acc="${x.id}" ${inPlayRound()?'disabled title="Прийняти можна після закриття туру"':''}>Прийняти</button>
         <button class="ghost" data-xc-cnt="${x.id}" data-xc-from="${iAmFrom?1:0}">Контр</button>
@@ -2333,13 +2347,18 @@ function exchangeRow(x){
     : (iAmFrom
         ? `<div class="tctrl"><span class="pill">чекає ${otherName}</span><button class="ghost" data-xc-cancel="${x.id}">Відкликати</button></div>`
         : `<span class="pill">чекає ${otherName}</span>`);
-  return `<div class="trow"><span class="tinfo">${info}</span>${ctrl}</div>`;
+  return `<div class="trow"><span class="tinfo">${info}${ofXTag}</span>${ctrl}</div>`;
 }
 function bindExchanges(){
   document.querySelectorAll('[data-xc-acc]').forEach(b=>b.onclick=()=>openExchangeAcceptModal(b.dataset.xcAcc));
   document.querySelectorAll('[data-xc-rej]').forEach(b=>b.onclick=()=>confirmModal('Відхилити обмін?', 'Відхилити',
     ()=>act('market_respond_exchange',{p_exchange:b.dataset.xcRej,p_action:'reject'},'Відхилено')));
   document.querySelectorAll('[data-xc-cnt]').forEach(b=>b.onclick=()=>openExchangeCounterModal(b.dataset.xcCnt, b.dataset.xcFrom==='1'));
+  document.querySelectorAll('[data-ev-hold-x]').forEach(b=>b.onclick=()=>openHoldModal(b.dataset.evHoldX,'x'));
+  document.querySelectorAll('[data-ev-free-x]').forEach(b=>b.onclick=()=>{ const e=(S.wev||[]).find(x=>x.exchange_id===b.dataset.evFreeX); if(!e) return;
+    const p=S.players.find(x=>x.id===e.player_id)||{}, pr=Math.round((p.market_value_current||0)*(1-(S.cfg?.sell_pct??0.05)));
+    confirmModal(`Продати <b>${esc(p.name||'?')}</b> у вільний ринок за <b>${eur(pr)}</b> (−${Math.round((S.cfg?.sell_pct??0.05)*100)}%)? Обмін з <b>${esc(e.offerer_name)}</b> буде відхилено, гравець піде у вільні.`,
+      'Продати · '+eur(pr), ()=>act('market_event_free_sell_x',{p_exchange:e.exchange_id},'Продано у вільний ринок')); });
   document.querySelectorAll('[data-xc-cancel]').forEach(b=>b.onclick=()=>confirmModal('Відкликати свій обмін? Заморожена доплата звільниться.', 'Відкликати',
     ()=>act('market_cancel_exchange',{p_exchange:b.dataset.xcCancel},'Обмін відкликано')));
 }
@@ -2458,7 +2477,7 @@ function exchangeUI(p){
     ${contractPicker(p.market_value_current, 0, p.id)}
     <div id="xCorr" class="mnote" style="margin-top:8px"></div>
     <div id="xStatus" class="mnote" style="margin-top:8px"></div>
-    <div class="macts"><button data-do="xpropose" id="xBtn">Запропонувати обмін</button></div>
+    ${wagePctUI()}<div class="macts"><button data-do="xpropose" id="xBtn">Запропонувати обмін</button></div>
   </div>`;
 }
 // наживо: рахує cash_delta, звіряє 75% обом + ліміти обом + бюджет, оновлює статус/кнопку
@@ -3104,9 +3123,9 @@ function bindModalActions(p){
     if(kind==='xpropose'){
       const box=h.querySelector('.xbox'); if(!box||box.dataset.off==null){ alert('Обери гравця й перевір умови'); return; }
       const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0, len=selectedLenIn(box);
-      const cl=box.querySelector('.clen'); if(needRole(cl)) return; const fr=rolesOn()?{p_from_role:(cl&&cl.dataset.prole)||null}:{};   // 539: роль для гравця, якого отримуєш
+      const cl=box.querySelector('.clen'); if(needRole(cl)) return; const fr=rolesOn()?{p_from_role:(cl&&cl.dataset.prole)||null}:{}; const wg=wageArg();   // 554: надбавка до зарплати wanted (подія «просить піти»)   // 539: роль для гравця, якого отримуєш
       confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} тур</b>?`, 'Запропонувати',
-        ()=>act('market_propose_exchange',{p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len,...fr},'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
+        ()=>act('market_propose_exchange',{p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len,...fr,...wg},'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='amt'){
       const box=b.closest('.mamt'), min=+box.dataset.min;
       const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
