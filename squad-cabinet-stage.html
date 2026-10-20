@@ -346,6 +346,8 @@ table.t{width:100%;border-collapse:collapse}
 .wpct{margin-top:8px}
 .agbox{margin-top:12px}
 .agrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:13px}
+.pm-xinfo{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
+.pm-xinfo .agbox{margin:0} .pm-xinfo .agres{margin:0}
 /* 20.10: вкладки вікна гравця («Купити | Обмін», «Купити зараз | Аукціон») + порівняння в обміні */
 .ptab-bar{display:flex;gap:6px;margin:12px 0 10px;border-bottom:1px solid var(--line)}
 .ptab{flex:1;padding:9px 12px;background:transparent;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text-dim);font-weight:700;font-size:14px;cursor:pointer;border-radius:0}
@@ -364,15 +366,18 @@ table.t{width:100%;border-collapse:collapse}
 .xdelta{margin-top:8px;font-size:12.5px;color:var(--text-dim)} .xdelta b{color:var(--text)}
 .psum{flex:1 1 100%;margin-top:10px;padding:10px 12px;border:1px solid var(--accent-d,var(--line));border-radius:10px;background:rgba(38,194,129,.06);font-size:12.5px;line-height:1.55}
 .psum .ph{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:4px}
-.psum:empty{display:none} .mamt .wpct{flex:1 1 100%}
+.psum:empty{display:none} .mamt .wpct{flex:1 1 100%} .mamt .psum{flex:1 1 320px} .mamt>button[data-do="amt"]{flex:none;align-self:flex-end;min-width:70px}
+.vhead{display:flex;gap:4px 14px;align-items:center;flex-wrap:wrap} .vhead .msec{margin:0} .vhead .mnote{margin:0;flex:1 1 260px;line-height:1.35} .vhead .vbtn{flex:none;margin-left:auto;padding:9px 16px}
 @media(max-width:560px){.xcmp{grid-template-columns:1fr}}
 .agres{margin:4px 0 8px;padding:8px 10px;border-left:3px solid var(--teal);background:rgba(111,176,201,.08);border-radius:6px;font-size:13px}
 .wpct select{margin-left:6px}
 /* 556: два режими пропозиції («Домовитись з учасником» / «Домовитись з гравцем») і форма аукціону */
-.wmodes{display:flex;gap:6px;margin:6px 0}
-.wmode{flex:1;padding:8px 6px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);cursor:pointer;font-weight:700;font-size:13px;line-height:1.25}
+.wmodes{display:flex;gap:6px 10px;margin:6px 0;align-items:center;flex-wrap:wrap}
+.wmodes .wm-member{flex:1 1 260px;margin:0;line-height:1.35}
+.wm-player{display:flex;gap:6px 14px;align-items:center;flex-wrap:wrap} .wm-player .wm-pnote{flex:1 1 300px;margin:0;line-height:1.4}
+.wmode{flex:0 0 auto;padding:8px 16px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);cursor:pointer;font-weight:700;font-size:13px;line-height:1.25}
 .wmode.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}
-.wpct .hide{display:none}
+.wpct .hide{display:none!important}
 .aucf{margin-top:10px}
 .aucf input#aucAmt{width:150px;flex:none}
 .aucf .aquick{display:flex;gap:6px;flex-wrap:wrap;margin:0}
@@ -2653,10 +2658,9 @@ function wagePctUI(){
   const lo=(S.cfg&&S.cfg.wage_event_limit_offerer)||3, lw=(S.cfg&&S.cfg.wage_event_limit_owner)||2;
   let opts=''; for(let v=step; v<=max; v+=step) opts+=`<option value="${v}">+${v}%</option>`;
   return `<div class="wpct" data-mode="member">
-    <div class="wmodes"><button type="button" class="wmode on" data-m="member">Домовитись з учасником</button><button type="button" class="wmode" data-m="player">Домовитись з гравцем</button></div>
-    <p class="mnote wm-member" style="margin:4px 0 0">Звичайна пропозиція: власник може прийняти, відхилити або зробити контр. Без надбавки.</p>
-    <div class="wm-player hide"><label class="dim">🤝 Надбавка до зарплати гравця <select id="wagePct">${opts}</select></label>
-      <p class="mnote" style="margin:4px 0 0">Це <b>«Домовитись з гравцем»</b>: для власника гравець <b>хоче піти</b> — він не може просто відхилити, а мусить продати, зробити контр, утримати (продовжити чи перепідписати з надбавкою) або продати у вільний ринок. Ти платиш +X% до зарплати гравця на весь контракт; надбавка <b>заморожується</b> з зарплатного до відповіді. Ліміт: ${lo} таких пропозиції за вікно туру; на одного власника — не більше ${lw} активних; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).</p></div></div>`;
+    <div class="wmodes"><button type="button" class="wmode on" data-m="member">Домовитись з учасником</button><button type="button" class="wmode" data-m="player">Домовитись з гравцем</button><span class="mnote wm-member">Звичайна пропозиція: власник може прийняти, відхилити або зробити контр. Без надбавки.</span></div>
+    <div class="wm-player hide"><label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати гравця <select id="wagePct">${opts}</select></label>
+      <span class="mnote wm-pnote">Це <b>«Домовитись з гравцем»</b>: для власника гравець <b>хоче піти</b> — він не може просто відхилити, а мусить продати, зробити контр, утримати (продовжити чи перепідписати з надбавкою) або продати у вільний ринок. Ти платиш +X% до зарплати гравця на весь контракт; надбавка <b>заморожується</b> з зарплатного до відповіді. Ліміт: ${lo} таких пропозиції за вікно туру; на одного власника — не більше ${lw} активних; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).</span></div></div>`;
 }
 // scope — форма (трансфер .mamt / обмін .xbox): у модалці їх дві
 function wageArg(scope){ const box=(scope||$('mhost')).querySelector('.wpct'); if(!box||box.dataset.mode!=='player') return {}; const el=box.querySelector('#wagePct'); const v=el?+el.value:0; return v>0?{p_wage_pct:v/100}:{}; }
@@ -2861,8 +2865,8 @@ function contractPicker(mv,freeAdd,pid,opts){
   if(o.extend){
     const max=o.max||1;
     return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="0" data-pid="${pid||''}" data-ext="1" data-left="${o.left||0}" data-oldwage="${o.oldWage||0}" data-max="${max}"${o.minRole?` data-minrole="${o.minRole}"`:''}>
-      <div class="clab"><b>Продовжити контракт</b> — нові тури <b>додаються</b> до тих, що лишились (${o.left||0}); нові коштують <b>×${ext??1}</b>, старі лишаються по-старому; разом не більше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
-      ${roleChips()}<div class="clen-row">${chipsHTML(max,1)}</div>
+      <div class="clab"><b>Продовжити контракт</b> — нові тури <b>додаються</b> до тих, що лишились (${o.left||0}); нові коштують <b>×${ext??1}</b>, старі лишаються по-старому; разом не більше за залишок етапу (<b>лишилось ${si.left} з ${si.len} турів</b>)${rolesOn()?' · '+roleIntroText():''}</div>
+      ${roleChips(true)}<div class="clen-row">${chipsHTML(max,1)}</div>
       <div class="clen-info"></div></div>`;
   }
   const max=maxLen();
@@ -2952,6 +2956,7 @@ function injuryBadge(p){
 }
 // overlay-варіант для великої картки (squadCardHTML)
 // 20.10 (Богдан): на самій картці травму/дискваліфікацію НЕ показуємо — вони лише в «Детальній картці» (infо-смуга «Травмований»)
+function ownerNoteHTML(p){ return `<p class="mnote" style="margin:0">Власник: <b>${esc(S.names[p.owner_participant_id]||'—')}</b> · угоди <b>публічні</b> — інші теж можуть запропонувати; він обере.</p>`; }
 function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
@@ -2998,11 +3003,10 @@ function actionsHTML(p,ctx){
   // 20.10 (відгук Богдана): вікно чужого / вільного гравця поділено на вкладки — менше тексту, зрозуміло «де просто купити»
   if(!free){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
-    let h=`<p class="mnote" style="margin:8px 0 0">Власник: <b>${ownerNm}</b> · угоди <b>публічні</b> — інші теж можуть запропонувати; він обере.</p>`;
+    let h='';   // 20.10: «Власник…» і «Агент» винесено в картку (pm-xinfo, під таблицею форми)
     // 535: у турі пропозиції на гравця з останнім туром контракту заборонені (автопродаж при закритті раніше за будь-яку угоду)
     if(inPlayRound() && expiringP(p)) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
     if(inPlayRound()) return h+`<p class="mnote warn">⏳ Тур ${inPlayRound().number} почався: угоди закриті — нові пропозиції, лоти й обміни створити не можна до закриття туру.</p>`;
-    h+=agentUI(p);
     const blockA=acquireBlock(p), lst=(S.listingsReady&&S.listings[p.id])||null;
     // ── 🛒 КУПИТИ: викуп з вітрини (миттєво) або пропозиція власнику (трансфер) ──
     let buy='';
@@ -3014,17 +3018,15 @@ function actionsHTML(p,ctx){
       if(lst){
         // 506: ціна лота фіксована, а вартість рухається → поза вікном ціни від ПОТОЧНОЇ вартості лот застарів
         const stale=(+lst.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+lst.ask_price>winMaxEur(mv));
-        buy+=`<div class="vcard"><div class="msec" style="margin:0 0 4px">🏷 Миттєвий викуп з вітрини</div>
-          <p class="mnote" style="margin:0"><b>${ownerNm}</b> виставив за <b>${eur(lst.ask_price)}</b> · 0% комісії.</p>`
-          +(stale ? `<p class="mnote warn">🕓 Лот застарів: вартість змінилась, ціна ask (${eur(lst.ask_price)}) поза вікном (${winTxt()}) від поточної ${eur(mv)}. Власник має перевиставити — викуп поки неможливий.</p>`
-                  : `<div class="macts" style="margin-top:10px"><button data-do="buylist" data-amt="${lst.ask_price}">Викупити за ask · ${eur(lst.ask_price)}</button></div>`)
+        buy+=`<div class="vcard"><div class="vhead"><span class="msec">🏷 Миттєвий викуп з вітрини</span><span class="mnote"><b>${ownerNm}</b> виставив за <b>${eur(lst.ask_price)}</b> · 0% комісії.</span>`
+          +(stale ? '' : `<button data-do="buylist" data-amt="${lst.ask_price}" class="vbtn">Викупити за ask · ${eur(lst.ask_price)}</button>`)+`</div>`
+          +(stale ? `<p class="mnote warn" style="margin:6px 0 0">🕓 Лот застарів: вартість змінилась, ціна ask (${eur(lst.ask_price)}) поза вікном (${winTxt()}) від поточної ${eur(mv)}. Власник має перевиставити — викуп поки неможливий.</p>` : '')
           +`</div>`;
       }
       if(lst && S.transfersReady) buy+=`<div class="xor">— або —</div>`;
       if(S.transfersReady){
         const minT=Math.ceil(mv*winMinPct()), maxT=winMaxEur(mv);
-        buy+=`<div class="vcard"><div class="msec" style="margin:0 0 4px">🤝 Запропонувати власнику (трансфер)</div>
-          <p class="mnote" style="margin:0">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті. Власник може прийняти, відхилити чи зробити контр.</p>
+        buy+=`<div class="vcard"><div class="vhead"><span class="msec">🤝 Запропонувати власнику (трансфер)</span><span class="mnote">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті. Власник може прийняти, відхилити чи зробити контр.</span></div>
           ${amountUI('Сума ('+winTxt()+')',minT,'propose',p.id,maxT,wagePctUI()+'<div class="psum" data-kind="propose"></div>')}</div>`;
       }
       if(!lst && !S.transfersReady) buy+=`<p class="mnote">Купівля в учасника зʼявиться після заливки <b>405</b>.</p>`;
@@ -3359,6 +3361,7 @@ async function openPlayerModal(pid){
   const ptScored  = sp && sp.rounds_played>0  ? sp.scored_points  : '—';
   const ptFielded = sp && sp.fielded_rounds>0 ? sp.fielded_points : '—';
   const lgEn=leagueEn(cl.league);
+  const xinfo=(!ctx.owned&&!ctx.free)?`<div class="pm-xinfo">${ownerNoteHTML(p)}${inPlayRound()?'':agentUI(p)}</div>`:'';   // власник + агент: у вільному місці під формою
   const html = `<div class="pm-fit">
     <header class="pm-head"><div class="pm-head1">
       <div class="pm-title">Детальна картка гравця</div>
@@ -3398,6 +3401,7 @@ async function openPlayerModal(pid){
             <div class="pm-box"><span>Історія власників</span><strong>${ownerHist(card,p)}</strong></div>
           </div>
         </div>
+        ${xinfo}
       </section>
     </div>
     <footer class="pm-actions">${actionsHTML(p,ctx)}</footer></div>`;
