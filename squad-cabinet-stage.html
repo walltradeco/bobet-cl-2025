@@ -336,6 +336,8 @@ table.t{width:100%;border-collapse:collapse}
 .trow .tctrl{display:flex;gap:6px;flex-wrap:wrap}
 .trow.wev{border-left:3px solid var(--gold);background:rgba(230,193,75,.07)}
 .wpct{margin-top:8px}
+.agbox{margin-top:12px}
+.agres{margin:4px 0 8px;padding:8px 10px;border-left:3px solid var(--teal);background:rgba(111,176,201,.08);border-radius:6px;font-size:13px}
 .wpct select{margin-left:6px}
 .trow .tctrl button{padding:6px 12px;font-size:13px}
 
@@ -955,6 +957,14 @@ async function loadRefs(){
     S.wof = await sbSel(`market_my_wage_offers?tournament_id=eq.${S.tour.id}&status=eq.open&select=*`);
     S.wevReady=true;
   }catch(e){ S.wev=[]; S.wof=[]; S.wevReady=false; }
+  // 555: агент — мої запити (з відповіддю на момент запиту), квота вікна, «про мого гравця питали» (БЕЗ запитувача). Поки SQL 555 не залито — degrade
+  S.agi=[]; S.agq=null; S.agp=[]; S.agReady=false;
+  try{
+    S.agq = (await sbSel(`market_my_agent_quota?tournament_id=eq.${S.tour.id}&select=*`))[0]||null;
+    S.agi = await sbSel(`market_my_agent_inquiries?tournament_id=eq.${S.tour.id}&select=player_id,round_id,created_at,result&order=created_at.desc`);
+    S.agp = await sbSel(`market_my_agent_pings?tournament_id=eq.${S.tour.id}&select=player_id,player_name,round_id,created_at&order=created_at.desc`);
+    S.agReady=!!S.agq;
+  }catch(e){ S.agi=[]; S.agq=null; S.agp=[]; S.agReady=false; }
   // обмін 1↔1 + двостороння доплата (412; таблиця публічна). Поки 412 не залито → degrade
   S.exchanges=[]; S.exchangesReady=false;
   try{
@@ -1130,9 +1140,33 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
     conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} із ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
-  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + conf;
+  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + agBanners() + conf;
 }
 // 542: банери штрафів ролей — МІЙ борг / склад «не зараховано» / вихід гравця (приватне, лише власнику)
+// 555: «Поговорити з агентом» — блок у картці ЧУЖОГО гравця (кнопка, квота вікна, остання відповідь агента)
+function agentUI(p){
+  if(!S.agReady || (S.cfg && S.cfg.agent_enabled===false) || !S.agq) return '';
+  const q=S.agq, per=+q.per_round||3, left=Math.max(0,per-(+q.used||0));
+  const last=(S.agi||[]).find(x=>x.player_id===p.id && (!q.round_id || x.round_id===q.round_id)) || (S.agi||[]).find(x=>x.player_id===p.id);
+  let info='';
+  if(last){ const r=last.result||{}, d=new Date(last.created_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+    info=`<p class="agres">🕵️ <b>Агент</b> <span class="dim">(${d})</span>: ${r.role?`роль <b>${roleLabel(r.role)}</b> · `:''}контракт <b>${r.contract_rounds_left}</b> з <b>${r.contract_length}</b> ${turW(r.contract_length)} · зарплата <b>${eur(r.wage_per_round)}</b>/тур${r.marked?' · <b class="warnc">🚩 порушив</b>':''}</p>`; }
+  return `<div class="agbox"><div class="msec">🕵️ Агент</div>${info}
+    <p class="mnote">Дізнатись точно: роль, залишок контракту, зарплату, позначку «порушив». <b>Власник побачить, що про його гравця питали (без імені).</b> Запитів у цьому вікні туру: лишилось <b>${left}</b> з ${per} (невикористані не переносяться).</p>
+    <div class="macts"><button class="ghost" data-do="agent" ${left<1?'disabled title="Ліміт запитів на це вікно вичерпано"':''}>Поговорити з агентом</button></div></div>`;
+}
+// 555: власник — «про твого гравця питали» (без імені запитувача)
+function agPingNote(p){
+  if(!S.agReady || !S.agp) return '';
+  const rid=S.agq&&S.agq.round_id, n=(S.agp||[]).filter(x=>x.player_id===p.id && (!rid || x.round_id===rid)).length;
+  return n?`<p class="mnote" style="margin:0 0 6px">🕵️ Про цього гравця питали агента: <b>${n}</b> ${n===1?'раз':'рази'} у цьому вікні туру <span class="dim">(хто — невідомо)</span>.</p>`:'';
+}
+function agBanners(){
+  if(!S.agReady || !S.agp || !S.agp.length) return '';
+  const rid=S.agq&&S.agq.round_id, cur=(S.agp||[]).filter(x=>!rid || x.round_id===rid); if(!cur.length) return '';
+  const by={}; cur.forEach(x=>{ by[x.player_name]=(by[x.player_name]||0)+1; });
+  return `<div class="stmsg"><b>🕵️ Про твоїх гравців питали агента</b> (цього вікна туру): ${Object.entries(by).map(([n,c])=>`<b>${esc(n)}</b> ×${c}`).join(', ')}. <span class="dim">Хто питав — невідомо; можливо, готують пропозицію.</span></div>`;
+}
 // 553: невирішена подія «гравець просить піти» (м'яч у мене) блокує підтвердження складу
 function evBanners(){
   if(!S.wevReady) return '';
@@ -2679,7 +2713,7 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    const cinfo=`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`
+    const cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`
       + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде продано після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
@@ -2734,6 +2768,7 @@ function actionsHTML(p,ctx){
         : blockL ? `<p class="mnote warn">Викуп ⛔ ${blockL}</p>`
                  : `<div class="macts"><button data-do="buylist" data-amt="${lst.ask_price}">Викупити за ask · ${eur(lst.ask_price)}</button></div>`;
     }
+    h+=agentUI(p);
     // ТРАНСФЕР (гроші за гравця)
     if(S.transfersReady){
       const blockT=acquireBlock(p);
@@ -3102,6 +3137,13 @@ function bindModalActions(p){
   const h=$('mhost');
   h.querySelectorAll('[data-do]').forEach(b=>b.onclick=async()=>{
     const kind=b.dataset.do;
+    if(kind==='agent'){
+      const q=S.agq||{}, left=Math.max(0,(+q.per_round||3)-(+q.used||0));
+      confirmModal(`Запитати агента про <b>${esc(p.name)}</b>? Ти дізнаєшся роль, залишок контракту, зарплату й позначку «порушив». <b>Власник побачить, що про його гравця питали (без твого імені).</b> Після запиту лишиться ${Math.max(0,left-1)} з ${q.per_round||3} у цьому вікні туру.`, 'Запитати агента',
+        async()=>{ const { error } = await sb.rpc('market_agent_inquiry',{p_player:p.id});
+          if(error){ alert('⛔ ' + (error.message||'').replace(/^.*?(Squad: )/, '$1')); openPlayerModal(p.id); return; }
+          await loadRefs(); openPlayerModal(p.id); },
+        ()=>openPlayerModal(p.id)); return; }
     if(kind==='sell'){ if(lnBlocked(p.id)) return alert(lnMsg()); const amt=+b.dataset.amt; confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> (−5%)?`, 'Продати · '+eur(amt),
       ()=>act('market_sell',{p_player:p.id},'Продано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
