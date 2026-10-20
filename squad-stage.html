@@ -982,7 +982,7 @@ async function openBoardCard(pid){
       <section class="pm-data">
         <div class="pm-identity">
           <div><h2>${esc(p.name)}</h2><div class="pm-metarow">${meta}</div></div>
-          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${cl.league?' · '+esc(leagueEn(cl.league)):''}</span></div>
+          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${cl.league?' · '+esc(leagueEn(cl.league)):''} ${SEASON_LABEL}</span></div>
         </div>
         <div class="pm-value">
           <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
