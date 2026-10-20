@@ -2269,8 +2269,10 @@ function chTipHTML(){
 async function viewMarket(){
   if(!S.chDefs) await loadChallenges();   // 19.10: підказка «Челенджі» потребує довідника й моїх нарахувань навіть якщо «Мій склад» ще не відкривали
   if(S.mktSub==='bids' || S.mktSub==='transfers') S.mktSub='deals';       // старі назви вкладок (до об'єднання)
-  const inCount=(S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id).length
-               +(S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id).length;
+  // 20.10 (Богдан): «Мої угоди (N)» = усе незавершене, під що заморожені мої гроші: пропозиції (мені й від мене) + обміни + аукціони, де я лідирую (як у тілі вкладки)
+  const inCount=(S.transfers||[]).filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id).length
+               +(S.exchanges||[]).filter(x=>x.to_participant===S.me.id||x.from_participant===S.me.id).length
+               +(S.auctions||[]).filter(a=>a.leader_participant_id===S.me.id).length;
   const shopAll=Object.values(S.listings||{});
   const subs=[['free','Вільні'],['all','Усі гравці'],['shop','Вітрина'+(shopAll.length?` (${shopAll.length})`:'')],['deals','Мої угоди'+(inCount?` (${inCount})`:'')]];
   const bar=`<div class="subbar"><div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>${chTipHTML()}</div>`;
