@@ -276,7 +276,7 @@ table.t{width:100%;border-collapse:collapse}
 .clen-info .cw-main{font-size:21px;line-height:1.1;color:var(--gold);font-weight:700}
 .clen-info .cw-main small{font-size:12px;font-weight:600;color:var(--text-dim)}
 .clen-info .cw-sum{font-size:13px;color:var(--text)}
-.clen-info .cw-note{font-size:12px;color:var(--text-dim);flex:1 1 240px;text-align:right}   /* 20.10: нотатка в одному рядку з вартістю */
+.clen-info .cw-note{font-size:12px;color:var(--text-dim);flex:0 1 auto;padding-left:16px;border-left:1px solid var(--line)}   /* 20.10: нотатка в одному рядку з вартістю */
 .clen-info .cw-sub{margin-top:4px;font-size:11.5px}
 .clen-info .cw-free{font-size:12.5px;color:var(--text);padding-left:16px;border-left:1px solid var(--line)}
 .clen-info.bad .cw-main,.clen-info.bad .cw-sum,.clen-info.bad .cw-free{color:var(--red)}
@@ -383,8 +383,8 @@ table.t{width:100%;border-collapse:collapse}
 .aucf .aquick{display:flex;gap:6px;flex-wrap:wrap;margin:0}
 .aucf .arow{display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;margin-top:8px}   /* 20.10: підписи, поле й кнопки — в один рядок (вікно нижче) */
 .aucf .ahint{flex:1 1 280px;margin:0;line-height:1.4}
-.aucf .abot .aucmsg{flex:1 1 280px;margin:0}
-.aucf .abot button{flex:none;min-width:200px;padding:11px 20px}
+.aucf .arow .aucmsg{flex:1 1 240px;margin:0;line-height:1.35}
+.aucf .arow button[data-do="aucgo"]{flex:none;margin-left:auto;min-width:170px;padding:11px 20px}
 .aucmsg.warn{color:var(--gold)}
 .trow .tctrl button{padding:6px 12px;font-size:13px}
 
@@ -2604,8 +2604,8 @@ function auctionForm(p,au,mv){
     ${aucPctUI()}
     <div class="arow"><span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
       <input id="aucAmt" inputmode="decimal" value="${(minNext/1e6).toString()}">
-      <div class="aquick">${quick}</div></div>
-    <div class="arow abot"><div class="aucmsg mnote"></div><button data-do="aucgo" disabled>Поставити</button></div></div>`;
+      <div class="aquick">${quick}</div>
+      <div class="aucmsg mnote"></div><button data-do="aucgo" disabled>Поставити</button></div></div>`;   // 20.10: ставка, швидкі суми, повідомлення й кнопка — один рядок
 }
 function aucRefresh(){
   const h=$('mhost'); const f=h&&h.querySelector('.aucf'); if(!f) return;
