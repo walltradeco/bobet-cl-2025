@@ -193,7 +193,7 @@ table.t{width:100%;border-collapse:collapse}
   cursor:pointer;transition:border-color .12s,transform .12s;text-align:center;display:flex;flex-direction:column}   /* 20.10: статус притиснуто донизу — без порожнього місця під ним */
 .mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
 .mtile.mine{border-color:rgba(244,196,48,.45)}
-.mtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.mtop{display:flex;justify-content:flex-start;gap:8px;align-items:center;margin-bottom:8px}
 .pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
 .pbadge.G{background:rgba(240,193,75,.14);color:#f0c14b;border-color:#5a4a1c}
 .pbadge.D{background:rgba(127,188,255,.12);color:#7fbcff;border-color:#274a63}
@@ -210,7 +210,7 @@ table.t{width:100%;border-collapse:collapse}
 .mtile .mclub{font-size:12px;color:var(--text-dim);margin-top:2px}
 .mtile .mlg{font-size:10.5px;color:var(--text-dim);opacity:.7;margin-top:1px}
 .mrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}
-.mtrow{display:flex;justify-content:center;align-items:center;gap:10px;margin-top:9px}   /* окремий клас: .mrow ще й рядок матчів (grid + hover-підсвітка) */
+.mtrow{display:flex;justify-content:center;align-items:center;gap:6px 9px;flex-wrap:wrap;margin-top:9px}   /* окремий клас: .mrow ще й рядок матчів (grid + hover-підсвітка) */
 .rpill{background:var(--panel2);border-radius:7px;padding:2px 9px;font-weight:800;color:var(--up);font-size:14px}
 .mprice{color:var(--text);font-weight:700;font-size:14px}
 .mstatus{margin-top:auto;padding-top:8px;border-top:1px solid var(--line);font-size:12px;
@@ -276,6 +276,7 @@ table.t{width:100%;border-collapse:collapse}
 .clen-info .cw-main{font-size:21px;line-height:1.1;color:var(--gold);font-weight:700}
 .clen-info .cw-main small{font-size:12px;font-weight:600;color:var(--text-dim)}
 .clen-info .cw-sum{font-size:13px;color:var(--text)}
+.clen-info .cw-note{font-size:12px;color:var(--text-dim);flex:1 1 240px;text-align:right}   /* 20.10: нотатка в одному рядку з вартістю */
 .clen-info .cw-sub{margin-top:4px;font-size:11.5px}
 .clen-info .cw-free{font-size:12.5px;color:var(--text);padding-left:16px;border-left:1px solid var(--line)}
 .clen-info.bad .cw-main,.clen-info.bad .cw-sum,.clen-info.bad .cw-free{color:var(--red)}
@@ -287,6 +288,7 @@ table.t{width:100%;border-collapse:collapse}
 .bc-main{font-family:var(--mono);font-size:26px;font-weight:700;margin:0}
 .bc-subs{display:flex;flex-direction:column;gap:1px;font-size:12px;color:var(--text-dim);line-height:1.35;min-width:0}
 .bc-subs b{color:var(--text)}
+.rt .when.dgr{margin-top:2px;max-width:340px;margin-left:auto;line-height:1.4}
 .budg-pour{align-self:center;display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap}
 .budg-pour small{font-weight:600;font-size:10px;opacity:.75}
 .pour-dir{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
@@ -349,6 +351,8 @@ table.t{width:100%;border-collapse:collapse}
 .ptab{flex:1;padding:9px 12px;background:transparent;border:0;border-bottom:2px solid transparent;margin-bottom:-1px;color:var(--text-dim);font-weight:700;font-size:14px;cursor:pointer;border-radius:0}
 .ptab:hover{color:var(--text)} .ptab.on{color:var(--text);border-bottom-color:var(--accent)}
 .ptab-body{display:none} .ptab-body.on{display:block}
+.ptabs.stack{display:grid;grid-template-columns:minmax(0,1fr)} .ptabs.stack .ptab-bar{grid-row:1}
+.ptabs.stack .ptab-body{display:block;grid-row:2;grid-column:1;visibility:hidden;pointer-events:none} .ptabs.stack .ptab-body.on{visibility:visible;pointer-events:auto}
 .xor{text-align:center;color:var(--text-dim);font-size:12px;margin:10px 0 0}
 .vcard{border:1px solid var(--line);background:var(--panel2);border-radius:10px;padding:10px 12px;margin-top:10px}
 .xcmp{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -370,8 +374,12 @@ table.t{width:100%;border-collapse:collapse}
 .wmode.on{background:var(--accent);border-color:var(--accent-d);color:#06120c}
 .wpct .hide{display:none}
 .aucf{margin-top:10px}
-.aucf input#aucAmt{width:100%}
-.aucf .aquick{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.aucf input#aucAmt{width:150px;flex:none}
+.aucf .aquick{display:flex;gap:6px;flex-wrap:wrap;margin:0}
+.aucf .arow{display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;margin-top:8px}   /* 20.10: підписи, поле й кнопки — в один рядок (вікно нижче) */
+.aucf .ahint{flex:1 1 280px;margin:0;line-height:1.4}
+.aucf .abot .aucmsg{flex:1 1 280px;margin:0}
+.aucf .abot button{flex:none;min-width:200px;padding:11px 20px}
 .aucmsg.warn{color:var(--gold)}
 .trow .tctrl button{padding:6px 12px;font-size:13px}
 
@@ -1176,9 +1184,8 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   const inplay=rsAll.find(r=>roundStarted(r,nowD));
   const n=mine.length, dgOk=mine.filter(isDG).length>=need;
   const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
-    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}${n?(n>=max
-      ? ` · ≥${need} DEF/GK у складі (основа або лавка) ${dgOk?'✓':'✕'}`
-      : ` · для ${max}/${max}: ≥${need} DEF/GK у складі (основа або лавка), є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
+    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}</div>
+    <div class="when dgr">≥${cfg.defgk_start_min||1} DEF/GK в основі · ≥${need} DEF/GK у складі (основа або лавка)${n?(n>=max?` ${dgOk?'✓':'✕'}`:`, є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
   const a=inplay?(S.attn||{})[inplay.number]:null;
   const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
             : a.state==='closing' ? 'Усі матчі завершені — розрахунок за ~1 год.'
@@ -1296,12 +1303,12 @@ function budgetPanel(){
       <div class="bc-row"><div class="bc-main" title="Доступно">${eur(S.spendable)}</div>
         <div class="bc-subs"><span title="Під ставки й пропозиції">Заморожено ${eur(S.frozen)}</span></div></div>
     </div>
+    <button class="budg-pour" data-do="pour">↔ Переливання<small>комісія −${feePct}%</small></button>
     <div class="budg-card">
       <div class="bc-h">💵 Зарплатний бюджет</div>
       <div class="bc-row"><div class="bc-main" title="Доступно">${wf!=null?eur(wf):'—'}</div>
         <div class="bc-subs"><span title="Під діючі контракти й ставки, де ти лідер">Заморожено ${wr!=null?eur(wr):'—'}</span>${runwayHTML(wb)}</div></div>
     </div>
-    <button class="budg-pour" data-do="pour">↔ Переливання<small>комісія −${feePct}%</small></button>
   </div>`;
 }
 function pourModal(){
@@ -1549,12 +1556,6 @@ function viewRoundResult(r){
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  if(!mine.length){
-    $('view').innerHTML = stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
-      '<div class="head2"><h2>Мій склад</h2></div><div class="soon">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>';
-    const pb0=$('view').querySelector('[data-do="pour"]'); if(pb0) pb0.onclick=pourModal;
-    return;
-  }
   // тур для виставлення = найближчий із дедлайном попереду (лок після дедлайну)
   const round = S.rounds.find(r => new Date(r.deadline_at) > new Date()) || null;
   clearTimeout(S.rrTimer);
@@ -1925,10 +1926,11 @@ function renderLineup(mine, round){
 
   $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
     `<div class="head2x"><h2>Мій склад</h2><div class="subx"><div>основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</div>${rolesNoteInner(mine)?`<div>${rolesNoteInner(mine)}</div>`:''}</div></div>
+     ${mine.length?'':'<div class="soon" style="margin-bottom:12px">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>'}
      <div class="squad-wrap">
        <div class="panel">
          <div class="slot-h"><span>Основа (${s.min5})</span><span>рейтинг · ціна</span></div>
-         <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>'}</div>
+         <div class="plist">${s.st.length?s.st.map((p,i)=>row(p,'start',i)).join(''):(mine.length?'<div class="dim" style="padding:6px 2px">— порожньо, додай гравців зі складу праворуч</div>':'<div class="dim" style="padding:6px 2px">— порожньо</div>')}</div>
          ${val}
          ${injWarn}
          ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
@@ -2074,8 +2076,8 @@ function ownerInfo(p){
   if(p.owner_participant_id===S.me.id) return { cls:'mine', txt:'★ У твоєму складі', dot:'' };
   if(p.owner_participant_id) return { cls:'', txt:'у складі · '+esc(S.names[p.owner_participant_id]||'—'), dot:'<span class="dot o"></span>' };
   const au=S.auctions.find(a=>a.player_id===p.id);
-  if(au) return { cls:'free', txt:'🔨 аукціон · '+eur(au.current_bid), dot:'<span class="dot g"></span>' };
-  return { cls:'free', txt:'✅ Вільний', dot:'<span class="dot g"></span>' };
+  if(au) return { cls:'free', txt:'аукціон · '+eur(au.current_bid), dot:'<span class="dot g"></span>' };
+  return { cls:'free', txt:'Вільний', dot:'<span class="dot g"></span>' };
 }
 function formChart(p){
   const last=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
@@ -2095,7 +2097,9 @@ function formChart(p){
 // після набуття слотів до squad_max має вистачати, щоб добрати defgk_full_min DEF/GK: D/G + (max − гравців) ≥ min.
 const isDG = x => x && (x.position==='D' || x.position==='G');
 // 16.10 (відгук Богдана): просте пояснення правила для «Мій склад» і «Ринок» — ≥2 DEF/GK потрібні лише для складу 8/8
-const dgNote = () => { const c=S.cfg||{}, mx=c.squad_max||8; return `щоб мати ${mx}/${mx}, потрібно ≥${c.defgk_full_min||2} DEF/GK у складі (основа або лавка)`; };
+// 20.10 (відгук Богдана): новачок має знати правило DEF/GK з першої секунди — і «у складі (основа або лавка)», і «≥1 в основі»
+const dgFrag = () => { const c=S.cfg||{}; return `≥${c.defgk_full_min||2} DEF/GK у складі (основа або лавка), з них ≥${c.defgk_start_min||1} в основі`; };
+const dgNote = () => { const c=S.cfg||{}, mx=c.squad_max||8; return `щоб мати ${mx}/${mx}, потрібно ${dgFrag()}`; };
 function dgRule(total, dg){                       // → null (ок) або текст причини; total/dg — ПІСЛЯ набуття
   const cfg=S.cfg||{}, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
   if(dg + (max-total) >= need) return null;
@@ -2114,6 +2118,15 @@ function defgkBanner(mine){
   else { txt=`DEF/GK у складі: <b>${d}</b> з ${need}. Для повного складу з ${max} потрібно ще <b>${lack}</b> · вільних слотів: ${slots}.`; }
   return `<div class="dgbanner ${cls}">${txt}</div>`;
 }
+// 20.10 (відгук Богдана): при купівлі нагадуємо правило DEF/GK, якщо в складі їх ще бракує (щоб новачок не помилився)
+function dgWarn(p){
+  const cfg=S.cfg||{}, max=cfg.squad_max||8, need=cfg.defgk_full_min||2;
+  const mine=S.players.filter(x=>x.owner_participant_id===S.me.id), n=mine.length, d=mine.filter(isDG).length, lack=Math.max(0,need-d);
+  if(lack<=0) return '';
+  if(isDG(p)) return `<p class="mnote" style="margin:6px 0 0">🛡 У складі DEF/GK: <b>${d}</b> з ${need} — цей гравець допоможе виконати правило: ${dgFrag()}.</p>`;
+  const slotsAfter=max-n-1;
+  return `<p class="mnote warn" style="margin:6px 0 0">⚠️ У складі DEF/GK: <b>${d}</b> з ${need}. Щоб мати ${max}/${max}, потрібно ${dgFrag()}. Після цієї купівлі вільних слотів: <b>${slotsAfter}</b>${slotsAfter===lack?' — решта слотів тільки для DEF/GK':''}.</p>`;
+}
 function acquireBlock(p){
   const cfg=S.cfg||{}, mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
   if(mine.length >= (cfg.squad_max||8)) return `Склад повний (${cfg.squad_max||8}) — спершу звільни місце`;
@@ -2131,15 +2144,14 @@ function mtile(p){
     // 16.10: на повному складі (8/8) купити нікого не можна — підпис «лише DEF/GK» там вводив в оману; показуємо лише коли ще є вільні слоти
     if(mine.length && mine.length<((S.cfg&&S.cfg.squad_max)||8) && dgRule(mine.length+1, mine.filter(isDG).length)) dgb='<div class="mdgb" title="Решта слотів — лише DEF/GK">лише DEF/GK</div>'; }
   return `<div class="mtile ${o.cls==='mine'?'mine':''}${dgb?' dgblock':''}" data-p="${p.id}">
-    <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}
-      <span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
+    <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}</div>
     ${S.listingsReady && S.listings[p.id] ? `<div class="mlistb" title="Виставлений на вітрину: ${S.listings[p.id].seller_participant===S.me.id?'твій лот':'викупити можна миттєво'}">🏷 вітрина ${eur(S.listings[p.id].ask_price)}</div>` : ''}
     ${avatar(p,76)}
     <div class="mnm">${esc(p.name)}</div>
     <div class="mclub">${esc(cl.name||'')}</div>
     <div class="mlg">${esc(leagueEn(cl.league))}</div>
     ${dgb}
-    <div class="mtrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span></div>
+    <div class="mtrow"><span class="rpill">${p.season_avg_rating??'—'}</span><span class="mprice">${eur(p.market_value_current)}</span><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></div>
     ${startWas(p,'center')}
     <div class="mstatus ${o.cls}">${o.dot}${o.txt}</div>
   </div>`;
@@ -2565,8 +2577,7 @@ function aucPctUI(){
   if(!aucPctOn()) return '';
   const step=Math.round(aucStep()*100), max=Math.round((+(S.cfg&&S.cfg.wage_offer_max_pct)||0.5)*100);
   let opts='<option value="0">без надбавки</option>'; for(let v=step; v<=max; v+=step) opts+=`<option value="${v}">+${v}%</option>`;
-  return `<label class="dim">🤝 Надбавка до зарплати <select id="aucPct">${opts}</select></label>
-    <p class="mnote" style="margin:4px 0 8px">Надбавка — ще один аргумент у торгах: ти платиш +X% до зарплати гравця на весь контракт; вона входить у зарплатний резерв, поки ти лідер. На ставці-викупі не діє.</p>`;
+  return `<div class="arow"><label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати <select id="aucPct">${opts}</select></label><span class="mnote ahint">Надбавка — ще один аргумент у торгах: ти платиш +X% до зарплати гравця на весь контракт; вона входить у зарплатний резерв, поки ти лідер. На ставці-викупі не діє.</span></div>`;
 }
 // чому ця пропозиція НЕ сильніша за лідерову (та сама сума); null — сильніша. Роль лідера знають лише ті, хто вже ставив на лот (приватна вьюха)
 function aucWeak(au,len,role,pct){
@@ -2586,11 +2597,10 @@ function auctionForm(p,au,mv){
     : `<button type="button" class="mini ghost" data-aamt="${floor}">мін. · ${eurUp(floor)}</button><button type="button" class="mini ghost" data-aamt="${ceil}">викуп · ${eurUp(ceil)}</button>`;
   return `<div class="aucf" data-pid="${p.id}" data-au="${au?au.id:''}" data-mv="${mv}">
     ${aucPctUI()}
-    <span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
-    <input id="aucAmt" inputmode="decimal" value="${(minNext/1e6).toString()}">
-    <div class="aquick">${quick}</div>
-    <div class="aucmsg mnote"></div>
-    <div class="macts"><button data-do="aucgo" disabled>Поставити</button></div></div>`;
+    <div class="arow"><span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
+      <input id="aucAmt" inputmode="decimal" value="${(minNext/1e6).toString()}">
+      <div class="aquick">${quick}</div></div>
+    <div class="arow abot"><div class="aucmsg mnote"></div><button data-do="aucgo" disabled>Поставити</button></div></div>`;
 }
 function aucRefresh(){
   const h=$('mhost'); const f=h&&h.querySelector('.aucf'); if(!f) return;
@@ -2620,8 +2630,9 @@ function aucRefresh(){
   if(pr.length){ msg.className='aucmsg mnote warn'; msg.innerHTML='⛔ '+pr.join(' · '); btn.disabled=true; btn.textContent=au?'Перебити':'Поставити'; }
   else{
     msg.className='aucmsg mnote';
-    msg.innerHTML=atCeil?`✅ Це <b>викуп</b>: лот закриється одразу, гравець стане твоїм за ${eur(raw)}.`
-      :`✅ Ставка <b>${eur(raw)}</b> · ${len} ${turW(len)}${rolesOn()?' · '+roleLabel(role):''}${pct>0?` · надбавка +${Math.round(pct*100)}%`:''}${au&&raw===+au.current_bid?' · <b>перебиває без підвищення суми</b>':''}`;
+    const e2=v=>'€'+(v/1e6).toFixed(2)+'M', per=Math.round(qWageR(pid,len,mv,role)*(1+pct));   // сума як у полі (до 0,01M); контракт — зарплата/тур з надбавкою
+    msg.innerHTML=atCeil?`✅ Це <b>викуп</b>: лот закриється одразу, гравець стане твоїм за ${e2(raw)}.`
+      :`✅ Ставка <b>${e2(raw)}</b> · ${len} ${turW(len)}${rolesOn()?' · '+roleLabel(role):''}${pct>0?` · надбавка +${Math.round(pct*100)}%`:''} · контракт <b>${eur(per)}</b>/тур × ${len} = резерв <b>${eur(per*len)}</b>${au&&raw===+au.current_bid?' · <b>перебиває без підвищення суми</b>':''}`;
     btn.disabled=false; btn.textContent=atCeil?'Викупити':(au?'Перебити':'Поставити');
   }
 }
@@ -2651,8 +2662,11 @@ function wagePctUI(){
 function wageArg(scope){ const box=(scope||$('mhost')).querySelector('.wpct'); if(!box||box.dataset.mode!=='player') return {}; const el=box.querySelector('#wagePct'); const v=el?+el.value:0; return v>0?{p_wage_pct:v/100}:{}; }
 // 20.10: надбавка («Домовитись з гравцем») у формі scope; 0, якщо режим «з учасником»
 function wpctOf(scope){ const box=scope&&scope.querySelector('.wpct'); if(!box||box.dataset.mode!=='player') return 0; const el=box.querySelector('#wagePct'); return el?(+el.value||0)/100:0; }
-// оновити пікери контракту й підсумки пропозицій (змінили режим/надбавку/суму)
-function propRefresh(){ const h=$('mhost'); if(!h) return; h.querySelectorAll('.xbox .clen, .ptab-body[data-pt="buy"] .clen').forEach(el=>updClen(el)); sumRefresh(); }
+// 20.10: надбавка у формі аукціону (#aucPct) — діє лише поки активна вкладка «Аукціон» (для «Купити зараз» надбавки нема) і ставка не на стелі
+function aucPctOf(){ const h=$('mhost'), f=h&&h.querySelector('.aucf'); if(!f) return 0; const body=f.closest('.ptab-body'); if(body&&!body.classList.contains('on')) return 0;
+  const sel=f.querySelector('#aucPct'); return (!sel||sel.disabled)?0:(+sel.value||0)/100; }
+// оновити пікери контракту й підсумки пропозицій (змінили режим/надбавку/суму/вкладку)
+function propRefresh(){ const h=$('mhost'); if(!h) return; h.querySelectorAll('.clen').forEach(el=>updClen(el)); sumRefresh(); }
 // підсумок «Твоя пропозиція»: що віддаєш/отримуєш, доплата/сума, контракт з надбавкою, що заморозиться
 function sumRefresh(){
   const h=$('mhost'); if(!h) return;
@@ -2680,7 +2694,7 @@ function sumRefresh(){
     box.innerHTML=`<div class="ph">📋 Твоя пропозиція</div>`+rows.map(r=>`<div>${r}</div>`).join('');
   });
 }
-document.addEventListener('change',e=>{ if(e.target&&e.target.id==='wagePct') propRefresh(); });
+document.addEventListener('change',e=>{ if(e.target&&(e.target.id==='wagePct'||e.target.id==='aucPct')) propRefresh(); });
 document.addEventListener('input',e=>{ if(e.target&&(e.target.id==='amtInp'||e.target.id==='xAmt')) sumRefresh(); });
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('.wmode'); if(!b) return;
   const box=b.closest('.wpct'); if(!box) return;
@@ -2827,8 +2841,9 @@ function myMainCount(){ return (S.players||[]).filter(p=>S.me&&p.owner_participa
 function roleArgs(box){ if(!rolesOn()) return {}; const el=box||$('mhost').querySelector('.clen'); return { p_role:(el&&el.dataset.prole)||null }; }
 function needRole(box){ if(!rolesOn()) return false; const el=box||$('mhost').querySelector('.clen'); if(el&&el.dataset.prole) return false;
   alert('Обери роль гравця: «Основний» чи «Лавка» — без неї підписати контракт не можна.'); return true; }
-function roleChips(){ if(!rolesOn()) return '';
-  return `<div class="crole"><div class="clab"><b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). Обери обов'язково.</div>
+function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). Обери обов'язково.`; }
+function roleChips(inline){ if(!rolesOn()) return '';
+  return `<div class="crole">${inline?'':`<div class="clab">${roleIntroText()}</div>`}
     <div class="crole-row"><button type="button" class="crole-chip" data-r="main">Основний</button><button type="button" class="crole-chip" data-r="bench">Лавка</button></div>
     <div class="crole-need"></div>
     <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id))}</div></div>`; }
@@ -2852,10 +2867,9 @@ function contractPicker(mv,freeAdd,pid,opts){
   }
   const max=maxLen();
   return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="${freeAdd||0}" data-pid="${pid||''}">
-    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок турніру (<b>лишилось ${si.left} з ${si.len} турів</b>)</div>
-    ${roleChips()}<div class="clen-row">${chipsHTML(max,1)}</div>
-    <div class="clen-info"></div>
-    <div class="clab" style="margin:6px 0 0">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</div></div>`;
+    <div class="clab">Контракт (турів) — довше = дорожча зарплата; резерв утримується наперед; не довше за залишок турніру (<b>лишилось ${si.left} з ${si.len} турів</b>)${rolesOn()?' · '+roleIntroText():''}</div>
+    ${roleChips(true)}<div class="clen-row">${chipsHTML(max,1)}</div>
+    <div class="clen-info"></div></div>`;
 }
 // довжина з ПЕРШОГО пікера модалки (buy/buylist/transfer) або з конкретного контейнера (обмін)
 function selectedLen(){ const el=$('mhost').querySelector('.clen'); return el?(+el.dataset.len||1):1; }
@@ -2865,7 +2879,7 @@ function updClen(el){
   const mv=+el.dataset.mv||0, len=+el.dataset.len||1, pid=el.dataset.pid;
   const prole=el.dataset.prole||'', isBench=prole==='bench';
   const w0=pid?qWageR(pid,len,mv,isBench?'bench':'main'):Math.round(wageFor(mv,len,'first')*(isBench?1+benchPrem():1)), q=pid&&S.quotes[pid];
-  const xb=el.closest('.xbox'), pctX=xb?wpctOf(xb):0, tb=el.closest('.ptab-body'), pctT=(!xb&&tb)?wpctOf(tb):0;   // 20.10: надбавка «Домовитись з гравцем» — враховується в показі контракту
+  const xb=el.closest('.xbox'), tb=el.closest('.ptab-body'), pctA=(!xb&&!tb&&el.dataset.ext!=='1')?aucPctOf():0, pctX=xb?wpctOf(xb):pctA, pctT=(!xb&&tb)?wpctOf(tb):0;   // 20.10: надбавка «Домовитись з гравцем» — враховується в показі контракту
   const w=pctX>0?Math.round(w0*(1+pctX)):w0, res=w*len;
   if(rolesOn()){   // ціни ОБОХ ролей поруч; «Лавка» недоступна для зірок; попередження, коли «Основних» більше 5
     const wm=pid?qWageR(pid,len,mv,'main'):wageFor(mv,len,'first'), wb=pid?qWageR(pid,len,mv,'bench'):Math.round(wageFor(mv,len,'first')*(1+benchPrem()));
@@ -2889,11 +2903,12 @@ function updClen(el){
       <span class="cw-sum">${isExt?'+':'×'} ${len} ${turW(len)} = ${isExt?'додатково заморозиться':'резерв'} <b>${eur(res)}</b></span>`;
   if(wf!=null){ bad=res>wf;
     txt+=`<span class="cw-free">зарплатний доступно <b>${eur(wf)}</b> → ${bad?`<b>не вистачає ${eur(res-wf)}</b>`:`лишиться <b>${eur(wf-res)}</b>`}</span>`; }
+  if(!isExt) txt+=`<span class="cw-note">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</span>`;
   txt+=`</div>`;
   if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1})</div>`;
   if(isExt && q && q.marked) txt+=`<div class="cw-sub"><b class="warnc">🚩 Позначка «порушив»: до зарплати нових турів +${Math.round((q.surcharge??extSurch())*100)}%, «Лавка» недоступна.</b> Продовження скидає позначку.</div>`;
   else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
-  if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> («Домовитись з гравцем»): база ${eur(w0)}/тур → ${eur(w)}/тур.</div>`;
+  if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> (${xb?'«Домовитись з гравцем»':'ставка на аукціоні; «Купити зараз» — без надбавки'}): база ${eur(w0)}/тур × ${(1+pctX).toFixed(2)} = <b>${eur(w)}</b>/тур.</div>`;
   if(pctT>0){ const w2=Math.round(w0*(1+pctT)), r2=w2*len; txt+=`<div class="cw-sub">Для пропозиції «Домовитись з гравцем» (надбавка <b>+${Math.round(pctT*100)}%</b>): <b>${eur(w2)}</b>/тур × ${len} = резерв <b>${eur(r2)}</b>${(wf!=null&&r2>wf)?` · <b class="warnc">не вистачає ${eur(r2-wf)}</b>`:''}. Викуп з вітрини — без надбавки.</div>`; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
   if(typeof sumRefresh==='function') sumRefresh();
@@ -2936,12 +2951,7 @@ function injuryBadge(p){
   return `<span class="injb${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</span>`;
 }
 // overlay-варіант для великої картки (squadCardHTML)
-function injIcon(p){
-  const j=p&&p.injury; if(!j) return '';
-  const susp=j.kind==='suspension';
-  const t=esc(j.note||j.expected_return||j.status||(susp?'дискваліфікований':'травмований'));
-  return `<div class="sq-ov sq-inj${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</div>`;
-}
+// 20.10 (Богдан): на самій картці травму/дискваліфікацію НЕ показуємо — вони лише в «Детальній картці» (infо-смуга «Травмований»)
 function actionsHTML(p,ctx){
   const {owned,free,au,mv}=ctx, cfg=S.cfg||{};
   if(owned){
@@ -3000,7 +3010,7 @@ function actionsHTML(p,ctx){
       buy=`<p class="mnote warn" style="margin:0">⛔ ${blockA}</p>`
         +(S.exchangesReady?`<p class="mnote">Обмін 1↔1 кількість гравців не збільшує — він може допомогти.</p><div class="macts"><button class="ghost" data-ptgo="ex">Перейти до обміну →</button></div>`:'');
     } else {
-      if(lst || S.transfersReady) buy+=contractPicker(mv,0,p.id);
+      if(lst || S.transfersReady) buy+=dgWarn(p)+contractPicker(mv,0,p.id);
       if(lst){
         // 506: ціна лота фіксована, а вартість рухається → поза вікном ціни від ПОТОЧНОЇ вартості лот застарів
         const stale=(+lst.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+lst.ask_price>winMaxEur(mv));
@@ -3035,24 +3045,24 @@ function actionsHTML(p,ctx){
     let h=`<p class="mnote">🔨 Аукціон: поточна ${eur(au.current_bid)} · ${iLead?'<b style="color:var(--gold)">ти лідер</b>':esc(S.names[au.leader_participant_id]||'—')} · до ${new Date(au.ends_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'})}<br>
       Умови лідера: контракт <b>${lLen}</b> · надбавка <b>${lPct?'+'+lPct+'%':'без'}</b> · роль ${my&&my.leader_role?`<b>${roleLabel(my.leader_role)}</b>`:'<span class="dim">приватна — бачать лише ті, хто вже ставив</span>'}</p>`;
     if(block) return h+`<p class="mnote warn">⛔ ${block}</p>`;
-    h+=contractPicker(mv,0,p.id);   // 508: той самий контракт і роль діють і для ставки, і для викупу
+    h+=dgWarn(p)+contractPicker(mv,0,p.id);   // 508: той самий контракт і роль діють і для ставки, і для викупу
     const aucBody = (!iLead ? auctionForm(p,au,mv)
       +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)} п.п.) чи контракті (+1 тур) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер.</p>`
       : `<p class="mnote">Ти лідер цього лота — повторно ставити не можна. Якщо тебе перебʼють, зʼявиться банер і група «Мене перебили» у «Мої угоди».</p>`);
     if(!canBuy) return h+aucBody;
     const buyBody=`<p class="mnote" style="margin:0">Миттєвий викуп закриє аукціон: вартість +${buyPct}% (премія).</p><div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп (+${buyPct}%) · ${eur(ceil)}</button></div>`;
-    return h+ptabs([['auc','🔨 Аукціон',aucBody],['buy','🛒 Викуп +'+buyPct+'%',buyBody]],'auc');
+    return h+ptabs([['auc','🔨 Аукціон',aucBody],['buy','🛒 Викуп +'+buyPct+'%',buyBody]],'auc',true);
   }
   if(block) return `<p class="mnote warn">⛔ ${block}</p>`;
   const buyBody=`<p class="mnote" style="margin:0">Миттєва купівля: вартість +${buyPct}% (премія). Контракт і роль — вище.</p>
     <div class="macts"><button data-do="buy" data-amt="${ceil}">Купити зараз · ${eur(ceil)} <small style="opacity:.8;font-weight:600">(викуп +${buyPct}% до вартості)</small></button></div>`;
   const aucBody=`${auctionForm(p,null,mv)}
     <p class="mnote">Старт — від ${Math.round(((cfg.auction_start_min_pct!=null)?+cfg.auction_start_min_pct:0.95)*100)}% вартості до викупу (ставка рівно на рівні викупу закриває лот одразу). Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер.</p>`;
-  return contractPicker(mv,0,p.id)+ptabs([['buy','🛒 Купити зараз',buyBody],['auc','🔨 Аукціон',aucBody]],'buy');
+  return dgWarn(p)+contractPicker(mv,0,p.id)+ptabs([['buy','🛒 Купити зараз',buyBody],['auc','🔨 Аукціон',aucBody]],'buy',true);
 }
 // вкладки вікна гравця: list = [[ключ, заголовок, html], …], def — ключ активної
-function ptabs(list,def){
-  return `<div class="ptabs"><div class="ptab-bar">${list.map(([k,t])=>`<button type="button" class="ptab${k===def?' on':''}" data-pt="${k}">${t}</button>`).join('')}</div>`
+function ptabs(list,def,stack){   // stack: усі вкладки в одній клітинці сітки — висота = найвищої, вікно не стрибає при перемиканні (вільний гравець)
+  return `<div class="ptabs${stack?' stack':''}"><div class="ptab-bar">${list.map(([k,t])=>`<button type="button" class="ptab${k===def?' on':''}" data-pt="${k}">${t}</button>`).join('')}</div>`
     + list.map(([k,,html])=>`<div class="ptab-body${k===def?' on':''}" data-pt="${k}">${html}</div>`).join('')+`</div>`;
 }
 document.addEventListener('click',e=>{
@@ -3060,7 +3070,7 @@ document.addEventListener('click',e=>{
   const k=t.classList.contains('ptab')?t.dataset.pt:t.dataset.ptgo, root=t.closest('.ptabs'); if(!root) return;
   root.querySelectorAll('.ptab').forEach(x=>x.classList.toggle('on',x.dataset.pt===k));
   root.querySelectorAll('.ptab-body').forEach(x=>x.classList.toggle('on',x.dataset.pt===k));
-  try{ fitPmodal(); }catch(_){}
+  try{ propRefresh(); fitPmodal(); }catch(_){}
 });
 // ── хелпери детальної картки ──
 function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
@@ -3199,7 +3209,7 @@ function squadCardHTML(p, tier, card, big){   // big=true — подіум (по
   // rare/mega-арт — готовий PNG (не збірка рамки). current_card_png із market_player_card (431)
   if(card.current_card_png){
     return `<div class="sqcard sqart" data-tier="${esc(tier)}">
-      <img class="sq-art" src="${esc(big?card.current_card_png:showThumb(card.current_card_png))}" alt="${esc(p.name)}" decoding="async"${big?'':imgFallback(card.current_card_png)}>${injIcon(p)}</div>`;
+      <img class="sq-art" src="${esc(big?card.current_card_png:showThumb(card.current_card_png))}" alt="${esc(p.name)}" decoding="async"${big?'':imgFallback(card.current_card_png)}></div>`;
   }
   const cl=(S.clubs[p.club_id]||{}), ff=frameFile(tier);
   const phU = big ? p.photo_url : poolThumb(p.photo_url);
@@ -3211,7 +3221,7 @@ function squadCardHTML(p, tier, card, big){   // big=true — подіум (по
     <img class="sq-frame" src="frames/${ff}.webp" alt="">
     ${photo}<div class="sq-scrim"></div>
     ${p.shirt_number?`<div class="sq-ov sq-num">#${p.shirt_number}</div>`:''}
-    <div class="sq-ov sq-pos">${posCat(p.position)}</div>${injIcon(p)}
+    <div class="sq-ov sq-pos">${posCat(p.position)}</div>
     <div class="sq-ov sq-info">
       <div class="sq-name" style="font-size:${(p.name||'').length>19?17:(p.name||'').length>15?20:23}px">${esc(p.name)}</div>
       <div class="sq-dv"></div>
