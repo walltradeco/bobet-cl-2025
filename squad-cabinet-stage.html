@@ -1005,6 +1005,10 @@ async function loadRefs(){
   // 556: МОЇ активні лоти (приватна вьюха за auth.uid()): умови лідера ВКЛЮЧНО З РОЛЛЮ — лише там, де я вже ставив; живить «Мене перебили» й підказки форми. Поки SQL 556 не залито — degrade
   S.myAuc=[]; S.myAucReady=false;
   try{ S.myAuc = await sbSel(`market_my_auction_bids?tournament_id=eq.${S.tour.id}&select=*`); S.myAucReady=true; }catch(e){ S.myAuc=[]; S.myAucReady=false; }
+  // 561: хто ще ставив на активні лоти (market_bids публічні) → «Скасувати ставку» лише коли інших ставок нема (сервер перевіряє те саме)
+  S.bidsBy={}; S.bidsReady=false;
+  try{ const ids=(S.auctions||[]).map(a=>a.id); if(ids.length){ const bs=await sbSel(`market_bids?auction_id=in.(${ids.join(',')})&select=auction_id,participant_id`);
+      bs.forEach(b=>{ (S.bidsBy[b.auction_id]=S.bidsBy[b.auction_id]||new Set()).add(b.participant_id); }); } S.bidsReady=true; }catch(e){ S.bidsBy={}; S.bidsReady=false; }
   // імена учасників (для лідерів аукціонів) — з наскрізного заліку (публічний)
   const lb = await sbSel(`market_leaderboard?tournament_id=eq.${S.tour.id}&select=participant_id,display_name`);
   S.names = {}; lb.forEach(p=>S.names[p.participant_id]=p.display_name);
@@ -2089,6 +2093,12 @@ function openLineupReview(mine, round){
 // ── дрібні хелпери плитки/картки ──
 const POS = { G:'GK', D:'DEF', M:'MID', F:'FWD' };
 function posCat(p){ return POS[p]||p; }
+// 561: чи можу скасувати свою лідерську ставку: лот активний, ще не завершується, інших ставок нема (без даних про ставки — показуємо, сервер вирішить)
+function canCancelBid(a){ if(!a||!S.me||a.leader_participant_id!==S.me.id) return false; if(new Date(a.ends_at)<=new Date()) return false;
+  if(!S.bidsReady) return true; const st=S.bidsBy[a.id]; return !st||![...st].some(x=>x!==S.me.id); }
+function cancelBidModal(auId,nm,back){ confirmModal(`Скасувати свою ставку на <b>${esc(nm)}</b>? Лот зніметься, гроші й зарплатний резерв звільняться; гравець знову стане вільним.`, 'Скасувати ставку',
+  ()=>act('market_cancel_bid',{p_auction:auId},'Ставку скасовано'), back); }
+function clubPos(p){ return `${clubWithLeague(p.club_id)} · ${posCat(p.position)}`; }   // 21.10: «Клуб · Ліга · Позиція» скрізь, де гравець у списку/рядку угоди
 // зафіксована початкова вартість під поточною: показуємо лише коли ціна вже зрушила (до першого матчу поточна = початкова — один рядок)
 function startWas(p,align){
   const s=p.market_value_start, c=p.market_value_current;
@@ -2331,7 +2341,7 @@ async function viewMarket(){
           rows.map(({l,p})=>{
             const mv=p.market_value_current||0, mine=l.seller_participant===S.me.id, pct=mv? Math.round((l.ask_price/mv-1)*100) : 0;
             const stale=(+l.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+l.ask_price>winMaxEur(mv));
-            return `<tr class="shoprow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name)}</b> <span class="dim">${esc(clubWithLeague(p.club_id))} · ${posCat(p.position)}</span></td>
+            return `<tr class="shoprow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name)}</b> <span class="dim">${esc(clubPos(p))}</span></td>
               <td class="n">${eur(mv)}</td><td class="n"><b>${eur(l.ask_price)}</b> <span class="dim">${pct>0?'+':''}${pct}%</span>${stale?' <span class="warnc" title="Вартість змінилась — ціна поза вікном, лот застарів">🕓 застарів</span>':''}</td>
               <td>${mine?'<b style="color:var(--gold)">ти</b>':esc(S.names[l.seller_participant]||'—')}</td>
               <td class="n">${mine?`<button class="mini ghost" data-unlistp="${p.id}">Зняти</button>`:`<button class="mini" data-open="${p.id}">Відкрити</button>`}</td></tr>`;
@@ -2353,22 +2363,23 @@ async function viewMarket(){
     const aucTerms=(a,rl)=>{ const L=a.leader_length?`${a.leader_length} ${turW(a.leader_length)}`:'—', P=Math.round((+a.leader_wage_pct||0)*100); return `${L}${P?` · +${P}%`:''}${rl?` · ${roleLabel(rl)}`:''}`; };
     const aucDt=a=>new Date(a.ends_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
     const bidsHtml = myBids.length
-      ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт · надбавка · роль</th><th class="n">До</th></tr></thead><tbody>${
+      ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Твоя ставка</th><th class="n">Контракт · надбавка · роль</th><th class="n">До</th><th></th></tr></thead><tbody>${
         myBids.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{}, my=(S.myAuc||[]).find(x=>x.auction_id===a.id);
-          return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
-            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,my&&my.leader_role)}</td><td class="n">${aucDt(a)}</td></tr>`;
+          return `<tr><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubPos(p))}</span></td>
+            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,my&&my.leader_role)}</td><td class="n">${aucDt(a)}</td>
+            <td class="n">${canCancelBid(a)?`<button class="mini ghost" data-bid-cancel="${a.id}" data-nm="${esc(p.name||'гравця')}">Скасувати</button>`:'<span class="dim" title="На лот ставили й інші учасники (або лот уже завершується) — скасувати не можна">—</span>'}</td></tr>`;
         }).join('')}</tbody></table>` : none;
     const outbid = outbidList();
     const outHtml = outbid.length
       ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Поточна</th><th class="n">Умови лідера</th><th class="n">До</th><th></th></tr></thead><tbody>${
         outbid.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
-          return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
+          return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubPos(p))}</span></td>
             <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">Перебити</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const shopHtml = !S.listingsReady ? '<div class="dim" style="padding:6px 2px">Вітрина зʼявиться після заливки 421.</div>'
       : myShop.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th></th></tr></thead><tbody>${
         myShop.map(l=>{ const p=S.players.find(x=>x.id===l.player_id)||{};
-          return `<tr class="shoprow mine" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubWithLeague(p.club_id))}</span></td>
+          return `<tr class="shoprow mine" data-open="${p.id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubPos(p))}</span></td>
             <td class="n">${eur(p.market_value_current)}</td><td class="n"><b>${eur(l.ask_price)}</b></td><td class="n"><button class="mini ghost" data-unlistp="${p.id}">Зняти</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const tradeIntro = (S.transfersReady||S.exchangesReady)
@@ -2394,7 +2405,8 @@ async function viewMarket(){
     $('view').querySelectorAll('[data-unlistp]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation();
       const p=S.players.find(x=>x.id===b.dataset.unlistp)||{name:'гравця'};
       confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини?`, 'Зняти', ()=>act('market_unlist_player',{p_player:b.dataset.unlistp},'Знято з продажу')); });
-    $('view').querySelectorAll('[data-open]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('[data-unlistp]')) return; openPlayerModal(el.dataset.open); });
+    $('view').querySelectorAll('[data-bid-cancel]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation(); cancelBidModal(b.dataset.bidCancel,b.dataset.nm); });
+    $('view').querySelectorAll('[data-open]').forEach(el=>el.onclick=(e)=>{ if(e.target.closest('[data-unlistp]')||e.target.closest('[data-bid-cancel]')) return; openPlayerModal(el.dataset.open); });
   }
 }
 
@@ -2402,7 +2414,7 @@ async function viewMarket(){
 function transferRow(t){
   const p=S.players.find(x=>x.id===t.player_id)||{};
   const evT=(S.wev||[]).find(e=>e.transfer_id===t.id), ofT=(S.wof||[]).find(e=>e.transfer_id===t.id);   // 553: подія (я власник) / моя пропозиція з надбавкою
-  const cl=clubWithLeague(p.club_id);
+  const cl=clubPos(p);
   const iAmSeller=t.from_participant===S.me.id;
   const other=iAmSeller?t.to_participant:t.from_participant;
   const otherName=esc(S.names[other]||'—');
@@ -2544,7 +2556,7 @@ function xCashLine(x, iAmFrom){
 }
 function exchangeRow(x){
   const off=S.players.find(p=>p.id===x.offered_player)||{}, want=S.players.find(p=>p.id===x.wanted_player)||{};
-  const offCl=clubWithLeague(off.club_id), wantCl=clubWithLeague(want.club_id);
+  const offCl=clubPos(off), wantCl=clubPos(want);
   const iAmFrom=x.from_participant===S.me.id;
   const other=iAmFrom?x.to_participant:x.from_participant, otherName=esc(S.names[other]||'—');
   const mine=x.awaiting_participant===S.me.id;
@@ -3142,7 +3154,9 @@ function actionsHTML(p,ctx){
     h+=dgWarn(p)+contractPicker(mv,0,p.id);   // 508: той самий контракт і роль діють і для ставки, і для викупу
     const aucBody = (!iLead ? auctionForm(p,au,mv)
       +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)} п.п.) чи контракті (+1 тур) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер. ${aucPctNote()}</p>`+aucTimerNote()
-      : `<p class="mnote">Ти лідер цього лота — повторно ставити не можна. Якщо тебе перебʼють, зʼявиться банер і група «Мене перебили» у «Мої угоди».</p>`);
+      : `<p class="mnote">Ти лідер цього лота — повторно ставити не можна. Якщо тебе перебʼють, зʼявиться банер і група «Мене перебили» у «Мої угоди».</p>`
+        + (canCancelBid(au) ? `<div class="macts"><button class="ghost" data-do="bidcancel" data-au="${au.id}">Скасувати свою ставку</button></div><p class="mnote">Передумав? Скасувати можна, доки ніхто інший не поставив: лот зніметься, гроші й зарплатний резерв звільняться.</p>`
+                            : `<p class="mnote">Скасувати ставку не можна — на цей лот ставили й інші учасники.</p>`));
     if(!canBuy) return h+aucBody;
     const buyBody=`<p class="mnote" style="margin:0">Миттєвий викуп закриє аукціон: вартість +${buyPct}% (премія).</p><div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп (+${buyPct}%) · ${eur(ceil)}</button></div>`;
     return h+ptabs([['auc','🔨 Аукціон',aucBody],['buy','🛒 Викуп +'+buyPct+'%',buyBody]],'auc',true);
@@ -3544,6 +3558,7 @@ function bindModalActions(p){
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
       confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} тур</b> (${eur(qWageR(p.id,len,p.market_value_current,ra.p_role)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
+    if(kind==='bidcancel'){ cancelBidModal(b.dataset.au,p.name,()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='extend'){ if(needRole()) return; const ra=roleArgs(); const len=selectedLen(), ci=contractInfo(p), w=qWageR(p.id,len,p.market_value_current,ra.p_role), em=S.cfg?.contract_ext_mult??1;
