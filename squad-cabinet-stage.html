@@ -2708,6 +2708,9 @@ function aucRefresh(){
     const e2=v=>'€'+(v/1e6).toFixed(2)+'M', per=Math.round(qWageR(pid,len,mv,role)*(1+pct));   // сума як у полі (до 0,01M); контракт — зарплата/тур з надбавкою
     msg.innerHTML=atCeil?`✅ Це <b>викуп</b>: лот закриється одразу, гравець стане твоїм за ${e2(raw)}.`
       :`✅ Ставка <b>${e2(raw)}</b> · ${len} ${turW(len)}${rolesOn()?' · '+roleLabel(role):''}${pct>0?` · надбавка +${Math.round(pct*100)}%`:''} · контракт <b>${eur(per)}</b>/тур × ${len} = резерв <b>${eur(per*len)}</b>${au&&raw===+au.current_bid?' · <b>перебиває без підвищення суми</b>':''}`;
+    // 21.10 (Богдан): роль лідера приватна — тому для того, хто ще не ставив на лот, клієнт не може сам перевірити «роль не гірша»; попереджаємо, коли це єдине, що може зірвати рівну суму
+    if(au && !atCeil && raw===+au.current_bid && rolesOn() && role==='bench' && !(S.myAuc||[]).find(x=>x.auction_id===au.id)){
+      msg.innerHTML+=`<br><span class="warnc">⚠️ Роль лідера прихована. Якщо він обіцяє «Основний», рівна сума з «Лавкою» не пройде (роль не може бути гіршою) — обери «Основний» або додай +5% до суми.</span>`; }
     btn.disabled=false; btn.textContent=atCeil?'Викупити':(au?'Перебити':'Поставити');
   }
 }
