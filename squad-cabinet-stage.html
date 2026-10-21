@@ -288,7 +288,8 @@ table.t{width:100%;border-collapse:collapse}
 .bc-main{font-family:var(--mono);font-size:26px;font-weight:700;margin:0}
 .bc-subs{display:flex;flex-direction:column;gap:1px;font-size:12px;color:var(--text-dim);line-height:1.35;min-width:0}
 .bc-subs b{color:var(--text)}
-.rt .when.dgr{margin-top:2px;max-width:340px;margin-left:auto;line-height:1.4}
+.rt .when.dgr{margin-top:2px;margin-left:auto;line-height:1.4;white-space:nowrap}   /* 21.10 (Богдан): «мін 5 ✓ · ≥1 DEF/GK … ✓» — один рядок, не 3 */
+@media(max-width:720px){.rt .when.dgr{white-space:normal;max-width:340px}}
 .budg-pour{align-self:center;display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap}
 .budg-pour small{font-weight:600;font-size:10px;opacity:.75}
 .pour-dir{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
@@ -366,7 +367,7 @@ table.t{width:100%;border-collapse:collapse}
 .xdelta{margin-top:8px;font-size:12.5px;color:var(--text-dim)} .xdelta b{color:var(--text)}
 .psum{flex:1 1 100%;margin-top:10px;padding:10px 12px;border:1px solid var(--accent-d,var(--line));border-radius:10px;background:rgba(38,194,129,.06);font-size:12.5px;line-height:1.55}
 .psum .ph{font:700 10px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin:0 8px 0 0;display:inline-block} .psum .psep{color:var(--text-dim)} .infoi{cursor:help;color:var(--text-dim);white-space:nowrap}
-.psum:empty{display:none} .mamt .wpct{display:contents} .mamt .wmodes{flex:1 1 auto;margin:0} .mamt .wm-player{flex:1 1 100%} .vcard .mamt .dim{flex:0 1 auto;min-width:0} .mamt .psum{flex:1 1 320px} .mamt>button[data-do="amt"]{flex:none;align-self:flex-end;min-width:70px}
+.psum:empty{display:none} .mamt .wpct{display:contents} .mamt .wmodes{flex:1 1 auto;margin:0} .mamt .wm-player{flex:1 1 100%} .vcard .mamt .dim{flex:0 1 auto;min-width:0} .mamt .psum{flex:1 1 320px;margin-top:0} .mamt .fbreak{flex:1 1 100%;height:0;margin-top:-8px}   /* 21.10 (Богдан): підсумок «Твоя пропозиція» + OK — завжди окремий рядок на всю ширину (раніше при вужчому вікні підсумок стискався праворуч і переносився на 3–4 рядки) */ .mamt>button[data-do="amt"]{flex:none;align-self:flex-end;min-width:70px}
 .vhead{display:flex;gap:4px 14px;align-items:center;flex-wrap:wrap} .vhead .msec{margin:0} .vhead .mnote{margin:0;flex:1 1 260px;line-height:1.35} .vhead .vbtn{flex:none;margin-left:auto;padding:9px 16px}
 @media(max-width:560px){.xcmp{grid-template-columns:1fr}}
 .agres{margin:4px 0 8px;padding:8px 10px;border-left:3px solid var(--teal);background:rgba(111,176,201,.08);border-radius:6px;font-size:13px}
@@ -381,9 +382,10 @@ table.t{width:100%;border-collapse:collapse}
 .aucf{margin-top:10px}
 .aucf input#aucAmt{width:150px;flex:none}
 .aucf .aquick{display:flex;gap:6px;flex-wrap:wrap;margin:0}
-.aucf .arow{display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;margin-top:8px}   /* 20.10: підписи, поле й кнопки — в один рядок (вікно нижче) */
+.aucf .arow{display:flex;gap:6px 12px;align-items:center;flex-wrap:wrap;margin-top:6px}   /* 20.10: підписи, поле й кнопки — в один рядок (вікно нижче) */
 .aucf .ahint{flex:1 1 280px;margin:0;line-height:1.4}
-.aucf .arow .aucmsg{flex:1 1 240px;margin:0;line-height:1.35}
+.aucf .aucmsg{margin:5px 0 0;line-height:1.35}   /* 21.10: повідомлення про ставку — окремий рядок під елементами (було в тому ж рядку й лишало порожнечу) */
+.aucrule{color:var(--text);font-size:12.5px;line-height:1.45;margin-top:7px}   /* 21.10: правило аукціону — помітніше, бо є місце */
 .aucf .arow button[data-do="aucgo"]{flex:none;margin-left:auto;min-width:170px;padding:11px 20px}
 .aucmsg.warn{color:var(--gold)}
 .trow .tctrl button{padding:6px 12px;font-size:13px}
@@ -647,10 +649,10 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .pm-sbox{padding-top:10px}
 .pm-sbox .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px;text-align:center}
 .pm-sbox .pm-seasons{grid-template-columns:repeat(3,66px)}
-.pm-midrow{display:grid;grid-template-columns:3fr 2fr;gap:16px;align-items:start;padding-top:10px}   /* форма ~60% ліворуч; статус і роль контракту — праворуч, одне під одним */
+.pm-midrow{display:grid;grid-template-columns:2fr 3fr;gap:16px;align-items:start;padding-top:10px}   /* 21.10 (Богдан): статус · роль · історія + дизайн картки — ліворуч, форма 5 матчів — праворуч (краще використано місце: дизайн більше не подовжує колонку картки) */
 .pm-side{display:flex;flex-direction:column;gap:8px}
 .frows{display:flex;flex-direction:column;gap:3px}
-.frow{display:grid;grid-template-columns:46px minmax(110px,1.2fr) minmax(120px,1fr) 56px 54px 50px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel2)}
+.frow{display:grid;grid-template-columns:46px minmax(100px,1.2fr) minmax(90px,1fr) 56px 54px 50px;gap:8px;align-items:center;font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px solid var(--line);border-radius:7px;background:var(--panel2)}
 .frow.fhead{background:none;border-color:transparent;padding:0 8px 2px;font:600 9px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim)}
 .frow .fu{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media(max-width:720px){.frow{grid-template-columns:40px minmax(0,1fr) 44px 40px 42px;gap:6px} .frow .fu,.frow.fhead span:nth-child(3){display:none} .frow.fhead{letter-spacing:0;font-size:8px} .frow.fhead .fr{font-size:8px}}   /* телефон: без колонки «Турнір» (назва — у підказці) */
@@ -699,7 +701,7 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
   .pm-body{grid-template-columns:1fr}
   .pm-cardside{max-width:280px;margin:0 auto}
   .pm-cardside .sqwrap{width:212px;height:318px} .pm-cardside .sqwrap .sqcard{transform:scale(.70667)}
-  .pm-midrow,.pm-inforow,.pm-inforow.has-role{grid-template-columns:1fr} .pm-toprow{flex-direction:column}
+  .pm-midrow,.pm-inforow,.pm-inforow.has-role{grid-template-columns:1fr} .pm-toprow{flex-direction:column} .pm-midrow .pm-side{order:2}   /* телефон: спершу форма, потім статус/роль/дизайн (як було) */
 }
 
 /* мінікартка/повна: рамка(webp) + фото/монограма + дані overlay (масштаб transform) */
@@ -1189,8 +1191,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   const inplay=rsAll.find(r=>roundStarted(r,nowD));
   const n=mine.length, dgOk=mine.filter(isDG).length>=need;
   const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
-    <div class="when">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`}</div>
-    <div class="when dgr">≥${cfg.defgk_start_min||1} DEF/GK в основі · ≥${need} DEF/GK у складі (основа або лавка)${n?(n>=max?` ${dgOk?'✓':'✕'}`:`, є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
+    <div class="when dgr">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`} · ≥${cfg.defgk_start_min||1} DEF/GK в основі · ≥${need} DEF/GK у складі (основа або лавка)${n?(n>=max?` ${dgOk?'✓':'✕'}`:`, є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
   const a=inplay?(S.attn||{})[inplay.number]:null;
   const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
             : a.state==='closing' ? 'Усі матчі завершені — розрахунок за ~1 год.'
@@ -1226,7 +1227,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
     conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} із ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
-  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + outbidBanners() + agBanners() + conf;
+  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + dealBanners() + outbidBanners() + agBanners() + conf;
 }
 // 542: банери штрафів ролей — МІЙ борг / склад «не зараховано» / вихід гравця (приватне, лише власнику)
 // 555: «Поговорити з агентом» — блок у картці ЧУЖОГО гравця (кнопка, квота вікна, остання відповідь агента)
@@ -1261,6 +1262,25 @@ function evBanners(){
     <div style="margin-top:8px"><button data-do="evopen" style="width:auto;padding:9px 20px">Розв'язати в «Мої угоди»</button></div></div>`).join('');
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-do="evopen"]'); if(!b) return; S.mktSub='deals'; go('market'); });
+// 21.10 (Богдан): вхідні пропозиції (трансфер, обмін, контр), що чекають МОЄЇ відповіді, — банер у «Мій склад» і «Ринок» (раніше їх було видно лише у вкладці «Мої угоди»).
+// Події «гравець хоче піти» (м'яч у мене) мають свій банер evBanners — тут їх не дублюємо.
+function dealBanners(){
+  if(!S.me) return '';
+  const evT=new Set((S.wev||[]).filter(e=>e.ball_with_owner&&e.transfer_id).map(e=>e.transfer_id)), evX=new Set((S.wev||[]).filter(e=>e.ball_with_owner&&e.exchange_id).map(e=>e.exchange_id));
+  const pn=id=>`<b>${esc((S.players.find(p=>p.id===id)||{}).name||'гравець')}</b>`, nm=id=>`<b>${esc(S.names[id]||'—')}</b>`;
+  const items=[];
+  (S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id && !evT.has(t.id)).forEach(t=>{
+    items.push(t.from_participant===S.me.id
+      ? `${nm(t.to_participant)} хоче купити твого ${pn(t.player_id)} за <b>${eur(t.amount)}</b>`
+      : `${nm(t.from_participant)} відповів контр-пропозицією на твою пропозицію щодо ${pn(t.player_id)} — <b>${eur(t.amount)}</b>`); });
+  (S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id && !evX.has(x.id)).forEach(x=>{
+    const iAmFrom=x.from_participant===S.me.id, other=iAmFrom?x.to_participant:x.from_participant;
+    items.push(iAmFrom
+      ? `${nm(other)} відповів контр-пропозицією на твій обмін: твій ${pn(x.offered_player)} ↔ ${pn(x.wanted_player)} · ${xCashLine(x,iAmFrom)}`
+      : `${nm(other)} пропонує обмін: ${pn(x.offered_player)} ↔ твій ${pn(x.wanted_player)} · ${xCashLine(x,iAmFrom)}`); });
+  if(!items.length) return '';
+  return `<div class="stmsg warn"><b>📨 Чекають твоєї відповіді (${items.length})</b>: ${items.join(' · ')}. <button data-do="evopen" class="mini" style="width:auto;margin-left:6px">Відповісти в «Мої угоди»</button></div>`;
+}
 // 556: «Тебе перебили» — активні лоти, де я ставив, але не лідирую (приватна вьюха); зникає, коли лот закрито або я знову поставив
 function outbidList(){ return S.myAucReady ? (S.myAuc||[]).filter(a=>!a.i_am_leader) : []; }
 function outbidBanners(){
@@ -2442,20 +2462,58 @@ function openHoldModal(tid,kind){
     await act(isX?'market_event_hold_x':'market_event_hold',isX?{p_exchange:tid,p_length:len,...ra}:{p_transfer:tid,p_length:len,...ra},canExt?'Контракт продовжено, гравця утримано':'Контракт перепідписано, гравця утримано');
   };
 }
-function openCounterModal(tid,min){
-  modalOpen(`<h3>Контрпропозиція</h3>
-    <p class="mnote">Своя сума (тут лише гроші; обмін гравців — у картці гравця). Мінімум ${eurUp(min)}.</p>
-    <div class="mamt" data-ref="${tid}" data-min="${min}">
-      <span class="dim">Контрсума · €млн (мін ${mCeil(min)})</span>
-      <input id="amtInp" inputmode="decimal" value="${mCeil(min)}">
-      <button data-do="counter">Надіслати</button></div>`);
-  const box=$('mhost').querySelector('.mamt');
+function openCounterModal(tid,min0){
+  // 21.10 (Богдан): у контрпропозиції показуємо мінімум і МАКСИМУМ (вікно ціни від поточної вартості; сервер перевіряє те саме), стартова сума — поточна пропозиція;
+  // вкладки «Гроші | Обмін»: обмін замість грошей = обираєш гравця суперника → готова форма обміну → після успішного надсилання цю пропозицію автоматично відхиляємо (без нового SQL)
+  const t=(S.transfers||[]).find(x=>x.id===tid)||{}, p=S.players.find(x=>x.id===t.player_id)||{}, mv=p.market_value_current||0;
+  const min=mv?Math.ceil(mv*winMinPct()):min0, max=mv?winMaxEur(mv):0;
+  const start=Math.min(Math.max(t.amount||min,min),max||Infinity);
+  const isEv=!!(S.wev||[]).find(e=>e.transfer_id===tid);   // подію «гравець хоче піти» відхилити не можна → обмін-заміна недоступна
+  const iOwn=p.owner_participant_id===S.me.id, other=(t.from_participant===S.me.id)?t.to_participant:t.from_participant;
+  const cashBody=`<p class="mnote">Своя сума. Вартість <b>${eur(mv)}</b> · вікно ${winTxt()}: <b>від ${eurUp(min)}${max?` до ${eurDown(max)}`:''}</b>.</p>
+    <div class="mamt" data-ref="${tid}" data-min="${min}" data-max="${max}">
+      <span class="dim">Контрсума · €млн (мін ${mCeil(min)}${max?` · макс ${mFloor(max)}`:''})</span>
+      <input id="amtInp" inputmode="decimal" value="${mCeil(start)}">
+      <button data-do="counter">Надіслати</button></div>`;
+  let body=cashBody;
+  if(S.exchangesReady && !isEv){
+    const theirs=S.players.filter(x=>x.owner_participant_id===other).sort((a,b)=>(b.market_value_current||0)-(a.market_value_current||0));
+    const exBody = iOwn
+      ? `<p class="mnote">Замість грошей — обмін 1↔1 з доплатою: твій <b>${esc(p.name)}</b> іде до <b>${esc(S.names[other]||'—')}</b>, а ти обираєш, кого забрати. Далі — умови (доплата, контракт, роль). Після надсилання обміну ця пропозиція (${eur(t.amount)}) <b>відхиляється автоматично</b>.</p>
+         <div class="mamt"><span class="dim">Гравець суперника</span><select id="cxPick" style="min-width:240px">${theirs.map(x=>`<option value="${x.id}">${esc(x.name)} · ${posCat(x.position)} · ${eur(x.market_value_current)}</option>`).join('')}</select><button data-do="cxgo">Далі: умови обміну →</button></div>`
+      : `<p class="mnote">Замість грошей — обмін 1↔1 з доплатою: ти віддаєш свого гравця за <b>${esc(p.name)}</b>. Далі — вибір гравця й умови. Після надсилання обміну ця пропозиція (${eur(t.amount)}) <b>відхиляється автоматично</b>.</p>
+         <div class="mamt"><button data-do="cxgo">Далі: умови обміну →</button></div>`;
+    body=ptabs([['cash','💶 Гроші',cashBody],['ex','🔄 Обмін',exBody]],'cash');
+  }
+  modalOpen(`<h3>Контрпропозиція</h3>${body}`);
+  const box=$('mhost').querySelector('[data-ref="'+tid+'"]');
   $('mhost').querySelector('[data-do="counter"]').onclick=async()=>{
     const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
     if(!eurv||eurv<min){ alert('Замало — мінімум '+eurUp(min)); return; }
+    if(max && eurv>max){ alert('Забагато — максимум '+eurDown(max)+' ('+winTxt()+')'); return; }
     modalClose();
     await act('market_respond_transfer',{p_transfer:tid,p_action:'counter',p_amount:eurv},'Контрпропозицію надіслано');
   };
+  const cx=$('mhost').querySelector('[data-do="cxgo"]');
+  if(cx) cx.onclick=async()=>{
+    const wantId = iOwn ? $('mhost').querySelector('#cxPick').value : p.id, offId = iOwn ? p.id : null;
+    if(!wantId) return alert('Немає гравця для обміну');
+    modalClose(); await openPlayerModal(wantId);
+    const h=$('mhost'), tb=h.querySelector('.ptab[data-pt="ex"]'); if(tb) tb.click();
+    const xb=h.querySelector('.xbox'), xo=h.querySelector('#xOff');
+    if(!xb) return;
+    if(offId && xo){ xo.value=offId; if(xo.value!==offId){ alert('Твій '+(p.name||'гравець')+' зараз не може брати участь в обміні (підтверджений склад) — обмін-заміна недоступна.'); return; } xRefresh(); }
+    xb.dataset.cx=tid;   // маркер живе лише в цьому вікні: закрив — зник (інакше наступний звичайний обмін відхилив би чужу пропозицію)
+    xb.insertAdjacentHTML('afterbegin',`<p class="mnote warn" style="margin:0 0 8px">↩ Це контрпропозиція обміном: після успішного надсилання пропозицію «${esc(p.name||'')} · ${eur(t.amount)}» буде відхилено.</p>`);
+  };
+}
+// контр-обмін: спершу створюємо обмін (він валідується сервером), потім відхиляємо стару пропозицію; збій відхилення не ховаємо
+async function actCounterExchange(tid,args){
+  const r=await sb.rpc('market_propose_exchange',args);
+  if(r.error){ alert('⛔ '+(r.error.message||'').replace(/^.*?(Squad: )/,'$1')); return; }
+  const r2=await sb.rpc('market_respond_transfer',{p_transfer:tid,p_action:'reject'});
+  alert(r2.error ? '✅ Обмін запропоновано, але стару пропозицію відхилити не вдалось ('+((r2.error.message||'').replace(/^.*?(Squad: )/,'$1'))+') — відхили її у «Мої угоди».' : '✅ Обмін запропоновано; попередню пропозицію відхилено');
+  await loadRefs(); go(S.tab);
 }
 
 // ── рядок обміну + дії (Прийняти/Відхилити/Контр/Відкликати) ──
@@ -2584,8 +2642,12 @@ function aucPctUI(){
   if(!aucPctOn()) return '';
   const step=Math.round(aucStep()*100), max=Math.round((+(S.cfg&&S.cfg.wage_offer_max_pct)||0.5)*100);
   let opts='<option value="0">без надбавки</option>'; for(let v=step; v<=max; v+=step) opts+=`<option value="${v}">+${v}%</option>`;
-  return `<div class="arow"><label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати <select id="aucPct">${opts}</select></label><span class="mnote ahint">Надбавка — ще один аргумент у торгах: ти платиш +X% до зарплати гравця на весь контракт; вона входить у зарплатний резерв, поки ти лідер. На ставці-викупі не діє.</span></div>`;
+  return `<label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати <select id="aucPct">${opts}</select></label>`;
 }
+// 21.10 (Богдан): текст про аукціон — скільки триває, що буде, якщо ніхто не перебʼє / якщо перебʼють; підказка про надбавку (раніше стояла окремим рядком над формою)
+function aucPctNote(){ return aucPctOn()?'Надбавка — ще один аргумент у торгах: +X% до зарплати гравця на весь контракт (на ставці-викупі не діє).':''; }
+function aucTimerNote(){ const h=(S.cfg&&S.cfg.auction_timer_hours!=null)?+S.cfg.auction_timer_hours:12, st=(S.cfg&&S.cfg.auction_stop_hours!=null)?+S.cfg.auction_stop_hours:12;
+  return `<p class="mnote aucrule">⏱ <b>Аукціон ${h} год:</b> лот стоїть ${h} год після останньої ставки (але не пізніше ніж за ${st} год до дедлайну туру). <b>Якщо ніхто не перебʼє — гравець твій.</b> Якщо перебʼють — ти про це дізнаєшся: зʼявиться банер «Тебе перебили» і група «Мене перебили» у «Мої угоди».</p>`; }
 // чому ця пропозиція НЕ сильніша за лідерову (та сама сума); null — сильніша. Роль лідера знають лише ті, хто вже ставив на лот (приватна вьюха)
 function aucWeak(au,len,role,pct){
   const L=+au.leader_length||1, P=+au.leader_wage_pct||0, st=aucStep();
@@ -2603,11 +2665,11 @@ function auctionForm(p,au,mv){
     ? `<button type="button" class="mini ghost" data-aamt="${minNext}">мін. +${Math.round(st*100)}% · ${eurUp(minNext)}</button><button type="button" class="mini ghost" data-aamt="${au.current_bid}">та сама · ${eurUp(au.current_bid)}</button><button type="button" class="mini ghost" data-aamt="${ceil}">викуп · ${eurUp(ceil)}</button>`
     : `<button type="button" class="mini ghost" data-aamt="${floor}">мін. · ${eurUp(floor)}</button><button type="button" class="mini ghost" data-aamt="${ceil}">викуп · ${eurUp(ceil)}</button>`;
   return `<div class="aucf" data-pid="${p.id}" data-au="${au?au.id:''}" data-mv="${mv}">
-    ${aucPctUI()}
-    <div class="arow"><span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
+    <div class="arow">${aucPctUI()}<span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
       <input id="aucAmt" inputmode="decimal" value="${(minNext/1e6).toString()}">
       <div class="aquick">${quick}</div>
-      <div class="aucmsg mnote"></div><button data-do="aucgo" disabled>Поставити</button></div></div>`;   // 20.10: ставка, швидкі суми, повідомлення й кнопка — один рядок
+      <button data-do="aucgo" disabled>Поставити</button></div>
+    <div class="aucmsg mnote"></div></div>`;   // 21.10: надбавка, ставка, швидкі суми й кнопка — один рядок; повідомлення про ставку — окремий рядок під ним
 }
 function aucRefresh(){
   const h=$('mhost'); const f=h&&h.querySelector('.aucf'); if(!f) return;
@@ -2847,7 +2909,7 @@ function myMainCount(){ return (S.players||[]).filter(p=>S.me&&p.owner_participa
 function roleArgs(box){ if(!rolesOn()) return {}; const el=box||$('mhost').querySelector('.clen'); return { p_role:(el&&el.dataset.prole)||null }; }
 function needRole(box){ if(!rolesOn()) return false; const el=box||$('mhost').querySelector('.clen'); if(el&&el.dataset.prole) return false;
   alert('Обери роль гравця: «Основний» чи «Лавка» — без неї підписати контракт не можна.'); return true; }
-function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). Обери обов'язково.`; }
+function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). Обери обов'язково. Змінити роль потім можна лише новим контрактом (хоч на 1 тур).`; }
 function roleChips(inline){ if(!rolesOn()) return '';
   return `<div class="crole">${inline?'':`<div class="clab">${roleIntroText()}</div>`}
     <div class="crole-row"><button type="button" class="crole-chip" data-r="main">Основний</button><button type="button" class="crole-chip" data-r="bench">Лавка</button></div>
@@ -2992,14 +3054,7 @@ function actionsHTML(p,ctx){
           ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk)}`;
       }
     }
-    // 543: свідоме переведення «Основний» → «Лавка» посеред контракту (лише у вікні ринку; не порушнику; не зірці); назад — тільки при продовженні
-    if(rolesOn() && (p.role||'main')==='main' && !p.marked && (mv||0)<starCap() && (ci.rl||0)>0 && !playNow && ci.wage && myConfirmedUpcoming()){
-      right+=`<p class="mnote">🔒 Склад підтверджено — ролі заморожені до кінця туру («Перевести на лавку» недоступно).</p>`;
-    } else if(rolesOn() && (p.role||'main')==='main' && !p.marked && (mv||0)<starCap() && (ci.rl||0)>0 && !playNow && ci.wage){
-      const nw=Math.round(ci.wage*(1+benchPrem()));
-      right+=`<div class="macts" style="margin-top:10px"><button class="ghost" data-do="tobench" data-nw="${nw}">Перевести на «Лавку» · ${eur(nw)}/тур</button></div>
-        <p class="mnote">«Лавка»: зарплата +${Math.round(benchPrem()*100)}% на решту контракту (+${eur((nw-ci.wage)*(ci.rl||0))} резерву). Назад на «Основного» — лише при продовженні контракту.</p>`;
-    }
+    // 21.10 (Богдан): окремої кнопки «Перевести на Лавку» НЕМАЄ — роль це обіцянка при підписанні, змінити її можна лише новим контрактом (продовженням, хоч на 1 тур); SQL 557
     return `<div class="own-grid"><div class="own-col">${cinfo}${extBlockF}</div><div class="own-col">${right}</div></div>`;
   }
   // 20.10 (відгук Богдана): вікно чужого / вільного гравця поділено на вкладки — менше тексту, зрозуміло «де просто купити»
@@ -3028,8 +3083,8 @@ function actionsHTML(p,ctx){
       if(lst && S.transfersReady) buy+=`<div class="xor">— або —</div>`;
       if(S.transfersReady){
         const minT=Math.ceil(mv*winMinPct()), maxT=winMaxEur(mv);
-        buy+=`<div class="vcard"><div class="vhead"><span class="msec">🤝 Запропонувати власнику (трансфер)</span><span class="mnote">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті. Власник може прийняти, відхилити чи зробити контр.</span></div>
-          ${amountUI('Сума ('+winTxt()+')',minT,'propose',p.id,maxT,wagePctUI()+'<div class="psum" data-kind="propose"></div>')}</div>`;
+        buy+=`<div class="vcard"><div class="vhead"><span class="msec">🤝 Запропонувати власнику (трансфер)</span><span class="mnote">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті. Власник може прийняти, відхилити чи зробити контр. Вікно ціни: ${winTxt()}.</span></div>
+          ${amountUI('Сума',minT,'propose',p.id,maxT,wagePctUI()+'<div class="fbreak"></div><div class="psum" data-kind="propose"></div>')}</div>`;
       }
       if(!lst && !S.transfersReady) buy+=`<p class="mnote">Купівля в учасника зʼявиться після заливки <b>405</b>.</p>`;
     }
@@ -3051,7 +3106,7 @@ function actionsHTML(p,ctx){
     if(block) return h+`<p class="mnote warn">⛔ ${block}</p>`;
     h+=dgWarn(p)+contractPicker(mv,0,p.id);   // 508: той самий контракт і роль діють і для ставки, і для викупу
     const aucBody = (!iLead ? auctionForm(p,au,mv)
-      +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)} п.п.) чи контракті (+1 тур) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер.</p>`
+      +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)} п.п.) чи контракті (+1 тур) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер. ${aucPctNote()}</p>`+aucTimerNote()
       : `<p class="mnote">Ти лідер цього лота — повторно ставити не можна. Якщо тебе перебʼють, зʼявиться банер і група «Мене перебили» у «Мої угоди».</p>`);
     if(!canBuy) return h+aucBody;
     const buyBody=`<p class="mnote" style="margin:0">Миттєвий викуп закриє аукціон: вартість +${buyPct}% (премія).</p><div class="macts"><button data-do="buy" data-amt="${ceil}">Викуп (+${buyPct}%) · ${eur(ceil)}</button></div>`;
@@ -3061,7 +3116,7 @@ function actionsHTML(p,ctx){
   const buyBody=`<p class="mnote" style="margin:0">Миттєва купівля: вартість +${buyPct}% (премія). Контракт і роль — вище.</p>
     <div class="macts"><button data-do="buy" data-amt="${ceil}">Купити зараз · ${eur(ceil)} <small style="opacity:.8;font-weight:600">(викуп +${buyPct}% до вартості)</small></button></div>`;
   const aucBody=`${auctionForm(p,null,mv)}
-    <p class="mnote">Старт — від ${Math.round(((cfg.auction_start_min_pct!=null)?+cfg.auction_start_min_pct:0.95)*100)}% вартості до викупу (ставка рівно на рівні викупу закриває лот одразу). Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер.</p>`;
+    <p class="mnote">Старт — від ${Math.round(((cfg.auction_start_min_pct!=null)?+cfg.auction_start_min_pct:0.95)*100)}% вартості до викупу (ставка рівно на рівні викупу закриває лот одразу). Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер. ${aucPctNote()}</p>${aucTimerNote()}`;
   return dgWarn(p)+contractPicker(mv,0,p.id)+ptabs([['buy','🛒 Купити зараз',buyBody],['auc','🔨 Аукціон',aucBody]],'buy',true);
 }
 // вкладки вікна гравця: list = [[ключ, заголовок, html], …], def — ключ активної
@@ -3374,7 +3429,6 @@ async function openPlayerModal(pid){
       <aside class="pm-cardside">
         <button class="sqwrap" id="pmShowCard" aria-label="Показати картку">${squadCardHTML(p,tier,card)}</button>
         <button class="pm-showcard" id="pmShowCard2">⤢ Показати картку</button>
-        ${ctx.owned?designSwitcher(p,card):''}
       </aside>
       <section class="pm-data">
         <div class="pm-identity">
@@ -3396,12 +3450,13 @@ async function openPlayerModal(pid){
           </div>
         </div>
         <div class="pm-midrow">
-          ${formList(card, form)}
           <div class="pm-side">
             <div class="pm-box"><span>Статус</span><strong><span class="sdot"></span>${o.txt.replace(/^[★✅🔨]\s*/u,'')}</strong></div>
             ${roleBox}
             <div class="pm-box"><span>Історія власників</span><strong>${ownerHist(card,p)}</strong></div>
+            ${ctx.owned?designSwitcher(p,card):''}
           </div>
+          ${formList(card, form)}
         </div>
         ${xinfo}
       </section>
@@ -3443,8 +3498,6 @@ function bindModalActions(p){
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
       confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} тур</b> (${eur(qWageR(p.id,len,p.market_value_current,ra.p_role)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
-    if(kind==='tobench'){ const nw=+b.dataset.nw; confirmModal(`Перевести <b>${esc(p.name)}</b> з «Основного» на «Лавку»?<br>Зарплата стане <b>${eur(nw)}</b>/тур на решту контракту. Повернути «Основного» можна лише при продовженні контракту.`, 'Перевести на «Лавку»',
-      ()=>act('market_role_to_bench',{p_player:p.id},'Переведено на «Лавку»'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
       ()=>act('market_unlist_player',{p_player:p.id},'Знято з продажу'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='extend'){ if(needRole()) return; const ra=roleArgs(); const len=selectedLen(), ci=contractInfo(p), w=qWageR(p.id,len,p.market_value_current,ra.p_role), em=S.cfg?.contract_ext_mult??1;
@@ -3460,8 +3513,9 @@ function bindModalActions(p){
       const box=h.querySelector('.xbox'); if(!box||box.dataset.off==null){ alert('Обери гравця й перевір умови'); return; }
       const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0, len=selectedLenIn(box);
       const cl=box.querySelector('.clen'); if(needRole(cl)) return; const fr=rolesOn()?{p_from_role:(cl&&cl.dataset.prole)||null}:{}; const wg=wageArg(box);   // 554: надбавка до зарплати wanted (подія «просить піти»)   // 539: роль для гравця, якого отримуєш
-      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} тур</b>?`, 'Запропонувати',
-        ()=>act('market_propose_exchange',{p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len,...fr,...wg},'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
+      const cxTid=box.dataset.cx||null, xargs={p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len,...fr,...wg};
+      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} тур</b>?${cxTid?'<br><b>Попередню пропозицію буде відхилено.</b>':''}`, 'Запропонувати',
+        ()=>cxTid ? actCounterExchange(cxTid,xargs) : act('market_propose_exchange',xargs,'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='aucgo'){   // 556: ставка/старт аукціону з довжиною, роллю й надбавкою (інлайн-валідація вже пройшла; сервер перевіряє те саме)
       const f=b.closest('.aucf'); aucRefresh(); if(b.disabled) return;
       const raw=Math.round((parseFloat((f.querySelector('#aucAmt').value||'0').replace(',','.'))||0)*1e6);
