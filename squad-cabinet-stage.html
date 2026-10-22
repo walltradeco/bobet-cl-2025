@@ -1230,11 +1230,11 @@ function renderHeader(){
         'Сума відсотків руху ціни 8 гравців твого лайнапу за ЗАКРИТІ тури (ціна гравця не впливає: дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша. По турах: '+mineMg.filter(x=>x.delta_pct!=null).map(x=>`Тур ${rNum(x.round_id)} ${ppSgn(+x.delta_pct)}`).join(' · ')+'. Те саме, що Σ % гравців на борді') : '';
   const pp=$('h-price-parts'); if(pp) pp.innerHTML = chg + sigCol
       + (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
-          const n=(S.mgStand||[]).length, d=+ms.delta_eur||0, hyb=(ms.final_metric==='hybrid'), roi=(hyb && ms.roi_sum!=null)? +ms.roi_sum : null;
+          const d=+ms.delta_eur||0, hyb=(ms.final_metric==='hybrid'), roi=(hyb && ms.roi_sum!=null)? +ms.roi_sum : null;
           const tip = hyb
-            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. ROI — сума по турах від «приріст ÷ вартість складу на старті туру» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів) рахується з обох показників порівну: і € приросту, і ROI порівнюються з іншими учасниками. Місце «N з M» — за цим комбінованим показником на цей момент. Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.'
+            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. ROI — сума по турах від «приріст ÷ вартість складу на старті туру» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів) рахується з обох показників порівну: і € приросту, і ROI порівнюються з іншими учасниками (розрахунок з числами — на борді, вкладка General · Management). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.'
             : 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.';
-          return col('💼 Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ROI ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''} · ${ms.place} з ${n}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })();
+          return col('💼 Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ROI ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })();
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
@@ -1518,7 +1518,7 @@ async function loadRR(force){
   const [fix,live,rs,mg,boost,posb]=await Promise.all([
     g(`market_fixtures?tournament_id=eq.${t}&select=round_id,kickoff_at,status,home_club_id,away_club_id&limit=1000`,[]),
     g(`market_squad_live?tournament_id=eq.${t}&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice,state,points,avg_rating,counted,dbl&limit=3000`,[]),
-    (async()=>{ let x=await g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points,rival_points`,null); if(x===null) x=await g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points`,[]); return x; })(),   // rival_points — з 552 (фолбек без нього)
+    (async()=>{ let x=await g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points,challenge_points,rival_points`,null); if(x===null) x=await g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points,rival_points`,null); if(x===null) x=await g(`market_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,points,mgmt_points`,[]); return x; })(),   // challenge_points — з 547, rival_points — з 552 (фолбеки без них)
     g(`market_mgmt_round_scores?tournament_id=eq.${t}&select=round_id,participant_id,value_start_eur,delta_eur,delta_pct,place,points`,[]),
     g(`market_round_boost_pub?tournament_id=eq.${t}&select=round_id,participant_id,boost,target_player`,[]),
     g(`market_round_pos_boost_pub?tournament_id=eq.${t}&select=round_id,participant_id,kind,player_id`,[])
@@ -1627,8 +1627,10 @@ function viewRoundResult(r){
         <td class="r tnum"><b>${(m.inSum && m.pts!=null)?m.pts:'—'}</b>${aiB?' <span class="aib" title="🔥 All-in: очки лавки зараховано в суму">🔥</span>':''}</td><td class="r">${mvH}</td></tr>`;
     }).join('');
     const rsRow=(rr.rs||[]).find(x=>x.round_id===r.id && x.participant_id===who);
-    const allRs=(rr.rs||[]).filter(x=>x.round_id===r.id), totOf=x=>(x.points||0)+(x.mgmt_points||0)+(x.rival_points||0);
-    const matchPts = (closed && rsRow) ? rsRow.points : sum, mgPts = (closed && rsRow) ? (rsRow.mgmt_points||0) : 0, rvPts = (closed && rsRow) ? (rsRow.rival_points||0) : 0;
+    const allRs=(rr.rs||[]).filter(x=>x.round_id===r.id), totOf=x=>(x.points||0)+(x.mgmt_points||0)+(x.challenge_points||0)+(x.rival_points||0);
+    // 22.10 (Богдан): «очки туру» тягнуть ВСЕ — матчі + 💎 менеджмент + 🎯 челенджі + ⚔️ Rivals; челенджі нараховано вже при відкритті складів (тур ще йде), 💎 і ⚔️ — після закриття туру
+    const chMine=(S.chAwards||[]).filter(a=>a.round_number===r.number).reduce((a,x)=>a+(x.awarded_points||0),0);
+    const matchPts = (closed && rsRow) ? rsRow.points : sum, mgPts = (closed && rsRow) ? (rsRow.mgmt_points||0) : 0, rvPts = (closed && rsRow) ? (rsRow.rival_points||0) : 0, chPts = (rsRow && rsRow.challenge_points!=null)? (rsRow.challenge_points||0) : chMine;
     const place = (closed && rsRow) ? 1+allRs.filter(x=>totOf(x)>totOf(rsRow)).length : null;
     const mg=(rr.mg||[]).find(x=>x.round_id===r.id && x.participant_id===who);
     // приріст складу за тур: закритий тур — з рахунку менеджменту (те саме, що в 💎), тур у грі — з журналу цін по вже зіграних гравцях
@@ -1641,21 +1643,21 @@ function viewRoundResult(r){
     const cap=rows.find(l=>l.is_captain), vice=rows.find(l=>l.is_vice);
     const cvTxt = (bo && bo.boost==='squad_autopilot') ? '' : `К: <b>${cap?esc(lastName(pl(cap.player_id).name)):'—'}</b> · V: <b>${vice?esc(lastName(pl(vice.player_id).name)):'—'}</b>`;
     body=`<div class="rr-sum">
-        <div class="rr-m"><div class="k">очки туру</div><div class="v" style="color:var(--gold)">${closed?`${matchPts}${mgPts?` + 💎${mgPts}`:''}${rvPts?` + ⚔️${rvPts}`:''}${(mgPts||rvPts)?` = ${matchPts+mgPts+rvPts}`:''}`:matchPts}</div>
-          <div class="s">${closed?'матчі'+(mgPts?' + менеджмент':'')+(rvPts?' + Rivals':''):'за зіграні матчі · тур ще йде'}</div></div>
-        ${place?`<div class="rr-m"><div class="k">місце в турі</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі + 💎${allRs.some(x=>x.rival_points)?' + ⚔️':''}</div></div>`:''}
+        <div class="rr-m"><div class="k">очки туру</div><div class="v" style="color:var(--gold)">${matchPts}${mgPts?` + 💎${mgPts}`:''}${chPts?` + 🎯${chPts}`:''}${rvPts?` + ⚔️${rvPts}`:''}${(mgPts||chPts||rvPts)?` = ${matchPts+mgPts+chPts+rvPts}`:''}</div>
+          <div class="s">${(mgPts||chPts||rvPts)?'матчі'+(mgPts?' + менеджмент':'')+(chPts?' + челенджі':'')+(rvPts?' + Rivals':''):'за зіграні матчі'}${closed?'':' · тур ще йде'}</div></div>
+        ${place?`<div class="rr-m"><div class="k">місце в турі</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі + 💎${allRs.some(x=>x.challenge_points)?' + 🎯':''}${allRs.some(x=>x.rival_points)?' + ⚔️':''}</div></div>`:''}
         ${grow?`<div class="rr-m"><div class="k">приріст складу</div><div class="v ${grow.eur>0?'up':grow.eur<0?'down':''}">${eurSgn(grow.eur)}</div><div class="s">${grow.start?(grow.eur>0?'+':grow.eur<0?'−':'')+Math.abs(grow.eur/grow.start*100).toFixed(1)+'% вартості складу':'вартість 8 гравців за тур'}${mg?` · 💎 менеджмент: ${mg.points>0?'+'+mg.points:'0'} (місце ${mg.place})`:''}</div></div>
-        <div class="rr-m"><div class="k">Σ % гравців</div><div class="v ${grow.pct>0?'up':grow.pct<0?'down':''}">${ppSgn(grow.pct)}</div><div class="s">сума % руху ціни 8 гравців (не % складу)</div></div>`:''}
-        ${challengesRoundCard(r)}
-        ${rivalsRoundCard(r, who)}
+        <div class="rr-m"><div class="k">Σ % гравців</div><div class="v ${grow.pct>0?'up':grow.pct<0?'down':''}">${ppSgn(grow.pct)}</div><div class="s">сума % руху ціни 8 гравців (не % складу)</div></div>`
+          : (closed?'':`<div class="rr-m"><div class="k">приріст складу</div><div class="v"><span class="dim">—</span></div><div class="s">зʼявиться після перших зіграних матчів</div></div>
+        <div class="rr-m"><div class="k">Σ % гравців</div><div class="v"><span class="dim">—</span></div><div class="s">сума % руху ціни 8 гравців (не % складу)</div></div>`)}
         <div class="rr-m"><div class="k">бусти й К/V</div><div class="v" style="font-size:15px;line-height:1.35">${[boostTxt,posTxt].filter(Boolean).join('<br>')||'<span class="dim">бустів нема</span>'}</div><div class="s">${cvTxt||'Автопілот: ×2 отримує найкращий'}</div></div>
       </div>
       <div class="rr-wrap"><table class="rrt${(bo&&bo.boost==='squad_all_in')?' allin':''}"><thead><tr><th class="hm">Роль</th><th>Гравець</th><th>Стан</th><th class="r hm">Оцінка</th><th class="r">Очки</th><th class="c">Множник</th><th class="r">В сумі очок</th><th class="r">Ціна</th></tr></thead>
-        <tbody>${tr}<tr class="tot"><td colspan="6">Разом в сумі очок (за гравцями)</td><td class="r tnum">${sum}</td><td></td></tr></tbody></table></div>
+        <tbody>${tr}<tr class="tot"><td colspan="6">Разом (за гравцями)</td><td class="r tnum">${sum}</td><td class="r" title="Сума руху цін 8 гравців за тур: Σ % і приріст вартості складу в €">${grow?`<span class="vdelta ${grow.eur>=0?'up':'down'}">${ppSgn(grow.pct)}</span><small class="vd-eur ${grow.eur>=0?'up':'down'}">${eurSgn(grow.eur)}</small>`:'<span class="dim">—</span>'}</td></tr></tbody></table></div>
       <p class="rr-note">«В сумі очок»: основа — коли зіграв; лавка — коли визначена заміна${(bo&&bo.boost==='squad_all_in')?' (🔥 All-in — очки дають усі 8)':''}; ×2 — капітан/віце (кращий із пари), Автопілот чи позиційний буст. Ціна — зміна вартості гравця за цей тур: % і в €. Клік на гравця — детальна картка.</p>`;
   }
   $('view').innerHTML = tourChipsHtml() + prog +
-    `<div class="head2"><h2>Тур ${r.number}</h2><span class="sub">${closed?'результат туру':'тур у грі'} · ${OTHERS_IN_TOUR?'обери учасника, щоб подивитись його склад':'твій склад і очки'}</span></div>` + pick + body + rivalBox(r);
+    `<div class="head2"><h2>Тур ${r.number}</h2><span class="sub">${closed?'результат туру':'тур у грі'} · ${OTHERS_IN_TOUR?'обери учасника, щоб подивитись його склад':'твій склад і очки'}</span></div>` + pick + body + challengesRoundBlock(r) + rivalBox(r);
   bindTourChips();
   $('view').querySelectorAll('.rrt tr[data-p]').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
   bindRival(r);
@@ -1783,12 +1785,16 @@ function challengesModalHtml(s, round){
                          : '<p class="mnote">Жоден новий челендж цим складом не зібрано.</p>';
   return `<div class="msec" style="margin-top:14px">🎯 Челенджі</div>${body}${done.length?`<p class="mnote dim">Уже виконано раніше: ${done.map(x=>esc(x.d.title)).join(', ')}.</p>`:''}`;
 }
-function challengesRoundCard(r){   // результат туру: що виконано саме в цьому турі
+// результат туру: блок «🎯 Челенджі · Тур N» ПІД таблицею, над Rivals (22.10, Богдан: замість плитки вгорі) — що виконано саме в цьому турі й за яку умову
+function challengesRoundBlock(r){
   if(!S.chOK || !(S.chDefs||[]).length) return '';
   const hit=(S.chAwards||[]).filter(a=>a.round_number===r.number);
   if(!hit.length && !chActive(r)) return '';
-  const names=hit.map(a=>{ const d=S.chDefs.find(x=>x.key===a.challenge_key)||{}; return `${esc(d.title||a.challenge_key)} <b>+${a.awarded_points}</b>`; });
-  return `<div class="rr-m"><div class="k">🎯 челенджі</div><div class="v" style="font-size:15px;line-height:1.35">${names.length?names.join('<br>'):'<span class="dim">не виконано</span>'}</div><div class="s">${names.length?'нараховано при відкритті складів':'раз за турнір кожен'}</div></div>`;
+  const sum=hit.reduce((a,x)=>a+(x.awarded_points||0),0);
+  const rows=hit.map(a=>{ const d=S.chDefs.find(x=>x.key===a.challenge_key)||{};
+    return `<div class="chr done"><span class="ci">✓</span><div class="cb"><div class="ct">${esc(d.title||a.challenge_key)}</div><div class="cd"><span class="cl">Умова</span>${esc(d.description||'')}</div></div><span class="cp">+${a.awarded_points}</span></div>`; }).join('');
+  return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🎯 Челенджі · Тур ${r.number}</span><span>${hit.length?`+${sum} ${pOchk(sum)} · нараховано при відкритті складів`:'раз за турнір кожен'}</span></div>
+    <div class="chl">${rows||'<p class="dim" style="margin:6px 2px">У цьому турі нових челенджів не виконано.</p>'}</div></div>`;
 }
 // ── ⚔️ RIVALS (552; рішення Богдана 19.10): дуель на тур, як у ЄвроСезоні; вибір суперника ОБОВ'ЯЗКОВИЙ для підтвердження складу ──
 // «Нікого» показується лише коли невикористаних суперників не лишилось; той самий суперник — раз за турнір; вибір наосліп, одна зміна після відкриття складів.
@@ -1895,13 +1901,6 @@ function bindRival(round){
       if(btn) btn.disabled=(pending===(my?(my.is_nobody?'nobody':my.opponent_participant):null)); });
     if(btn) btn.onclick=()=>confirmModal(`Новий суперник: <b>${pending==='nobody'?'Нікого':esc(S.names[pending]||'?')}</b>.<br>Це остання зміна цього туру — після підтвердження суперника більше не можна буде переобрати.`, 'Підтвердити зміну', ()=>call(pending));
   }
-}
-function rivalsRoundCard(r, who){   // картка в підсумку туру: моя (або обраного учасника) дуель
-  if(!rvOn(r)) return '';
-  const row=(S.rvBoard||[]).find(x=>x.round_id===r.id && x.chooser_participant===who) || (who===S.me.id ? rvMy(r) : null);
-  if(!row) return '';
-  const opp=row.is_nobody?'Нікого':(row.opponent_name||'—');
-  return `<div class="rr-m"><div class="k">⚔️ rivals</div><div class="v" style="font-size:15px;line-height:1.35">проти ${esc(opp)}<br>${rvStatusMark(row)}</div><div class="s">${row.scored?'дуель зіграна':'очікує закриття туру'}</div></div>`;
 }
 function rivalsModalHtml(round){
   if(!rvOn(round)) return '';
