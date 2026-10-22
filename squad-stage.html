@@ -136,6 +136,7 @@ nav.etabs button{background:transparent;border:0;border-bottom:2px solid transpa
   font-family:'Montserrat',sans-serif;font-weight:600;font-size:17px;padding:12px 18px;cursor:pointer;
   white-space:nowrap;transition:color .15s,border-color .15s}
 nav.etabs button.stg-lb{color:var(--accent)}
+nav.etabs.etabs-wait{visibility:hidden}   /* 22.10: вкладки етапів ховаємо, доки не прийшов конфіг (інакше миготіли «Rounds 1-5 / 6-10» і прихований Management, а потім підміна на актуальні) */
 nav.etabs button.stg-s1{color:var(--teal)}
 nav.etabs button.stg-s2{color:var(--blue)}
 nav.etabs button.stg-bank{color:var(--gold)}
@@ -517,7 +518,7 @@ table.grid{min-width:0}
 
 <div class="wrap">
   <div class="nav-lbl" id="navLbl">Етапи</div>
-  <nav class="etabs" id="etabs">
+  <nav class="etabs etabs-wait" id="etabs">
     <button class="stg-lb active" data-stage="lb">Leaderboard</button>
     <button class="stg-s1" data-stage="s1">Rounds 1-5</button>
     <button class="stg-s2" data-stage="s2">Rounds 6-10</button>
@@ -1506,7 +1507,7 @@ async function boot(){
     setInterval(refreshLive,180000);   // по ходу туру — оновлення без перезавантаження (раз на 3 хв, лише коли вкладка видима)
   }catch(e){
     document.getElementById('h2tour').textContent='помилка: '+e.message;
-  }
+  }finally{ const et=document.getElementById('etabs'); if(et) et.classList.remove('etabs-wait'); }   // і при помилці/«турнір не заведено» вкладки не лишаються прихованими
 }
 let _refreshing=false;
 async function refreshLive(){

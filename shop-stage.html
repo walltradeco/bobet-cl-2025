@@ -66,10 +66,8 @@ button:disabled{opacity:.45;cursor:not-allowed}
   background:#0a120e;border:1px solid var(--line)}
 .card .art img{width:100%;height:100%;object-fit:contain;display:block}
 .card:hover .art{outline:2px solid var(--accent)}
-.card .rar{position:absolute;top:6px;left:6px;font-family:var(--mono);font-size:10px;font-weight:700;
-  letter-spacing:.08em;text-transform:uppercase;padding:2px 7px;border-radius:6px}
-.rar.rare{background:rgba(111,176,201,.2);color:#bfe0ee;border:1px solid #3d6d7e}
-.rar.mega_rare{background:rgba(230,193,75,.18);color:#f0d98a;border:1px solid #8a7228}
+.card .rartxt{margin-top:6px;text-align:center;font-size:12px;color:var(--text-dim)}   /* 22.10: рідкість — простий текст під карткою (плашку на арті прибрано) */
+.card .rartxt.mega_rare{color:var(--gold)}
 .card .own{margin-top:6px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
   color:var(--text-dim);border:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .card .own.free{background:var(--green-soft);color:var(--up);border-color:var(--accent-d)}
@@ -284,9 +282,10 @@ function renderGrid(){
     const own = c.is_free ? `<div class="own free">Вільна</div>`
       : `<div class="own ${mine?'mine':''}">${mine?'★ Твоя':esc(c.owner_name||'зайнята')}</div>`;
     return `<div class="card" data-k="${esc(c.card_key)}">
-      <div class="art"><span class="rar ${c.tier}">${RAR[c.tier]||c.tier}</span>
+      <div class="art">
         <img src="${esc(cardThumb(c.png_path))}" alt="${esc(cardTitle(c))}" loading="lazy" decoding="async"
              onerror="this.onerror=null;this.src='${esc(c.png_path)}'"></div>
+      <div class="rartxt ${c.tier}">${RAR[c.tier]||c.tier}</div>
       ${own}</div>`;
   }).join('') || '<div class="sum">Нічого не знайдено.</div>';
   [...document.querySelectorAll('.card')].forEach(el=>el.onclick=()=>openCard(el.dataset.k));
