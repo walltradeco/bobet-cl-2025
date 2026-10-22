@@ -81,6 +81,23 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .mgex th:first-child,.mgex td:first-child{text-align:left}
 .mgex th{color:var(--ink)}
 .mgex .mgexn{margin-top:6px;font-size:12.5px}
+.mglink{margin:10px 0 0}
+.mglink a{color:var(--gold);cursor:pointer;text-decoration:underline}
+.rchips{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 14px}
+.rchips button{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:5px 12px;color:var(--ink);font:inherit;font-size:12.5px;cursor:pointer}
+.rchips button:hover{border-color:var(--gold)}
+.rules{display:grid;gap:14px}
+.rsec{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 18px;font-size:13.5px;line-height:1.6;color:var(--muted);scroll-margin-top:12px}
+.rsec h3{margin:0 0 8px;color:var(--ink);font-size:16px}
+.rsec b{color:var(--ink)}
+.rsec ul,.rsec ol{margin:6px 0;padding-left:20px}
+.rsec p{margin:6px 0}
+.rsec .rtbl{overflow-x:auto;margin:8px 0}
+.rsec table{border-collapse:collapse;font-size:12.5px;min-width:60%}
+.rsec th,.rsec td{padding:3px 12px 3px 0;text-align:left;white-space:nowrap}
+.rsec th{color:var(--ink)}
+.rsec td.n,.rsec th.n{text-align:right;padding-right:0;padding-left:12px}
+.rsec .rnote{color:var(--dim);font-size:12.5px}
 .mgsec{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--rose);opacity:.9;margin:22px 2px 10px}
 .lbr.mg .pts{color:var(--rose)}
 .lbr.mg .pts.pj{opacity:.75}
@@ -122,7 +139,7 @@ nav.etabs button.stg-bank{color:var(--gold)}
 nav.etabs button.stg-pts{color:var(--purple)}
 nav.etabs button.stg-mg{color:var(--rose)}
 nav.etabs button.stg-ch{color:var(--gold)}
-nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank,nav.etabs button.stg-pts,nav.etabs button.stg-mg,nav.etabs button.stg-ch{opacity:.55}
+nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank,nav.etabs button.stg-pts,nav.etabs button.stg-mg,nav.etabs button.stg-ch,nav.etabs button.stg-rules{opacity:.55}
 nav.etabs button:hover{opacity:1}
 nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 
@@ -496,6 +513,7 @@ table.grid{min-width:0}
     <button class="stg-mg hide" data-stage="mg">General · Management</button>
     <button class="stg-ch hide" data-stage="ch">General · Challenges</button>
     <button class="stg-pts" data-stage="pts">Points by round</button>
+    <button class="stg-rules" data-stage="rules">Rules</button>
   </nav>
 
   <!-- Leaderboard — 3 картки (1-5 Тур · 6-10 Тур · General), заповнює renderLB -->
@@ -512,6 +530,9 @@ table.grid{min-width:0}
 
   <!-- 🎯 Челенджі (547): список челенджів і хто виконав -->
   <section id="secCh" class="hide"></section>
+
+  <!-- 📜 Rules: лише правила нарахування очок (як грати — окремо, у Playbook) -->
+  <section id="secRules" class="hide"></section>
 
   <!-- Стейдж-деталь (1-5 / 6-10 Тур) -->
   <section id="secStage" class="hide">
@@ -709,6 +730,7 @@ function renderCh(){
   host.innerHTML=`<div class="head2"><h2>🎯 General Challenges</h2><span class="sub">окремий шлях очок за склад · раз за турнір кожен · клік на імʼя → склад</span></div>
     <div class="mgintro"><b>Челенджі</b> — додаткові очки за композицію складу, який ти виставив на тур. Кожен челендж можна виконати <b>раз за турнір</b>, кілька — за один тур. Очки нараховуються <b>одразу, коли склади відкрито</b> (усі підтвердили або минув дедлайн). Рахуються з Туру ${first}; разом до <b>${total}</b> очок. «Основа» і «лавка» тут — слоти складу (5 + запасні), а не контрактні ролі.</div>
     <div class="chgrid">${cards}</div>
+    <div class="hint">Усі правила челенджів — у вкладці <a style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="goStage('rules');return false">Rules</a>.</div>
     <div class="hint">Позиційні челенджі взаємовиключні: «формації основи» (4 DEF/GK + FWD · ≥3 FWD · 2-2-1) — за тур лише одна, «склад» (≥5 MID · 3+3+2) — теж лише один; «Схема 2-2-1» сумісна з «≥5 MID» і «3+3+2», але не з «Муром» і «Атакою».</div>`;
 }
 function mgChip(pid,rid){   // матриця «Очки по турах»: 💎+N без рамки, деталі в title
@@ -1098,67 +1120,132 @@ function mgTotalCard(title, nom){
   return `<div class="${cls}"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
 }
 // 💎 Менеджмент (528): як це працює · 💼 наскрізна «Менеджер турніру» (прогноз → підсумок) · подіум КОЖНОГО закритого туру
+// спільні шматки для вкладок Management і Rules: ваги й пороги беремо з market_config (S.mgCfg), режим 💼 — з market_mgmt_standings
+function mgCtx(){
+  const cfg=S.mgCfg||{tour:[3,2,1],fin:[20,14,8,4,2],total:6,w:0.25,pw:0.5};
+  const hy=mgHybrid(), k0=(S.mgs[0]||{}).roi_weight, k=k0!=null?+k0:1;
+  const pr=cfg.pr||{top:9,topP:0.10,hi:7.5,hiP:0.05,lo:6.5,loP:-0.05,deep:6,deepP:-0.10};
+  const f1=n=>String(n).replace('.',','), pcs=v=>(v>0?'+':v<0?'−':'')+Math.abs(Math.round(v*100))+'%';
+  const plus=a=>a.map(n=>'+'+n).join('/');
+  return {cfg,hy,k,pr,f1,pcs,fin5:cfg.fin.join('/'),tour3:plus(cfg.tour)};
+}
+// 📜 Rules: лише ПРАВИЛА нарахування очків (як грати — окремо, у Playbook). Цифри з конфігу; приклади — на вигаданих числах.
+function renderRules(){
+  const host=$('secRules'); if(!host) return;
+  const {cfg,hy,k,pr,f1,pcs,fin5,tour3}=mgCtx();
+  const total=cfg.total, one=oneStage();
+  const chFirst=(S.chCfg&&S.chCfg.first_round)||null, rvFirst=(S.rvCfg&&S.rvCfg.first_round)||null;
+  const band=(lbl,v)=>`<tr><td>${lbl}</td><td class="n">${v}</td></tr>`;
+  const exOk = cfg.pw===0.5 && cfg.w===0.25;   // приклад підібрано під ваги 0,5 і 0,25
+  const mg2 = S.mgReady;
+  const secs=[];
+  // 1. Формат
+  secs.push(['format','📋 Формат',`<ul>
+      <li>Турнір — <b>${total} турів</b>. Тур = один вікенд: рахуються лише матчі національних чемпіонатів, по одному матчу на клуб (без кубків і єврокубків).</li>
+      <li>Склад — до 8 гравців: <b>основа 5 + лавка 3</b> (мінімум 5). Не більше 3 гравців з одного клубу й 1 воротаря на клуб. Якщо у складі 8 гравців — не менше 2 DEF/GK у складі й не менше 1 в основі.</li>
+      <li>Перед дедлайном туру ти виставляєш склад: основу, порядок лавки, капітана, віце й буст. Підтвердження — кнопкою й остаточне. Склади й бусти всіх відкриваються, коли підтвердили всі учасники або минув дедлайн.</li>
+      <li><b>Загальний залік (General)</b> = очки матчів + 💎 Менеджер туру + 💼 Менеджер турніру${S.chReady?' + 🎯 Челенджі':''}${S.rvReady?' + ⚔️ Rivals':''}.</li></ul>`]);
+  // 2. Очки за матч
+  secs.push(['points','⚽ Очки за матч',`<p>Очки гравцю дає його оцінка за матч (SofaScore):</p>
+      <div class="rtbl"><table><tr><th>Оцінка</th><th class="n">Очки</th></tr>${band('9,0 – 10','4')}${band('8,0 – 8,9','3')}${band('7,0 – 7,9','2')}${band('6,5 – 6,9','1')}${band('нижче 6,5','0')}</table></div>
+      <ul>
+      <li>Гравець без оцінки вважається таким, що <b>не грав</b>: 0 очок, ціна не рухається (вихід на заміну без оцінки теж «не грав»).</li>
+      <li>Очки рахуються <b>наживо</b>, по ходу туру. Основа — одразу, щойно є оцінка.</li>
+      <li><b>Лавка.</b> Запасний замінює основного, який не зіграв. Слотів для заміни стільки, скільки основних не зіграло; запасні заходять за порядком лавки (береться той, хто зіграв). Очки лавки входять у суму, коли всі основні вже відіграли (до того показуються приглушено).</li>
+      <li><b>Капітан і віце: ×2 отримує найкращий із пари</b> (хто набрав більше очок). Рівні очки — ×2 капітану. Не зіграв один — ×2 має другий; не зіграли обоє — ×2 згорає. Віце необов’язковий (без віце — ×2 капітану).</li>
+      <li><b>Бусти</b> (безкоштовні для всіх):
+        <ul>
+          <li>🤖 <b>Автопілот</b> — ×2 отримує найкращий серед усіх гравців складу (основа й лавка), що зіграли; замінює капітана й віце.</li>
+          <li>🔥 <b>All-in</b> — усі гравці складу (основа й лавка), що зіграли, дають очки одразу; капітан і віце діють як звичайно.</li>
+          <li>Автопілот і All-in — не більше одного буста на тур, кожен — <b>${one?'раз за турнір':'раз на етап'}</b>.</li>
+          <li>⚡ <b>2x FWD</b>, <b>2x MID</b>, <b>2x DEF/GK</b> — подвоює очки одного гравця основи цієї позиції (не капітана й не віце). Кожен — <b>раз за турнір</b>; усі три можна в одному турі (різні гравці). Не поєднуються з Автопілотом і All-in. Ціль не зіграла — буст згорає.</li>
+        </ul></li></ul>`]);
+  // 3. Ціна гравця
+  secs.push(['price','💶 Як змінюється ціна гравця',`<ul>
+      <li>Ціна гравця рухається за його оцінкою за тур:</li></ul>
+      <div class="rtbl"><table><tr><th>Оцінка за тур</th><th class="n">Зміна ціни</th></tr>
+        ${band('від '+f1(pr.top)+' і вище',pcs(pr.topP))}${band('від '+f1(pr.hi)+' до '+f1(pr.top),pcs(pr.hiP))}${band('від '+f1(pr.lo)+' до '+f1(pr.hi),'без змін')}${band('від '+f1(pr.deep)+' до '+f1(pr.lo),pcs(pr.loP))}${band('нижче '+f1(pr.deep),pcs(pr.deepP))}</table></div>
+      <ul>
+      <li>Гравець не грав — ціна <b>не змінюється</b>.</li>
+      <li>Ціна не падає нижче €1M (гравці, які стартували дешевше за €1M, — не нижче стартової ціни).</li>
+      <li>Нова ціна з’являється, щойно відомі оцінки; 💎 і 💼 рахуються, коли тур закрито.</li>
+      <li>Вартість гравця — <b>ринкова</b>: її міняють лише оцінки за матчі. Ціна угод між учасниками (трансфер, аукціон, обмін) на неї не впливає.</li></ul>`]);
+  // 4. 💎
+  if(mg2){
+    const exTour = exOk ? `<div class="rtbl"><table><tr><th>Склад</th><th class="n">Вартість</th><th class="n">Δ€</th><th class="n">Σ%</th><th class="n">Рахунок</th><th class="n">Місце</th><th class="n">Очки</th></tr>
+        <tr><td>B</td><td class="n">380M</td><td class="n">+12,0M</td><td class="n">+9 п.п.</td><td class="n">+0,99</td><td class="n">1</td><td class="n">+3</td></tr>
+        <tr><td>A</td><td class="n">430M</td><td class="n">+9,0M</td><td class="n">+14 п.п.</td><td class="n">+0,87</td><td class="n">2</td><td class="n">+2</td></tr>
+        <tr><td>C</td><td class="n">250M</td><td class="n">+7,0M</td><td class="n">+26 п.п.</td><td class="n">+0,39</td><td class="n">3</td><td class="n">+1</td></tr>
+        <tr><td>D</td><td class="n">410M</td><td class="n">−4,0M</td><td class="n">−8 п.п.</td><td class="n">−2,25</td><td class="n">4</td><td class="n">0</td></tr></table></div>
+        <p class="rnote">Приклад на вигаданих числах (не реальний тур): складу C вистачило відсотків для третього місця, хоча євро він заробив менше за A і B.</p>` : '';
+    secs.push(['tour','💎 Менеджер туру',`<ol>
+      <li>Після кожного закритого туру беремо <b>8 гравців</b> складу цього туру (основа й лавка — однаково). Хто не зіграв — рухається на 0.</li>
+      <li>Для складу рахуємо: <b>Δ€</b> — на скільки € змінилась вартість цих гравців${cfg.pw>0?`; <b>Σ%</b> — сума відсотків руху ціни кожного гравця (дешевий гравець із +10% дає стільки ж, скільки зірка з +10%)`:''}; <b>V₀</b> — вартість складу на старті туру.</li>
+      <li><b>Рахунок туру</b> = Δ€${cfg.pw>0?` + ${f1(cfg.pw)} × Σ%`:''} + ${f1(cfg.w)} × V₀. Кожна частина порівнюється з іншими учасниками в цьому турі: рахується, наскільки вище чи нижче середнього.</li>
+      <li>Три найкращі за рахунком отримують <b>${tour3}</b> очок — навіть якщо вартість упала. Однаковий рахунок ділить місце й очки цього місця.</li>
+      <li>Не рахуються: зарплати, премія при купівлі, ціна угод між учасниками, готівка, Банк.</li></ol>${exTour}`]);
+    // 5. 💼
+    const exFin = (hy && k===1) ? `<div class="rtbl"><table><tr><th>Склад</th><th class="n">Σ Δ€</th><th class="n">Σ ROI</th><th class="n">€ порівняно з іншими</th><th class="n">ROI порівняно з іншими</th><th class="n">Разом</th><th class="n">Місце</th></tr>
+        <tr><td>A</td><td class="n">+27,0M</td><td class="n">+6,3%</td><td class="n">+1,12</td><td class="n">+0,65</td><td class="n">+1,77</td><td class="n">1</td></tr>
+        <tr><td>C</td><td class="n">+14,5M</td><td class="n">+6,9%</td><td class="n">+0,05</td><td class="n">+0,84</td><td class="n">+0,89</td><td class="n">2</td></tr>
+        <tr><td>B</td><td class="n">+19,0M</td><td class="n">+4,8%</td><td class="n">+0,43</td><td class="n">+0,19</td><td class="n">+0,63</td><td class="n">3</td></tr>
+        <tr><td>D</td><td class="n">−4,7M</td><td class="n">−1,3%</td><td class="n">−1,60</td><td class="n">−1,68</td><td class="n">−3,28</td><td class="n">4</td></tr></table></div>
+        <p class="rnote">Приклад на вигаданих числах. За одними лише євро порядок був би A, B, C, D; ROI підняв C над B.</p>` : '';
+    const finBody = hy ? `<ol>
+      <li>Після кожного туру запам’ятовуємо Δ€ складу й його <b>ROI = Δ€ ÷ вартість складу на старті туру</b> (наприклад, +3M на склад 300M — це +1,0%). Склад без гравців у турі дає 0.</li>
+      <li>Після ${total} турів додаємо: <b>Σ Δ€</b> — на скільки € виріс склад; <b>Σ ROI</b> — сума ROI по турах.</li>
+      <li>Кожну суму порівнюємо з іншими учасниками (наскільки вище чи нижче середнього) й складаємо: <b>💼 = € + ${k===1?'':f1(k)+' × '}ROI</b>${k===1?' (порівну, 50/50)':''}.</li>
+      <li>Місця 1–${cfg.fin.length} отримують <b>${fin5}</b> очок у General. Нараховується, коли закрито всі ${total} турів; до того на борді — прогноз.</li>
+      <li>Не рахуються: зарплати, премія при купівлі, ціна угод між учасниками, готівка, Банк.</li></ol>${exFin}`
+      : `<ol><li>${mgByEur()?`Сумуємо приріст вартості складу в € за всі ${total} турів`:`Додаємо рахунки всіх ${total} турів`}; місця 1–${cfg.fin.length} отримують <b>${fin5}</b> очок у General. Нараховується, коли закрито всі ${total} турів; до того на борді — прогноз.</li></ol>`;
+    secs.push(['final','💼 Менеджер турніру',finBody]);
+  }
+  // 6. 🎯
+  if(S.chReady){
+    const defs=S.chDefs.filter(d=>d.active), sum=defs.reduce((a,d)=>a+d.points,0);
+    secs.push(['ch','🎯 Челенджі',`<ul>
+      <li>Додаткові очки за <b>композицію складу</b>, який ти виставив на тур — вони не залежать від оцінок гравців.</li>
+      <li>${chFirst?`Рахуються з <b>Туру ${chFirst}</b>. `:''}Кожен челендж можна виконати <b>раз за турнір</b>; кілька челенджів — за один тур, якщо склад підходить під всі умови.</li>
+      <li>Перевіряється підтверджений склад. Очки нараховуються <b>одразу, коли склади відкрито</b>.</li>
+      <li>«Склад» — усі гравці (основа й лавка), «основа» — п’ятеро гравців основи.</li></ul>
+      <div class="rtbl"><table><tr><th>Челендж</th><th>Умова</th><th class="n">Очки</th></tr>${defs.map(d=>`<tr><td>${esc(d.title)}</td><td style="white-space:normal">${esc(d.description)}</td><td class="n">+${d.points}</td></tr>`).join('')}
+        <tr><td><b>Разом</b></td><td></td><td class="n"><b>${sum}</b></td></tr></table></div>
+      <p class="rnote">Умови про склад і умови про основу можуть суперечити одна одній (наприклад, «4 DEF/GK + FWD в основі» і «≥3 FWD в основі»): такі челенджі за один тур не виконати.</p>`]);
+  }
+  // 7. ⚔️
+  if(S.rvReady){
+    secs.push(['rv','⚔️ Rivals',`<ul>
+      <li>${rvFirst?`З <b>Туру ${rvFirst}</b> `:''}у кожному турі ти обираєш суперника — іншого учасника. Порівнюються <b>очки матчів</b> за тур (основа, заміни, капітан/віце, бусти); 💎, 🎯 і 💼 не рахуються.</li>
+      <li>Перемога — <b>+2</b>, нічия — <b>+1</b>, поразка — <b>0</b>. Очки отримує той, хто обирав; суперник нічого не втрачає (того самого можуть обрати кілька учасників).</li>
+      <li>Вибір <b>обов’язковий</b> для підтвердження складу.</li>
+      <li>Суперник обирається наосліп: до підтвердження вибір вільний; після підтвердження він зафіксований до відкриття складів; після відкриття складів є <b>одна зміна</b> (до 2 годин після дедлайну).</li>
+      <li>Кожного суперника можна обрати <b>не більше одного разу за турнір</b>. «Нікого» доступний лише тоді, коли невикористаних суперників не лишилось.</li>
+      <li>Якщо в суперника немає зарахованого складу — нічия (+1). Якщо немає в тебе (не підтвердив) — 0.</li>
+      <li>Окрема номінація «⚔️ Rivals — найбільше перемог за турнір» — лише титул, без додаткових очок.</li></ul>`]);
+  }
+  const chips=secs.map(x=>`<button onclick="document.getElementById('r-${x[0]}').scrollIntoView({behavior:'smooth',block:'start'})">${x[1]}</button>`).join('');
+  host.innerHTML=`<div class="head2"><h2>📜 Rules</h2><span class="sub">як нараховуються очки · лише правила</span></div>
+    <div class="rchips">${chips}</div>
+    <div class="rules">${secs.map(x=>`<div class="rsec" id="r-${x[0]}"><h3>${x[1]}</h3>${x[2]}</div>`).join('')}</div>`;
+}
 function renderMg(){
   const host=$('secMg'); if(!host) return;
   if(!S.mgReady){ host.innerHTML='<div class="hint" style="padding:16px 2px">Вкладка зʼявиться після оновлення бази (SQL 528).</div>'; return; }
   const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6,w:0.25,pw:0};
   const plus=a=>a.map(n=>'+'+n).join('/');
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
-  const hy=mgHybrid(), k0=(S.mgs[0]||{}).roi_weight, k=k0!=null?+k0:1;
-  const pr=cfg.pr||{top:9,topP:0.10,hi:7.5,hiP:0.05,lo:6.5,loP:-0.05,deep:6,deepP:-0.10};
-  const f1=n=>String(n).replace('.',','), pcs=v=>(v>0?'+':v<0?'−':'')+Math.abs(Math.round(v*100))+'%';
-  const bands=`≥${f1(pr.top)} → ${pcs(pr.topP)} · ${f1(pr.hi)}–${f1(pr.top)} → ${pcs(pr.hiP)} · ${f1(pr.lo)}–${f1(pr.hi)} → без змін · ${f1(pr.deep)}–${f1(pr.lo)} → ${pcs(pr.loP)} · нижче ${f1(pr.deep)} → ${pcs(pr.deepP)}`;
-  const fin5=cfg.fin.join('/'), tour3=plus(cfg.tour);
+  const ctx=mgCtx(), {hy,k,fin5,tour3}=ctx;
   const finTxt = hy
-    ? `рахуємо <b>приріст вартості складу в €</b> і <b>ROI</b> (приріст ÷ вартість складу) за всі ${cfg.total} турів — ${k===1?'вони важать порівну (50/50)':'ROI має вагу '+f1(k)+' до 1 для €'}; кращі ${cfg.fin.length} за цим комбінованим показником отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`
+    ? `рахуємо <b>приріст вартості складу в €</b> і <b>ROI</b> (приріст ÷ вартість складу) за всі ${cfg.total} турів — ${k===1?'вони важать порівну (50/50)':'ROI має вагу '+ctx.f1(k)+' до 1 для €'}; кращі ${cfg.fin.length} за цим комбінованим показником отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`
     : mgByEur()
       ? `сумується <b>приріст вартості складу в €</b> за всі ${cfg.total} турів (рахунок туру і 💎 тут не беруться); кращі ${cfg.fin.length} за цією сумою отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`
       : `рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`;
-  const exOk = cfg.pw===0.5 && cfg.w===0.25;   // приклад підібрано під чинні ваги 0,5 і 0,25
-  const exTour = exOk ? `<div class="mgex"><div class="mgexh">Приклад 💎 (вигадані числа, не реальний тур)</div><table>
-      <tr><th>Склад</th><th>Вартість</th><th>Δ€</th><th>Σ%</th><th>Рахунок</th><th>Місце</th><th>Очки</th></tr>
-      <tr><td>B</td><td>380M</td><td>+12,0M</td><td>+9 п.п.</td><td>+0,99</td><td>1</td><td>+3</td></tr>
-      <tr><td>A</td><td>430M</td><td>+9,0M</td><td>+14 п.п.</td><td>+0,87</td><td>2</td><td>+2</td></tr>
-      <tr><td>C (дешевший)</td><td>250M</td><td>+7,0M</td><td>+26 п.п.</td><td>+0,39</td><td>3</td><td>+1</td></tr>
-      <tr><td>D</td><td>410M</td><td>−4,0M</td><td>−8 п.п.</td><td>−2,25</td><td>4</td><td>0</td></tr></table>
-      <div class="mgexn">C заробив менше євро, але багато «влучань» у відсотках дали йому подіум. Найбільша частина рахунку — євро, тому виграв B.</div></div>` : '';
-  const exFin = (hy && k===1) ? `<div class="mgex"><div class="mgexh">Приклад 💼 після ${cfg.total} турів (вигадані числа)</div><table>
-      <tr><th>Склад</th><th>Σ Δ€</th><th>Σ ROI</th><th>€ порівняно з іншими</th><th>ROI порівняно з іншими</th><th>Разом</th><th>Місце</th></tr>
-      <tr><td>A</td><td>+27,0M</td><td>+6,3%</td><td>+1,12</td><td>+0,65</td><td>+1,77</td><td>1</td></tr>
-      <tr><td>C (дешевий склад)</td><td>+14,5M</td><td>+6,9%</td><td>+0,05</td><td>+0,84</td><td>+0,89</td><td>2</td></tr>
-      <tr><td>B</td><td>+19,0M</td><td>+4,8%</td><td>+0,43</td><td>+0,19</td><td>+0,63</td><td>3</td></tr>
-      <tr><td>D</td><td>−4,7M</td><td>−1,3%</td><td>−1,60</td><td>−1,68</td><td>−3,28</td><td>4</td></tr></table>
-      <div class="mgexn">Лише за євро було б A, B, C, D. З ROI склад C (найдешевший) обійшов B: він виростив гроші найефективніше відносно своєї вартості.</div></div>` : '';
-  const how=`<details class="mghow"><summary>Як це рахується і як під це підлаштуватись</summary><div class="mgh">
-    <h4>💎 Менеджер туру — як рахується</h4>
-    <ol>
-      <li>Беремо <b>8 гравців</b> вашого складу в цьому турі (основа й лавка — однаково). Хто не зіграв — не рухається, його вклад 0.</li>
-      <li>Ціна гравця рухається від його середньої оцінки за тур: ${bands}.</li>
-      <li>Для складу рахуємо: <b>Δ€</b> — на скільки € змінилась вартість цих 8 гравців${cfg.pw>0?`; <b>Σ%</b> — сума відсотків руху ціни кожного гравця (дешевий гравець із +10% дає стільки ж, скільки зірка з +10%)`:''}; <b>вартість складу</b> на старті туру (невеликий бонус за витрачений бюджет).</li>
-      <li>Рахунок туру = Δ€${cfg.pw>0?` + ${f1(cfg.pw)} × Σ%`:''} + ${f1(cfg.w)} × вартість складу; кожна частина порівнюється з іншими учасниками цього туру (наскільки вище чи нижче середнього). Три найкращі отримують <b>${tour3}</b> очк. — навіть коли вартість упала.</li>
-    </ol>${exTour}
-    <h4>💼 Менеджер турніру — як рахується</h4>
-    ${hy ? `<ol>
-      <li>Після кожного туру запам’ятовуємо Δ€ складу і його <b>ROI = Δ€ ÷ вартість складу на старті туру</b> (наприклад, +3M на склад 300M — це +1,0%). Склад без лайнапу в турі дає 0.</li>
-      <li>Після ${cfg.total} турів додаємо: <b>Σ Δ€</b> (на скільки € виріс склад) і <b>Σ ROI</b> (сума ROI по турах).</li>
-      <li>Кожну суму порівнюємо з іншими учасниками (наскільки вище чи нижче середнього) і складаємо: <b>💼 = € + ${k===1?'':f1(k)+' × '}ROI</b> → місця ${fin5}. Тобто половина оцінки — «на скільки € ви виросли», половина — «наскільки ефективно відносно вартості складу».</li>
-    </ol>${exFin}` : `<p>${mgByEur()?'Сумуємо приріст вартості складу в € за всі тури — місця й очки за сумою.':'Сумуємо рахунки всіх турів — місця й очки за сумою.'}</p>`}
-    <h4>Як під це підлаштуватись</h4>
-    <ul>
-      <li><b>Євро (найбільше в 💎 за тур)</b> любить дорогих: той самий +5% на зірці дає більше євро, ніж на дешевому гравці. Вкладайте гроші в тих, хто, найімовірніше, зіграє й отримає 7,5+.</li>
-      <li><b>Відсотки та ROI</b> люблять влучність: недорогий гравець, який стабільно виходить на поле й дорожчає, важить стільки ж у %, скільки зірка. Дешевий склад може виграти ${hy?'💼':'подіум туру'}, якщо його гравці «влучають».</li>
-      <li><b>Лавка рахується</b>: не лишайте слот гравцем, який, найпевніше, не зіграє, — не зіграв означає 0.</li>
-      <li><b>Травми й ротація</b> вирішують багато чого: дивіться позначки травм і розклад матчів перед кожним туром.</li>
-      <li><b>Рахунок відносний</b>: якщо всі ростуть — треба ростити більше, якщо всі падають — виграє «менш поганий». Іноді корисно відрізнятись від інших.</li>
-      <li><b>Купівлі й продажі коштують грошей</b> (премія при купівлі, комісія при продажу), але в менеджмент не входять — кожна заміна має окупитись зростанням ціни.</li>
-      <li>Капітан, віце та бусти до менеджменту <b>не стосуються</b> — вони впливають лише на очки матчів.</li>
-    </ul></div></details>`;
   const intro=`<div class="mgintro"><b>Менеджмент бюджету</b> — друга гра поруч з очками за матчі: очки дає й те, як змінюється вартість вашого складу.
     <ul>
       <li>💎 <b>Менеджер туру:</b> за кожен тур три найкращі за «менеджерським рахунком» отримують <b>${tour3}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
       <li>💼 <b>Менеджер турніру:</b> ${finTxt}.</li>
       <li>Не рахуються: зарплати, премія купівлі, угоди між учасниками, готівка й Банк — грошима між собою очки не накрутиш.</li>
-    </ul>${how}</div>`;
+    </ul><p class="mglink">Як саме рахується, з прикладами — у вкладці <a onclick="goStage('rules');return false">Rules</a>.</p></div>`;
   // 💼 наскрізна — спільна картка (mgTotalCard), до закриття останнього туру — прогноз
   const totalCard=mgTotalCard('💼 Менеджер турніру');
   // 💎 подіум кожного тура 1..N (3 в ряд): закриті — місця й очки, майбутні — сірі «чекає туру»
@@ -1188,18 +1275,20 @@ function goStage(stage){
   S.stage=stage;
   document.querySelectorAll('#etabs button').forEach(b=>b.classList.toggle('active', b.dataset.stage===stage));
   { const ab=document.querySelector('#etabs button.active'); if(ab && ab.scrollIntoView) ab.scrollIntoView({inline:'center',block:'nearest'}); }   // вузький екран: активна вкладка в зоні видимості
-  const lb=(stage==='lb'), bank=(stage==='bank'), pts=(stage==='pts'), mg=(stage==='mg'), ch=(stage==='ch');
+  const lb=(stage==='lb'), bank=(stage==='bank'), pts=(stage==='pts'), mg=(stage==='mg'), ch=(stage==='ch'), rl=(stage==='rules');
   $('secLB').classList.toggle('hide', !lb);
   $('secBank').classList.toggle('hide', !bank);
   $('secPts').classList.toggle('hide', !pts);
   $('secMg').classList.toggle('hide', !mg);
   $('secCh').classList.toggle('hide', !ch);
-  $('secStage').classList.toggle('hide', lb||bank||pts||mg||ch);
+  $('secRules').classList.toggle('hide', !rl);
+  $('secStage').classList.toggle('hide', lb||bank||pts||mg||ch||rl);
   if(lb){ renderLB(); return; }
   if(bank){ renderBank(); return; }
   if(stage==='pts'){ renderPts(); return; }
   if(mg){ renderMg(); return; }
   if(ch){ renderCh(); return; }
+  if(rl){ renderRules(); return; }
   const rs=stageRounds(stage);
   if(!rs.length){
     $('turnRow').innerHTML=''; $('h2tour').textContent='🏁 Турів ще не було'; $('topCards').innerHTML=''; $('mtList').innerHTML='';

@@ -1197,7 +1197,9 @@ const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>roundS
 const prevOpenRound=(round)=>round?((S.rounds||[]).filter(r=>r.number<round.number && !r.results_entered_at).sort((a,b)=>a.number-b.number)[0]||null):null;   // 544: склад на тур підтверджується лише ПІСЛЯ закриття попереднього
 const myConfirmedUpcoming=()=>!!(S.myConfLn && S.myConfLn.size>0);                                                                                       // 545: після власного підтвердження склад і ролі заморожені
 const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
-const EXPIRING_TXT='⏳ Контракт добігає (лишився 1 тур): після закриття туру гравець автоматично стане вільним (власник отримає повну вартість), тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.';
+// ЄДИНЕ формулювання про автопродаж гравця з останнім туром контракту — картка гравця, ринок, модалка підтвердження (pl=true — про кількох гравців)
+function autosaleTxt(pl){ return `після закриття туру ${pl?'їх':'гравця'} буде автоматично продано за вартістю, яка буде після зміни ціни за тур (у % і в €), без штрафу — комісія продажу −5% не стягується`; }
+const EXPIRING_TXT=`⏳ Контракт добігає (лишився 1 тур): ${autosaleTxt(false)}, тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.`;
 // ── 🧭 ЄДИНИЙ БЛОК СТАНУ ТУРУ (15.10; рішення Богдана — як у «Predictions & Results» ЄвроСезону). Один над «Мій склад» і «Ринок»:
 //    hero «ДО ДЕДЛАЙНУ» (або «тур у грі» / «ринок зачинено») + «СКЛАД n з 8», зелена смужка «склад підтверджено», «ПІДТВЕРДИЛИ n з m» з чіпами (лише «Мій склад»).
 //    Замінив: «Трансферне вікно відкрито…», «Доступно €…» (дублювало Трансферний бюджет), «Тур N · дедлайн», «Підтвердили…», довге «Склад підтверджено…». Бюджети — budgetPanel() окремо ──
@@ -1901,15 +1903,15 @@ function moveBench(mine, pid, dir){
 function roleChipHTML(p,zone){ if(!rolesOn()) return '';
   const r=p.role||'main', mis=(zone==='start'&&r==='bench')||(zone==='bench'&&r==='main');
   const risk=mis && r==='main' && penOn() && !p.injury && (+p.wage_per_round||0)>0;   // 542: «Основний» не в основі → порушення на дедлайні
-  const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде автоматично продано відразу після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі — після підтвердження складу гравець «заслужить основу»: при продовженні премія +'+Math.round(benchPrem()*100)+'% знімається'):('Роль: '+roleLabel(r)+' — обіцянка при підписанні'+(r==='bench'?' (+'+Math.round(benchPrem()*100)+'% до зарплати; якщо хоч раз стоятиме в основі підтвердженого складу — при продовженні премія знімається)':''));
+  const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде автоматично продано відразу після туру (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі — після підтвердження складу гравець «заслужить основу»: '+earnedEffect()):('Роль: '+roleLabel(r)+' — обіцянка при підписанні'+(r==='bench'?' (надбавка +'+Math.round(benchPrem()*100)+'% до зарплати; якщо гравець хоч раз стоятиме в основі підтвердженого складу — «заслужить основу»: '+earnedEffect()+')':''));
   const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
   return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>${mk}`; }
-function rolesNoteInner(mine){ if(!rolesOn()) return '';
+function rolesNoteInner(mine, noEarned){ if(!rolesOn()) return '';
   const mc=(mine||[]).filter(p=>(p.role||'main')==='main').length, bc=(mine||[]).length-mc;
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
   const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
   const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за тур, друге порушення — гравця буде автоматично продано відразу після туру.`:'';
-  return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen} 🪑 ${earnedHint()}`; }
+  return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}${noEarned?'':` 🪑 ${earnedHint()}`}`; }
 function rolesBanner(mine){ const t=rolesNoteInner(mine); return t?`<div class="mnote" style="margin:8px 0">${t}</div>`:''; }
 function renderLineup(mine, round){
   const s = lnState(mine);
@@ -1927,7 +1929,7 @@ function renderLineup(mine, round){
   </div>`;
   const injStart = s.st.filter(p=>p&&p.injury);
   const benchStart = rolesOn() ? s.st.filter(p=>p&&(p.role||'main')==='bench') : [];
-  const benchWarn = benchStart.length ? `<div class="mnote" style="margin:8px 0">🪑 В основі гравці з роллю «Лавка»: ${benchStart.map(p=>`<b>${esc(lastName(p.name))}</b>`).join(', ')} — після підтвердження складу вони «заслужать основу»: при продовженні премія +${Math.round(benchPrem()*100)}% знімається.</div>` : '';
+  const benchWarn = benchStart.length ? benchEarnedNote(benchStart.map(p=>p.name), 'margin:8px 0') : '';
   const injWarn = injStart.length ? `<div class="injwarn">🤕 В основі ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
 
   const posBtn = (p,L) => {   // 532: ⚡ 2x … на гравця основи (не капітан/віце; не з Автопілотом/All-in)
@@ -2052,13 +2054,13 @@ function renderLineup(mine, round){
 // модалка-огляд складу перед підтвердженням (капітан/віце + порядок лавки)
 function openLineupReview(mine, round){
   const s=lnState(mine);
-  const line=(p,extra)=>`<div class="lrow" style="cursor:default">
+  const line=(p,extra,zone)=>`<div class="lrow" style="cursor:default">
     <span class="pos ${p.position}">${p.position}</span>
-    <span class="lnm">${esc(p.name)}${extra||''}<span class="lclub">${esc(clubWithLeague(p.club_id))}</span></span>
+    <span class="lnm">${esc(p.name)}${extra||''}${roleChipHTML(p,zone)}<span class="lclub">${esc(clubWithLeague(p.club_id))}</span></span>
     <span class="lrt">★${p.season_avg_rating??'—'}</span></div>`;
   const starters=s.st.map(p=>line(p,
-    (s.cap&&s.cap.id===p.id)?' <b class="capb">© капітан</b>':(s.vice&&s.vice.id===p.id)?' <b class="viceb">V віце</b>':'')).join('');
-  const bench=s.bn.length? s.bn.map((p,i)=>line(p,` <span class="dim">${i+1}-й на заміну</span>`)).join('')
+    (s.cap&&s.cap.id===p.id)?' <b class="capb">© капітан</b>':(s.vice&&s.vice.id===p.id)?' <b class="viceb">V віце</b>':'', 'start')).join('');
+  const bench=s.bn.length? s.bn.map((p,i)=>line(p,` <span class="dim">${i+1}-й на заміну</span>`, 'bench')).join('')
                          : '<div class="dim" style="padding:6px 2px">— лавка порожня</div>';
   // 542: попередження про порушення ролі («Основний» не в основі на дедлайні) + борг блокує підтвердження
   let penBlk='', blockDebt=false;
@@ -2067,17 +2069,32 @@ function openLineupReview(mine, round){
     const offMain=mine.filter(x=>(x.role||'main')==='main' && !stIds.has(x.id) && (+x.wage_per_round||0)>0);
     const viol=offMain.filter(x=>!x.injury), exempt=offMain.filter(x=>x.injury);
     if(viol.length){
-      penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>
-        <p class="mnote warn">«Основний» поза основою на дедлайні — порушення: борг <b>${Math.round(debtPct()*100)}%</b> зарплати гравця за тур. Друге порушення тим самим гравцем — гравця буде автоматично продано відразу після туру.</p>`
-        + viol.map(x=>`<p class="mnote">• <b>${esc(x.name)}</b> — борг ≈ ${eur(Math.round(x.wage_per_round*debtPct()))}${x.marked?' · <b class="warnc">🚩 вже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після туру</b>':''}</p>`).join('')
-        + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу. Не хочеш порушувати — постав «Основного» в основу або переведи його на «Лавку» у картці гравця (+${Math.round(benchPrem()*100)}% до зарплати).</p>`;
+      penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>`
+        + viol.map(x=>{
+            const bi=s.bn.findIndex(b2=>b2.id===x.id), where=bi>=0?`на лавці (${bi+1}-й на заміну)`:'не в основі';
+            return `<p class="mnote warn">• <b>${esc(x.name)}</b> має роль <b>«Основний»</b>, але стоїть ${where} — це <b>порушення</b>: борг ≈ <b>${eur(Math.round(x.wage_per_round*debtPct()))}</b> (${Math.round(debtPct()*100)}% його зарплати за тур).${x.marked?' <b class="warnc">🚩 Він уже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після туру.</b>':' Друге порушення цим гравцем — його буде автоматично продано відразу після туру.'}</p>`; }).join('')
+        + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу.</p>
+        <p class="mnote">Як уникнути: постав «Основного» в основу. Або зміни роль новим контрактом (продовження хоч на 1 тур, якщо контракт ще можна продовжити): роль «Лавка» — це надбавка +${Math.round(benchPrem()*100)}% до зарплати.</p>`;
     }
     if(exempt.length) penBlk+=`<p class="mnote">ℹ️ Зараз не рахуються через травму/дискваліфікацію: ${exempt.map(x=>esc(x.name)).join(', ')} — якщо до дедлайну одужають, це знову порушення.</p>`;
     if(debtSum()>0){ blockDebt=true; penBlk=`<p class="mnote warn" style="margin-top:14px">💸 Є несплачений борг ${eur(debtSum())} — спершу сплати його (кнопка «Сплатити борг» над складом), інакше склад підтвердити не можна.</p>`+penBlk; }
   }
+  // 22.10 (Богдан): нагадати, що гравці з контрактом «1 тур до кінця» після закриття туру автоматично продаються — за оновленою ціною, без штрафу
+  let expBlk='';
+  { const exp=mine.filter(expiringP);
+    if(exp.length){
+      const inSt=new Set(s.st.map(x=>x.id)), inBn=new Set(s.bn.map(x=>x.id));
+      const where=x=>inSt.has(x.id)?'основа':inBn.has(x.id)?'лавка':'не в складі туру';
+      const left=mine.length-exp.length;
+      expBlk=`<div class="msec" style="margin-top:14px">⏳ Контракт добігає (лишився 1 тур)</div>
+        <p class="mnote">${exp.map(x=>`• <b>${esc(x.name)}</b> (${where(x)}) — зараз ${eur(x.market_value_current)}`).join('<br>')}</p>
+        <p class="mnote">У цьому турі ${exp.length>1?'вони ще грають':'він ще грає'} і ${exp.length>1?'дають':'дає'} очки. ${(()=>{ const t=autosaleTxt(exp.length>1); return t.charAt(0).toUpperCase()+t.slice(1); })()}. Хочеш залишити ${exp.length>1?'гравців':'гравця'} — продовж ${exp.length>1?'їхні контракти':'його контракт'} до підтвердження складу (після підтвердження продовжити не вийде).</p>
+        ${left<5?`<p class="mnote warn">Після автопродажу у складі лишиться гравців: ${left}. Для наступного туру потрібно мінімум 5 — доведеться добирати.</p>`:''}`;
+    } }
   modalOpen(`<h3>Підтвердити склад · тур ${round.number}</h3>
     <div class="cfgrid"><div class="cfcol">
     <div class="msec" style="margin-top:12px">Основа (${s.st.length})</div>${starters}
+    ${(rolesOn() && s.st.some(p=>(p.role||'main')==='bench')) ? benchEarnedNote(s.st.filter(p=>(p.role||'main')==='bench').map(p=>p.name), 'margin:8px 0 0') : ''}
     <div class="msec" style="margin-top:14px">Лавка — порядок заміни ⚠️</div>
     <p class="mnote">Незіграний основний → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
@@ -2086,6 +2103,7 @@ function openLineupReview(mine, round){
     </div><div class="cfcol">
     ${challengesModalHtml(s, round)}
     ${rivalsModalHtml(round)}
+    ${expBlk}
     ${penBlk}
     </div></div>
     <div class="cfbottom">
@@ -2957,21 +2975,25 @@ function starCap(){ return +(S.cfg&&S.cfg.star_no_bench_value_eur)||100000000; }
 function benchPrem(){ const v=S.cfg&&S.cfg.bench_wage_premium; return v==null?0.25:+v; }
 function roleLabel(r){ return r==='bench'?'Лавка':'Основний'; }
 // 21.10 (Богдан): механіку «заслужив основу» показуємо скрізь, де пояснюємо ролі: гравець із роллю «Лавка», що хоч раз стояв в основі ПІДТВЕРДЖЕНОГО складу
-// (рахується вибір складу, не гра), при ПРОДОВЖЕННІ більше не платить премію «Лавки» (+25%); уже підписана зарплата на решту контракту не змінюється
-function earnedHint(){ return `Хто з «Лавки» хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра) — тому при продовженні премія +${Math.round(benchPrem()*100)}% знімається («заслужив основу»).`; }
+// (рахується вибір складу, не гра), при ПРОДОВЖЕННІ більше не платить надбавку «Лавки» (+25%); уже підписана зарплата на решту контракту не змінюється
+// 22.10 (Богдан): примітка, коли в основі стоять гравці з роллю «Лавка» — і в редакторі складу, і в модалці підтвердження; «надбавка», не «премія»
+// ЄДИНЕ формулювання ефекту «заслужив основу» — скрізь, де пояснюємо роль «Лавка»
+function earnedEffect(){ return `при продовженні контракту надбавка +${Math.round(benchPrem()*100)}% до зарплати (за роль «Лавка») знімається`; }
+function benchEarnedNote(names, style){ return `<div class="mnote" style="${style}">🪑 В основі гравці з роллю «Лавка»: ${names.map(n=>`<b>${esc(lastName(n))}</b>`).join(', ')} — після підтвердження складу вони «заслужать основу»: ${earnedEffect()}.</div>`; }
+function earnedHint(){ return `Хто з «Лавки» хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра) — «заслужив основу»: ${earnedEffect()}.`; }
 function benchCardNote(p){ if(!rolesOn()||(p.role||'main')!=='bench') return '';
-  return `<p class="mnote" style="margin:0 0 6px">🪑 Роль <b>Лавка</b>: до зарплати +${Math.round(benchPrem()*100)}% на весь контракт. <b>Заслужив основу:</b> якщо гравець хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра), то при продовженні премія знімається; уже підписана зарплата не змінюється.<span class="bench-earned" data-pid="${p.id}"></span></p>`; }
+  return `<p class="mnote" style="margin:0 0 6px">🪑 Роль <b>Лавка</b>: надбавка +${Math.round(benchPrem()*100)}% до зарплати на весь контракт. ${earnedHint()} Уже підписана зарплата не змінюється.<span class="bench-earned" data-pid="${p.id}"></span></p>`; }
 function myMainCount(){ return (S.players||[]).filter(p=>S.me&&p.owner_participant_id===S.me.id&&(p.role||'main')==='main').length; }
 // роль з пікера (обов'язкова, без дефолту): {p_role} лише коли ролі ввімкнено — інакше нічого не додаємо (сумісність зі старим бекендом)
 function roleArgs(box){ if(!rolesOn()) return {}; const el=box||$('mhost').querySelector('.clen'); return { p_role:(el&&el.dataset.prole)||null }; }
 function needRole(box){ if(!rolesOn()) return false; const el=box||$('mhost').querySelector('.clen'); if(el&&el.dataset.prole) return false;
   alert('Обери роль гравця: «Основний» чи «Лавка» — без неї підписати контракт не можна.'); return true; }
-function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+${Math.round(benchPrem()*100)}% до зарплати). ${earnedHint()} Обери обов'язково. Змінити роль потім можна лише новим контрактом (хоч на 1 тур).`; }
+function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (надбавка +${Math.round(benchPrem()*100)}% до зарплати). ${earnedHint()} Змінити роль потім можна лише новим контрактом (хоч на 1 тур).`; }
 function roleChips(inline){ if(!rolesOn()) return '';
   return `<div class="crole">${inline?'':`<div class="clab">${roleIntroText()}</div>`}
     <div class="crole-row"><button type="button" class="crole-chip" data-r="main">Основний</button><button type="button" class="crole-chip" data-r="bench">Лавка</button></div>
     <div class="crole-need"></div>
-    <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id))}</div></div>`; }
+    <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id), true)}</div></div>`; }
 function qWageR(pid,len,mv,role){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes.find(x=>x.len===len);
   const base=e?+e.wage:wageFor(mv,len,defMode(pid));
   if(role!=='bench') return base;
@@ -3014,7 +3036,7 @@ function updClen(el){
     const benchOk=!(q&&q.bench_allowed===false) && (mv||0)<starCap() && !minMain;
     const cm=el.querySelector('.crole-chip[data-r="main"]'), cb=el.querySelector('.crole-chip[data-r="bench"]');
     if(cm) cm.innerHTML=`Основний<small>${eur(wm)}/тур</small>`;
-    if(cb){ cb.innerHTML=`Лавка<small>${benchOk?eur(wb)+'/тур · '+((el.dataset.ext==='1'&&q&&q.bonus)?'без премії (заслужив основу)':'+'+Math.round(benchPrem()*100)+'%'):(minMain?'пропонують «Основний» — лише «Основним»':((q&&q.marked)?'позначка «порушив» — лише «Основний»':'зірка ≥ '+eur(starCap())+' — лише «Основний»'))}</small>`; cb.disabled=!benchOk;
+    if(cb){ cb.innerHTML=`Лавка<small>${benchOk?eur(wb)+'/тур · '+((el.dataset.ext==='1'&&q&&q.bonus)?'без надбавки (заслужив основу)':'+'+Math.round(benchPrem()*100)+'%'):(minMain?'пропонують «Основний» — лише «Основним»':((q&&q.marked)?'позначка «порушив» — лише «Основний»':'зірка ≥ '+eur(starCap())+' — лише «Основний»'))}</small>`; cb.disabled=!benchOk;
       if(!benchOk && el.dataset.prole==='bench'){ el.dataset.prole=''; cb.classList.remove('on'); } }
     if(cm&&el.dataset.prole==='main') cm.classList.add('on');
     const need=el.querySelector('.crole-need'); if(need){ const isExtP=el.dataset.ext==='1';
@@ -3035,14 +3057,14 @@ function updClen(el){
   if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1}${pctS>0?' + '+Math.round(pctS*100)+'%':''})</div>`;
   if(isExt && pctS>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctS*100)}%</b> (лише на нові тури): база ${eur(w0)}/тур × ${(1+pctS).toFixed(2)} = <b>${eur(w)}</b>/тур.</div>`;
   if(isExt && rolesOn() && pid){ const pr=(S.players||[]).find(x=>x.id===pid), curBench=pr&&(pr.role||'main')==='bench';
-    if(q && q.bonus) txt+=`<div class="cw-sub"><b style="color:var(--green)">✅ Заслужив основу:</b> «Лавка» тут без премії +${Math.round(benchPrem()*100)}% — ціна як в «Основного».</div>`;
-    else if(curBench && q && !q.marked) txt+=`<div class="cw-sub">🪑 Роль «Лавка» зараз. Щоб при продовженні не платити премію +${Math.round(benchPrem()*100)}%, постав гравця в основу підтвердженого складу хоча б раз («заслужив основу»).</div>`; }
+    if(q && q.bonus) txt+=`<div class="cw-sub"><b style="color:var(--green)">✅ Заслужив основу:</b> «Лавка» тут без надбавки +${Math.round(benchPrem()*100)}% — ціна як в «Основного».</div>`;
+    else if(curBench && q && !q.marked) txt+=`<div class="cw-sub">🪑 Роль «Лавка» зараз. Щоб при продовженні контракту не платити надбавку +${Math.round(benchPrem()*100)}%, постав гравця в основу підтвердженого складу хоча б раз («заслужив основу»).</div>`; }
   if(isExt && q && q.marked) txt+=`<div class="cw-sub"><b class="warnc">🚩 Позначка «порушив»: до зарплати нових турів +${Math.round((q.surcharge??extSurch())*100)}%, «Лавка» недоступна.</b> Продовження скидає позначку.</div>`;
   else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
   if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> (${xb||pctT>0?'«Домовитись з гравцем» — на весь контракт':'ставка на аукціоні; «Купити зараз» — без надбавки'}): база ${eur(w0)}/тур × ${(1+pctX).toFixed(2)} = <b>${eur(w)}</b>/тур.</div>`;
   if(pctT>0 && tb && tb.querySelector('[data-do="buylist"]')){ const r0=w0*len; txt+=`<div class="cw-sub">Викуп з вітрини — без надбавки: <b>${eur(w0)}</b>/тур × ${len} = резерв <b>${eur(r0)}</b>${(wf!=null&&r0>wf)?` · <b class="warnc">не вистачає ${eur(r0-wf)}</b>`:''}.</div>`; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
-  if(pid) document.querySelectorAll('.bench-earned[data-pid="'+pid+'"]').forEach(e=>{ e.innerHTML=(q&&q.bonus)?' <b style="color:var(--green)">✅ Це вже так — продовження буде без премії.</b>':''; });   // стан приходить із котирування
+  if(pid) document.querySelectorAll('.bench-earned[data-pid="'+pid+'"]').forEach(e=>{ e.innerHTML=(q&&q.bonus)?' <b style="color:var(--green)">✅ Це вже так — продовження буде без надбавки.</b>':''; });   // стан приходить із котирування
   if(typeof sumRefresh==='function') sumRefresh();
   if(typeof aucRefresh==='function') aucRefresh();   // 556: форма аукціону залежить від довжини/ролі
 }
@@ -3091,7 +3113,7 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?' · <b class="warnc">добігає — продовж, інакше після наступного туру автопродаж</b>':''}</p>`
+    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?` · <b class="warnc">добігає — продовж контракт, інакше ${autosaleTxt(false)}</b>`:''}</p>`
       + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     cinfo += benchCardNote(p);
     const extBlock = extMax>=1
