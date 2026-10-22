@@ -1029,6 +1029,11 @@ async function loadRefs(){
   // 563: final_metric + roi_sum (гібрид «€ + ROI»); без них (563 не залито) → попередній запит
   try{ S.mgStand = await sbSel(`market_mgmt_standings?tournament_id=eq.${S.tour.id}&select=participant_id,rounds_done,delta_eur,place,projected_points,final_points,is_final,final_metric,roi_sum`); }
   catch(e0){ try{ S.mgStand = await sbSel(`market_mgmt_standings?tournament_id=eq.${S.tour.id}&select=participant_id,rounds_done,delta_eur,place,projected_points,final_points,is_final`); }catch(e){ S.mgStand=null; } }
+  // 22.10: дані для «Зміна · Тур N» і Σ% у шапці: рахунки менеджменту ЗАКРИТИХ турів (старт і Δ складу туру; публічна вьюха) + мій лайнап туру, що зараз іде (для «наживо»). Нема вьюхи → блок показує лише Squad Price і 💼.
+  S.mgRows=[]; S.myOpenLU={};
+  try{ try{ S.mgRows = await sbSel(`market_mgmt_round_scores?tournament_id=eq.${S.tour.id}&select=round_id,participant_id,value_start_eur,delta_eur,delta_pct`); }   // delta_pct — з SQL 531
+       catch(e1){ S.mgRows = await sbSel(`market_mgmt_round_scores?tournament_id=eq.${S.tour.id}&select=round_id,participant_id,value_start_eur,delta_eur`); } }catch(e){ S.mgRows=[]; }
+  try{ const lr=liveRoundNow(); if(lr){ const ln=await sbSel(`market_lineup?round_id=eq.${lr.id}&participant_id=eq.${S.me.id}&select=player_id`); S.myOpenLU[lr.id]=ln.map(x=>x.player_id); } }catch(e){ S.myOpenLU={}; }
   // свої баланси: трансферний/зарплатний + доступне/заморожене (RLS + RPC: лише свої; публічна лише сума Банку, 510)
   const b = await sbSel(`market_budget?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=bank_eur,wage_bank_eur`);
   S.bank = b.length? b[0].bank_eur : null;
@@ -1149,18 +1154,42 @@ function renderTabs(){
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
 }
-// шапка: Банк (сума + розклад; публічна лише сума) + Squad Price (з Val Δ) + аватар/ім'я
+// 22.10: тур, що зараз іде (відкритий складами або минув дедлайн, результатів ще нема) — для «Зміна · Тур N» у шапці
+function liveRoundNow(){ const now=Date.now(); return (S.rounds||[]).find(r=>!r.results_entered_at && (r.opened_at || new Date(r.deadline_at).getTime()<=now)) || null; }
+// 22.10 (рішення Богдана): «зміна за тур» = рух цін ТВОЇХ 8 гравців ЛАЙНАПУ туру (а не нинішнього складу від старту пулу). Тур іде — наживо з журналу цін уже зіграних;
+// між турами — підсумок останнього закритого туру (з рахунку менеджменту, те саме число, що в 💎/💼). Купівлі/продажі й ріст гравців ДО купівлі сюди не входять.
+function myTourChange(){
+  const live=liveRoundNow();
+  if(live){
+    const lu=(S.myOpenLU||{})[live.id];
+    if(!lu || !lu.length) return {n:live.number, state:'nolineup'};
+    const log=(S.plogBy||{})[live.id];
+    if(log===undefined){ loadTourLog(live.id); return {n:live.number, state:'loading'}; }
+    if(log===null) return {n:live.number, state:'nodata'};
+    if(Date.now()-((S.plogAt||{})[live.id]||0)>300000) loadTourLog(live.id,true);   // тур іде: ціни наживо → освіжаємо раз на 5 хв
+    const byP={}; log.forEach(x=>byP[x.player_id]=x);
+    let e=0, v0=0;
+    for(const pid of lu){
+      const p=S.players.find(x=>x.id===pid); if(!p || p.market_value_current==null) return {n:live.number, state:'nodata'};
+      const g=byP[pid];
+      if(g && g.mult){ const before=Math.round(g.value_after/g.mult); e+=g.value_after-before; v0+=before; } else v0+=+p.market_value_current;
+    }
+    return {n:live.number, state:'live', eur:e, pct:v0? e/v0*100 : null, v0};
+  }
+  const closed=[...(S.rounds||[])].filter(r=>r.results_entered_at).sort((a,b)=>b.number-a.number)[0];
+  if(closed){
+    const mg=(S.mgRows||[]).find(x=>x.round_id===closed.id && x.participant_id===S.me.id);
+    if(mg){ const v0=+mg.value_start_eur||0, d=+mg.delta_eur||0; return {n:closed.number, state:'closed', eur:d, pct:v0? d/v0*100 : null, v0}; }
+    return {n:closed.number, state:'nolineup', closed:true};
+  }
+  return {state:'none'};
+}
+// шапка: Банк (сума + розклад; публічна лише сума) + Squad Price (зміна за тур, Σ% і 💼 — лише те, що заробили гравці, поки були в моєму складі) + аватар/ім'я
 function renderHeader(){
   if(!S.me) return;
   const mine=S.players.filter(p=>p.owner_participant_id===S.me.id);
   const price=mine.reduce((s,p)=>s+(p.market_value_current||0),0);
-  const start=mine.reduce((s,p)=>s+(p.market_value_start||0),0);
-  // зміна вартості складу від старту: у € (скільки грошей) і в % = СУМА відсотків зміни вартості гравців (ціна гравця не впливає — як Val Δ на борді)
-  // 16.10: «Зміна» = € і справжній % вартості складу (€ ÷ старт); окремо «Σ % гравців» = сума відсотків кожного гравця (вона завжди більша за % складу — це не помилка)
-  const dEur=price-start, dpSum=mine.reduce((s,p)=>s+(p.market_value_start? (p.market_value_current-p.market_value_start)/p.market_value_start*100 : 0),0);
-  const dPct=start? dEur/start*100 : 0;
   const sgn=n=>n>0?'+':n<0?'−':'', eAbs=v=>'€'+(Math.abs(v)/1e6).toFixed(1)+'M';
-  const moved=!!(start && (Math.abs(dEur)>=50000 || Math.abs(dpSum)>=0.05));
   const e1=v=>'€'+(v/1e6).toFixed(1)+'M';
   // Мій Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
   const tr=S.bank, wg=S.wageBank, ok=(tr!=null);
@@ -1173,19 +1202,39 @@ function renderHeader(){
     : '';
   const bb=$('h-bank-box'); if(bb) bb.title= ok? 'Мій Банк = Squad Price + Трансферний бюджет + Зарплатний бюджет (повні, разом із замороженим). Публічна лише сума Банку (вкладка «🏦 Банк» на борді); розклад балансів бачиш лише ти.' : '';
   const pr=$('h-price'); if(pr) pr.textContent=eur(price);
-  const pp=$('h-price-parts'); if(pp) pp.innerHTML = start
-    ? col('Старт', e1(start), '', 'Вартість гравців твого нинішнього складу на старті турніру (зафіксована; до першого матчу = поточна)')
-      + col('Зміна від старту', moved? `${dEur>=0?'▲':'▼'} ${sgn(dEur)}${eAbs(dEur)} · ${sgn(dPct)}${Math.abs(dPct).toFixed(1)}%` : 'без змін', moved? (dEur>=0?'up':'down') : '',
-            `Зміна вартості складу від старту: ${eur(start)} → ${eur(price)}. % — частка від вартості складу на старті`)
-      + (moved? col('Σ % гравців', `${dpSum>=0?'▲':'▼'} ${ppSgn(dpSum)}`, dpSum>=0?'up':'down',
-            'Сума відсотків зміни вартості кожного з твоїх гравців від старту (ціна гравця не впливає; дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша. Те саме, що Σ % гравців на борді') : '')
+  // 22.10 (рішення Богдана): блок Squad Price показує лише те, що гравці заробили, поки були в МОЄМУ складі в турах: «Зміна · Тур N», Σ % закритих турів і 💼.
+  // Раніше тут стояли «Старт / Зміна від старту / Σ%» від старту ПУЛУ для нинішніх гравців: вони враховували ріст гравців ДО купівлі (у Тест 2, який ще не грав, було +12,6M)
+  // і «стрибали» при купівлях/продажах. Старт гравця лишився на його картці як ринкова довідка.
+  const tc=myTourChange(), mineMg=(S.mgRows||[]).filter(x=>x.participant_id===S.me.id).sort((a,b)=>((S.rounds.find(r=>r.id===a.round_id)||{}).number||0)-((S.rounds.find(r=>r.id===b.round_id)||{}).number||0));
+  const rNum=id=>((S.rounds||[]).find(r=>r.id===id)||{}).number;
+  const sumPct=mineMg.reduce((s,x)=>s+(x.delta_pct!=null? +x.delta_pct : 0),0), hasPct=mineMg.some(x=>x.delta_pct!=null);
+  const traj=mineMg.map(x=>{ const d=+x.delta_eur||0; return `Тур ${rNum(x.round_id)}: ${e1((+x.value_start_eur||0)+d)} (${sgn(d)}${eAbs(d)} за тур)`; });
+  if(tc.state==='live') traj.push(`Тур ${tc.n} (наживо): ${e1(tc.v0+tc.eur)} (${Math.abs(tc.eur)>=50000? sgn(tc.eur)+eAbs(tc.eur)+' поки' : 'без змін поки'})`);
+  const pbx=$('h-price-box'); if(pbx) pbx.title='Squad Price — поточна вартість усіх твоїх гравців.'+(traj.length? '\nТур за туром (вартість складу туру після нього):\n'+traj.join('\n') : '')+'\nРух цін гравців ДО того, як вони стали твоїми, тобі не зараховується — лише те, що вони зробили в турах, поки були в твоєму складі.';
+  let chg='';
+  if(tc.state!=='none'){
+    const lbl= `Зміна · Тур ${tc.n}`+((tc.state==='closed' || tc.closed)? ' (закрито)' : '');
+    let val='—', cls='';
+    if(tc.state==='live'||tc.state==='closed'){ const on=Math.abs(tc.eur)>=50000; val= on? `${tc.eur>=0?'▲':'▼'} ${sgn(tc.eur)}${eAbs(tc.eur)}${tc.pct!=null? ` · ${sgn(tc.pct)}${Math.abs(tc.pct).toFixed(1)}%` : ''}` : 'без змін'; cls= on? (tc.eur>=0?'up':'down') : ''; }
+    else if(tc.state==='loading') val='…';
+    else if(tc.state==='nolineup' && !tc.closed) val='складу нема';
+    const tip= tc.state==='live'
+      ? `Рух цін твоїх 8 гравців лайнапу Туру ${tc.n} з початку туру (оновлюється, коли зʼявляються оцінки). % — частка від вартості твого складу на старті туру. Купівлі й продажі сюди не входять; рух цін гравців до того, як вони стали твоїми, не зараховується.`
+      : tc.state==='closed'
+        ? `Підсумок останнього закритого туру (Тур ${tc.n}): на скільки € змінилась вартість твоїх 8 гравців лайнапу за цей тур. % — частка від вартості складу на старті туру. Коли відкриється наступний тур, тут зʼявиться його рух наживо.`
+        : tc.state==='nolineup' ? `У Турі ${tc.n} у тебе не було виставленого складу, тому змін немає. Рахується лише рух цін гравців, які були в твоєму лайнапі в турі.`
+        : 'Зміна за тур зʼявиться, коли завантажаться ціни туру.';
+    chg=col(lbl, val, cls, tip);
+  }
+  const sigCol= hasPct? col('Σ % гравців', `${sumPct>=0?'▲':'▼'} ${ppSgn(sumPct)}`, sumPct>=0?'up':'down',
+        'Сума відсотків руху ціни 8 гравців твого лайнапу за ЗАКРИТІ тури (ціна гравця не впливає: дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша. По турах: '+mineMg.filter(x=>x.delta_pct!=null).map(x=>`Тур ${rNum(x.round_id)} ${ppSgn(+x.delta_pct)}`).join(' · ')+'. Те саме, що Σ % гравців на борді') : '';
+  const pp=$('h-price-parts'); if(pp) pp.innerHTML = chg + sigCol
       + (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
           const n=(S.mgStand||[]).length, d=+ms.delta_eur||0, hyb=(ms.final_metric==='hybrid'), roi=(hyb && ms.roi_sum!=null)? +ms.roi_sum : null;
           const tip = hyb
             ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. ROI — сума по турах від «приріст ÷ вартість складу на старті туру» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів) рахується з обох показників порівну: і € приросту, і ROI порівнюються з іншими учасниками. Місце «N з M» — за цим комбінованим показником на цей момент. Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.'
             : 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.';
-          return col('💼 Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ROI ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''} · ${ms.place} з ${n}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })()
-    : '';
+          return col('💼 Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ROI ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''} · ${ms.place} з ${n}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })();
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
@@ -3770,6 +3819,7 @@ async function loadTourLog(rid,force){
   catch(e){ S.plogBy[rid]=null; }
   S.plogLoading[rid]=false;
   if(S.tab==='stats' && S.stF && S.stF.round===rid) viewStats();
+  if(S.me && S.players) renderHeader();   // 22.10: «Зміна · Тур N» у шапці береться з цього журналу цін
 }
 function viewStats(){
   const N=20;   // топ-20 (було 10); фільтри — як на «Ринку»: ліга · клуб · позиція · власник

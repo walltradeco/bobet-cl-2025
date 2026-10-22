@@ -316,6 +316,8 @@ table.bb .bp small{color:var(--muted);font-weight:400;font-size:12px}
 .slot-h{font-family:var(--mono);font-weight:700;font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
   color:var(--dim);margin:12px 2px 8px;display:flex;justify-content:space-between}
 table.grid td.pn{font-family:var(--mono);font-weight:700}
+.spv{font-family:var(--mono);font-weight:700}
+.spd{font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--dim);margin-top:3px;white-space:nowrap}
 table.grid{min-width:0}
 /* вкладка «Матчі» туру: розклад/результати клубів пулу (як у кабінеті) */
 .mlist{padding:4px 10px}
@@ -1465,6 +1467,27 @@ function squadValDelta(pid){
 const arrOf=d=>d==='up'?'▲':d==='down'?'▼':'–';
 const valEurTxt=vd=>vd.none?'–':arrOf(vd.dirE)+' '+eurSg(vd.eur);
 const valPctTxt=vd=>vd.none?'–':arrOf(vd.dir)+' '+ppSg(vd.pct);
+// 22.10 (рішення Богдана): Squad Price ТУРУ — вартість 8 гравців ЛАЙНАПУ цього туру (не поточного складу, який міг змінитись трансферами):
+//  · закритий тур — ПІСЛЯ туру = старт туру + Δ € з рахунку менеджменту (те саме число, що в 💎 і знімку Банку; рух ціни гравців до купівлі учаснику не зараховується);
+//  · тур у грі — наживо (поточна вартість лайнапу; Δ — з журналу цін уже зіграних);
+//  · складу нема / розстановка прихована / закритий тур без рахунку — v:null («—»).
+// Раніше колонка завжди показувала ПОТОЧНУ вартість нинішнього складу на всіх вкладках турів — у турах 1–2 вона не збігалась із плитками того туру.
+function squadPriceAt(pid,rnd){
+  if(!rnd) return {v:null};
+  const mg=S.mgReady? mgRow(pid,rnd.id) : null;
+  if(mg && mg.value_start_eur!=null && mg.delta_eur!=null) return {v:(+mg.value_start_eur)+(+mg.delta_eur), start:+mg.value_start_eur, d:+mg.delta_eur, kind:'after'};
+  if(rnd.results_entered_at || !revealed(rnd)) return {v:null};
+  const lu=S.lineup.filter(l=>l.participant_id===pid && l.round_id===rnd.id); if(!lu.length) return {v:null};
+  let v=0, d=0;
+  for(const l of lu){ const p=S.pById[l.player_id]; if(!p || p.market_value_current==null) return {v:null}; v+=+p.market_value_current; const e=eurMove(l.player_id,rnd.id); if(e!=null) d+=e; }
+  return {v, start:v-d, d, kind:'live'};
+}
+function squadPriceTip(sp,n){
+  if(sp.v==null) return 'Складу на Тур '+n+' нема або його ще приховано — вартість не показуємо';
+  return sp.kind==='after'
+    ? 'Вартість складу Туру '+n+' ПІСЛЯ закриття туру: старт туру '+eur(sp.start)+' '+eurSg(sp.d)+' (рух цін гравців цього туру)'
+    : 'Вартість складу Туру '+n+' НАЖИВО: старт туру '+eur(sp.start)+' '+eurSg(sp.d)+' (оновлюється, коли зʼявляються оцінки)';
+}
 
 // стан «наживо» (516): рядки market_squad_live учасника за тур; нема вьюхи/рядків → null (старий розрахунок плиток)
 function liveRowsOf(pid,rid){ const r=S.liveBy[rid+'|'+pid]; return (S.liveReady && r && r.length)? r : null; }
@@ -1676,20 +1699,20 @@ function renderStandings(){
   if(!S.lb.length){ t.innerHTML=''; document.getElementById('tblHint').textContent='Ще немає учасників.'; return; }
   const rk=rankAt(S.tour);
   const order=[...S.lb].sort((a,b)=>(rk.cum[b.participant_id]||0)-(rk.cum[a.participant_id]||0));
-  const mgRid=(S.rounds.find(r=>r.number===S.tour)||{}).id, mgOn=S.mgReady, zr=mgOn? mgZ(mgRid) : {};
+  const rndT=S.rounds.find(r=>r.number===S.tour), mgRid=(rndT||{}).id, mgOn=S.mgReady, zr=mgOn? mgZ(mgRid) : {};
   const body=order.map(p=>{
-    const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid), vd=squadValDelta(pid);
+    const pid=p.participant_id, place=rk.rank[pid], dm=deltaMark(pid), vd=squadValDelta(pid), sp=squadPriceAt(pid,rndT);
     return `<tr onclick="openSquad('${pid}')">
       <td class="rk">${place}<span class="delta ${dm.c}">${dm.t}</span></td>
       <td class="name-c">${esc(p.display_name)}</td>
       <td>${tiles(pid)}</td>
-      <td class="sp tnum">${eur(p.squad_price)}</td>
+      <td class="sp tnum" title="${esc(squadPriceTip(sp,S.tour))}">${sp.v==null? '<span style="color:var(--dim)">—</span>' : eur(sp.v)}</td>
       <td style="white-space:nowrap" class="tnum ${vd.dirE||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі (розстановка прихована до дедлайну або матчі ще не зіграні)':'На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур (лише рух ринку)'}">${valEurTxt(vd)}</td>
       <td style="white-space:nowrap" class="tnum ${vd.dir||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі':'Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)'}">${valPctTxt(vd)}</td>${mgOn? mgScoreCell(pid,mgRid,zr) : ''}
     </tr>`;
   }).join('');
   t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th>
-    <th>Squad (основа 5 + лавка 3)</th><th title="Squad Price — поточна вартість складу (не залежить від обраного туру)">Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
+    <th>Squad (основа 5 + лавка 3)</th><th title="Squad Price — вартість складу ЦЬОГО туру: після закриття туру (старт + Δ € поруч), поки тур іде — наживо. Купівлі й продажі між турами сюди не входять, тому старт наступного туру може відрізнятись від кінця попереднього. Рух цін гравців до того, як вони стали твоїми, учаснику не зараховується">Squad Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
 }
 
 // 📊 Очки по турах: учасник × УСІ тури обох етапів + Разом (раніше — підвкладка туру)
@@ -1712,9 +1735,29 @@ function renderPts(){
     const fp=finPts(p.participant_id); sum+=fp;
     return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}${hasFin?`<td class="pn tnum">${fp>0?'+'+fp:'·'}</td>`:''}<td class="total tnum">${sum}</td></tr>`;
   }).join('');
+  // 22.10: «Squad Price by round» — вартість складу тур за туром (див. squadPriceAt). Під вартістю: «тур» = рух цін гравців цього туру (Δ €), «склад» = зміна вартості
+  // через купівлі/продажі МІЖ турами (старт цього туру − кінець попереднього). Гроші при купівлі/продажі переходять між Squad Price і бюджетом — це не збиток (усе разом = Банк).
+  const mS=d=>(d>0?'+':d<0?'−':'')+(Math.abs(d)/1e6).toFixed(1)+'M';
+  const spBody=S.lb.map(p=>{
+    let prevEnd=null;
+    const cells=rs.map(r=>{
+      const sp=squadPriceAt(p.participant_id,r);
+      if(sp.v==null){ prevEnd=null; return `<td class="pn tnum" title="${esc(squadPriceTip(sp,r.number))}"><span style="color:var(--dim)">—</span></td>`; }
+      const swap=(prevEnd!=null)? sp.start-prevEnd : null;
+      prevEnd=(sp.kind==='after')? sp.v : null;
+      const dOn=Math.abs(sp.d)>=50000, parts=[`<span class="${dOn?(sp.d>0?'up':'down'):'eq'}">${dOn?(sp.d>0?'▲ ':'▼ '):''}${dOn?mS(sp.d):'0.0M'}</span> тур`];
+      if(swap!=null && Math.abs(swap)>=50000) parts.push(`<span class="${swap>0?'up':'down'}">${mS(swap)}</span> склад`);
+      const tip=squadPriceTip(sp,r.number)+(swap!=null && Math.abs(swap)>=50000? ' · Між турами склад змінився через купівлі/продажі: '+eurSg(swap)+' (гроші при цьому переходять між Squad Price і бюджетом — це не збиток)' : '');
+      return `<td class="pn tnum" title="${esc(tip)}"><div class="spv">${eur(sp.v)}</div><div class="spd">${parts.join(' · ')}</div></td>`;
+    }).join('');
+    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}<td class="pn tnum" title="Поточна вартість нинішнього складу (те саме, що в Банку) — вона може відрізнятись від останнього туру, якщо склад змінився після нього">${eur(p.squad_price)}</td></tr>`;
+  }).join('');
   host.innerHTML=`<div class="head2"><h2>📊 Points by round</h2><span class="sub">очки кожного учасника за кожен тур · клік → склад</span></div>
     <div class="board"><div class="f1-scroll"><table class="f1 grid">${head}<tbody>${body}</tbody></table></div></div>
-    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${S.mgReady?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>`;
+    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${S.mgReady?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>
+    <div class="head2" style="margin-top:26px"><h2>💶 Squad Price by round</h2><span class="sub">вартість складу кожного туру · клік → склад</span></div>
+    <div class="board"><div class="f1-scroll"><table class="f1 grid"><thead><tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th title="Поточна вартість нинішнього складу">Зараз</th></tr></thead><tbody>${spBody}</tbody></table></div></div>
+    <div class="hint">Вартість складу туру — це 8 гравців його лайнапу: після закриття туру, а поки тур іде — наживо · під нею: «тур» — рух цін гравців цього туру, «склад» — зміна вартості через купівлі/продажі між турами (гроші переходять між Squad Price і бюджетом — це не збиток; усе разом дає Банк) · «—» — складу на тур не було або його ще приховано · «Зараз» — вартість нинішнього складу</div>`;
 }
 // 📅 Матчі туру (вкладка туру): клуби пулу — розклад/результати; клік → оцінки гравців пулу
 function ptsOf(r){ return r==null||r<6.5?0:r>=9?4:r>=8?3:r>=7?2:1; }   // дзеркало market_rating_points (502)
@@ -1784,6 +1827,9 @@ function openSquad(pid){
                     .map(l=>pcard(l.player_id,rid,false,false,l.bench_order,{counted:allin}));
     bodyHtml=`<div class="sqcols"><div><div class="slot-h"><span>Основа</span><span>очки за тур</span></div><div class="plist">${start.join('')||'<div class="meta">порожньо</div>'}</div></div>`
       + `<div>${bench.length?`<div class="slot-h"><span>Лавка</span><span>порядок заміни</span></div><div class="plist">${bench.join('')}</div>`:''}</div></div>`;
+  }else if(rndM && revealed(rndM)){
+    // 22.10: тур уже відкрито/минув дедлайн, а лайнапу учасника нема → склад не виставлено (раніше тут показувались нинішні гравці з підписом «розстановка — після дедлайну», що плутало)
+    bodyHtml=`<div class="lockbox">Склад на Тур ${S.tour} не виставлено${rndM.results_entered_at?'':' — до цього туру учасник ще не приєднався або не підтвердив склад'}.</div>`;
   }else{
     const own=S.players.filter(x=>x.owner_participant_id===pid);
     const o5=own.slice(0,5), ob=own.slice(5,8);   // до дедлайну справжня розстановка прихована → поділ умовний (як у таблиці)
@@ -1797,7 +1843,9 @@ function openSquad(pid){
   document.getElementById('ovlB').innerHTML=
     `<div class="ovl-meta">
       <div class="m"><span>Місце</span><b>${place<=3?medal[place-1]:'#'+place}</b></div>
-      <div class="m"><span>Squad Price</span><b class="tnum">${eur(p.squad_price)}</b></div>
+      ${(()=>{ const sp=squadPriceAt(pid,rndM); return sp.v!=null
+          ? `<div class="m" title="${esc(squadPriceTip(sp,S.tour))}"><span>Squad Price</span><b class="tnum">${eur(sp.v)}</b></div>`
+          : `<div class="m" title="Складу цього туру нема або його ще приховано. Нижче — поточна вартість нинішнього складу"><span>Squad Price · зараз</span><b class="tnum">${eur(p.squad_price)}</b></div>`; })()}
       <div class="m" title="На скільки € змінилась вартість 8 гравців складу за цей тур"><span>Δ € тура</span><b class="tnum ${vd.dirE||'eq'}">${valEurTxt(vd)}</b></div>
       <div class="m" title="Сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)"><span>Σ % гравців</span><b class="tnum ${vd.dir||'eq'}">${valPctTxt(vd)}</b></div>
       ${(S.mgReady && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m" title="${esc(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}"><span>💎 Рахунок</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
