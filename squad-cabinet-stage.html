@@ -1210,7 +1210,7 @@ const prevOpenRound=(round)=>round?((S.rounds||[]).filter(r=>r.number<round.numb
 const myConfirmedUpcoming=()=>!!(S.myConfLn && S.myConfLn.size>0);                                                                                       // 545: після власного підтвердження склад і ролі заморожені
 const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
 // ЄДИНЕ формулювання про автопродаж гравця з останнім туром контракту — картка гравця, ринок, модалка підтвердження (pl=true — про кількох гравців)
-function autosaleTxt(pl){ return `після закриття туру ${pl?'їх':'гравця'} буде автоматично продано за вартістю, яка буде після зміни ціни за тур (у % і в €), без штрафу — комісія продажу −5% не стягується`; }
+function autosaleTxt(pl){ return `після закриття туру ${pl?'їх':'гравця'} буде автоматично продано за вартістю, яка буде після зміни ціни за тур (у % і в €), комісія продажу −5% не стягується`; }
 const EXPIRING_TXT=`⏳ Контракт добігає (лишився 1 тур): ${autosaleTxt(false)}, тож угоду під час туру запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.`;
 // ── 🧭 ЄДИНИЙ БЛОК СТАНУ ТУРУ (15.10; рішення Богдана — як у «Predictions & Results» ЄвроСезону). Один над «Мій склад» і «Ринок»:
 //    hero «ДО ДЕДЛАЙНУ» (або «тур у грі» / «ринок зачинено») + «СКЛАД n з 8», зелена смужка «склад підтверджено», «ПІДТВЕРДИЛИ n з m» з чіпами (лише «Мій склад»).
@@ -1679,7 +1679,7 @@ function posBlock(mine, round){
   }).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>⚡ Позиційні бусти</span><span>1 раз за турнір кожен · до 3 в одному турі</span></div>
     <div class="bgrid">${cards}</div>
-    <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього (не на капітана чи віце). Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до дедлайну можна змінити.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього. Капітан і Віце не поєднуються з позиційними бустами на одному гравці: на капітана чи віце ⚡ поставити не можна. Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до дедлайну можна змінити.</p></div>`;
 }
 // ── 🎯 Челенджі (547): окремий шлях очок за композицію складу; РАЗ ЗА ТУРНІР кожен; нараховується одразу при відкритті складів ──
 // «основа/лавка» тут = СЛОТИ складу (5 + запасні), а не контрактна роль «Основний/Лавка». Правила — дзеркало _market_challenge_hits (SQL 547).
@@ -1947,8 +1947,9 @@ function renderLineup(mine, round){
   const posBtn = (p,L) => {   // 532: ⚡ 2x … на гравця основи (не капітан/віце; не з Автопілотом/All-in)
     if(locked || !S.posOK || S.boost || L.cap || L.vice) return '';
     const k=posKindOf(p); if(!k) return '';
-    const on=S.pos[k]===p.id, used=posUsedElsewhere(k, round), dis=!on && used!=null;
-    return `<button class="mini ${on?'on':'ghost'}" data-pos="${p.id}" ${dis?'disabled':''} title="${dis?POSB[k].name+': використано в Турі '+used:POSB[k].desc}">⚡ ${POSB[k].name}</button>`;
+    const on=S.pos[k]===p.id, used=posUsedElsewhere(k, round);
+    if(!on && used!=null) return '';   // 22.10 (Богдан): буст уже використано в турнірі (картка «Використано в Турі N» вище) — біля гравців його не показуємо
+    return `<button class="mini ${on?'on':'ghost'}" data-pos="${p.id}" title="${POSB[k].desc}">⚡ ${POSB[k].name}</button>`;
   };
   const row = (p, zone, idx) => {
     const L=S.lineup[p.id], cl=clubWithLeague(p.club_id), col=clubCol(p.club_id), d=vDelta(p), ci=contractInfo(p);
@@ -1983,7 +1984,7 @@ function renderLineup(mine, round){
     </div>`;
   };
 
-  const capNote = `<p class="dim" style="margin:10px 0 0">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо).'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>`;
+  const capNote = `<p class="dim" style="margin:10px 0 0">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо). Капітан і Віце не поєднуються з позиційними бустами «⚡ 2x …» на одному гравці.'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>`;
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
@@ -2084,7 +2085,7 @@ function openLineupReview(mine, round){
       penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>`
         + viol.map(x=>{
             const bi=s.bn.findIndex(b2=>b2.id===x.id), where=bi>=0?`на лавці (${bi+1}-й на заміну)`:'не в основі';
-            return `<p class="mnote warn">• <b>${esc(x.name)}</b> має роль <b>«Основний»</b>, але стоїть ${where} — це <b>порушення</b>: борг ≈ <b>${eur(Math.round(x.wage_per_round*debtPct()))}</b> (${Math.round(debtPct()*100)}% його зарплати за тур).${x.marked?' <b class="warnc">🚩 Він уже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після туру.</b>':' Друге порушення цим гравцем — його буде автоматично продано відразу після туру.'}</p>`; }).join('')
+            return `<p class="mnote warn">• <b>${esc(x.name)}</b> має роль <b>«Основний»</b>, але стоїть ${where} — це <b>порушення</b>: борг ≈ <b>${eur(Math.round(x.wage_per_round*debtPct()))}</b> (${Math.round(debtPct()*100)}% його зарплати за тур).${x.marked?' <b class="warnc">🚩 Він уже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після туру.</b>':(expiringP(x)?'':' Друге порушення цим гравцем — його буде автоматично продано відразу після туру.')}${expiringP(x)?' <b>Хоч у нього лишився 1 тур і після туру його однаково продадуть, штраф за роль доведеться заплатити: «не виставив в основу, бо 1 тур» не спрацює.</b>':''}</p>`; }).join('')
         + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу.</p>
         <p class="mnote">Як уникнути: постав «Основного» в основу. Або зміни роль новим контрактом (продовження хоч на 1 тур, якщо контракт ще можна продовжити): роль «Лавка» — це надбавка +${Math.round(benchPrem()*100)}% до зарплати.</p>`;
     }
@@ -2784,6 +2785,15 @@ function amountUI(label,minEur,kind,ref,maxEur,extra){
     ${extra||''}
     <button data-do="amt">OK</button></div>`;
 }
+// 22.10 (Богдан): підказка (БЕЗ заборони) у пропозиції на чужого гравця, коли ВЛАСНИК УЖЕ ПІДТВЕРДИВ склад на найближчий тур. Чи гравець у його складі, інші не бачать (склади приховано
+// до відкриття) — тому сервер звичайну пропозицію не блокує; «Домовитись з гравцем» (з надбавкою) для такого власника недоступне (_market_propose_transfer 556).
+function ownerConfHint(p){
+  if(!S.confOK || !p || !p.owner_participant_id || (S.me && p.owner_participant_id===S.me.id)) return '';
+  const nxt=(S.rounds||[]).find(r=>new Date(r.deadline_at)>new Date());
+  if(!nxt || !confOf(p.owner_participant_id, nxt.id)) return '';
+  const exp=expiringP(p);
+  return `<p class="mnote warn" style="margin:8px 0 0">🔒 Власник уже підтвердив склад на тур ${nxt.number}. Якщо <b>${esc(lastName(p.name))}</b> у його складі (основа чи лавка), прийняти пропозицію власник зможе лише після закриття туру${exp?` — а в цього гравця лишився 1 тур контракту: після закриття туру його буде автоматично продано за оновленою вартістю (комісія продажу −5% не стягується), і пропозиція скасується`:''}. Якщо гравця в складі нема — власник може прийняти її одразу. «Домовитись з гравцем» (з надбавкою) для нього зараз недоступне.</p>`;
+}
 // 553: надбавка до зарплати в пропозиції трансферу = подія «гравець просить піти» (приховано, поки SQL 553 не залито або вимкнено в конфігу)
 function wagePctOn(){ return !!S.wevReady && !(S.cfg && S.cfg.wage_events_enabled===false); }
 // 556: пропозиція на чужого гравця має ДВА режими: «Домовитись з учасником» (звичайна, без надбавки; власник може відхилити) і
@@ -3125,7 +3135,7 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?` · <b class="warnc">добігає — продовж контракт, інакше ${autosaleTxt(false)}</b>`:''}</p>`
+    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?` · <b class="warnc">добігає — продовж контракт, інакше ${autosaleTxt(false)}</b>`:''}${(ci.low && rolesOn() && penOn() && (p.role||'main')==='main' && (+p.wage_per_round||0)>0)?` <b class="warnc">⚠️ Штраф за роль лишається: якщо «Основний» не в основі на дедлайні — борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))} навіть для останнього туру контракту (вердикт — до автопродажу).</b>`:''}</p>`
       + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     cinfo += benchCardNote(p);
     const extBlock = extMax>=1
@@ -3190,7 +3200,7 @@ function actionsHTML(p,ctx){
     // ── 🔄 ОБМІН ──
     const ex = S.exchangesReady ? exchangeUI(p) : `<p class="mnote">Обмін зʼявиться після заливки <b>412</b>.</p>`;
     if(!S.transfersReady && !S.exchangesReady) return h+`<p class="mnote">Трансфери/обмін зʼявляться після заливки <b>405</b>/<b>412</b>.</p>`;
-    return h+ptabs([['buy','🛒 Купити',buy],['ex','🔄 Обмін',ex]], (blockA&&S.exchangesReady)?'ex':'buy');
+    return h+ownerConfHint(p)+ptabs([['buy','🛒 Купити',buy],['ex','🔄 Обмін',ex]], (blockA&&S.exchangesReady)?'ex':'buy');
   }
   const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
   if(inPlayRound()) return `<p class="mnote warn">⏳ Тур ${inPlayRound().number} почався: купівля, ставки й викуп вільних гравців закриті до закриття туру.</p>`;
