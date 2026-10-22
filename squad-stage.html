@@ -166,6 +166,8 @@ nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 /* борда Банку (510): підрядок під іменем — Squad Price і Δ проти старту етапу */
 .lbr .bsub{display:block;white-space:normal;font-family:var(--mono);font-size:12.5px;font-weight:500;color:var(--dim);margin-top:3px;letter-spacing:.02em}
 .lbr .bsub b{font-weight:700}
+.lbcard.cmp .lbr .bsub.sc{display:block;margin-top:2px}   /* 22.10: рядок «рахунок +X (€ … · ROI …)» під приростом у картці 💼 */
+details.rsec summary{cursor:pointer;color:var(--ink);font-size:14px}details.rsec[open] summary{margin-bottom:6px}
 .bankhint{padding:16px 22px;font-size:13px;color:var(--dim);line-height:1.5}
 @media(max-width:520px){   /* 4 вкладки ЕТАПИ мають вміститись; рядки борди Банку не обрізають підрядок */
   nav.etabs{gap:0} nav.etabs button{font-size:14px;padding:12px 9px}
@@ -221,6 +223,8 @@ table.f1 th{font-family:var(--mono);font-size:10.5px;text-transform:uppercase;le
 table.f1 td{padding:12px;border-bottom:1px solid var(--line);vertical-align:middle}
 table.f1 tbody tr{cursor:pointer;transition:background .12s}
 table.f1 tbody tr:hover td{background:var(--panel2)}
+table.f1.nocl tbody tr{cursor:default}
+table.f1.nocl tbody tr:hover td{background:transparent}   /* 22.10: «Points by round» — лише інформація, рядки не клікабельні */
 table.f1 tbody tr:last-child td{border-bottom:none}
 .rk{font-family:var(--mono);font-weight:700;font-size:20px;width:1%;white-space:nowrap}
 .rk .medal{margin-right:2px}
@@ -317,6 +321,7 @@ table.bb .bp small{color:var(--muted);font-weight:400;font-size:12px}
   color:var(--dim);margin:12px 2px 8px;display:flex;justify-content:space-between}
 table.grid td.pn{font-family:var(--mono);font-weight:700}
 .spv{font-family:var(--mono);font-weight:700}
+.spr .s{color:var(--dim);font-weight:500}.spr b{font-weight:700}
 .spd{font-family:var(--mono);font-weight:500;font-size:10.5px;color:var(--dim);margin-top:3px;white-space:nowrap}
 table.grid{min-width:0}
 /* вкладка «Матчі» туру: розклад/результати клубів пулу (як у кабінеті) */
@@ -664,6 +669,63 @@ function mgScoreCell(pid,rid,zr){
   return `<td class="tnum ${cl}" style="white-space:nowrap" title="${esc(mgScoreTxt(m,zr)+' · місце '+m.place+(m.points>0?' · 💎 +'+m.points:''))}">${zS(sc)}${m.points>0?` <small style="color:var(--rose);font-size:11px">💎+${m.points}</small>`:''}</td>`;
 }
 function mgPodium(rid){ return S.mg.filter(m=>m.round_id===rid && m.points>0).sort((a,b)=>(a.place-b.place)||(b.points-a.points)); }
+// 22.10 (відгук Богдана: «розрахунки треба показувати нормально, як приклади в Rules»): РЕАЛЬНІ розрахунки менеджменту на вкладці Management.
+// 💼 (563): складові рахунку — z(Σ Δ€) і k·z(Σ ROI) по учасниках турніру (stddev_pop, як у SQL); не збіглось із hybrid_score → показуємо лише сам рахунок.
+const mgFmtM=d=>(d>0?'+':d<0?'−':'')+(Math.abs(d)/1e6).toFixed(1)+'M';
+function mgFinZ(){
+  const rows=S.mgs||[]; if(!rows.length || !mgHybrid()) return {};
+  const k0=rows[0].roi_weight, k=k0!=null? +k0 : 1;
+  const z=(vals,x)=>{ const n=vals.length, mu=vals.reduce((a,b)=>a+b,0)/n, sd=Math.sqrt(vals.reduce((a,b)=>a+(b-mu)*(b-mu),0)/n); return sd>0? (x-mu)/sd : 0; };
+  const D=rows.map(m=>+m.delta_eur||0), R=rows.map(m=>+m.roi_sum||0), out={};
+  rows.forEach(m=>{ const zd=z(D,+m.delta_eur||0), zr=k*z(R,+m.roi_sum||0);
+    out[m.participant_id]={zd,zr,k,ok:m.hybrid_score!=null && Math.abs(zd+zr-(+m.hybrid_score))<0.02}; });
+  return out;
+}
+function mgFinScoreTxt(x,fz){
+  if(!(mgHybrid() && x.hybrid_score!=null)) return '';
+  const c=(fz||{})[x.participant_id];
+  return 'рахунок '+zS(+x.hybrid_score)+(c&&c.ok? ' (€ '+zS(c.zd)+' · ROI '+zS(c.zr)+')' : '');
+}
+// 💼: таблиця «ROI по турах» (Δ€ ÷ вартість складу на старті туру) і таблиця «результат формули» (€ порівняно · ROI порівняно · разом · місце · очки)
+function mgFinCalcHTML(){
+  if(!mgHybrid() || !S.mgs.length) return '';
+  const done=Math.max(0,...S.mgs.map(x=>x.rounds_done||0)); if(!done) return '';
+  const cfg=S.mgCfg||{total:6,fin:[20,14,8,4,2]}, ctx=mgCtx(), k=ctx.k, fz=mgFinZ();
+  const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
+  const rows=[...S.mgs].sort((a,b)=>(a.place-b.place)||byName(a,b));
+  const rds=S.rounds.filter(r=>S.mg.some(m=>m.round_id===r.id)).sort((a,b)=>a.number-b.number);
+  const nm=x=>esc(S.names[x.participant_id]||'—');
+  const roiHead=`<tr><th>Склад</th>${rds.map(r=>`<th class="n">Тур ${r.number}: Δ€ ÷ V₀ = ROI</th>`).join('')}<th class="n">Σ Δ€</th><th class="n">Σ ROI</th></tr>`;
+  const roiBody=rows.map(x=>`<tr><td>${nm(x)}</td>${rds.map(r=>{ const m=mgRow(x.participant_id,r.id), v0=m? +m.value_start_eur : 0;
+      return (m && v0>0)? `<td class="n">${mgFmtM(+m.delta_eur)} ÷ ${(v0/1e6).toFixed(1)}M = <b>${roiSg(+m.delta_eur/v0)}</b></td>` : '<td class="n">—</td>'; }).join('')}
+      <td class="n">${eurSg(+x.delta_eur)}</td><td class="n"><b>${x.roi_sum!=null? roiSg(+x.roi_sum) : '—'}</b></td></tr>`).join('');
+  const resHead=`<tr><th>Склад</th><th class="n">Σ Δ€</th><th class="n">Σ ROI</th><th class="n">€ порівняно з іншими</th><th class="n">ROI порівняно з іншими${k===1?'':' × '+ctx.f1(k)}</th><th class="n">Разом</th><th class="n">Місце</th><th class="n">Очки</th></tr>`;
+  const resBody=rows.map(x=>{ const c=fz[x.participant_id], pts=x.is_final? x.final_points : x.projected_points;
+    return `<tr><td>${nm(x)}</td><td class="n">${eurSg(+x.delta_eur)}</td><td class="n">${roiSg(+x.roi_sum||0)}</td>
+      <td class="n">${c&&c.ok? zS(c.zd) : '—'}</td><td class="n">${c&&c.ok? zS(c.zr) : '—'}</td><td class="n"><b>${x.hybrid_score!=null? zS(+x.hybrid_score) : '—'}</b></td>
+      <td class="n">${x.place}</td><td class="n">${pts>0? '+'+pts : '0'}${x.is_final? '' : ' <span style="color:var(--dim)">(прогноз)</span>'}</td></tr>`; }).join('');
+  const noRounds=rows.filter(x=>!(x.rounds_done>0)).map(x=>S.names[x.participant_id]).filter(Boolean);
+  return `<div class="rsec" style="margin:10px 0 6px"><h3>💼 Як порахований Менеджер турніру · після туру ${done} з ${cfg.total}</h3>
+    <p><b>1. ROI кожного туру</b> = приріст складу в € ÷ вартість складу на старті туру (V₀). <b>Σ ROI</b> — сума ROI по закритих турах. Склад без гравців у турі дає 0 (у таблиці «—»).</p>
+    <div class="rtbl"><table>${roiHead}${roiBody}</table></div>
+    <p><b>2. Результат формули.</b> «Порівняно з іншими» — наскільки показник вищий чи нижчий за середній серед усіх учасників турніру. <b>Разом = € порівняно + ${k===1?'':ctx.f1(k)+' × '}ROI порівняно</b>; за цією сумою визначається місце.</p>
+    <div class="rtbl"><table>${resHead}${resBody}</table></div>
+    <p class="rnote">Щоб бути першим, не обов’язково вигравати за обома показниками одразу: важить сума двох порівнянь, тож сильніший ROI може підняти склад із меншим приростом у € (приклад — у вкладці Rules).${noRounds.length?` ${esc(noRounds.join(', '))}: закритих турів ще нема, тому Σ Δ€ і Σ ROI = 0 — але в порівнянні з іншими він теж бере участь.`:''} Місця 1–${cfg.fin.length} отримують <b>${cfg.fin.join('/')}</b> очк. у General; нараховується, коли закрито всі ${cfg.total} турів, до того — прогноз.</p></div>`;
+}
+// 💎: розрахунок рахунку КОЖНОГО закритого туру (V₀, Δ€, Σ%, внесок кожної частини, рахунок, місце, очки); останній тур розгорнуто
+function mgTourCalcHTML(r,open){
+  const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
+  const rows=S.mg.filter(m=>m.round_id===r.id).sort((a,b)=>(a.place-b.place)||byName(a,b));
+  if(!rows.length) return '';
+  const cfg=S.mgCfg||{w:0.25,pw:0,tour:[3,2,1]}, zr=mgZ(r.id), f1=n=>String(n).replace('.',',');
+  const okAll=rows.every(m=>(zr[m.participant_id]||{}).ok), usePct=cfg.pw>0 && rows.every(m=>m.delta_pct!=null);
+  const head=`<tr><th>Склад</th><th class="n">Вартість на старті (V₀)</th><th class="n">Δ€</th>${usePct?'<th class="n">Σ%</th>':''}${okAll?`<th class="n">Δ€ порівняно</th>${usePct?`<th class="n">Σ% порівняно × ${f1(cfg.pw)}</th>`:''}<th class="n">V₀ порівняно × ${f1(cfg.w)}</th>`:''}<th class="n">Рахунок</th><th class="n">Місце</th><th class="n">Очки</th></tr>`;
+  const body=rows.map(m=>{ const c=zr[m.participant_id]||{};
+    return `<tr><td>${esc(S.names[m.participant_id]||'—')}</td><td class="n">${eurB(+m.value_start_eur)}</td><td class="n">${eurSg(+m.delta_eur)}</td>${usePct?`<td class="n">${ppSg(+m.delta_pct)}</td>`:''}${okAll?`<td class="n">${zS(c.zd)}</td>${usePct?`<td class="n">${zS(c.zp)}</td>`:''}<td class="n">${zS(c.zv)}</td>`:''}<td class="n"><b>${m.score!=null? zS(+m.score) : '—'}</b></td><td class="n">${m.place}</td><td class="n">${m.points>0? '+'+m.points : '0'}</td></tr>`; }).join('');
+  return `<details class="rsec" style="margin:8px 0"${open?' open':''}><summary><b>Тур ${r.number}</b> · складів у розрахунку: ${rows.length}</summary>
+    <div class="rtbl"><table>${head}${body}</table></div>
+    <p class="rnote">${okAll?`Рахунок = Δ€ порівняно${usePct?` + ${f1(cfg.pw)} × Σ% порівняно`:''} + ${f1(cfg.w)} × V₀ порівняно. `:''}«Порівняно» — наскільки показник вищий чи нижчий за середній серед складів цього туру. Три найкращі за рахунком — ${(cfg.tour||[3,2,1]).map(n=>'+'+n).join('/')} очок; рівний рахунок ділить місце.</p></details>`;
+}
 function mgBadge(pid,rid){   // 💎 на картці учасника — лише для місць з очками (топ-3 туру); без рамки, по наведенню — подіум туру
   const m=mgRow(pid,rid); if(!m || !(m.points>0)) return '';
   const num=(S.rounds.find(r=>r.id===rid)||{}).number;
@@ -1117,7 +1179,7 @@ function mgTotalCard(title, nom){
     const pts=x.is_final? x.final_points : x.projected_points;
     return `<div class="lbr bk mg ${pc}" onclick="openSquad('${x.participant_id}')">
       <div class="rnk">${rank}</div>
-      <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgHybrid()&&x.roi_sum!=null? `приріст ${eurSg(x.delta_eur)} · ROI ${roiSg(+x.roi_sum)}` : mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span></div>
+      <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgHybrid()&&x.roi_sum!=null? `приріст ${eurSg(x.delta_eur)} · ROI ${roiSg(+x.roi_sum)}` : mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span>${mgHybrid()&&x.hybrid_score!=null? `<span class="bsub sc">${mgFinScoreTxt(x,mgFinZ())}</span>` : ''}</div>
       <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
   return `<div class="${cls}"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
 }
@@ -1244,7 +1306,7 @@ function renderMg(){
       : `рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`;
   const intro=`<div class="mgintro"><b>Менеджмент бюджету</b> — друга гра поруч з очками за матчі: очки дає й те, як змінюється вартість вашого складу.
     <ul>
-      <li>💎 <b>Менеджер туру:</b> за кожен тур три найкращі за «менеджерським рахунком» отримують <b>${tour3}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
+      <li>💎 <b>Менеджер туру:</b> <b>рахунок туру</b> = приріст вартості 8 гравців у € ${cfg.pw>0?`+ ${ctx.f1(cfg.pw)} × сума % руху їхніх цін `:''}+ ${ctx.f1(cfg.w)} × вартість складу на старті туру (кожна частина — порівняно з іншими учасниками в цьому турі); три найкращі за рахунком отримують <b>${tour3}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
       <li>💼 <b>Менеджер турніру:</b> ${finTxt}.</li>
       <li>Не рахуються: зарплати, премія купівлі, угоди між учасниками, готівка й Банк — грошима між собою очки не накрутиш.</li>
     </ul><p class="mglink">Як саме рахується, з прикладами — у вкладці <a onclick="goStage('rules');return false">Rules</a>.</p></div>`;
@@ -1268,9 +1330,12 @@ function renderMg(){
     ${intro}
     <div class="mgsec">💼 Наскрізна · Менеджер турніру</div>
     <div class="lbboards one">${totalCard}</div>
+    ${mgFinCalcHTML()}
     <div class="mgsec">💎 Подіуми турів · Менеджер туру</div>
     <div class="mggrid">${cards.join('')}</div>
-    <div class="hint">Δ — приріст вартості 8 гравців складу за тур (лише рух ринку) · Σ% — сума відсотків руху ціни цих гравців · місце визначає комбінований показник (приріст у €, у % і вартість складу, порівняно з іншими учасниками) · рівні місця ділять очки цього місця</div>`;
+    ${(()=>{ const rc=S.rounds.filter(r=>S.mg.some(m=>m.round_id===r.id)).sort((a,b)=>a.number-b.number);
+       return rc.length? `<div class="mgsec">💎 Як порахований рахунок туру · реальні числа</div>${rc.map((r,i)=>mgTourCalcHTML(r,i===rc.length-1)).join('')}` : ''; })()}
+    <div class="hint">Δ — приріст вартості 8 гравців складу за тур (лише рух ринку) · Σ% — сума відсотків руху ціни цих гравців · місце визначає рахунок туру: Δ€ + ${ctx.f1(cfg.pw||0)} × Σ% + ${ctx.f1(cfg.w)} × вартість складу, кожна частина порівняно з іншими учасниками туру (розрахунок з числами — нижче) · рівні місця ділять очки цього місця</div>`;
 }
 // перемикання вкладок: Leaderboard / Rounds 1-5 / Rounds 6-10 / General · Management / Points by round
 function goStage(stage){
@@ -1482,6 +1547,9 @@ function squadPriceAt(pid,rnd){
   for(const l of lu){ const p=S.pById[l.player_id]; if(!p || p.market_value_current==null) return {v:null}; v+=+p.market_value_current; const e=eurMove(l.player_id,rnd.id); if(e!=null) d+=e; }
   return {v, start:v-d, d, kind:'live'};
 }
+// «на старті туру → після туру» (рішення Богдана 22.10: показувати відразу обидві вартості; тур іде — друга = наживо)
+const eurM1=v=>'€'+(v/1e6).toFixed(1)+'M';
+const squadPriceRange=sp=>`<span class="spr"><span class="s">${eurM1(sp.start)} →</span> <b>${eurM1(sp.v)}</b></span>`;
 function squadPriceTip(sp,n){
   if(sp.v==null) return 'Складу на Тур '+n+' нема або його ще приховано — вартість не показуємо';
   return sp.kind==='after'
@@ -1706,13 +1774,13 @@ function renderStandings(){
       <td class="rk">${place}<span class="delta ${dm.c}">${dm.t}</span></td>
       <td class="name-c">${esc(p.display_name)}</td>
       <td>${tiles(pid)}</td>
-      <td class="sp tnum" title="${esc(squadPriceTip(sp,S.tour))}">${sp.v==null? '<span style="color:var(--dim)">—</span>' : eur(sp.v)}</td>
+      <td class="sp tnum" style="white-space:nowrap" title="${esc(squadPriceTip(sp,S.tour))}">${sp.v==null? '<span style="color:var(--dim)">—</span>' : squadPriceRange(sp)}</td>
       <td style="white-space:nowrap" class="tnum ${vd.dirE||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі (розстановка прихована до дедлайну або матчі ще не зіграні)':'На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур (лише рух ринку)'}">${valEurTxt(vd)}</td>
       <td style="white-space:nowrap" class="tnum ${vd.dir||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі':'Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)'}">${valPctTxt(vd)}</td>${mgOn? mgScoreCell(pid,mgRid,zr) : ''}
     </tr>`;
   }).join('');
   t.innerHTML=`<thead><tr><th>#</th><th>Учасник</th>
-    <th>Squad (основа 5 + лавка 3)</th><th title="Squad Price — вартість складу ЦЬОГО туру: після закриття туру (старт + Δ € поруч), поки тур іде — наживо. Купівлі й продажі між турами сюди не входять, тому старт наступного туру може відрізнятись від кінця попереднього. Рух цін гравців до того, як вони стали твоїми, учаснику не зараховується">Squad Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
+    <th>Squad (основа 5 + лавка 3)</th><th title="Squad Price — вартість складу ЦЬОГО туру: «на старті туру → після туру» (поки тур іде — друга наживо; різниця = Δ € поруч). Купівлі й продажі між турами сюди не входять, тому старт наступного туру може відрізнятись від кінця попереднього. Рух цін гравців до того, як вони стали твоїми, учаснику не зараховується">Squad Price</th><th title="На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур">Δ € тура</th><th title="Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)">Σ % гравців</th>${mgOn?'<th title="Рахунок «Менеджер туру» = z(Δ€) + 0,5·z(Σ%) + 0,25·z(склад) по учасниках туру; за ним визначаються 💎 +3/+2/+1. Зʼявляється, коли тур закрито">💎 Рахунок</th>':''}</tr></thead><tbody>${body}</tbody>`;
 }
 
 // 📊 Очки по турах: учасник × УСІ тури обох етапів + Разом (раніше — підвкладка туру)
@@ -1733,7 +1801,7 @@ function renderPts(){
       return `<td class="pn tnum">${v!=null? v : '·'}${boostChip(p.participant_id,r.id)}${mgChip(p.participant_id,r.id)}${chChip(p.participant_id,r.id)}${rvChip(p.participant_id,r.id)}</td>`;
     }).join('');
     const fp=finPts(p.participant_id); sum+=fp;
-    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}${hasFin?`<td class="pn tnum">${fp>0?'+'+fp:'·'}</td>`:''}<td class="total tnum">${sum}</td></tr>`;
+    return `<tr><td class="name-c">${esc(p.display_name)}</td>${cells}${hasFin?`<td class="pn tnum">${fp>0?'+'+fp:'·'}</td>`:''}<td class="total tnum">${sum}</td></tr>`;
   }).join('');
   // 22.10: «Squad Price by round» — вартість складу тур за туром (див. squadPriceAt). Під вартістю: «тур» = рух цін гравців цього туру (Δ €), «склад» = зміна вартості
   // через купівлі/продажі МІЖ турами (старт цього туру − кінець попереднього). Гроші при купівлі/продажі переходять між Squad Price і бюджетом — це не збиток (усе разом = Банк).
@@ -1748,16 +1816,16 @@ function renderPts(){
       const dOn=Math.abs(sp.d)>=50000, parts=[`<span class="${dOn?(sp.d>0?'up':'down'):'eq'}">${dOn?(sp.d>0?'▲ ':'▼ '):''}${dOn?mS(sp.d):'0.0M'}</span> тур`];
       if(swap!=null && Math.abs(swap)>=50000) parts.push(`<span class="${swap>0?'up':'down'}">${mS(swap)}</span> склад`);
       const tip=squadPriceTip(sp,r.number)+(swap!=null && Math.abs(swap)>=50000? ' · Між турами склад змінився через купівлі/продажі: '+eurSg(swap)+' (гроші при цьому переходять між Squad Price і бюджетом — це не збиток)' : '');
-      return `<td class="pn tnum" title="${esc(tip)}"><div class="spv">${eur(sp.v)}</div><div class="spd">${parts.join(' · ')}</div></td>`;
+      return `<td class="pn tnum" title="${esc(tip)}"><div class="spv">${squadPriceRange(sp)}</div><div class="spd">${parts.join(' · ')}</div></td>`;
     }).join('');
-    return `<tr onclick="openSquad('${p.participant_id}')"><td class="name-c">${esc(p.display_name)}</td>${cells}<td class="pn tnum" title="Поточна вартість нинішнього складу (те саме, що в Банку) — вона може відрізнятись від останнього туру, якщо склад змінився після нього">${eur(p.squad_price)}</td></tr>`;
+    return `<tr><td class="name-c">${esc(p.display_name)}</td>${cells}<td class="pn tnum" title="Поточна вартість нинішнього складу (те саме, що в Банку) — вона може відрізнятись від останнього туру, якщо склад змінився після нього">${eur(p.squad_price)}</td></tr>`;
   }).join('');
-  host.innerHTML=`<div class="head2"><h2>📊 Points by round</h2><span class="sub">очки кожного учасника за кожен тур · клік → склад</span></div>
-    <div class="board"><div class="f1-scroll"><table class="f1 grid">${head}<tbody>${body}</tbody></table></div></div>
+  host.innerHTML=`<div class="head2"><h2>📊 Points by round</h2><span class="sub">очки кожного учасника за кожен тур</span></div>
+    <div class="board"><div class="f1-scroll"><table class="f1 grid nocl">${head}<tbody>${body}</tbody></table></div></div>
     <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${S.mgReady?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>
-    <div class="head2" style="margin-top:26px"><h2>💶 Squad Price by round</h2><span class="sub">вартість складу кожного туру · клік → склад</span></div>
-    <div class="board"><div class="f1-scroll"><table class="f1 grid"><thead><tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th title="Поточна вартість нинішнього складу">Зараз</th></tr></thead><tbody>${spBody}</tbody></table></div></div>
-    <div class="hint">Вартість складу туру — це 8 гравців його лайнапу: після закриття туру, а поки тур іде — наживо · під нею: «тур» — рух цін гравців цього туру, «склад» — зміна вартості через купівлі/продажі між турами (гроші переходять між Squad Price і бюджетом — це не збиток; усе разом дає Банк) · «—» — складу на тур не було або його ще приховано · «Зараз» — вартість нинішнього складу</div>`;
+    <div class="head2" style="margin-top:26px"><h2>💶 Squad Price by round</h2><span class="sub">вартість складу кожного туру: на старті → після туру</span></div>
+    <div class="board"><div class="f1-scroll"><table class="f1 grid nocl"><thead><tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th title="Поточна вартість нинішнього складу">Зараз</th></tr></thead><tbody>${spBody}</tbody></table></div></div>
+    <div class="hint">Вартість складу туру — це 8 гравців його лайнапу: «на старті туру → після туру» (поки тур іде — друга цифра наживо) · під нею: «тур» — рух цін гравців цього туру, «склад» — зміна вартості через купівлі/продажі між турами (гроші переходять між Squad Price і бюджетом — це не збиток; усе разом дає Банк) · «—» — складу на тур не було або його ще приховано · «Зараз» — вартість нинішнього складу · суми округлено до 0,1M (різниця в арифметиці до 0,1M — округлення)</div>`;
 }
 // 📅 Матчі туру (вкладка туру): клуби пулу — розклад/результати; клік → оцінки гравців пулу
 function ptsOf(r){ return r==null||r<6.5?0:r>=9?4:r>=8?3:r>=7?2:1; }   // дзеркало market_rating_points (502)
