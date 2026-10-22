@@ -68,6 +68,19 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .mgintro{margin:4px 0 22px;padding:14px 18px;border:1px solid var(--line);border-left:3px solid var(--rose);border-radius:10px;background:var(--panel);font-size:13.5px;line-height:1.6;color:var(--muted)}
 .mgintro b{color:var(--ink)}
 .mgintro ul{margin:8px 0 0;padding-left:20px}
+.mghow{margin-top:12px}
+.mghow summary{cursor:pointer;color:var(--ink);font-weight:700}
+.mghow .mgh{margin-top:8px}
+.mghow h4{margin:16px 0 4px;color:var(--ink);font-size:14px}
+.mghow ol,.mghow ul{margin:6px 0;padding-left:20px}
+.mghow p{margin:6px 0}
+.mgex{margin:10px 0;padding:10px 12px;border:1px dashed var(--line);border-radius:8px;overflow-x:auto}
+.mgex .mgexh{font-weight:700;color:var(--ink);margin-bottom:6px}
+.mgex table{border-collapse:collapse;font-size:12.5px;min-width:100%}
+.mgex th,.mgex td{padding:3px 8px;text-align:right;white-space:nowrap}
+.mgex th:first-child,.mgex td:first-child{text-align:left}
+.mgex th{color:var(--ink)}
+.mgex .mgexn{margin-top:6px;font-size:12.5px}
 .mgsec{font-family:var(--mono);font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--rose);opacity:.9;margin:22px 2px 10px}
 .lbr.mg .pts{color:var(--rose)}
 .lbr.mg .pts.pj{opacity:.75}
@@ -703,8 +716,11 @@ function mgChip(pid,rid){   // матриця «Очки по турах»: 💎
   return `<span class="mgn" title="${esc('Менеджер туру: '+m.place+'-е місце · +'+m.points+' очк. · приріст вартості складу '+eurSg(m.delta_eur)+(m.delta_pct!=null? ' · Σ% '+ppSg(+m.delta_pct) : '')+' · вартість складу на старті туру '+eurB(m.value_start_eur)+' · '+mgScoreTxt(m,mgZ(rid)))}">💎+${m.points}</span>`;
 }
 // 💼 очки наскрізної учасника: лише коли вона вже нарахована (is_final), до того — 0 (прогноз показуємо окремо)
-// наскрізна рахується за Σ приросту вартості складу (529, final_metric='eur') чи за Σ рахунків туру (528 / 'score')
-const mgByEur=()=>!!(S.mgs.length && S.mgs[0].final_metric==='eur');
+// наскрізна: гібрид «€ + ROI» (563, final_metric='hybrid'), Σ приросту вартості складу (529, 'eur') чи Σ рахунків туру (528 / 'score')
+const mgMode=()=>(S.mgs.length && S.mgs[0].final_metric) || 'score';   // 528 без final_metric → score
+const mgByEur=()=>mgMode()==='eur';
+const mgHybrid=()=>mgMode()==='hybrid';   // 563: 💼 = z(Σ Δ€) + k·z(Σ ROI)
+const roiSg=v=>(v>0?'+':v<0?'−':'')+Math.abs(v*100).toFixed(1)+'%';   // Σ ROI (частка) → %
 function finPts(pid){ const f=S.mgs.find(x=>x.participant_id===pid); return (f&&f.is_final)? (f.final_points||0) : 0; }
 
 function eur(v){ if(v==null) return '—'; return '€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
@@ -1077,7 +1093,7 @@ function mgTotalCard(title, nom){
     const pts=x.is_final? x.final_points : x.projected_points;
     return `<div class="lbr bk mg ${pc}" onclick="openSquad('${x.participant_id}')">
       <div class="rnk">${rank}</div>
-      <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span></div>
+      <div class="nm">${esc(S.names[x.participant_id]||'—')}<span class="bsub">${mgHybrid()&&x.roi_sum!=null? `приріст ${eurSg(x.delta_eur)} · ROI ${roiSg(+x.roi_sum)}` : mgByEur()? `приріст складу ${eurSg(x.delta_eur)}` : `рахунок ${(+x.total_score).toFixed(2)} · приріст ${eurSg(x.delta_eur)}`}</span></div>
       <div class="pts ${x.is_final?'':'pj'}">${pts>0?'+'+pts:'0'}<small>${x.is_final?'підсумок':'прогноз'}</small></div></div>`; }).join('');
   return `<div class="${cls}"><div class="bh">${title} <span style="opacity:.7;font-weight:600;letter-spacing:.04em;text-transform:none;font-size:12px">· після туру ${done} з ${cfg.total}</span></div>${rows}</div>`;
 }
@@ -1088,15 +1104,61 @@ function renderMg(){
   const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6,w:0.25,pw:0};
   const plus=a=>a.map(n=>'+'+n).join('/');
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
+  const hy=mgHybrid(), k0=(S.mgs[0]||{}).roi_weight, k=k0!=null?+k0:1;
+  const pr=cfg.pr||{top:9,topP:0.10,hi:7.5,hiP:0.05,lo:6.5,loP:-0.05,deep:6,deepP:-0.10};
+  const f1=n=>String(n).replace('.',','), pcs=v=>(v>0?'+':v<0?'−':'')+Math.abs(Math.round(v*100))+'%';
+  const bands=`≥${f1(pr.top)} → ${pcs(pr.topP)} · ${f1(pr.hi)}–${f1(pr.top)} → ${pcs(pr.hiP)} · ${f1(pr.lo)}–${f1(pr.hi)} → без змін · ${f1(pr.deep)}–${f1(pr.lo)} → ${pcs(pr.loP)} · нижче ${f1(pr.deep)} → ${pcs(pr.deepP)}`;
+  const fin5=cfg.fin.join('/'), tour3=plus(cfg.tour);
+  const finTxt = hy
+    ? `рахуємо <b>приріст вартості складу в €</b> і <b>ROI</b> (приріст ÷ вартість складу) за всі ${cfg.total} турів — ${k===1?'вони важать порівну (50/50)':'ROI має вагу '+f1(k)+' до 1 для €'}; кращі ${cfg.fin.length} за цим комбінованим показником отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`
+    : mgByEur()
+      ? `сумується <b>приріст вартості складу в €</b> за всі ${cfg.total} турів (рахунок туру і 💎 тут не беруться); кращі ${cfg.fin.length} за цією сумою отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`
+      : `рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою отримують <b>${fin5}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів`;
+  const exOk = cfg.pw===0.5 && cfg.w===0.25;   // приклад підібрано під чинні ваги 0,5 і 0,25
+  const exTour = exOk ? `<div class="mgex"><div class="mgexh">Приклад 💎 (вигадані числа, не реальний тур)</div><table>
+      <tr><th>Склад</th><th>Вартість</th><th>Δ€</th><th>Σ%</th><th>Рахунок</th><th>Місце</th><th>Очки</th></tr>
+      <tr><td>B</td><td>380M</td><td>+12,0M</td><td>+9 п.п.</td><td>+0,99</td><td>1</td><td>+3</td></tr>
+      <tr><td>A</td><td>430M</td><td>+9,0M</td><td>+14 п.п.</td><td>+0,87</td><td>2</td><td>+2</td></tr>
+      <tr><td>C (дешевший)</td><td>250M</td><td>+7,0M</td><td>+26 п.п.</td><td>+0,39</td><td>3</td><td>+1</td></tr>
+      <tr><td>D</td><td>410M</td><td>−4,0M</td><td>−8 п.п.</td><td>−2,25</td><td>4</td><td>0</td></tr></table>
+      <div class="mgexn">C заробив менше євро, але багато «влучань» у відсотках дали йому подіум. Найбільша частина рахунку — євро, тому виграв B.</div></div>` : '';
+  const exFin = (hy && k===1) ? `<div class="mgex"><div class="mgexh">Приклад 💼 після ${cfg.total} турів (вигадані числа)</div><table>
+      <tr><th>Склад</th><th>Σ Δ€</th><th>Σ ROI</th><th>€ порівняно з іншими</th><th>ROI порівняно з іншими</th><th>Разом</th><th>Місце</th></tr>
+      <tr><td>A</td><td>+27,0M</td><td>+6,3%</td><td>+1,12</td><td>+0,65</td><td>+1,77</td><td>1</td></tr>
+      <tr><td>C (дешевий склад)</td><td>+14,5M</td><td>+6,9%</td><td>+0,05</td><td>+0,84</td><td>+0,89</td><td>2</td></tr>
+      <tr><td>B</td><td>+19,0M</td><td>+4,8%</td><td>+0,43</td><td>+0,19</td><td>+0,63</td><td>3</td></tr>
+      <tr><td>D</td><td>−4,7M</td><td>−1,3%</td><td>−1,60</td><td>−1,68</td><td>−3,28</td><td>4</td></tr></table>
+      <div class="mgexn">Лише за євро було б A, B, C, D. З ROI склад C (найдешевший) обійшов B: він виростив гроші найефективніше відносно своєї вартості.</div></div>` : '';
+  const how=`<details class="mghow"><summary>Як це рахується і як під це підлаштуватись</summary><div class="mgh">
+    <h4>💎 Менеджер туру — як рахується</h4>
+    <ol>
+      <li>Беремо <b>8 гравців</b> вашого складу в цьому турі (основа й лавка — однаково). Хто не зіграв — не рухається, його вклад 0.</li>
+      <li>Ціна гравця рухається від його середньої оцінки за тур: ${bands}.</li>
+      <li>Для складу рахуємо: <b>Δ€</b> — на скільки € змінилась вартість цих 8 гравців${cfg.pw>0?`; <b>Σ%</b> — сума відсотків руху ціни кожного гравця (дешевий гравець із +10% дає стільки ж, скільки зірка з +10%)`:''}; <b>вартість складу</b> на старті туру (невеликий бонус за витрачений бюджет).</li>
+      <li>Рахунок туру = Δ€${cfg.pw>0?` + ${f1(cfg.pw)} × Σ%`:''} + ${f1(cfg.w)} × вартість складу; кожна частина порівнюється з іншими учасниками цього туру (наскільки вище чи нижче середнього). Три найкращі отримують <b>${tour3}</b> очк. — навіть коли вартість упала.</li>
+    </ol>${exTour}
+    <h4>💼 Менеджер турніру — як рахується</h4>
+    ${hy ? `<ol>
+      <li>Після кожного туру запам’ятовуємо Δ€ складу і його <b>ROI = Δ€ ÷ вартість складу на старті туру</b> (наприклад, +3M на склад 300M — це +1,0%). Склад без лайнапу в турі дає 0.</li>
+      <li>Після ${cfg.total} турів додаємо: <b>Σ Δ€</b> (на скільки € виріс склад) і <b>Σ ROI</b> (сума ROI по турах).</li>
+      <li>Кожну суму порівнюємо з іншими учасниками (наскільки вище чи нижче середнього) і складаємо: <b>💼 = € + ${k===1?'':f1(k)+' × '}ROI</b> → місця ${fin5}. Тобто половина оцінки — «на скільки € ви виросли», половина — «наскільки ефективно відносно вартості складу».</li>
+    </ol>${exFin}` : `<p>${mgByEur()?'Сумуємо приріст вартості складу в € за всі тури — місця й очки за сумою.':'Сумуємо рахунки всіх турів — місця й очки за сумою.'}</p>`}
+    <h4>Як під це підлаштуватись</h4>
+    <ul>
+      <li><b>Євро (найбільше в 💎 за тур)</b> любить дорогих: той самий +5% на зірці дає більше євро, ніж на дешевому гравці. Вкладайте гроші в тих, хто, найімовірніше, зіграє й отримає 7,5+.</li>
+      <li><b>Відсотки та ROI</b> люблять влучність: недорогий гравець, який стабільно виходить на поле й дорожчає, важить стільки ж у %, скільки зірка. Дешевий склад може виграти ${hy?'💼':'подіум туру'}, якщо його гравці «влучають».</li>
+      <li><b>Лавка рахується</b>: не лишайте слот гравцем, який, найпевніше, не зіграє, — не зіграв означає 0.</li>
+      <li><b>Травми й ротація</b> вирішують багато чого: дивіться позначки травм і розклад матчів перед кожним туром.</li>
+      <li><b>Рахунок відносний</b>: якщо всі ростуть — треба ростити більше, якщо всі падають — виграє «менш поганий». Іноді корисно відрізнятись від інших.</li>
+      <li><b>Купівлі й продажі коштують грошей</b> (премія при купівлі, комісія при продажу), але в менеджмент не входять — кожна заміна має окупитись зростанням ціни.</li>
+      <li>Капітан, віце та бусти до менеджменту <b>не стосуються</b> — вони впливають лише на очки матчів.</li>
+    </ul></div></details>`;
   const intro=`<div class="mgintro"><b>Менеджмент бюджету</b> — друга гра поруч з очками за матчі: очки дає й те, як змінюється вартість вашого складу.
     <ul>
-      <li>Після кожного закритого туру для складу (8 гравців: основа + лавка) рахуємо, <b>на скільки змінилась їхня вартість</b> у € за тур${cfg.pw>0?', <b>на скільки відсотків</b> вона рухалась (сума % по гравцях — щоб дешевий гравець із великим стрибком теж мав вагу)':''} і <b>наскільки дорогий склад</b> на старті туру. Рахунок туру = приріст у €${cfg.pw>0?` + ${cfg.pw} × сума %`:''} + ${cfg.w} × вартість складу — ${cfg.pw>0?'усі три':'обидва'} порівнюються з іншими учасниками туру. Цей рахунок потрібен лише для 💎 за тур; 💼 рахується окремо — лише за приростом у €.</li>
-      <li>💎 <b>Менеджер туру:</b> три найкращі за рахунком отримують <b>${plus(cfg.tour)}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
-      <li>💼 <b>Менеджер турніру:</b> ${mgByEur()
-        ? `сумується <b>приріст вартості складу в €</b> за всі ${cfg.total} турів (рахунок туру і 💎 тут не беруться); кращі ${cfg.fin.length} за цією сумою`
-        : `рахунки всіх ${cfg.total} турів додаються; кращі ${cfg.fin.length} за сумою`} отримують <b>${cfg.fin.join('/')}</b> очк. у General — нараховується, коли закрито всі ${cfg.total} турів.</li>
+      <li>💎 <b>Менеджер туру:</b> за кожен тур три найкращі за «менеджерським рахунком» отримують <b>${tour3}</b> очк. — навіть якщо вартість упала (найкращі з поганих теж).</li>
+      <li>💼 <b>Менеджер турніру:</b> ${finTxt}.</li>
       <li>Не рахуються: зарплати, премія купівлі, угоди між учасниками, готівка й Банк — грошима між собою очки не накрутиш.</li>
-    </ul></div>`;
+    </ul>${how}</div>`;
   // 💼 наскрізна — спільна картка (mgTotalCard), до закриття останнього туру — прогноз
   const totalCard=mgTotalCard('💼 Менеджер турніру');
   // 💎 подіум кожного тура 1..N (3 в ряд): закриті — місця й очки, майбутні — сірі «чекає туру»
@@ -1185,8 +1247,10 @@ async function loadDynamic(){
     try{ S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,delta_pct,score,place,points`); }   // delta_pct — з SQL 531
     catch(e){ S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,score,place,points`); }
     // final_metric (529): eur = наскрізна за Σ приросту вартості складу, score = за Σ рахунків; без нього (529 не залито) → рахунки, як у 528
-    try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric&order=place.asc`); }
-    catch(e){ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`); }
+    // roi_sum / hybrid_score / roi_weight — з SQL 563 (гібрид «€ + ROI»); без них (563 не залито) → попередні запити
+    try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric,roi_sum,hybrid_score,roi_weight&order=place.asc`); }
+    catch(e0){ try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric&order=place.asc`); }
+    catch(e){ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`); } }
     S.mgReady=true;
   }catch(e){ S.mg=[]; S.mgs=[]; }
   // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
@@ -1229,12 +1293,15 @@ async function boot(){
     // межа етапу (market_config; анонімно читається); degrade, якщо 501 не залито
     // + налаштування менеджменту (528: очки за тур/турнір, кількість турів); без них (528 не залито) → старий запит
     { let cf=null;
-      try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight,mgmt_pct_weight'); }
+      try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight,mgmt_pct_weight,price_up_top_threshold,price_up_top_pct,price_up_hi_threshold,price_up_hi_pct,price_dn_lo_threshold,price_dn_lo_pct,price_dn_deep_threshold,price_dn_deep_pct'); }
+      catch(e00){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight,mgmt_pct_weight'); }
       catch(e0){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight'); }
-      catch(e){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round'); }catch(e2){} } }
+      catch(e){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round'); }catch(e2){} } } }
       const row=cf&&(cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null));
       if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round;
-      if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25, pw:row.mgmt_pct_weight!=null?+row.mgmt_pct_weight:0}; }
+      if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25, pw:row.mgmt_pct_weight!=null?+row.mgmt_pct_weight:0,
+        pr:{top:row.price_up_top_threshold!=null?+row.price_up_top_threshold:9, topP:row.price_up_top_pct!=null?+row.price_up_top_pct:0.10, hi:row.price_up_hi_threshold!=null?+row.price_up_hi_threshold:7.5, hiP:row.price_up_hi_pct!=null?+row.price_up_hi_pct:0.05,
+            lo:row.price_dn_lo_threshold!=null?+row.price_dn_lo_threshold:6.5, loP:row.price_dn_lo_pct!=null?+row.price_dn_lo_pct:-0.05, deep:row.price_dn_deep_threshold!=null?+row.price_dn_deep_threshold:6, deepP:row.price_dn_deep_pct!=null?+row.price_dn_deep_pct:-0.10}}; }
     { const l1=stage1Max(), mx=stage2End(), one=oneStage();
       const b1=document.querySelector('.stg-s1'), b2=document.querySelector('.stg-s2'), bm=document.querySelector('.stg-mg');
       if(b1) b1.textContent='Rounds 1-'+l1; if(b2) b2.textContent='Rounds '+(l1+1)+'-'+mx;
