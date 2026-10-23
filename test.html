@@ -1707,6 +1707,9 @@
     padding:16px;
   }
   #cabinet-overlay.open{display:flex; flex-direction:column;}
+  /* Squad-кабінет (23.10, відгук Богдана): вікно ширше за 1440 — місця на екрані вистачає, а Squad має праву панель новин і широкі таблиці.
+     Клас `wide` вішається в open() лише для Squad (BoBet-кабінет лишається 1440). Друга стеля — `.wrap/.hbar/.tabrow` у squad-cabinet-stage.html (теж 1800). */
+  #cabinet-overlay.wide:not(.min) #cabinet-shell{max-width:1840px;}
   #cabinet-shell{
     position:relative;
     align-self:center; width:100%;
@@ -5367,6 +5370,7 @@ document.getElementById('refresh-btn').addEventListener('click', refreshAll);
     // Модалку показуємо одразу (і розгортаємо, якщо була згорнута)
     overlay.classList.remove('min');
     overlay.classList.add('open');
+    overlay.classList.toggle('wide', typeof activeTournament !== 'undefined' && !!activeTournament && activeTournament.source === 'squad');   // Squad — ширше вікно (синхронно, щоб не «стрибало»)
     document.body.classList.add('cabinet-lock');
     minBtn.textContent = '▁ Згорнути';
     // src залежить від активного турніру (BoBet vs Squad) — перевіряємо

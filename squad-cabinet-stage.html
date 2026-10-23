@@ -31,7 +31,7 @@ h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
 .tnum,table.t td.n,.stat span,.lrt,.lmv,.mprice,.rpill,.mbig .n,.mstats div b{font-variant-numeric:tabular-nums}
 .stage-badge{position:fixed;top:0;left:0;right:0;z-index:50;background:var(--red);
   color:#fff;text-align:center;font-size:12px;font-weight:700;letter-spacing:.05em;padding:4px}
-.wrap{max-width:1440px;margin:0 auto;padding:34px 16px 80px}
+.wrap{max-width:1800px;margin:0 auto;padding:34px 16px 80px}   /* 1440 → 1800 (23.10): вікно кабінету на test.html теж розширено (#cabinet-overlay.wide) */
 .hide{display:none!important}
 h1{font-size:24px;margin:0}
 h2{font-size:19px;margin:0 0 10px}
@@ -50,7 +50,7 @@ button:disabled{background:var(--panel2);color:var(--dim);border-color:var(--lin
 /* шапка застосунку (F1-макет) */
 #screen-app{padding-top:26px}
 header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdrop-filter:blur(10px)}
-.hbar{max-width:1440px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
+.hbar{max-width:1800px;margin:0 auto;padding:12px 16px;display:flex;align-items:center;gap:10px 18px;flex-wrap:wrap}
 .hbox{display:flex;align-items:flex-end;gap:6px 22px;flex-wrap:wrap;padding:8px 16px;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.025)}
 .hcol{display:flex;flex-direction:column;line-height:1.15;min-width:0}
 .hcol .k{font-size:10px;color:var(--dim);text-transform:uppercase;letter-spacing:.1em;font-family:var(--mono);font-weight:600;white-space:nowrap}
@@ -71,7 +71,7 @@ header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdro
 .me .av{width:26px;height:26px;border-radius:50%;background:var(--accent-d);display:grid;place-items:center;
   font-family:var(--mono);font-weight:700;font-size:13px;color:#dff5ea}
 .priv{font-size:9.5px;color:var(--dim);border:1px solid var(--line);border-radius:5px;padding:1px 5px;letter-spacing:.04em}
-.tabrow{max-width:1440px;margin:0 auto;padding:0 16px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;border-bottom:1px solid var(--line)}   /* вкладки зліва, профіль/кнопки справа; на вузькому вікні кнопки переносяться під вкладки */
+.tabrow{max-width:1800px;margin:0 auto;padding:0 16px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;border-bottom:1px solid var(--line)}   /* вкладки зліва, профіль/кнопки справа; на вузькому вікні кнопки переносяться під вкладки */
 nav.tabs{display:flex;gap:2px;overflow-x:auto;max-width:100%;min-width:0;flex:0 1 auto;margin:0;padding:0;scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
 .tab{flex:0 0 auto;background:none;border:none;color:var(--text-dim);font-family:var(--mono);font-weight:600;
@@ -368,7 +368,7 @@ table.t{width:100%;border-collapse:collapse}
 /* 📰 права панель новин (23.10, рішення Богдана): остання стрічка ринку завжди поруч, а не лише у вкладці; на «Таблиця & Матчі», у вкладці News і на вузьких екранах (<1100 px) її нема */
 .shell{display:flex;align-items:flex-start;gap:16px}
 .shell #view{flex:1;min-width:0}
-.newsaside{flex:none;width:290px;position:sticky;top:10px;height:calc(100vh - 20px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.newsaside{flex:none;width:300px;position:sticky;top:10px;height:calc(100vh - 20px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
 .newsaside.hide{display:none}
 .na-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
 .na-head .t{flex:1}
@@ -383,6 +383,7 @@ table.t{width:100%;border-collapse:collapse}
 .na-more,.na-empty{padding:10px 4px;text-align:center;font-size:11px;color:var(--text-dim)}
 .na-open{position:fixed;right:0;top:150px;z-index:40;border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:var(--panel);color:var(--text);font-size:16px;padding:8px 9px;cursor:pointer}
 .na-open.hide{display:none}
+@media(min-width:1500px){.newsaside{width:340px}}
 @media(max-width:1099px){.newsaside,.na-open{display:none!important}}
 .news-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
 .news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
@@ -3651,7 +3652,7 @@ function showFullCard(p, tier, card){
       let src=big?full:'';
       if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
       if(!el.isConnected) return;
-      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); try{ if(im.decode) await im.decode(); }catch(e){} }
+      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); /* decode() інколи не завершується (фонова вкладка) — не чекаємо довше 0,6 с */ }
       showCard(); });
     // базова картка (рамка + фото): чекаємо фото/герб, але не довше 2,5 с
     const pend=[...tilt.querySelectorAll('img')].filter(i=>!i.complete);

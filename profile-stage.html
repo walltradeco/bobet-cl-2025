@@ -1207,7 +1207,7 @@ function showFullCard(c){
       let src=big?full:'';
       if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
       if(!el.isConnected) return;
-      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); try{ if(im.decode) await im.decode(); }catch(e){} }
+      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); /* decode() інколи не завершується (фонова вкладка) — не чекаємо довше 0,6 с */ }
       el.classList.add('cd'); });
   });
   stage.addEventListener('pointermove',e=>{
