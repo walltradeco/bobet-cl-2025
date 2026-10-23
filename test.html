@@ -5162,8 +5162,18 @@ async function loadActiveTab(){
     document.getElementById('tabs').style.display = 'none';
     if(etapiLbl) etapiLbl.style.display = 'none';
     content.innerHTML =
-      '<iframe src="squad-stage.html?embed=1" title="Squad Mode — борда" ' +
+      '<iframe id="squad-board-frame" src="squad-stage.html?embed=1" title="Squad Mode — борда" scrolling="no" ' +
       'style="width:100%;border:0;min-height:82vh;display:block"></iframe>';
+    // 23.10 (відгук Богдана: «2 скроли — загальний і всередині таблиці»): висота iframe = висоті вмісту борди (як у кабінеті), тож лишається
+    // один (загальний) скрол сторінки, як в ЄвроСезоні. Однакова origin → читаємо contentDocument; інакше лишається min-height.
+    (function(){
+      const fr = document.getElementById('squad-board-frame'); if(!fr) return;
+      const fit = () => { try{ const b = fr.contentDocument && fr.contentDocument.body; const h = b ? b.scrollHeight : 0;
+        if(h > 200) fr.style.height = (h + 28) + 'px'; }catch(e){} };
+      fr.addEventListener('load', () => { fit(); setTimeout(fit, 400);
+        try{ new ResizeObserver(fit).observe(fr.contentDocument.body); }catch(e){} });
+      window.addEventListener('resize', fit, { passive:true });
+    })();
     return;
   }
 

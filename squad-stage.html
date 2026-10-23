@@ -1029,6 +1029,7 @@ function showFullCard(p, tier, card){
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
+  embedFull(el);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
   const showCard=()=>{ if(!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
   loadImg(sceneUrl).then(sc=>{
@@ -2016,6 +2017,20 @@ function ownCard(x){
 function closeM(){ document.getElementById('ovl').classList.remove('on'); }
 // у кабінеті борда вставлена iframe на ВСЮ висоту → fixed-вікно відкривалось угорі iframe, поза екраном (якщо користувач проскролив).
 // Зсуваємо вміст вікон у ВИДИМУ частину (однакова origin; інакше нічого не робимо)
+// 23.10: борда в embed (test.html / кабінет) — iframe на ВСЮ висоту вмісту (без власного скролу), тож fixed-сцена картки мусить лягти у ВИДИМУ частину:
+// верх = скільки iframe прокручено вгору батьком, висота = видима частина; слідкуємо за скролом/ресайзом батька, поки сцена відкрита
+function embedFull(el){
+  if(!document.body.classList.contains('embed')) return;
+  try{
+    const fe=window.frameElement; if(!fe) return; const pw=window.parent;
+    const place=()=>{ if(!el.isConnected) return;
+      const rt=fe.getBoundingClientRect().top, top=Math.max(0,-rt), h=Math.max(300,Math.min(pw.innerHeight-rt, fe.clientHeight)-top);   // видима частина iframe: від top до (низ вікна батька − верх iframe)
+      el.style.inset='auto'; el.style.left='0'; el.style.right='0'; el.style.top=top+'px'; el.style.height=h+'px';
+      const st=el.querySelector('.stage'); if(st && typeof fitPodium==='function') fitPodium(st); };
+    place(); pw.addEventListener('scroll',place,{passive:true}); pw.addEventListener('resize',place);
+    new MutationObserver((_,o)=>{ if(!el.isConnected){ pw.removeEventListener('scroll',place); pw.removeEventListener('resize',place); o.disconnect(); } }).observe(document.body,{childList:true});
+  }catch(e){}
+}
 function embedPlace(){
   if(!document.body.classList.contains('embed')) return;
   try{
