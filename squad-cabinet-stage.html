@@ -349,6 +349,11 @@ table.t{width:100%;border-collapse:collapse}
 .colc-art[data-tier=mega_rare]{box-shadow:0 0 0 1px rgba(230,193,75,.6),0 8px 22px rgba(230,193,75,.14)}
 .colcard:hover .colc-art,.colcard:focus-visible .colc-art{outline:2px solid var(--accent)}
 .colc-rar{margin-top:2px;text-align:center;font-size:12px;color:var(--text-dim)} .colc-rar.mega_rare{color:var(--gold)}
+.colc-ds{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:6px 0 2px}
+.colc-ds .dchip{padding:2px 7px;font-size:11px;font-weight:700;border-radius:999px}
+.colc-ds .dchip.dis{opacity:.7;cursor:default} .colc-ds .dchip.dis:hover{border-color:var(--line);color:var(--text-dim)} .colc-ds .dchip.dis.on{opacity:1}
+.colc-ds .dchip.lock{opacity:.55}
+.colc-name[data-name]{cursor:pointer} .colc-name[data-name]:hover{color:var(--accent)}
 .colc-kind{position:absolute;top:6px;right:6px;font-size:12px;background:rgba(8,14,11,.78);border-radius:5px;padding:1px 5px}
 .colc-name{margin-top:7px;text-align:center;font-weight:700;font-size:13px;line-height:1.25;min-height:2.5em}   /* ім'я та прізвище повністю; дуо/команда переноситься на 2–3 рядки */
 .colc-own{margin-top:5px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
@@ -371,6 +376,7 @@ table.t{width:100%;border-collapse:collapse}
 .trow .tctrl{display:flex;gap:6px;flex-wrap:wrap}
 .trow.wev{border-left:3px solid var(--gold);background:rgba(230,193,75,.07)}
 .wpct{margin-top:8px}
+.bwarn{color:var(--gold);font-size:12.5px;font-weight:600}
 .agbox{margin-top:12px}
 .agrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:13px}
 .pm-xinfo{display:flex;flex-direction:column;gap:8px;margin-top:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel2)}
@@ -1294,7 +1300,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   // сервер (_market_trade_open) морозить ринок, щойно ХОЧА Б ОДИН тур «у грі» (дедлайн минув, результатів нема) — навіть коли вже заведено наступний тур; блок каже те саме
   const inplay=rsAll.find(r=>roundStarted(r,nowD));
   const n=mine.length, dgOk=mine.filter(isDG).length>=need;
-  const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}</div>
+  const right=`<div class="rt"><div class="cap">склад</div><div class="t" style="color:${n>=min?'var(--green)':'var(--gold)'}">${n} з ${max}${(()=>{ const rs=S.me?reservedPlayers(S.me.id):[]; return rs.length?` <span class="dim" style="font-size:12px;font-weight:600" title="Місця зарезервовано під активні пропозиції і ставки: ${esc(rs.map(x=>x.name).join(', '))}. Поки їх не вирішено, купити більше гравців, ніж лишилось вільних місць, не можна.">+${rs.length} під пропозиції</span>`:''; })()}</div>
     <div class="when dgr">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`} · ≥${cfg.defgk_start_min||1} DEF/GK в основі · ≥${need} DEF/GK у складі (основа або лавка)${n?(n>=max?` ${dgOk?'✓':'✕'}`:`, є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
   const a=inplay?(S.attn||{})[inplay.number]:null;
   const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
@@ -1375,7 +1381,7 @@ function dealBanners(){
   const items=[];
   (S.transfers||[]).filter(t=>t.awaiting_participant===S.me.id && !evT.has(t.id)).forEach(t=>{
     items.push(t.from_participant===S.me.id
-      ? `${nm(t.to_participant)} хоче купити твого ${pn(t.player_id)} за <b>${eur(t.amount)}</b>`
+      ? `${nm(t.to_participant)} хоче купити твого ${pn(t.player_id)} за <b>${eur(t.amount)}</b>${(()=>{ const pl=S.players.find(x=>x.id===t.player_id); return pl && acquireBlock(pl,t.to_participant,true) ? ' <span class="bwarn">⚠️ у покупця зараз немає місця</span>' : ''; })()}`
       : `${nm(t.from_participant)} відповів контр-пропозицією на твою пропозицію щодо ${pn(t.player_id)} — <b>${eur(t.amount)}</b>`); });
   (S.exchanges||[]).filter(x=>x.awaiting_participant===S.me.id && !evX.has(x.id)).forEach(x=>{
     const iAmFrom=x.from_participant===S.me.id, other=iAmFrom?x.to_participant:x.from_participant;
@@ -2287,13 +2293,41 @@ function dgWarn(p){
   const slotsAfter=max-n-1;
   return `<p class="mnote warn" style="margin:6px 0 0">⚠️ У складі DEF/GK: <b>${d}</b> з ${need}. Щоб мати ${max}/${max}, потрібно ${dgFrag()}. Після цієї купівлі вільних слотів: <b>${slotsAfter}</b>${slotsAfter===lack?' — решта слотів тільки для DEF/GK':''}.</p>`;
 }
-function acquireBlock(p){
-  const cfg=S.cfg||{}, mine=S.players.filter(x=>x.owner_participant_id===S.me.id);
-  if(mine.length >= (cfg.squad_max||8)) return `Склад повний (${cfg.squad_max||8}) — спершу звільни місце`;
-  if(mine.filter(x=>x.club_id===p.club_id).length >= (cfg.max_per_club||3)) return `Уже ${cfg.max_per_club||3} з цього клубу`;
-  if(p.position==='G' && mine.some(x=>x.position==='G'&&x.club_id===p.club_id)) return 'Уже є воротар з цього клубу';
+// 22.10 (SQL 564, відгук Богдана): ЗАРЕЗЕРВОВАНІ місця учасника pid — гравці, на яких у нього активна пропозиція (він покупець, pending) або він лідирує в активному аукціоні;
+// крім exceptIds (та сама пропозиція/лот). Дзеркало серверної перевірки _market_acquire_reason: купити більше, ніж лишилось місць з урахуванням резервів, не можна.
+function reservedPlayers(pid, exceptIds){
+  const ex=new Set(exceptIds||[]), ids=new Set();
+  (S.transfers||[]).forEach(t=>{ if(t.to_participant===pid && t.status==='pending' && !ex.has(t.player_id)) ids.add(t.player_id); });
+  (S.auctions||[]).forEach(a=>{ if(a.leader_participant_id===pid && !ex.has(a.player_id)) ids.add(a.player_id); });
+  return [...ids].map(id=>S.players.find(x=>x.id===id)).filter(x=>x && x.owner_participant_id!==pid);
+}
+const lcFirst = t => t ? t.charAt(0).toLowerCase()+t.slice(1) : t;
+// ліміти складу roster + p → {t: текст для себе, third: текст про іншого, over: склад заповнений} | null
+function acquireCheck(p, roster){
+  const cfg=S.cfg||{}, max=cfg.squad_max||8, perClub=cfg.max_per_club||3;
+  if(roster.length >= max) return {t:`Склад повний (${max}) — спершу звільни місце`, third:`склад повний (${max}/${max})`, over:true};
+  if(roster.filter(x=>x.club_id===p.club_id).length >= perClub) return {t:`Уже ${perClub} з цього клубу`, third:`уже ${perClub} з цього клубу`};
+  if(p.position==='G' && roster.some(x=>x.position==='G'&&x.club_id===p.club_id)) return {t:'Уже є воротар з цього клубу', third:'уже є воротар з цього клубу'};
   // 514: досяжність 2 DEF/GK уже з 7-го гравця (раніше лише на 8-му)
-  return dgRule(mine.length+1, mine.filter(isDG).length + (isDG(p)?1:0));
+  const d=dgRule(roster.length+1, roster.filter(isDG).length + (isDG(p)?1:0));
+  return d ? {t:d, third:lcFirst(d)} : null;
+}
+// who — чий склад (за замовчуванням мій); third=true — формулювання про ІНШОГО (для продавця: «у покупця …»)
+function acquireBlock(p, who, third){
+  const pid=who||S.me.id, mine=S.players.filter(x=>x.owner_participant_id===pid);
+  const r0=acquireCheck(p, mine); if(r0) return third ? r0.third : r0.t;           // фактичний склад — як раніше
+  const res=reservedPlayers(pid, [p.id]); if(!res.length) return null;
+  const r1=acquireCheck(p, mine.concat(res)); if(!r1) return null;                // 564: порушення з'явилось ЛИШЕ через зарезервовані місця
+  const names=res.map(x=>x.name).join(', '), max=(S.cfg&&S.cfg.squad_max)||8;
+  if(third) return r1.over ? `з урахуванням його інших активних пропозицій і ставок (${names}) склад заповниться: ${max}/${max}` : `з урахуванням його інших активних пропозицій і ставок (${names}): ${r1.third}`;
+  return r1.over ? `У тебе є активна пропозиція або ставка (${names}): якщо її приймуть, склад буде ${max}/${max}. Відклич її, щоб купити іншого`
+                 : `З урахуванням твоїх активних пропозицій і ставок (${names}): ${lcFirst(r1.t)}. Відклич пропозицію або ставку, щоб купити іншого`;
+}
+// продавцю: чи зможе покупець виконати цю пропозицію (повний склад / клубний ліміт / резерви) — жовте попередження в рядку угоди
+function buyerNote(t){
+  const p=S.players.find(x=>x.id===t.player_id); if(!p) return '';
+  const r=acquireBlock(p, t.to_participant, true); if(!r) return '';
+  return `<span class="bwarn" style="display:block;margin-top:4px">⚠️ Прийняти зараз неможливо: у покупця ${esc(r)}. Угода стане можливою, коли в нього звільниться місце.</span>`;
 }
 
 // ── плитка гравця (сітка ринку, за макетом) ──
@@ -2554,7 +2588,8 @@ function transferRow(t){
     : (!iAmSeller
         ? `<div class="tctrl"><span class="pill">чекає ${otherName}</span><button class="ghost" data-tr-cancel="${t.id}">Відкликати</button></div>`
         : `<span class="pill">чекає ${otherName}</span>`);
-  return `<div class="trow"><span class="tinfo">${info}${ofTag}</span>${ctrl}</div>`;
+  const bnote = (iAmSeller && mine) ? buyerNote(t) : '';   // 564: покупець не зможе виконати (повний склад / ліміт клубу / резерви)
+  return `<div class="trow"><span class="tinfo">${info}${ofTag}${bnote}</span>${ctrl}</div>`;
 }
 function bindTransfers(){
   document.querySelectorAll('[data-tr-acc]').forEach(b=>b.onclick=()=>{ const t=(S.transfers||[]).find(x=>x.id===b.dataset.trAcc); if(t && t.from_participant===S.me.id && lnBlocked(t.player_id)) return alert(lnMsg());
@@ -2923,18 +2958,24 @@ document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closes
   const box=b.closest('.wpct'); if(!box) return;
   box.dataset.mode=b.dataset.m; box.querySelectorAll('.wmode').forEach(x=>x.classList.toggle('on',x===b));
   box.querySelector('.wm-member').classList.toggle('hide',b.dataset.m==='player'); box.querySelector('.wm-player').classList.toggle('hide',b.dataset.m!=='player'); propRefresh(); });
-// JS-аналог _market_exchange_reason (412): склад pid БЕЗ outP + inP легальний?
+// JS-аналог _market_exchange_reason (412/564): склад pid БЕЗ outP + inP легальний? 564: другий прохід враховує зарезервовані місця (активні пропозиції/ставки pid)
 function exchangeBlock(pid,outP,inP){
-  const cfg=S.cfg||{}, roster=S.players.filter(x=>x.owner_participant_id===pid && x.id!==outP.id);
-  const total=roster.length+1;
-  const clubN=roster.filter(x=>x.club_id===inP.club_id).length+1;
-  const clubGK=roster.filter(x=>x.club_id===inP.club_id&&x.position==='G').length+(inP.position==='G'?1:0);
-  const dg=roster.filter(x=>x.position==='D'||x.position==='G').length+((inP.position==='D'||inP.position==='G')?1:0);
-  if(total>(cfg.squad_max||8)) return `склад >${cfg.squad_max||8}`;
-  if(clubN>(cfg.max_per_club||3)) return `>${cfg.max_per_club||3} з клубу ${esc((S.clubs[inP.club_id]||{}).name||'')}`;
-  if(clubGK>1) return 'два воротарі з одного клубу';
-  const dgr=dgRule(total,dg); if(dgr) return dgr.charAt(0).toLowerCase()+dgr.slice(1);   // 514: досяжність
-  return null;
+  const cfg=S.cfg||{};
+  const chk=roster=>{
+    const total=roster.length+1;
+    const clubN=roster.filter(x=>x.club_id===inP.club_id).length+1;
+    const clubGK=roster.filter(x=>x.club_id===inP.club_id&&x.position==='G').length+(inP.position==='G'?1:0);
+    const dg=roster.filter(x=>x.position==='D'||x.position==='G').length+((inP.position==='D'||inP.position==='G')?1:0);
+    if(total>(cfg.squad_max||8)) return `склад >${cfg.squad_max||8}`;
+    if(clubN>(cfg.max_per_club||3)) return `>${cfg.max_per_club||3} з клубу ${esc((S.clubs[inP.club_id]||{}).name||'')}`;
+    if(clubGK>1) return 'два воротарі з одного клубу';
+    const dgr=dgRule(total,dg); if(dgr) return dgr.charAt(0).toLowerCase()+dgr.slice(1);   // 514: досяжність
+    return null;
+  };
+  const base=S.players.filter(x=>x.owner_participant_id===pid && x.id!==outP.id);
+  const r0=chk(base); if(r0) return r0;
+  const res=reservedPlayers(pid,[outP.id,inP.id]); if(!res.length) return null;
+  const r1=chk(base.concat(res)); return r1 ? `з урахуванням активних пропозицій і ставок (${esc(res.map(x=>x.name).join(', '))}): ${r1}` : null;
 }
 // блок обміну в модалці чужого гравця p (=wanted). Селект свого + доплата + наживо валідація.
 // рядки порівняння гравця (обмін): mineSide — мій гравець (видно залишок контракту й роль)
@@ -3755,20 +3796,20 @@ function bindModalActions(p){
   }
 }
 
-// ── 📇 КОЛЕКЦІЯ — гравці складу + Rare/Mega картки ──
-// 22.10 (відгук Богдана): колекція учасника НАКОПИЧУЄТЬСЯ — це ВСІ гравці, що коли-небудь були в його складі (не лише поточні), кожен зі своєю
-// базовою карткою (silver / gold / смарагдова рамка), плюс його Rare/Mega картки (card_items, 1/1). Режими: «Мої» (за замовчуванням) · «Усі Rare/Mega»
-// (каталог крамниці, у т.ч. нічиї) · «Учасник ▾». Вільні гравці й гравці, що не були в складі, тут не показуються — вони на «Ринку».
-// Звідки: «хто коли-небудь був у складі» = публічний market_ownership_log (до кого переходив гравець) + нинішні власники; рамку, яку носив учасник, беремо
-// з player_card_choice лише якщо вибір зробив САМЕ він (інакше silver). Фільтри Rare/Mega беруть рідкість і колекцію з КАТАЛОГУ карток, а не з дизайну гравця.
+// ── 📇 КОЛЕКЦІЯ — одна картка на гравця + перемикач дизайнів; Rare/Mega змішані з гравцями ──
+// 23.10 (відгук Богдана): колекція учасника НАКОПИЧУЄТЬСЯ — ВСІ гравці, що коли-небудь були в його складі (не лише поточні), і гравці, чию rare/mega-картку він купив
+// (навіть якщо самого гравця не купував). Гравець — ОДНА картка; під іменем перемикач дизайну (Silver · Gold · Emerald · його Rare/Mega/Duo), обраний бачать і інші.
+// Режими: «Мої» (за замовчуванням) · кнопки з іменами інших учасників · «Усі Rare/Mega» (каталог крамниці, у т.ч. нічиї). Вільні гравці й ті, що не були в складі, — на «Ринку».
+// Дизайн: поточного гравця — player_card_choice (вибір цього учасника, як на полі); колишнього — collection_design (SQL 565; до заливки — silver); обрана картка має ще бути його.
 async function viewCollection(){
   S.cards={}; S.cardMeta=null;   // дизайн гравців (країна для картки) і колекції — завжди свіжо
   const g0=async q=>{ try{ return await sbSel(q); }catch(e){ return null; } };
-  const [items, pp, olog, chs] = await Promise.all([
+  const [items, pp, olog, chs, cds] = await Promise.all([
     g0('card_items?select=id,card_key,tier,kind,png_path,eligible_sofa_ids,owner_profile_id,collections'),
     g0(`participants?tournament_id=eq.${S.tour.id}&select=id,profile_id`),                       // учасник → акаунт (картки належать акаунту)
     g0(`market_ownership_log?tournament_id=eq.${S.tour.id}&select=player_id,to_participant&limit=5000`),
-    g0('player_card_choice?select=player_id,participant_id,frame&limit=5000'),
+    g0('player_card_choice?select=player_id,participant_id,frame,card_item_id&limit=5000'),
+    g0('collection_design?select=participant_id,player_id,frame,card_item_id&limit=5000'),      // 565; null = ще не залито
     loadCardMeta() ]);
   if(items===null){ $('view').innerHTML='<div class="head2"><h2>Колекція</h2></div><div class="soon">Не вдалось завантажити картки. Онови сторінку.</div>'; return; }
   S.myCards=items.filter(c=>c.owner_profile_id===S.myProfile);   // «чим володію» (вибір дизайну в картці гравця) — завжди свіже, бо видача йде повз фронт
@@ -3777,10 +3818,10 @@ async function viewCollection(){
   profOf[S.me.id]=S.myProfile; pidOf[S.myProfile]=S.me.id;
   const others=Object.keys(S.names||{}).filter(id=>id!==S.me.id && profOf[id]).sort((a,b)=>String(S.names[a]).localeCompare(String(S.names[b])));
   const f=S.colF;
-  if(f.mode==='user' && !others.includes(f.who)) f.who=others[0]||'';
-  if(f.mode==='user' && !f.who) f.mode='mine';
+  if(f.mode==='user' && !others.includes(f.who)) { f.mode='mine'; f.who=''; }
   const bySofa={}, byId={}; S.players.forEach(p=>{ byId[p.id]=p; if(p.sofascore_player_id!=null) bySofa[p.sofascore_player_id]=p; });
   const prettyKey=k=>String(k||'').replace(/_/g,' ');
+  const collT=k=>((S.collReg||[]).find(x=>x.key===k)||{}).title||k;
   // Rare/Mega картки каталогу
   const all=items.map(c=>{
     const pls=(c.eligible_sofa_ids||[]).map(id=>bySofa[id]).filter(Boolean);
@@ -3790,25 +3831,45 @@ async function viewCollection(){
       rating: rs.length? rs.reduce((a,b)=>a+b,0)/rs.length : 0,
       price: pls.reduce((a,p)=>a+(p.market_value_current||0),0) };
   });
-  // гравці, що коли-небудь були в складі учасника (поточні + з журналу власності)
   const everBy={}, add=(pid,plid)=>{ if(pid) (everBy[pid]=everBy[pid]||new Set()).add(plid); };
   S.players.forEach(p=>add(p.owner_participant_id,p.id));
   (olog||[]).forEach(r=>add(r.to_participant,r.player_id));
   const chBy={}; (chs||[]).forEach(r=>chBy[r.player_id]=r);
-  const FR_RANK={emerald:2,gold:3,silver:4}, FR_LBL={silver:'Silver',gold:'Gold',emerald:'Emerald'};
-  const playersOf=pid=>[...(everBy[pid]||[])].map(id=>byId[id]).filter(Boolean).map(p=>{
-    const ch=chBy[p.id], fr=(ch && ch.participant_id===pid && ch.frame) || 'silver';
-    return {p, fr, cur:p.owner_participant_id===pid, title:p.name, rating:p.season_avg_rating||0, price:p.market_value_current||0}; });
-  const mineN=playersOf(S.me.id).length + all.filter(c=>c.owner_profile_id===S.myProfile).length;
+  const cdBy={}; (cds||[]).forEach(r=>cdBy[r.participant_id+'|'+r.player_id]=r);
+  const FR_LBL={silver:'Silver',gold:'Gold',emerald:'Emerald'}, FR_RANK={emerald:2,gold:3,silver:4};
+  const tierRank=t=>t==='mega_rare'?0:1;
+  // ── одиниці колекції учасника pid: гравець (поточний/колишній/лише картка) з доступними дизайнами ──
+  const unitsOf=pid=>{
+    const m=new Map();
+    const get=(p,ever)=>{ let u=m.get(p.id); if(!u){ u={p, ever:false, cur:p.owner_participant_id===pid, cards:[]}; m.set(p.id,u); } if(ever) u.ever=true; return u; };
+    [...(everBy[pid]||[])].forEach(id=>{ const p=byId[id]; if(p) get(p,true); });
+    all.filter(c=>c.owner_profile_id && c.owner_profile_id===profOf[pid]).forEach(c=>c.pls.forEach(p=>get(p,false).cards.push(c)));
+    const out=[...m.values()];
+    out.forEach(u=>{
+      u.cards.sort((a,b)=>tierRank(a.tier)-tierRank(b.tier) || a.title.localeCompare(b.title));
+      // вибраний дизайн: поточний — player_card_choice цього учасника; колишній — collection_design (565), інакше вибір, що ще лежить у player_card_choice; картка має бути ще його
+      let ch=null; const pc=chBy[u.p.id];
+      if(u.cur){ if(pc && pc.participant_id===pid) ch=pc; }
+      else { ch=cdBy[pid+'|'+u.p.id]||null; if(!ch && pc && pc.participant_id===pid) ch=pc; }
+      let sel=null;
+      if(ch && ch.card_item_id){ const c=u.cards.find(x=>x.id===ch.card_item_id); if(c) sel={k:'c:'+c.id, card:c}; }
+      if(!sel && ch && ch.frame && u.ever) sel={k:'f:'+ch.frame, frame:ch.frame};
+      if(!sel) sel = u.ever ? {k:'f:silver', frame:'silver'} : (u.cards[0] ? {k:'c:'+u.cards[0].id, card:u.cards[0]} : {k:'f:silver', frame:'silver'});
+      u.sel=sel;
+      u.rank = sel.card ? tierRank(sel.card.tier) : FR_RANK[sel.frame];
+      u.title=u.p.name; u.rating=u.p.season_avg_rating||0; u.price=u.p.market_value_current||0;
+    });
+    return out;
+  };
+  const mineUnits=unitsOf(S.me.id);
   const clubs=[...new Set([...all.flatMap(c=>c.pls.map(p=>p.club_id)), ...S.players.filter(p=>p.owner_participant_id).map(p=>p.club_id)])]
     .map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
   const opt=(v,l,sel)=>`<option value="${esc(v)}"${String(sel)===String(v)?' selected':''}>${esc(l)}</option>`;
-  const modeBtn=(m,ic,lbl,n)=>`<button class="cmode${f.mode===m?' on':''}" data-m="${m}">${ic} ${lbl}${n!=null?` <b>${n}</b>`:''}</button>`;
+  const modeBtn=(m,ic,lbl,n,who)=>`<button class="cmode${(f.mode===m && (m!=='user' || f.who===who))?' on':''}" data-m="${m}"${who?` data-who="${who}"`:''}>${ic} ${esc(lbl)}${n!=null?` <b>${n}</b>`:''}</button>`;
   $('view').innerHTML=`
     <div class="head2"><h2>Колекція</h2><span class="sub" id="colSum"></span></div>
     <div class="col-modes">
-      ${modeBtn('mine','⭐','Мої',mineN)}${modeBtn('all','🛒','Усі Rare/Mega',all.length)}${others.length?modeBtn('user','👤','Учасник'):''}
-      <select id="colWho"${f.mode==='user'?'':' hidden'}>${others.map(id=>opt(id,S.names[id],f.who)).join('')}</select>
+      ${modeBtn('mine','⭐','Мої',mineUnits.length)}${others.map(id=>modeBtn('user','👤',S.names[id],null,id)).join('')}${modeBtn('all','🛒','Усі Rare/Mega',all.length)}
     </div>
     <div class="col-filters">
       <input id="colQ" placeholder="Пошук по імені…" value="${esc(f.q)}">
@@ -3819,11 +3880,12 @@ async function viewCollection(){
       <select id="colOwner"${f.mode==='all'?'':' hidden'}>${[['','Власник: усі'],['shop','У крамниці'],['taken','В учасників']].map(([v,l])=>opt(v,l,f.owner)).join('')}</select>
       <select id="colSort">${[['rarity','За рідкістю'],['rating','За рейтингом'],['price','За ціною'],['name','За іменем']].map(([v,l])=>opt(v,l,f.sort)).join('')}</select>
     </div>
-    <div id="colGrid"></div>`;
+    <div class="col-grid" id="colGrid"></div>`;
   const g=$('colGrid');
   const ownOf=c=> c.owner_profile_id===S.myProfile ? {cls:'mine', t:'★ Твоя'}
                 : c.owner_profile_id ? {cls:'other', t:esc(S.names[pidOf[c.owner_profile_id]]||'Інший учасник')}
                 : {cls:'shop', t:'🛒 У крамниці'};
+  // картка каталогу (режим «Усі Rare/Mega»)
   const cardHTML=c=>{ const o=ownOf(c);
     return `<div class="colcard" data-c="${c.id}" tabindex="0">
       <div class="colc-art" data-tier="${c.tier}"><img src="${esc(showThumb(c.png_path))}" alt="${esc(c.title)}" loading="lazy" decoding="async"${imgFallback(c.png_path)}>
@@ -3831,80 +3893,119 @@ async function viewCollection(){
       <div class="colc-name">${esc(c.title)}</div>
       <div class="colc-rar ${c.tier}">${c.tier==='mega_rare'?'Mega Rare':'Rare'}</div>
       <div class="colc-own ${o.cls}">${o.t}</div></div>`; };
-  // базова картка гравця (рамка), БЕЗ вдягнутого rare/mega-арту — той лежить у секції Rare/Mega
-  const playerHTML=e=>{ const p=e.p, cc=S.cards[p.id]||{}, cardObj={...cc, current_card_png:null, current_card_key:null};
+  // підписи варіантів-карток під гравцем: Mega / Rare (+ колекція або номер, якщо однакових кілька)
+  const cardLbl=(u,c)=>{ const same=u.cards.filter(x=>x.tier===c.tier && x.kind===c.kind);
+    const base=(c.tier==='mega_rare'?'Mega':'Rare')+(c.kind==='team'?' 👥':'');
+    if(same.length<2) return base;
+    const coll=(c.collections||[])[0]; return base+' · '+(coll?collT(coll):(same.indexOf(c)+1)); };
+  // ОДНА картка гравця: обраний дизайн + ім'я, рідкість обраного, перемикач дизайнів, статус
+  const unitHTML=(u,mine)=>{
+    const p=u.p, cc=S.cards[p.id]||{};
+    const face = u.sel.card
+      ? `<div class="colc-art" data-tier="${u.sel.card.tier}"><img src="${esc(showThumb(u.sel.card.png_path))}" alt="${esc(p.name)}" loading="lazy" decoding="async"${imgFallback(u.sel.card.png_path)}></div>`
+      : `<div class="colc-wrap">${squadCardHTML(p,u.sel.frame,{...cc, current_card_png:null, current_card_key:null})}</div>`;
+    const chips=[];
+    if(u.ever){
+      chips.push(['f:silver','Silver',false]); chips.push(['f:gold','Gold',false]);
+      if((mine && S.myEmerald) || u.sel.frame==='emerald') chips.push(['f:emerald','Emerald',false]);
+      else if(mine) chips.push(['f:emerald','🔒 Emerald',true]);
+    }
+    u.cards.forEach(c=>chips.push(['c:'+c.id, cardLbl(u,c), false, c.title]));
+    const chipsHTML = chips.length>1 || u.cards.length ? `<div class="colc-ds">${chips.map(([k,l,locked,ttl])=>
+      `<button type="button" class="dchip${u.sel.k===k?' on':''}${locked?' lock':''}${mine?'':' dis'}" data-design="${k}" data-pl="${p.id}"${locked?' data-locked="1"':''}${ttl?` title="${esc(ttl)}"`:''}${mine?'':' disabled'}>${l}</button>`).join('')}</div>` : '';
+    const rar = u.sel.card ? (u.sel.card.tier==='mega_rare'?'Mega Rare':'Rare') : FR_LBL[u.sel.frame];
+    const st = u.cur ? {cls:'mine', t:'У складі'} : u.ever ? {cls:'', t:'Був у складі'} : {cls:'', t:'Лише картка'};
     const holder=p.owner_participant_id?(S.names[p.owner_participant_id]||'інший учасник'):'вільний';
     return `<div class="colcard" data-p="${p.id}" tabindex="0">
-      <div class="colc-wrap">${squadCardHTML(p,e.fr,cardObj)}</div>
-      <div class="colc-name">${esc(p.name)}</div>
-      <div class="colc-rar">${FR_LBL[e.fr]}</div>
-      <div class="colc-own ${e.cur?'mine':''}"${e.cur?'':` title="Зараз: ${esc(holder)}"`}>${e.cur?'У складі':'Був у складі'}</div></div>`; };
+      <div class="colc-face" data-face="1">${face}</div>
+      <div class="colc-name" data-name="1" title="Відкрити гравця">${esc(p.name)}</div>
+      <div class="colc-rar ${u.sel.card&&u.sel.card.tier==='mega_rare'?'mega_rare':''}">${rar}</div>
+      ${chipsHTML}
+      <div class="colc-own ${st.cls}"${u.cur?'':` title="Зараз: ${esc(holder)}"`}>${st.t}</div></div>`; };
   const apply=()=>{
     const f=S.colF, q=(f.q||'').trim().toLowerCase();
-    const who = f.mode==='mine' ? S.me.id : f.mode==='user' ? f.who : null;
-    const itemsPool = f.mode==='mine' ? all.filter(c=>c.owner_profile_id===S.myProfile)
-                    : f.mode==='user' ? all.filter(c=>c.owner_profile_id && c.owner_profile_id===profOf[f.who])
-                    : all;
-    const plPool = who ? playersOf(who) : [];
-    const itemsVis=itemsPool.filter(c=>{
-      if(q && !(c.title.toLowerCase().includes(q) || c.card_key.toLowerCase().includes(q))) return false;
-      if(f.pos && !c.pls.some(p=>p.position===f.pos)) return false;
-      if(f.club && !c.pls.some(p=>String(p.club_id)===f.club)) return false;
-      if(f.coll && !(c.collections||[]).includes(f.coll)) return false;
-      if(f.rarity && c.tier!==f.rarity) return false;
-      if(f.mode==='all' && f.owner==='shop' && c.owner_profile_id) return false;
-      if(f.mode==='all' && f.owner==='taken' && !c.owner_profile_id) return false;
+    if(f.mode==='all'){
+      const vis=all.filter(c=>{
+        if(q && !(c.title.toLowerCase().includes(q) || c.card_key.toLowerCase().includes(q))) return false;
+        if(f.pos && !c.pls.some(p=>p.position===f.pos)) return false;
+        if(f.club && !c.pls.some(p=>String(p.club_id)===f.club)) return false;
+        if(f.coll && !(c.collections||[]).includes(f.coll)) return false;
+        if(f.rarity && c.tier!==f.rarity) return false;
+        if(f.owner==='shop' && c.owner_profile_id) return false;
+        if(f.owner==='taken' && !c.owner_profile_id) return false;
+        return true; });
+      vis.sort((a,b)=>{
+        const d = f.sort==='rating'? (b.rating-a.rating) : f.sort==='price'? (b.price-a.price) : f.sort==='name'? 0 : (tierRank(a.tier)-tierRank(b.tier));
+        return d || a.title.localeCompare(b.title); });
+      g.innerHTML = vis.length ? vis.map(cardHTML).join('') : '<div class="soon" style="grid-column:1/-1">Нічого не знайдено — зміни або скинь фільтри.</div>';
+      const mega=all.filter(c=>c.tier==='mega_rare').length;
+      const sum=$('colSum'); if(sum) sum.innerHTML=`каталог крамниці · <b>${all.length}</b> карток (${mega} Mega · ${all.length-mega} Rare) · у крамниці ${all.filter(c=>!c.owner_profile_id).length} · в учасників ${all.filter(c=>c.owner_profile_id).length} · показано ${vis.length} · натисни картку для деталей`;
+      return;
+    }
+    const pid = f.mode==='mine' ? S.me.id : f.who, mine = pid===S.me.id;
+    const units = mine ? mineUnits : unitsOf(pid);
+    const vis=units.filter(u=>{
+      if(q && !u.title.toLowerCase().includes(q)) return false;
+      if(f.pos && u.p.position!==f.pos) return false;
+      if(f.club && String(u.p.club_id)!==f.club) return false;
+      if(f.coll && !u.cards.some(c=>(c.collections||[]).includes(f.coll))) return false;
+      if(f.rarity){   // рідкість: є такий варіант (картка Mega/Rare, або рамка)
+        const has = (f.rarity==='mega_rare'||f.rarity==='rare') ? u.cards.some(c=>c.tier===f.rarity)
+                  : u.ever && (f.rarity==='silver' || f.rarity==='gold' || u.sel.frame==='emerald' || (mine && S.myEmerald));
+        if(!has) return false; }
       return true; });
-    const plVis=plPool.filter(e=>{
-      if(q && !e.title.toLowerCase().includes(q)) return false;
-      if(f.pos && e.p.position!==f.pos) return false;
-      if(f.club && String(e.p.club_id)!==f.club) return false;
-      if(f.coll) return false;                      // колекції (Champion Rhythm тощо) — лише в Rare/Mega-карток
-      if(f.rarity && e.fr!==f.rarity) return false;
-      return true; });
-    itemsVis.sort((a,b)=>{
-      const d = f.sort==='rating'? (b.rating-a.rating) : f.sort==='price'? (b.price-a.price) : f.sort==='name'? 0
-              : ((a.tier==='mega_rare'?0:1)-(b.tier==='mega_rare'?0:1));   // за рідкістю: Mega вище
-      return d || a.title.localeCompare(b.title); });
-    plVis.sort((a,b)=>{
-      const d = f.sort==='rating'? (b.rating-a.rating) : f.sort==='price'? (b.price-a.price) : f.sort==='name'? 0
-              : (FR_RANK[a.fr]-FR_RANK[b.fr]);                              // за рідкістю: смарагдова → золота → срібна
+    vis.sort((a,b)=>{
+      const d = f.sort==='rating'? (b.rating-a.rating) : f.sort==='price'? (b.price-a.price) : f.sort==='name'? 0 : (a.rank-b.rank);
       return d || (f.sort==='rarity'? ((b.cur?1:0)-(a.cur?1:0)) : 0) || a.title.localeCompare(b.title); });
-    const sec=(title,list,fn)=> list.length ? `${f.mode==='all'?'':`<div class="col-sec">${title} · ${list.length}</div>`}<div class="col-grid">${list.map(fn).join('')}</div>` : '';
-    const filtered=!!(q||f.pos||f.club||f.coll||f.rarity||(f.mode==='all'&&f.owner));
-    let html = sec('Гравці складу',plVis,playerHTML) + sec('Rare / Mega',itemsVis,cardHTML);
+    let html = vis.map(u=>unitHTML(u,mine)).join('');
     if(!html){
-      const empty = filtered ? 'Нічого не знайдено — зміни або скинь фільтри.'
-            : f.mode==='mine' ? 'У тебе ще немає карток. Усі Rare/Mega, що є в крамниці, — у режимі «Усі Rare/Mega».<br><button class="mini" id="colGoAll" style="margin-top:10px">Показати всі Rare/Mega</button>'
-            : f.mode==='user' ? `У «${esc(S.names[f.who]||'учасника')}» ще немає карток.`
-            : 'Карток поки немає.';
-      html=`<div class="soon">${empty}</div>`;
+      const filtered=!!(q||f.pos||f.club||f.coll||f.rarity);
+      html=`<div class="soon" style="grid-column:1/-1">${filtered ? 'Нічого не знайдено — зміни або скинь фільтри.'
+        : mine ? 'У тебе ще немає карток. Усі Rare/Mega, що є в крамниці, — у режимі «Усі Rare/Mega».<br><button class="mini" id="colGoAll" style="margin-top:10px">Показати всі Rare/Mega</button>'
+        : `У «${esc(S.names[pid]||'учасника')}» ще немає карток.`}</div>`;
     }
     g.innerHTML=html;
     const goAll=$('colGoAll'); if(goAll) goAll.onclick=()=>setMode('all');
-    const mega=itemsPool.filter(c=>c.tier==='mega_rare').length, cur=plPool.filter(e=>e.cur).length;
-    const shown=plVis.length+itemsVis.length;
-    const head = f.mode==='mine' ? `твоя колекція · <b>${plPool.length}</b> гравців (${cur} у складі зараз) · <b>${itemsPool.length}</b> Rare/Mega`
-               : f.mode==='user' ? `колекція «${esc(S.names[f.who]||'—')}» · <b>${plPool.length}</b> гравців (${cur} у складі зараз) · <b>${itemsPool.length}</b> Rare/Mega`
-               : `каталог крамниці · <b>${itemsPool.length}</b> карток (${mega} Mega · ${itemsPool.length-mega} Rare) · у крамниці ${itemsPool.filter(c=>!c.owner_profile_id).length} · в учасників ${itemsPool.filter(c=>c.owner_profile_id).length}`;
-    const sum=$('colSum'); if(sum) sum.innerHTML=`${head} · показано ${shown} · натисни картку для деталей`;
+    const nCards=units.reduce((a,u)=>a+u.cards.length,0), cur=units.filter(u=>u.cur).length;
+    const sum=$('colSum'); if(sum) sum.innerHTML=`${mine?'твоя колекція':`колекція «${esc(S.names[pid]||'—')}»`} · <b>${units.length}</b> гравців (${cur} у складі зараз) · ${nCards} Rare/Mega-карток · показано ${vis.length}${mine?' · обирай дизайн під іменем':''}`;
   };
-  const setMode=m=>{
-    S.colF.mode=m; if(m==='user' && !S.colF.who) S.colF.who=others[0]||'';
-    $('view').querySelectorAll('.cmode').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
-    $('colWho').hidden = m!=='user'; $('colOwner').hidden = m!=='all';
+  const setMode=(m,who)=>{
+    S.colF.mode=m; S.colF.who=who||'';
+    $('view').querySelectorAll('.cmode').forEach(b=>b.classList.toggle('on', b.dataset.m===m && (m!=='user' || b.dataset.who===S.colF.who)));
+    $('colOwner').hidden = m!=='all';
     apply();
   };
-  // клік по Rare/Mega — великий показ на чистому подіумі (той самий, що в Ринку/Крамниці), без підписів (відгук Богдана 22.10); по гравцю — його картка, як на «Ринку»
+  // великий показ на чистому подіумі (той самий, що в Ринку/Крамниці), без підписів (відгук Богдана 22.10)
   const openCard=id=>{ const c=all.find(x=>x.id===id); if(c) showFullCard({name:c.title}, c.tier, {current_card_png:c.png_path}); };
-  const open=el=>{ if(el.dataset.p) openPlayerModal(el.dataset.p); else openCard(el.dataset.c); };
+  const openUnit=pl=>{ const u=(S.colF.mode==='mine'?mineUnits:unitsOf(S.colF.who)).find(x=>x.p.id===pl); if(!u) return;
+    if(u.sel.card) showFullCard({name:u.p.name}, u.sel.card.tier, {current_card_png:u.sel.card.png_path});
+    else showFullCard(u.p, u.sel.frame, {...(S.cards[u.p.id]||{}), current_card_png:null, current_card_key:null}); };
+  // зміна дизайну (лише мої): поточному гравцю — як на полі, колишньому — у collection_design (565); при відсутності 565 — старий RPC для поточних
+  const setDesign=async(pl,key)=>{
+    const y=window.scrollY, args = key.startsWith('f:') ? {p_player:pl, p_frame:key.slice(2)} : {p_player:pl, p_card_item:key.slice(2)};
+    let res=await sb.rpc('set_collection_design', args);
+    if(res.error && /function|schema cache|could not find/i.test(res.error.message||'')){
+      const cur=S.players.find(x=>x.id===pl && x.owner_participant_id===S.me.id);
+      if(!cur) return alert('Для колишніх гравців потрібне оновлення бази (SQL 565) — воно ще не залито.');
+      res=await sb.rpc('set_card_design', args);
+    }
+    if(res.error) return alert('Дизайн: '+((res.error.message||res.error)+'').replace(/^.*?(Card: )/,'$1'));
+    await viewCollection(); window.scrollTo(0,y);   // перемальовуємо вкладку на місці
+  };
   const bind=(id,key)=>{ const el=$(id); if(el) el.onchange=()=>{ S.colF[key]=el.value; apply(); }; };
   const qi=$('colQ'); if(qi) qi.oninput=()=>{ S.colF.q=qi.value; apply(); };
-  bind('colPos','pos'); bind('colClub','club'); bind('colColl','coll'); bind('colRarity','rarity'); bind('colOwner','owner'); bind('colSort','sort'); bind('colWho','who');
-  $('view').querySelectorAll('.cmode').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+  bind('colPos','pos'); bind('colClub','club'); bind('colColl','coll'); bind('colRarity','rarity'); bind('colOwner','owner'); bind('colSort','sort');
+  $('view').querySelectorAll('.cmode').forEach(b=>b.onclick=()=>setMode(b.dataset.m,b.dataset.who));
   // картки перемальовуються через innerHTML → клік/Enter через делегування на контейнері (обробники самих карток би губились)
-  g.onclick=e=>{ const el=e.target.closest('.colcard'); if(el) open(el); };
-  g.onkeydown=e=>{ if(e.key!=='Enter' && e.key!==' ') return; const el=e.target.closest('.colcard'); if(el){ e.preventDefault(); open(el); } };
+  const onAct=(e,key)=>{
+    const dz=e.target.closest('[data-design]');
+    if(dz){ if(dz.disabled) return true; if(dz.dataset.locked){ alert('Смарагдова рамка ще не розблокована.'); return true; } setDesign(dz.dataset.pl, dz.dataset.design); return true; }
+    const el=e.target.closest('.colcard'); if(!el) return false;
+    if(el.dataset.c){ openCard(el.dataset.c); return true; }
+    if(e.target.closest('[data-name]')) openPlayerModal(el.dataset.p); else openUnit(el.dataset.p);
+    return true; };
+  g.onclick=e=>{ onAct(e); };
+  g.onkeydown=e=>{ if(e.key!=='Enter' && e.key!==' ') return; if(e.target.closest('[data-design]')) return; const el=e.target.closest('.colcard'); if(el){ e.preventDefault(); if(el.dataset.c) openCard(el.dataset.c); else openUnit(el.dataset.p); } };
   apply();
 }
 
