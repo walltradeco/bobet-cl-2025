@@ -666,6 +666,21 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .acard h3{font-size:14.5px;margin:0 0 4px}
 .acard p{color:var(--text-dim);font-size:12.5px;margin:0}
 .acard .lk{color:var(--dim);font-size:12px;font-family:var(--mono);font-weight:600;margin-top:8px;display:inline-block}
+/* ⚙ адмінка (23.10) */
+.adm-subs{margin:12px 0}
+.subtabs button.soonb{opacity:.55} .subtabs button i{font-size:10px;font-style:normal;color:var(--text-dim);margin-left:3px}
+.admc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 14px}
+.admc h3{font:700 13px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--text-dim);margin:0 0 10px}
+.admchips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.admbtns{display:flex;gap:8px;flex-wrap:wrap}
+.adm-badge{font:700 11px var(--mono);border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--text-dim)} .adm-badge.up{color:var(--up);border-color:var(--accent-d)} .adm-badge.gold{color:var(--gold);border-color:rgba(230,193,75,.5)}
+.admt{width:100%;border-collapse:collapse;font-size:13px} .admt th{text-align:left;font:700 11px var(--mono);color:var(--text-dim);padding:4px 8px;border-bottom:1px solid var(--line)}
+.admt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top} .admt tr.bad td{background:rgba(204,60,60,.08)} .admt .msg{font-size:12px;color:var(--text-dim)} .admt tr.bad .msg{color:var(--down)}
+.admt tr.dimrow td{opacity:.55} .admt select{max-width:230px;background:var(--panel2);color:var(--text);border:1px solid var(--line);border-radius:6px;padding:3px 5px;font:inherit}
+.admlbl{display:block;margin:10px 0 4px;font-size:12px;color:var(--text-dim)}
+.admin-inp{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font:inherit;box-sizing:border-box}
+.pf{display:flex;gap:8px;padding:4px 0;font-size:13px} .pfi{flex:none;width:18px;text-align:center;font-weight:700} .pfit{font-size:12px;color:var(--text-dim);margin-top:2px} .pflevel{font-weight:700;margin-bottom:6px}
+.pf.up .pfi,.pflevel.up{color:var(--up)} .pf.gold .pfi,.pflevel.gold,.admt .gold{color:var(--gold)} .pf.down .pfi,.pflevel.down{color:var(--down)} .pf.dim .pfi{color:var(--text-dim)}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
 .modal.pmodal{max-width:1180px;max-height:96vh;padding:0;overflow-x:hidden;overflow-y:auto}
@@ -695,7 +710,7 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .pm-metarow b{color:var(--text);font-weight:600}
 .pm-metarow .club{display:flex;align-items:center;gap:5px}
 .pm-metarow .crest{width:15px;height:15px;border-radius:4px}
-.pm-rating{text-align:right;flex:none}
+.pm-rating{text-align:right;flex:none;margin-right:28px}   /* 23.10: трохи лівіше — ✕ закриття не налазить на рейтинг */
 .pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
 .pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
 .was{display:block;font-family:var(--mono);font-size:10.5px;font-weight:500;line-height:1.2;color:var(--text-dim);text-transform:none;letter-spacing:0;margin-top:4px;white-space:nowrap}   /* зафіксована початкова вартість під поточною */
@@ -3198,7 +3213,8 @@ function earnedEffect(){ return `при продовженні контракт�
 function benchEarnedNote(names, style){ return `<div class="mnote" style="${style}">🪑 В основі гравці з роллю «Лавка»: ${names.map(n=>`<b>${esc(lastName(n))}</b>`).join(', ')} — після підтвердження складу вони «заслужать основу»: ${earnedEffect()}.</div>`; }
 function earnedHint(){ return `Хто з «Лавки» хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра) — «заслужив основу»: ${earnedEffect()}.`; }
 function benchCardNote(p){ if(!rolesOn()||(p.role||'main')!=='bench') return '';
-  return `<p class="mnote" style="margin:0 0 6px">🪑 Роль <b>Лавка</b>: надбавка +${Math.round(benchPrem()*100)}% до зарплати на весь контракт. ${earnedHint()} Уже підписана зарплата не змінюється.<span class="bench-earned" data-pid="${p.id}"></span></p>`; }
+  /* 23.10 (Богдан: «багато повторюваного тексту»): роль «Лавка» вже видно в статусі картки — без слова «Роль», без повтору «+25% до зарплати» в двох реченнях */
+  return `<p class="mnote" style="margin:0 0 6px">🪑 Надбавка +${Math.round(benchPrem()*100)}% до зарплати на весь контракт (уже підписана не змінюється). Хто хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра) — «заслужив основу»: при продовженні надбавка знімається.<span class="bench-earned" data-pid="${p.id}"></span></p>`; }
 function myMainCount(){ return (S.players||[]).filter(p=>S.me&&p.owner_participant_id===S.me.id&&(p.role||'main')==='main').length; }
 // роль з пікера (обов'язкова, без дефолту): {p_role} лише коли ролі ввімкнено — інакше нічого не додаємо (сумісність зі старим бекендом)
 function roleArgs(box){ if(!rolesOn()) return {}; const el=box||$('mhost').querySelector('.clen'); return { p_role:(el&&el.dataset.prole)||null }; }
@@ -3329,22 +3345,22 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові тури ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?` · <b class="warnc">добігає — продовж контракт, інакше ${autosaleTxt(false)}</b>`:''}${(ci.low && rolesOn() && penOn() && (p.role||'main')==='main' && (+p.wage_per_round||0)>0)?` <b class="warnc">⚠️ Штраф за роль лишається: якщо «Основний» не в основі на дедлайні — борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))} навіть для останнього туру контракту (вердикт — до автопродажу).</b>`:''}</p>`
+    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось турів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/тур`:''}${ci.low?` · <b class="warnc">добігає — ${inPlayRound()?'':'продовж контракт, інакше '}${autosaleTxt(false)}</b>`:''}${(ci.low && !inPlayRound() && rolesOn() && penOn() && (p.role||'main')==='main' && (+p.wage_per_round||0)>0)?` <b class="warnc">⚠️ Штраф за роль лишається: якщо «Основний» не в основі на дедлайні — борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))} навіть для останнього туру контракту (вердикт — до автопродажу).</b>`:''}</p>`
       + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після туру; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     cinfo += benchCardNote(p);
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
       : `<p class="mnote">Контракт уже покриває всі тури, що лишились (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
     const lockedP = lnBlocked(p.id), playNow = inPlayRound(), expNow = !!(playNow && expiringP(p));
-    const extBlockF = playNow ? `<p class="mnote warn">⏳ Тур ${playNow.number} почався: контракти не продовжуються до закриття туру.</p>`
-                    : (lockedP ? `<p class="mnote warn">🔒 Гравець у підтвердженому складі — контракт можна продовжити після закриття туру.</p>` : extBlock);
-    let right = lockedP
-      ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
-      : (playNow
-          ? `<p class="mnote warn">⏳ Тур ${playNow.number} почався: ринок повністю закритий (продаж, вітрина, обмін, трансфер) — відкриється після закриття туру.</p>`
+    /* 23.10 (Богдан: «багато повторюваного тексту»): «тур почався» — ОДНЕ повідомлення замість двох (контракти + ринок); перед пріоритетом «гравець у підтвердженому складі» — під час туру заморожено все */
+    const extBlockF = playNow ? '' : (lockedP ? `<p class="mnote warn">🔒 Гравець у підтвердженому складі — контракт можна продовжити після закриття туру.</p>` : extBlock);
+    let right = playNow
+      ? `<p class="mnote warn" style="margin:0">⏳ Тур ${playNow.number} почався: ринок закритий (продаж, вітрина, обмін, трансфер, продовження контракту) — відкриється після закриття туру.</p>`
+      : (lockedP
+          ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
           : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
-      <p class="mnote">Продаж у ринок працює лише між турами; коли тур почався (заморозка), він закритий.</p>`);
-    if(expNow) right += `<p class="mnote warn">${EXPIRING_TXT}</p>`;
+`);
+    /* 23.10: автопродаж гравця з останнім туром контракту тепер сказано ОДИН раз — у рядку «Контракт» зліва (раніше дублювалось тут EXPIRING_TXT) */
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
     if(S.listingsReady && !lockedP && !expNow && !playNow){
       const lst=S.listings[p.id];
@@ -4279,21 +4295,282 @@ function renderNews(){
   const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
 }
 // ── ⚙ АДМІНКА (патерн BoBet/PSL; дії — наступний крок) ──
-function viewAdmin(){
-  const cards=[
-    ['🎛 Пул гравців','Гравці, стартові вартості, додати/прибрати з пулу (~270–300, 10–15/клуб).'],
-    ['🗓 Тури','Створити / дедлайн / відкрити / закрити. Тур = календарний тиждень (пн–нд).'],
-    ['📊 Рейтинги за тур','Напівавто через staging (збирач SofaScore → підтвердження) або вручну.'],
-    ['👥 Учасники + пошти','Додати/редагувати учасників, запрошення (allowed_emails).'],
-    ['🚪 Пре-маркет','Відкрити вікно (4 дні до 1-го дедлайну), рівний бюджет усім.'],
-    ['⚖ Розв\'язати спірне','Аукціон / трансфер вручну, коригування пулу, фонд.'],
-  ];
-  $('view').innerHTML = `<div class="head2"><h2>Адмінка</h2><span class="sub">патерн BoBet/PSL · заморозка авто (дедлайн → усі результати)</span></div>
-    ${adminConfBlock()}${adminPenBlock()}
-    <div class="adm-grid">${cards.map(([h,p])=>`<div class="acard"><h3>${h}</h3><p>${p}</p><span class="lk">готуємо →</span></div>`).join('')}</div>
-    <p class="dim" style="margin-top:12px">Пул зараз: <b>${S.players.length}</b> гравців · турів: <b>${S.rounds.length}</b>. Дії адмінки — наступний крок.</p>`;
+// ═══ ⚙ АДМІНКА (23.10, рішення Богдана; SQL 566–567…): керувати турніром без Claude. Підвкладки; кожна дія — RPC + запис у журнал.
+// Небезпечні дії — слово + причина (сервер перевіряє теж). Час скрізь — за Києвом. ADM_SUBS: live=false → «скоро» (фази 2–5 плану).
+const KY='Europe/Kyiv';
+function kyParts(iso){ const f=new Intl.DateTimeFormat('en-GB',{timeZone:KY,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'}).formatToParts(new Date(iso)); const o={}; f.forEach(p=>o[p.type]=p.value); return o; }
+const kyInput=iso=>{ if(!iso) return ''; const p=kyParts(iso); return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`; };      // → значення <input type=datetime-local> (Київ)
+const kyFmt=iso=>{ if(!iso) return '—'; const p=kyParts(iso); return `${p.day}.${p.month} ${p.hour}:${p.minute}`; };
+const kyDay=iso=>{ if(!iso) return '—'; const p=kyParts(iso); return `${p.day}.${p.month}`; };
+function kyToISO(y,mo,d,h,mi){   // київський «настінний» час → ISO UTC (вистачає 3 ітерацій для DST)
+  const t0=Date.UTC(y,mo-1,d,h,mi); let t=t0;
+  for(let i=0;i<3;i++){ const p=kyParts(new Date(t).toISOString()); t=t0-(Date.UTC(+p.year,+p.month-1,+p.day,+p.hour,+p.minute)-t); }
+  return new Date(t).toISOString(); }
+const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); return m?kyToISO(+m[1],+m[2],+m[3],+m[4],+m[5]):null; };
+
+const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',false],['config','⚙','Налаштування',false],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
+const ADM_SOON={
+  people:['👥 Учасники й пошти','Додати учасника (ім\'я + пошта + стартові бюджети), перейменувати, змінити пошту, адмін-права, прибрати (лише без майна й угод).'],
+  config:['⚙ Налаштування турніру','Редактор параметрів з поясненнями й діапазонами: ролі й штрафи, очки челенджів, старт Rivals, очки менеджменту, ліміти складу, вікно ціни, зарплати; кожна зміна — в журнал.'],
+  disputes:['⚖ Спірне й ручні дії','Скасувати/закрити аукціон, скасувати трансфер чи обмін, коригування балансу (з причиною), примусовий продаж гравця в ринок, видача картки, «скинути етап» (небезпечне: слово + причина).'],
+  pool:['🎛 Пул гравців і клуби','Додати/прибрати гравця (лише без власника), стартова вартість, фото, ручна травма; клуби пулу й клуби-суперники.']
+};
+const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
+  fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано'};
+const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
+const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
+const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
+
+async function admProbe(){
+  if(S.admOK!==undefined) return S.admOK;
+  try{ const {error}=await sb.rpc('market_admin_log_list',{p_tournament:S.tour.id,p_limit:1}); S.admOK=!(error && /PGRST202|could not find|schema cache/i.test((error.code||'')+' '+(error.message||''))); }
+  catch(e){ S.admOK=false; }
+  return S.admOK;
+}
+async function admCall(fn,args,okMsg){
+  const {data,error}=await sb.rpc(fn,args);
+  if(error){ alert('⛔ '+String(error.message||error).replace(/^.*?(Squad: )/,'$1')); return {error}; }
+  if(okMsg) alert('✅ '+okMsg);
+  await loadRefs(); return {data};
+}
+// модалка небезпечної дії: слово + причина (кнопка активна, лише коли обидва ок; сервер перевіряє те саме)
+function admDanger({title,body,word,label,reasonLabel,onOk}){
+  modalOpen(`<h3>${title}</h3><div style="font-size:14px;margin:8px 0 10px;line-height:1.45">${body}</div>
+    ${word?`<label class="admlbl">Впиши слово <b>${esc(word)}</b></label><input id="dgWord" class="admin-inp" autocomplete="off" placeholder="${esc(word)}">`:''}
+    <label class="admlbl">${esc(reasonLabel||'Причина (мінімум 5 символів; піде в журнал)')}</label><textarea id="dgReason" class="admin-inp" rows="2"></textarea>
+    <div class="macts"><button data-do="dgok" disabled>${esc(label)}</button><button class="ghost" data-do="dgno">Скасувати</button></div>`);
+  const ok=$('mhost').querySelector('[data-do="dgok"]'), w=$('dgWord'), r=$('dgReason');
+  const upd=()=>{ ok.disabled=!((!word||(w.value.trim()===word)) && r.value.trim().length>=5); };
+  [w,r].forEach(el=>el&&el.addEventListener('input',upd)); upd();
+  ok.onclick=async()=>{ const c=w?w.value.trim():null, why=r.value.trim(); modalClose(); await onOk(c,why); };
+  $('mhost').querySelector('[data-do="dgno"]').onclick=modalClose;
+}
+
+// ───────── розбір списку матчів: «Господарі — Гості, ДД.ММ ГГ:ХХ[, event]» ─────────
+const CLUB_ALIAS={'арсенал':'Arsenal','астон вілла':'Aston Villa','борнмут':'Bournemouth','брентфорд':'Brentford','брайтон':'Brighton & Hove Albion','челсі':'Chelsea','ковентрі':'Coventry City','кристал пелес':'Crystal Palace',
+  'евертон':'Everton','халл':'Hull City','халл сіті':'Hull City','іпсвіч':'Ipswich Town','лідс':'Leeds United','ліверпуль':'Liverpool','манчестер сіті':'Man City','ман сіті':'Man City','манчестер юнайтед':'Man Utd','ман юнайтед':'Man Utd','мю':'Man Utd',
+  'ньюкасл':'Newcastle United','ноттінгем':'Nottingham Forest','ноттінгем форест':'Nottingham Forest','тоттенгем':'Tottenham','баварія':'Bayern','дортмунд':'Dortmund','боруссія дортмунд':'Dortmund','байєр':'Leverkusen','баєр':'Leverkusen',
+  'леверкузен':'Leverkusen','лейпциг':'RB Leipzig','айнтрахт':'Eintracht Frankfurt','фрайбург':'SC Freiburg','вердер':'SV Werder Bremen','уніон берлін':'1. FC Union Berlin','аугсбург':'FC Augsburg','атлетік':'Athletic','атлетіко':'Atletico',
+  'барселона':'Barcelona','барса':'Barcelona','бетіс':'Betis','сельта':'Celta Vigo','хетафе':'Getafe','реал мадрид':'Real Madrid','реал':'Real Madrid','реал сосьєдад':'Real Sociedad','севілья':'Sevilla','валенсія':'Valencia','вільярреал':'Villarreal',
+  'осасуна':'Osasuna','райо вальєкано':'Rayo Vallecano','еспаньйол':'Espanyol','леванте':'Levante','парма':'Parma','інтер':'Inter','мілан':'Milan','ювентус':'Juventus','наполі':'Napoli','рома':'Roma','лаціо':'Lazio','аталанта':'Atalanta',
+  'болонья':'Bologna','фіорентина':'Fiorentina','комо':'Como','дженоа':'Genoa','кальярі':'Cagliari','удінезе':'Udinese','сассуоло':'Sassuolo','лечче':'Lecce','псж':'PSG','парі сен жермен':'PSG','ліон':'Olympique Lyonnais','страсбур':'RC Strasbourg',
+  'ле гавр':'Le Havre','динамо':'Dynamo Kyiv','динамо київ':'Dynamo Kyiv','шахтар':'Shakhtar','полісся':'Polissya','зоря':'Zoria Luhansk','колос':'Kolos Kovalivka','кривбас':'Kryvbas Kryvyi Rih','карпати':'Karpaty Lviv','оболонь':'Obolon Kyiv',
+  'верес':'NK Veres Rivne','буковина':'Bukovyna Chernivtsi','кудрівка':'Kudrivka'};
+const admNorm=s=>String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9а-яіїєґ ]+/g,' ').replace(/\s+/g,' ').trim();
+function admClubList(){ return Object.values(S.clubs||{}).sort((a,b)=>(a.league||'').localeCompare(b.league||'')||a.name.localeCompare(b.name)); }
+function admMatchClub(name){
+  const n=admNorm(name); if(!n) return null; const cl=admClubList();
+  const al=CLUB_ALIAS[n]; if(al){ const c=cl.find(x=>x.name===al); if(c) return c; }
+  const ex=cl.filter(c=>admNorm(c.name)===n); if(ex.length===1) return ex[0];
+  const st=cl.filter(c=>admNorm(c.name).startsWith(n)||n.startsWith(admNorm(c.name))); if(st.length===1) return st[0];
+  const inc=cl.filter(c=>admNorm(c.name).includes(n)); return inc.length===1?inc[0]:null;
+}
+function admParseFixtures(text){
+  const rows=[], now=new Date();
+  String(text||'').split(/\n+/).map(s=>s.trim()).filter(Boolean).forEach(line=>{
+    const m=line.match(/^(.+?)(?:\s*[—–]\s*|\s+-\s+|\s+vs\.?\s+)(.+?)\s*[,;|]\s*(?:(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[./](\d{1,2})(?:[./](\d{2,4}))?)\s+(\d{1,2})[:.](\d{2})(?:\s*[,;|\s]\s*(\d{5,}))?\s*$/i);
+    if(!m){ rows.push({line,err:'не розпізнано рядок (формат: Господарі — Гості, ДД.ММ ГГ:ХХ[, event id])'}); return; }
+    let y,mo,d; if(m[3]){ y=+m[3]; mo=+m[4]; d=+m[5]; } else { d=+m[6]; mo=+m[7]; y=m[8]?(+m[8]<100?2000+ +m[8]:+m[8]):now.getFullYear();
+      if(!m[8]){ const t=new Date(Date.UTC(y,mo-1,d)); if(t<now-60*864e5) y++; } }
+    const h=+m[9], mi=+m[10];
+    if(mo<1||mo>12||d<1||d>31||h>23||mi>59){ rows.push({line,err:'некоректна дата/час'}); return; }
+    rows.push({line, home:admMatchClub(m[1])?.id||'', away:admMatchClub(m[2])?.id||'', homeTxt:m[1].trim(), awayTxt:m[2].trim(), kickoff:kyToISO(y,mo,d,h,mi), event:m[11]||''});
+  });
+  return rows;
+}
+// редактор матчів: textarea → розібрати → перегляд із селектами клубів → submit(items). ctx: {deadline (ISO|null), roundId|null, existing: фікстури туру}
+function admFixtureEditor(host, ctx, label, onSubmit){
+  const id='fe'+Math.random().toString(36).slice(2,7);
+  host.innerHTML=`<textarea id="${id}t" class="admin-inp" rows="6" placeholder="Arsenal — Chelsea, 08.11 15:00, 16412971&#10;Динамо — Шахтар, 09.11 13:00&#10;(один матч на рядок; назви клубів — як у SofaScore або українською; event id необов'язковий)"></textarea>
+    <div style="margin:8px 0"><button class="mini" id="${id}p">Розібрати список</button></div><div id="${id}v"></div>`;
+  const pool=new Set((S.players||[]).filter(p=>p.club_id).map(p=>p.club_id));
+  let rows=[];
+  const opts=sel=>`<option value="">— обери клуб —</option>`+(()=>{ let lg='',o=''; admClubList().forEach(c=>{ if(c.league!==lg){ if(lg) o+='</optgroup>'; lg=c.league; o+=`<optgroup label="${esc(lg)}">`; } o+=`<option value="${c.id}"${c.id===sel?' selected':''}>${esc(c.name)}${pool.has(c.id)?' ★':''}</option>`; }); return o+(lg?'</optgroup>':''); })()+`<option value="__new">＋ новий клуб…</option>`;
+  const check=()=>{   // клієнтські перевірки (сервер — остаточний арбітр)
+    const seenEv=new Map(), seenClub=new Map();
+    (ctx.existing||[]).forEach(f=>{ if(f.sofascore_event_id) seenEv.set(String(f.sofascore_event_id),'уже в турі'); if(pool.has(f.home_club_id)) seenClub.set(f.home_club_id,'вже має матч'); if(pool.has(f.away_club_id)) seenClub.set(f.away_club_id,'вже має матч'); });
+    rows.forEach(r=>{ r.msg=r.err||''; if(r.err) return;
+      if(!r.home||!r.away) r.msg='обери обидва клуби'; else if(r.home===r.away) r.msg='клуб проти самого себе';
+      else if(ctx.deadline && new Date(r.kickoff)<=new Date(ctx.deadline)) r.msg='матч раніше за дедлайн туру';
+      else if(r.event && seenEv.has(String(r.event))) r.msg='event id '+r.event+' вже є';
+      else { for(const c of [r.home,r.away]) if(pool.has(c) && seenClub.has(c)){ r.msg=`клуб пулу «${esc(S.clubs[c]?.name||'?')}» вже має матч`; break; } }
+      if(!r.msg){ if(r.event) seenEv.set(String(r.event),1); [r.home,r.away].forEach(c=>{ if(pool.has(c)) seenClub.set(c,1); }); } });
+  };
+  const draw=()=>{ check(); const bad=rows.filter(r=>r.msg).length;
+    $(id+'v').innerHTML=rows.length?`<table class="admt"><thead><tr><th>#</th><th>Господарі</th><th>Гості</th><th>Початок (Київ)</th><th>event</th><th></th></tr></thead><tbody>${rows.map((r,i)=>r.err
+      ?`<tr class="bad"><td>${i+1}</td><td colspan="4">${esc(r.line)}</td><td class="msg">${esc(r.err)}</td></tr>`
+      :`<tr class="${r.msg?'bad':'ok'}"><td>${i+1}</td><td><select data-fe="home" data-i="${i}">${opts(r.home)}</select>${r.home?'':`<div class="dim">«${esc(r.homeTxt)}»</div>`}</td><td><select data-fe="away" data-i="${i}">${opts(r.away)}</select>${r.away?'':`<div class="dim">«${esc(r.awayTxt)}»</div>`}</td>
+        <td>${kyFmt(r.kickoff)}</td><td>${esc(r.event||'—')}</td><td class="msg">${r.msg?esc(r.msg):'✓'}</td></tr>`).join('')}</tbody></table>
+      <div style="margin-top:10px"><button id="${id}go" ${bad?'disabled':''}>${esc(label.replace('{n}',rows.length))}</button>${bad?` <span class="dim">виправ ${bad} рядок(ів)</span>`:''}</div>`:'';
+    $(id+'v').querySelectorAll('select[data-fe]').forEach(s=>s.onchange=()=>{ const i=+s.dataset.i;
+      if(s.value==='__new'){ admClubForm(async cid=>{ if(cid){ await loadRefs(); rows[i][s.dataset.fe]=cid; } draw(); }); return; }
+      rows[i][s.dataset.fe]=s.value; draw(); });
+    const go=$(id+'go'); if(go) go.onclick=()=>onSubmit(rows.map(r=>({home_club:r.home,away_club:r.away,kickoff:r.kickoff,event_id:r.event?+r.event:null})));
+  };
+  $(id+'p').onclick=()=>{ rows=admParseFixtures($(id+'t').value); draw(); if(ctx.onParsed) ctx.onParsed(rows); };
+}
+function admClubForm(done){
+  modalOpen(`<h3>Новий клуб-суперник</h3><p class="mnote">Клуб потрібен лише як суперник у матчі (гравців пулу в ньому нема). Назва — англійською, як у SofaScore; team id — число з посилання <code>/team/…/{id}</code>.</p>
+    <label class="admlbl">Назва</label><input id="ncName" class="admin-inp" placeholder="Zoria Luhansk"><label class="admlbl">Ліга</label><input id="ncLeague" class="admin-inp" placeholder="УПЛ">
+    <label class="admlbl">SofaScore team id</label><input id="ncTid" class="admin-inp" inputmode="numeric" placeholder="312677">
+    <div class="macts"><button data-do="ncok">Додати клуб</button><button class="ghost" data-do="ncno">Скасувати</button></div>`);
+  $('mhost').querySelector('[data-do="ncno"]').onclick=()=>{ modalClose(); done(null); };
+  $('mhost').querySelector('[data-do="ncok"]').onclick=async()=>{
+    const {data,error}=await sb.rpc('admin_squad_club_add',{p_tournament:S.tour.id,p_name:$('ncName').value,p_league:$('ncLeague').value,p_tid:+$('ncTid').value||null});
+    if(error){ alert('⛔ '+String(error.message).replace(/^.*?(Squad: )/,'$1')); return; }
+    modalClose(); done(data&&data.id); };
+}
+
+// ───────── вкладка «Огляд» (поки: розблокування складів, борги; повний огляд — фаза 2) ─────────
+function admOverview(body){
+  const rs=(S.rounds||[]).map(r=>{ const st=admState(r), a=(S.attn||{})[r.number]; const [t,cl]=ADM_STL[st];
+    return `<tr><td>Тур ${r.number}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${a&&a.reason?`<span class="down">${esc(a.reason)}</span>`:'—'}</td></tr>`; }).join('');
+  body.innerHTML=`${adminConfBlock()}${adminPenBlock()}
+    <div class="admc"><h3>🗓 Тури зараз</h3><table class="admt"><thead><tr><th>Тур</th><th>Дедлайн (Київ)</th><th>Стан</th><th>Увага</th></tr></thead><tbody>${rs||'<tr><td colspan="4" class="dim">Турів ще нема</td></tr>'}</tbody></table>
+      <p class="mnote" style="margin-top:8px">Керування турами й матчами — у «🗓 Тури». Повний огляд «що горить» (health, свіжість рейтингів/травм, черги) — наступна фаза.</p></div>`;
   { const r=lnRound(); if(r) bindUnconf(r); }
   bindPenCancel();
+}
+
+// ───────── вкладка «Тури» ─────────
+async function admRounds(body){
+  const A=S.adm, T=S.tour.id;
+  body.innerHTML='<div class="spin">завантаження…</div>';
+  let rounds,fx; try{ [rounds,fx]=await Promise.all([ sbSel(`market_rounds?tournament_id=eq.${T}&select=*&order=number.asc`), sbSel(`market_fixtures?tournament_id=eq.${T}&select=*&order=kickoff_at.asc&limit=1000`) ]); }
+  catch(e){ body.innerHTML='<div class="soon">Не вдалося завантажити тури: '+esc(e.message||e)+'</div>'; return; }
+  A.rounds=rounds; A.fx=fx;
+  if(A.rid!=='new' && !rounds.some(r=>r.id===A.rid)){ const nx=rounds.find(r=>!r.results_entered_at)||rounds[rounds.length-1]; A.rid=nx?nx.id:'new'; }
+  const chips=rounds.map(r=>{ const st=admState(r); return `<button class="mini ${A.rid===r.id?'':'ghost'}" data-ar="${r.id}">Тур ${r.number}${st==='closed'?' ✔':st==='draft'?'':' ⏳'}</button>`; }).join('')
+    +` <button class="mini ${A.rid==='new'?'':'ghost'}" data-ar="new">➕ Новий тур</button>`;
+  body.innerHTML=`<div class="admchips">${chips}</div><div id="admRound"></div>`;
+  body.querySelectorAll('[data-ar]').forEach(b=>b.onclick=()=>{ A.rid=b.dataset.ar; admRounds(body); });
+  const box=$('admRound');
+  if(A.rid==='new') return admNewRound(box,rounds,body);
+  const r=rounds.find(x=>x.id===A.rid); if(!r){ box.innerHTML='<div class="soon">Турів ще нема — створи перший.</div>'; return; }
+  admRoundView(box,r,fx.filter(f=>f.round_id===r.id),body);
+}
+function admRoundView(box,r,fx,body){
+  const st=admState(r), [stl,stc]=ADM_STL[st], T=S.tour.id, started=(st==='started'||st==='open');
+  const cn=id=>esc(S.clubs[id]?.name||'?');
+  const rows=fx.map(f=>`<tr class="${f.status==='cancelled'?'dimrow':''}"><td>${kyFmt(f.kickoff_at)}</td><td><b>${cn(f.home_club_id)}</b> — <b>${cn(f.away_club_id)}</b>${f.home_score!=null?` <span class="dim">${f.home_score}:${f.away_score}</span>`:''}</td>
+    <td>${f.sofascore_event_id?esc(f.sofascore_event_id):'<span class="down">нема</span>'}</td>
+    <td>${f.status==='played'?'зіграно':`<select data-fst="${f.id}" ${st==='closed'?'disabled':''}>${['scheduled','postponed','cancelled'].map(s=>`<option value="${s}"${f.status===s?' selected':''}>${ADM_ST[s]}</option>`).join('')}</select>`}</td>
+    <td>${st==='closed'||f.status==='played'?'':`<button class="mini ghost" data-fed="${f.id}" title="Час / event id">✏️</button> <button class="mini ghost" data-fdel="${f.id}" title="Видалити матч">🗑</button>`}</td></tr>`).join('');
+  box.innerHTML=`<div class="admc"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:baseline"><h3 style="margin:0">${esc(r.title||('Тур '+r.number))}</h3><span class="adm-badge ${stc}">${stl}</span></div>
+      <div class="mnote" style="margin:6px 0 10px">Дедлайн: <b>${kyFmt(r.deadline_at)}</b> (Київ)${r.deadline_note?` · <b>причина зсуву:</b> ${esc(r.deadline_note)}`:''} · тиждень: ${r.week_start?kyDay(r.week_start+'T12:00:00Z'):'—'}–${r.week_end?kyDay(r.week_end+'T12:00:00Z'):'—'} · матчів: <b>${fx.length}</b></div>
+      <div class="admbtns">${st==='closed'?'':'<button class="mini" data-ra="deadline">⏱ Зсунути дедлайн</button>'}<button class="mini ghost" data-ra="rename">✏️ Назва / тиждень</button>
+        ${st==='closed'?'':(r.deadline_at&&new Date(r.deadline_at)<=new Date()?'<button class="mini" data-ra="close">✅ Закрити тур вручну</button>':'')}
+        ${st==='draft'?'<button class="mini ghost" data-ra="delete">🗑 Видалити тур</button>':''}</div></div>
+    <div class="admc"><h3>🔍 Передперевірка туру</h3><div id="admPf"><div class="spin">перевіряю…</div></div></div>
+    <div class="admc"><h3>⚽ Матчі туру</h3>${fx.length?`<table class="admt"><thead><tr><th>Початок (Київ)</th><th>Матч</th><th>event</th><th>Статус</th><th></th></tr></thead><tbody>${rows}</tbody></table>`:'<p class="dim">Матчів ще нема.</p>'}</div>
+    ${st==='closed'?'':`<div class="admc"><h3>➕ Додати матчі</h3>${started?'<p class="mnote warn">Тур уже почався: зміни — лише зі словом «ЗМІНИТИ» і причиною.</p>':''}<div id="admAdd"></div></div>`}`;
+  admPreflight(r);
+  const reload=()=>admRounds(body);
+  if(st!=='closed') admFixtureEditor($('admAdd'),{deadline:r.deadline_at,existing:fx},'Додати {n} матч(ів)',items=>{
+    const go=async(c,why)=>{ const {error}=await admCall('admin_squad_fixtures_add',{p_round:r.id,p_items:items,p_confirm:c||null,p_reason:why||null},`Додано матчів: ${items.length}`); if(!error) reload(); };
+    if(started) admDanger({title:'Додати матчі в тур, що почався',body:`Додати ${items.length} матч(ів) у ${esc(r.title||('Тур '+r.number))}? Дедлайн минув або склади відкрито — це змінює склад матчів, що рахуються.`,word:'ЗМІНИТИ',label:'Додати',onOk:go}); else go(); });
+  box.querySelectorAll('[data-ra]').forEach(b=>b.onclick=()=>admRoundAction(b.dataset.ra,r,fx,reload));
+  box.querySelectorAll('[data-fst]').forEach(s=>s.onchange=()=>{ const f=fx.find(x=>x.id===s.dataset.fst), to=s.value; s.value=f.status;
+    admDanger({title:'Статус матчу',body:`${cn(f.home_club_id)} — ${cn(f.away_club_id)}: «${ADM_ST[f.status]}» → «${ADM_ST[to]}». ${to!=='scheduled'?'Тур не закриється сам, поки такий матч є — знадобиться ручне закриття.':''}`,word:started?'ЗМІНИТИ':null,label:'Змінити статус',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_fixture_status',{p_fixture:f.id,p_status:to,p_reason:why,p_confirm:c||null},'Статус змінено'); if(!error) reload(); }}); });
+  box.querySelectorAll('[data-fed]').forEach(b=>b.onclick=()=>{ const f=fx.find(x=>x.id===b.dataset.fed);
+    modalOpen(`<h3>Матч: час / event id</h3><p class="mnote">${cn(f.home_club_id)} — ${cn(f.away_club_id)}</p>
+      <label class="admlbl">Початок (Київ)</label><input id="feK" type="datetime-local" class="admin-inp" value="${kyInput(f.kickoff_at)}">
+      <label class="admlbl">SofaScore event id (порожньо = не міняти)</label><input id="feE" class="admin-inp" inputmode="numeric" value="${f.sofascore_event_id||''}">
+      <label style="display:block;margin:6px 0"><input type="checkbox" id="feC"> зняти привʼязку до SofaScore</label>
+      <div class="macts"><button data-do="feok">Далі</button><button class="ghost" data-do="feno">Скасувати</button></div>`);
+    $('mhost').querySelector('[data-do="feno"]').onclick=modalClose;
+    $('mhost').querySelector('[data-do="feok"]').onclick=()=>{ const k=kyInputToISO($('feK').value), ev=$('feE').value.trim(), clr=$('feC').checked; modalClose();
+      admDanger({title:'Змінити матч',body:'Зміна часу/event id. '+(started?'Тур уже почався — потрібне слово.':'Причина піде в журнал.'),word:started?'ЗМІНИТИ':null,label:'Зберегти',
+        onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_fixture_update',{p_fixture:f.id,p_kickoff:k,p_event_id:(ev&&!clr)?+ev:null,p_clear_event:clr,p_confirm:c||null,p_reason:why},'Матч збережено'); if(!error) reload(); }}); }; });
+  box.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=()=>{ const f=fx.find(x=>x.id===b.dataset.fdel);
+    admDanger({title:'Видалити матч',body:`${cn(f.home_club_id)} — ${cn(f.away_club_id)}, ${kyFmt(f.kickoff_at)}. Лише матч без рейтингів; тур перераховується передперевіркою.`,word:'ВИДАЛИТИ',label:'Видалити',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_fixture_delete',{p_fixture:f.id,p_confirm:c,p_reason:why},'Матч видалено'); if(!error) reload(); }}); });
+}
+async function admPreflight(r){
+  const box=$('admPf'); if(!box) return;
+  const {data,error}=await sb.rpc('admin_squad_round_preflight',{p_round:r.id});
+  if(!$('admPf')) return;
+  if(error){ $('admPf').innerHTML='<span class="down">'+esc(String(error.message).replace(/^.*?(Squad: )/,'$1'))+'</span>'; return; }
+  const ic={ok:'✓',warn:'⚠',error:'✗',info:'ℹ'}, cl={ok:'up',warn:'gold',error:'down',info:'dim'};
+  $('admPf').innerHTML=`<div class="pflevel ${cl[data.level]||''}">${data.level==='ok'?'✅ Тур готовий':data.level==='warn'?'⚠ Є попередження':'✗ Є помилки — виправ перед стартом'}</div>`+
+    data.checks.map(c=>`<div class="pf ${cl[c.level]||''}"><span class="pfi">${ic[c.level]||'•'}</span><div>${esc(c.text)}${(Array.isArray(c.items)&&c.items.length)?`<div class="pfit">${c.items.map(x=>esc(typeof x==='string'?x:(x.club?`${x.club} — матчів: ${x.matches}`:JSON.stringify(x)))).join('<br>')}</div>`:''}
+      ${(c.key==='deadline_rule'&&c.items&&c.items.suggested)?`<div><button class="mini" data-pfset="${esc(c.items.suggested)}">Виставити дедлайн за правилом (${kyFmt(c.items.suggested)})</button></div>`:''}</div></div>`).join('');
+  $('admPf').querySelectorAll('[data-pfset]').forEach(b=>b.onclick=()=>admRoundAction('deadline',r,[],()=>admRounds($('admBody')),b.dataset.pfset));
+}
+function admRoundAction(a,r,fx,reload,presetISO){
+  const nm=esc(r.title||('Тур '+r.number)), pastDl=new Date(r.deadline_at)<=new Date();
+  if(a==='deadline'){
+    modalOpen(`<h3>Зсунути дедлайн · ${nm}</h3><p class="mnote">Зараз: <b>${kyFmt(r.deadline_at)}</b> (Київ). ${pastDl?'<b class="warn">Дедлайн уже минув — потрібне слово «ЗСУНУТИ»; можливо лише поки склади не відкрито.</b> ':''}Причина буде ВИДИМА ВСІМ учасникам у кабінеті.</p>
+      <label class="admlbl">Новий дедлайн (Київ)</label><input id="dlK" type="datetime-local" class="admin-inp" value="${kyInput(presetISO||r.deadline_at)}">
+      <div class="macts"><button data-do="dlok">Далі</button><button class="ghost" data-do="dlno">Скасувати</button></div>`);
+    $('mhost').querySelector('[data-do="dlno"]').onclick=modalClose;
+    $('mhost').querySelector('[data-do="dlok"]').onclick=()=>{ const iso=kyInputToISO($('dlK').value); if(!iso){ alert('Вкажи дату й час'); return; } modalClose();
+      admDanger({title:'Причина зсуву дедлайну',body:`Новий дедлайн: <b>${kyFmt(iso)}</b> (Київ). Нагадування про дедлайн перерахуються.`,word:pastDl?'ЗСУНУТИ':null,label:'Зсунути',reasonLabel:'Причина (її бачать усі учасники)',
+        onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_round_deadline',{p_round:r.id,p_new:iso,p_reason:why,p_confirm:c||null},'Дедлайн зсунуто'); if(!error) reload(); }}); }; }
+  else if(a==='rename'){
+    modalOpen(`<h3>Назва й тиждень · ${nm}</h3><label class="admlbl">Назва</label><input id="rnT" class="admin-inp" value="${esc(r.title||'')}">
+      <label class="admlbl">Початок тижня</label><input id="rnS" type="date" class="admin-inp" value="${r.week_start||''}"><label class="admlbl">Кінець тижня</label><input id="rnE" type="date" class="admin-inp" value="${r.week_end||''}">
+      <div class="macts"><button data-do="rnok">Зберегти</button><button class="ghost" data-do="rnno">Скасувати</button></div>`);
+    $('mhost').querySelector('[data-do="rnno"]').onclick=modalClose;
+    $('mhost').querySelector('[data-do="rnok"]').onclick=async()=>{ const args={p_round:r.id,p_title:$('rnT').value||null,p_week_start:$('rnS').value||null,p_week_end:$('rnE').value||null}; modalClose();
+      const {error}=await admCall('admin_squad_round_update',args,'Збережено'); if(!error) reload(); }; }
+  else if(a==='close'){
+    const n={played:0,off:0,other:0}; fx.forEach(f=>{ if(f.status==='played') n.played++; else if(f.status==='cancelled'||f.status==='postponed') n.off++; else n.other++; });
+    admDanger({title:`Закрити ${nm} вручну`,body:`Зіграно матчів: <b>${n.played}</b>; скасовано/перенесено: <b>${n.off}</b>; не завершено: <b>${n.other}</b>. Закриття НЕЗВОРОТНЕ: порахуються ціни, зарплати, знімок Банку, Rivals, 💎/💼; очки матчів без рейтингів не нарахуються. Звичайно тур закривається сам, коли всі матчі готові — ручне потрібне лише для скасованого/перенесеного матчу.`,word:'ЗАКРИТИ',label:'Закрити тур',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_round_close',{p_round:r.id,p_confirm:c,p_reason:why},'Тур закрито'); if(!error) reload(); }}); }
+  else if(a==='delete'){
+    admDanger({title:`Видалити ${nm}`,body:'Видаляється лише тур без жодних даних (склади, бусти, Rivals, рейтинги…) разом із його матчами. Сервер відмовить, якщо дані є.',word:'ВИДАЛИТИ',label:'Видалити тур',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_round_delete',{p_round:r.id,p_confirm:c,p_reason:why},'Тур видалено'); if(!error){ S.adm.rid=null; reload(); } }}); }
+}
+function admNewRound(box,rounds,body){
+  const next=(rounds.reduce((m,r)=>Math.max(m,r.number),0))+1, T=S.tour.id;
+  box.innerHTML=`<div class="admc"><h3>➕ Новий тур № ${next}</h3><p class="mnote">Встав матчі списком — дедлайн (21:59 Київ за добу до першого матчу), тиждень і назва підставляться самі; їх можна змінити. Тур створюється разом із матчами одним кроком.</p>
+      <div id="admNewEd"></div><div id="admNewForm" style="display:none;margin-top:12px">
+      <label class="admlbl">Назва (порожньо = авто, напр. «Тур ${next} · 6–8 листопада»)</label><input id="nrT" class="admin-inp">
+      <label class="admlbl">Дедлайн (Київ) — підставлено за правилом; можна змінити</label><input id="nrD" type="datetime-local" class="admin-inp"></div></div>`;
+  admFixtureEditor($('admNewEd'),{deadline:null,existing:[],onParsed:async rows=>{
+      $('admNewForm').style.display=rows.length?'block':'none';
+      const first=rows.filter(r=>!r.err).map(r=>r.kickoff).sort()[0];
+      if(first){ const {data}=await sb.rpc('admin_squad_deadline_suggest',{p_tournament:T,p_first_kickoff:first}); if(data) $('nrD').value=kyInput(data); } }},
+    'Створити тур із {n} матчів',async items=>{
+      const {error}=await admCall('admin_squad_round_create',{p_tournament:T,p_number:next,p_title:$('nrT').value||null,p_week_start:null,p_week_end:null,p_deadline:kyInputToISO($('nrD').value),p_items:items},`Тур ${next} створено`);
+      if(!error){ S.adm.rid=null; admRounds(body); } });
+}
+
+// ───────── вкладка «Журнал» ─────────
+async function admLog(body){
+  body.innerHTML='<div class="spin">завантаження…</div>';
+  const {data,error}=await sb.rpc('market_admin_log_list',{p_tournament:S.tour.id,p_limit:200});
+  if(error){ body.innerHTML='<div class="soon">Журнал недоступний: '+esc(String(error.message).replace(/^.*?(Squad: )/,'$1'))+'</div>'; return; }
+  const sum=l=>{ const t=l.target||{}, b=l.before||{}, a=l.after||{};
+    if(l.action==='round_create') return `Тур ${t.round}: ${esc(a.title||'')}, дедлайн ${kyFmt(a.deadline)}, матчів ${(a.fixtures||[]).length}`;
+    if(l.action==='round_deadline') return `Тур ${t.round}: ${kyFmt(b.deadline)} → ${kyFmt(a.deadline)}`;
+    if(l.action==='fixtures_add') return `Тур ${t.round}: +${(a.fixtures||[]).length}${t.started?' (тур уже почався)':''}`;
+    if(l.action==='fixture_update') return `Тур ${t.round}: ${kyFmt(b.kickoff)} → ${kyFmt(a.kickoff)}${a.event_id!==b.event_id?` · event ${b.event_id||'—'} → ${a.event_id||'—'}`:''}`;
+    if(l.action==='fixture_status') return `Тур ${t.round}: ${ADM_ST[b.status]||b.status} → ${ADM_ST[a.status]||a.status}`;
+    if(l.action==='fixture_delete') return `Тур ${t.round}: ${esc(b.fixture||'')}`;
+    if(l.action==='round_close') return `Тур ${t.round}: матчів ${b.fixtures}, готових ${b.ready}, не готових ${(b.not_ready||[]).length}`;
+    if(l.action==='round_delete') return `Тур ${t.round}: ${esc(b.title||'')}`;
+    if(l.action==='round_update') return `Тур ${t.round}: ${esc(b.title||'')} → ${esc(a.title||'')}`;
+    if(l.action==='club_add') return `${esc(t.club||'')} (${esc(a.league||'')}), tid ${t.sofascore_tid}`;
+    return esc(JSON.stringify(t)); };
+  body.innerHTML=`<div class="admc"><h3>📜 Журнал дій адміна</h3>${(data||[]).length?`<table class="admt"><thead><tr><th>Коли (Київ)</th><th>Хто</th><th>Дія</th><th>Деталі</th><th>Причина</th></tr></thead><tbody>${data.map(l=>`<tr><td>${kyFmt(l.created_at)}</td><td>${esc(l.actor)}</td><td>${esc(ADM_ACT[l.action]||l.action)}</td><td>${sum(l)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="dim">Дій адміна ще не було.</p>'}</div>`;
+}
+
+async function viewAdmin(){
+  if(!(S.me && S.me.is_admin)){ $('view').innerHTML='<div class="soon">Адмінка — лише для адміна турніру.</div>'; return; }
+  const A=S.adm||(S.adm={sub:'rounds',rid:null});
+  const ok=await admProbe();
+  $('view').innerHTML=`<div class="head2"><h2>Адмінка</h2><span class="sub">керування турніром без Claude · кожна дія — у журналі · час — за Києвом</span></div>
+    <div class="subtabs adm-subs">${ADM_SUBS.map(([k,ic,l,live])=>`<button data-asub="${k}" class="${A.sub===k?'on':''}${live?'':' soonb'}">${ic} ${l}${live?'':' <i>скоро</i>'}</button>`).join('')}</div><div id="admBody"></div>`;
+  $('view').querySelectorAll('[data-asub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.asub; viewAdmin(); });
+  const body=$('admBody');
+  if(A.sub==='overview') return admOverview(body);
+  if(!ok && (A.sub==='rounds'||A.sub==='log')){ body.innerHTML='<div class="soon">Адмін-функції ще не залито в базу (SQL <b>566</b> і <b>567</b>). Після заливки ця вкладка запрацює.</div>'; return; }
+  if(A.sub==='rounds') return admRounds(body);
+  if(A.sub==='log') return admLog(body);
+  const s=ADM_SOON[A.sub]; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;
 }
 
 // 542: «Сплатити борг» з банера (делегування: банер є і на «Мій склад», і на «Ринок»)
