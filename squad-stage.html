@@ -432,6 +432,12 @@ table.grid{min-width:0}
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
 .sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
 @keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+/* відкриття: спочатку сцена (малий файл), потім карта одразу в повній якості; поки вантажиться — спінер (23.10) */
+.sqfull .stage{opacity:0;transition:opacity .35s ease} .sqfull.sc .stage{opacity:1}
+.sqfull .podium-card{opacity:0;transition:opacity .4s ease} .sqfull.cd .podium-card{opacity:1}
+.sqfull .sqload{position:absolute;left:50%;top:46%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid rgba(255,255,255,.16);border-top-color:#26c281;animation:sqspin .8s linear infinite;z-index:5;pointer-events:none}
+.sqfull.cd .sqload{display:none}
+@keyframes sqspin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт із кабінету — тримати в синхроні) ── */
@@ -1002,40 +1008,50 @@ function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=n
 function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
 function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmUrl(png); };
   ['pointerenter','focus','touchstart'].forEach(ev=>btn.addEventListener(ev,go,{once:true,passive:true})); }
-function upgradeArt(el,full){   // el = .sqfull; thumb → повний арт (мініатюра лишається, якщо повний не завантажився)
-  const im=el.querySelector('img.rarepng'), tilt=el.querySelector('.tilt'); if(!im||!full) return;
-  im.addEventListener('error',()=>{ if(im.src.indexOf('_sm.webp')>=0) im.src=full; },{once:true});
-  const big=new Image(); big.decoding='async'; try{ big.fetchPriority='high'; }catch(e){}
-  let done=false;
-  const swap=()=>{ if(done) return; done=true; if(!el.isConnected) return; im.src=full; if(tilt) tilt.style.setProperty('--m',"url('"+full+"')"); };
-  // підміна по onload (надійно); decode() лише згладжує момент, а якщо він завис — через 400мс підміняємо все одно
-  big.onload=()=>{ if(!big.decode){ swap(); return; } const t=setTimeout(swap,400); big.decode().then(()=>{ clearTimeout(t); swap(); },()=>{ clearTimeout(t); swap(); }); };
-  big.src=full;
-}
+// Відкриття сцени (23.10, відгук Богдана): раніше мініатюра _sm.webp → підміна на повний арт (було видно «мильну» картку, потім різку), а сцену (фон) 3,5-МБ PNG
+// гальмував. Тепер: СПОЧАТКУ сцена (≈0,2 МБ), ПОТІМ повний арт — карта з'являється одразу в повній якості; поки вантажиться — спінер. Прогрів при наведенні — warmUrl.
+function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im=new Image(); im.decoding='async'; let done=false;
+  const fin=v=>{ if(!done){ done=true; res(v); } };
+  im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
+  im.onerror=()=>fin(null); im.src=u; }); }
 function showFullCard(p, tier, card){
   card=card||{};
-  const scene=SCENE_FILE[tier]||'steel';
-  const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
+  const scene=SCENE_FILE[tier]||'steel', sceneUrl='scenes/'+scene+'.webp', full=card.current_card_png||'';
+  const isArt=!!full;                                         // rare/mega — готовий арт-PNG на подіумі
   const fx=isArt, reflect=false, mega=(tier==='mega_rare');   // віддзеркалення на підлозі прибрано (рішення Богдана) — лишається контактна тінь
-  const inner=isArt?`<img class="rarepng" src="${esc(showThumb(card.current_card_png))}" alt="${esc(p.name)}">`
-                   :squadCardHTML(p,tier,card,true);
+  const inner=isArt?`<img class="rarepng" alt="${esc(p.name)}">`:squadCardHTML(p,tier,card,true);
   const el=document.createElement('div'); el.className='sqfull';
-  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
-    <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
-      ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button><div class="sqload"></div>
+    <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}">
+      ${fx?'<div class="glow"></div>':''}
       <div class="contact"></div>
-      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(showThumb(card.current_card_png))}')"`:''}>${inner}</div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}">${inner}</div></div>
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
-  if(isArt) upgradeArt(el,card.current_card_png);
-  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
-  fitPodium(stage); requestAnimationFrame(()=>fitPodium(stage));
+  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
+  const showCard=()=>{ if(!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
+  loadImg(sceneUrl).then(sc=>{
+    if(!el.isConnected) return;
+    if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
+    el.classList.add('sc');
+    if(isArt) return loadImg(full).then(async big=>{
+      if(!el.isConnected) return;
+      let src=big?full:'';
+      if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
+      if(!el.isConnected) return;
+      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); try{ if(im.decode) await im.decode(); }catch(e){} }
+      showCard(); });
+    // базова картка (рамка + фото): чекаємо фото/герб, але не довше 2,5 с
+    const pend=[...tilt.querySelectorAll('img')].filter(i=>!i.complete);
+    return Promise.race([Promise.all(pend.map(i=>new Promise(r=>{ i.addEventListener('load',r,{once:true}); i.addEventListener('error',r,{once:true}); }))), new Promise(r=>setTimeout(r,2500))]).then(showCard);
+  });
   stage.addEventListener('pointermove',e=>{
     const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
     tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*16+3).toFixed(1)}deg) rotateY(${(dx*22).toFixed(1)}deg)`;
   });
   stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
+  return el;
 }
 // ── модалка (порт із кабінету; на борді немає auth/дій → лише інформація) ──
 const $=id=>document.getElementById(id);

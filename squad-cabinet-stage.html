@@ -340,31 +340,50 @@ table.t{width:100%;border-collapse:collapse}
 .col-filters input{flex:1;min-width:160px}
 .col-sec{margin:20px 0 10px;font:700 12px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
 .col-grid{display:grid;grid-template-columns:repeat(auto-fill,168px);gap:16px;justify-content:start}
-.colcard{width:168px;cursor:pointer;min-width:0;outline:none}
+.colcard{width:168px;min-width:0}
+.colc-face{width:168px;border-radius:10px;cursor:pointer;outline:none}   /* клікабельна й підсвічується ЛИШЕ картка (відгук Богдана 23.10) */
 .colc-wrap{position:relative;width:168px;height:252px;overflow:hidden;border-radius:10px}
 .colc-wrap .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(.56)}  /* 168/300 */
-.colcard:hover .colc-wrap,.colcard:focus-visible .colc-wrap{outline:2px solid var(--accent)}
-.colc-art{position:relative;aspect-ratio:2/3;border-radius:10px;overflow:hidden;background:var(--panel)}
+.colc-face:hover .colc-wrap,.colc-face:focus-visible .colc-wrap,.colc-face:hover .colc-art,.colc-face:focus-visible .colc-art{outline:2px solid var(--accent)}
+.colc-art{position:relative;aspect-ratio:2/3;border-radius:10px;overflow:hidden}   /* без фону-підкладки: Rare/Mega виглядають як Silver/Gold/Emerald — лише форма картки; рамка — тільки при наведенні (відгук Богдана 23.10) */
 .colc-art img{display:block;width:100%;height:100%;object-fit:cover}
-.colc-art[data-tier=mega_rare]{box-shadow:0 0 0 1px rgba(230,193,75,.6),0 8px 22px rgba(230,193,75,.14)}
-.colcard:hover .colc-art,.colcard:focus-visible .colc-art{outline:2px solid var(--accent)}
 .colc-rar{margin-top:2px;text-align:center;font-size:12px;color:var(--text-dim)} .colc-rar.mega_rare{color:var(--gold)}
 .colc-ds{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin:6px 0 2px}
 .colc-ds .dchip{padding:2px 7px;font-size:11px;font-weight:700;border-radius:999px}
 .colc-ds .dchip.dis{opacity:.7;cursor:default} .colc-ds .dchip.dis:hover{border-color:var(--line);color:var(--text-dim)} .colc-ds .dchip.dis.on{opacity:1}
 .colc-ds .dchip.lock{opacity:.55}
-.colc-name[data-name]{cursor:pointer} .colc-name[data-name]:hover{color:var(--accent)}
-.colc-kind{position:absolute;top:6px;right:6px;font-size:12px;background:rgba(8,14,11,.78);border-radius:5px;padding:1px 5px}
 .colc-name{margin-top:7px;text-align:center;font-weight:700;font-size:13px;line-height:1.25;min-height:2.5em}   /* ім'я та прізвище повністю; дуо/команда переноситься на 2–3 рядки */
 .colc-own{margin-top:5px;text-align:center;font-size:11px;font-weight:700;border-radius:6px;padding:3px 6px;
   color:var(--text-dim);border:1px solid var(--line);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .colc-own.mine{background:var(--green-soft);color:var(--up);border-color:var(--accent-d)}
 .colc-own.shop{color:var(--gold);border-color:rgba(230,193,75,.45)}
 /* 📰 News-стрічка */
-.nrow{display:flex;gap:10px;align-items:baseline;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);margin-bottom:8px}
-.nrow .nico{font-size:15px;flex:none;width:20px;text-align:center}
-.nrow .ntxt{flex:1;font-size:13.5px;line-height:1.35}
-.nrow .ntime{flex:none;font-size:11px;color:var(--text-dim);font-family:var(--mono);white-space:nowrap}
+.news-feed{max-width:720px}   /* компактна стрічка (23.10, відгук Богдана «дуже розтягнуто»): вузька колонка, час зліва, групи по днях */
+.nday{margin:14px 0 4px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)} .nday:first-child{margin-top:2px}
+.nrow{display:flex;gap:8px;align-items:baseline;padding:5px 4px;border-bottom:1px solid var(--line)}
+.nrow:hover{background:rgba(255,255,255,.025)}
+.nrow .ntime{flex:none;width:38px;font-size:11px;color:var(--text-dim);font-family:var(--mono);white-space:nowrap}
+.nrow .nico{font-size:14px;flex:none;width:18px;text-align:center}
+.nrow .ntxt{flex:1;font-size:13px;line-height:1.35;min-width:0}
+/* 📰 права панель новин (23.10, рішення Богдана): остання стрічка ринку завжди поруч, а не лише у вкладці; на «Таблиця & Матчі», у вкладці News і на вузьких екранах (<1100 px) її нема */
+.shell{display:flex;align-items:flex-start;gap:16px}
+.shell #view{flex:1;min-width:0}
+.newsaside{flex:none;width:290px;position:sticky;top:10px;height:calc(100vh - 20px);display:flex;flex-direction:column;border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden}
+.newsaside.hide{display:none}
+.na-head{display:flex;align-items:center;gap:6px;padding:8px 10px;border-bottom:1px solid var(--line);font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+.na-head .t{flex:1}
+.na-head button{background:none;border:1px solid var(--line);border-radius:7px;color:var(--text-dim);font:600 11px var(--mono);padding:2px 7px;cursor:pointer}
+.na-head button:hover{border-color:var(--accent-d);color:var(--text)}
+.na-list{flex:1;overflow-y:auto;padding:2px 8px 10px;overscroll-behavior:contain}
+.na-list .nday{margin:10px 0 2px}
+.na-list .nrow{padding:5px 2px;gap:6px}
+.na-list .nrow .ntime{width:34px;font-size:10.5px}
+.na-list .nrow .nico{width:16px;font-size:13px}
+.na-list .nrow .ntxt{font-size:12.5px;line-height:1.3}
+.na-more,.na-empty{padding:10px 4px;text-align:center;font-size:11px;color:var(--text-dim)}
+.na-open{position:fixed;right:0;top:150px;z-index:40;border:1px solid var(--line);border-right:0;border-radius:10px 0 0 10px;background:var(--panel);color:var(--text);font-size:16px;padding:8px 9px;cursor:pointer}
+.na-open.hide{display:none}
+@media(max-width:1099px){.newsaside,.na-open{display:none!important}}
 .news-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
 .news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
 .mnote.warn{color:var(--down);font-weight:600}
@@ -839,6 +858,12 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
 .sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
 @keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
+/* відкриття: спочатку сцена (малий файл), потім карта одразу в повній якості; поки вантажиться — спінер (23.10) */
+.sqfull .stage{opacity:0;transition:opacity .35s ease} .sqfull.sc .stage{opacity:1}
+.sqfull .podium-card{opacity:0;transition:opacity .4s ease} .sqfull.cd .podium-card{opacity:1}
+.sqfull .sqload{position:absolute;left:50%;top:46%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid rgba(255,255,255,.16);border-top-color:var(--accent);animation:sqspin .8s linear infinite;z-index:5;pointer-events:none}
+.sqfull.cd .sqload{display:none}
+@keyframes sqspin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
 </style>
 </head>
@@ -884,7 +909,8 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
         <button id="btn-logout" class="btn ghost sm" style="margin-left:4px">Вийти</button></div>
     </div>
   </header>
-  <div class="wrap"><div id="view"><div class="spin">завантаження…</div></div></div>
+  <div class="wrap shell"><div id="view"><div class="spin">завантаження…</div></div><aside id="newsAside" class="newsaside hide" aria-label="Стрічка новин"></aside></div>
+<button id="naOpen" class="na-open hide" title="Показати стрічку новин">📰</button>
 </div>
 
 <div id="mhost" class="modal-host hide"></div>
@@ -1264,6 +1290,58 @@ function renderHeader(){
   const mn=$('my-name'); if(mn) mn.textContent=nm;
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
 }
+// ── 📰 ПРАВА ПАНЕЛЬ НОВИН ── останні 12 подій ринку одразу, раніші підвантажуються при гортанні; ✕ згортає (запам'ятовується); «усі →» = вкладка News із фільтрами
+const NA_SEL='id,kind,actor_participant,subject_participant,player_id,meta,created_at';
+let _naMem=null;   // запасний стан у пам'яті, якщо localStorage недоступний (приватне вікно тощо)
+const naStore={ get(){ try{ const v=localStorage.getItem('sqNewsAside'); return v!=null?v:_naMem; }catch(e){ return _naMem; } }, set(v){ _naMem=v; try{ localStorage.setItem('sqNewsAside',v); }catch(e){} } };
+const naWanted=()=> S.tab!=='table' && S.tab!=='news';
+async function naLoad(more){
+  const A=S.na||(S.na={rows:[],shown:12,done:false,loading:false,err:false,at:0});
+  if(A.loading || (more && A.done)) return; A.loading=true;
+  try{
+    const off = more ? A.rows.length : 0;
+    const r = await sbSel(`market_news?tournament_id=eq.${S.tour.id}&order=created_at.desc&limit=40&offset=${off}&select=${NA_SEL}`);
+    const have=new Map(A.rows.map(x=>[x.id,x])); r.forEach(x=>have.set(x.id,x));
+    A.rows=[...have.values()].sort((a,b)=> a.created_at<b.created_at?1:-1);
+    if(more && r.length<40) A.done=true;
+    A.err=false; A.at=Date.now();
+  }catch(e){ A.err=true; }
+  A.loading=false;
+}
+function naRender(){
+  const el=$('newsAside'), ob=$('naOpen'); if(!el) return;
+  const A=S.na||{rows:[],shown:12,done:false,err:true};
+  const open=naStore.get()!=='0', want=naWanted() && !A.err;
+  el.classList.toggle('hide', !(want&&open)); if(ob) ob.classList.toggle('hide', !(want&&!open));
+  if(!(want&&open)) return;
+  const old=$('naList'), top=old?old.scrollTop:0;
+  const list=A.rows.slice(0,A.shown);
+  el.innerHTML=`<div class="na-head"><span class="t">📰 Стрічка</span><button type="button" data-na="all" title="Уся історія з фільтрами">усі →</button><button type="button" data-na="hide" title="Згорнути">✕</button></div>
+    <div class="na-list" id="naList">${list.length?newsGrouped(list):'<div class="na-empty">Подій ще немає</div>'}${(A.rows.length>A.shown||!A.done)&&list.length?'<div class="na-more">гортай вниз — раніші події</div>':''}</div>`;
+  const nl=$('naList'); nl.scrollTop=top;
+  requestAnimationFrame(naFill);   // вікно високе, а подій мало (нема що гортати) → дозаповнити
+  nl.onscroll=async()=>{ if(nl.scrollTop+nl.clientHeight < nl.scrollHeight-60) return;
+    const A2=S.na; if(A2.shown<A2.rows.length){ A2.shown+=20; naRender(); return; }
+    if(!A2.done && !A2.loading){ await naLoad(true); A2.shown+=20; naRender(); } };
+  el.querySelectorAll('[data-na]').forEach(b=>b.onclick=()=>{ if(b.dataset.na==='all') go('news'); else{ naStore.set('0'); naRender(); } });
+}
+// дозаповнення: панель вища за подій, що показані → додаємо по 12 (і підвантажуємо раніші), доки не з'явиться прокрутка; не діє, поки панель сховано (clientHeight 0)
+function naFill(){
+  const A=S.na, nl=$('naList'); if(!A||!nl||A.filling) return;
+  if(nl.clientHeight<50 || nl.scrollHeight>nl.clientHeight+4) return;
+  if(!(A.shown<A.rows.length || (!A.done && !A.loading))) return;
+  A.filling=true;
+  (async()=>{ if(A.shown>=A.rows.length && !A.done) await naLoad(true); A.filling=false; if(A.shown<A.rows.length){ A.shown+=12; naRender(); } })();
+}
+window.addEventListener('resize',()=>{ if(S && S.na) naFill(); });
+async function naSync(force){
+  const A=S.na||(S.na={rows:[],shown:12,done:false,loading:false,err:false,at:0});
+  if(!naWanted()){ naRender(); return; }
+  if(force || !A.at || Date.now()-A.at>20000){ await naLoad(false); }
+  naRender();
+}
+document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#naOpen'); if(b){ naStore.set('1'); naRender(); } });
+setInterval(()=>{ if(!document.hidden && S && S.tour && naWanted()) naSync(true); },60000);
 async function go(tab, quiet){
   if(S.tab!==tab){ S.ctour=null; S.rrp=null; }   // 15.10: нова вкладка — чіп туру знову за замовчуванням (відкритий тур)
   S.tab=tab; if(!quiet) renderTabs(); renderHeader();   // тихе перемальовування (Rivals): вкладки не чіпаємо
@@ -1272,6 +1350,7 @@ async function go(tab, quiet){
   if(!quiet) $('view').innerHTML='<div class="spin">завантаження…</div>';
   const fn={my:viewSquad,market:viewMarket,collection:viewCollection,stats:viewStats,table:viewTable,news:viewNews,admin:viewAdmin}[tab];
   if(!fn) return;
+  naSync();   // права панель новин: показати/сховати за вкладкою й освіжити
   const run=fn();
   if(quiet){ await run; window.scrollTo(0,y); }
   return run;
@@ -3540,35 +3619,44 @@ function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=n
 function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
 function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmUrl(png); };
   ['pointerenter','focus','touchstart'].forEach(ev=>btn.addEventListener(ev,go,{once:true,passive:true})); }
-function upgradeArt(el,full){   // el = .sqfull; thumb → повний арт (мініатюра лишається, якщо повний не завантажився)
-  const im=el.querySelector('img.rarepng'), tilt=el.querySelector('.tilt'); if(!im||!full) return;
-  im.addEventListener('error',()=>{ if(im.src.indexOf('_sm.webp')>=0) im.src=full; },{once:true});
-  const big=new Image(); big.decoding='async'; try{ big.fetchPriority='high'; }catch(e){}
-  let done=false;
-  const swap=()=>{ if(done) return; done=true; if(!el.isConnected) return; im.src=full; if(tilt) tilt.style.setProperty('--m',"url('"+full+"')"); };
-  // підміна по onload (надійно); decode() лише згладжує момент, а якщо він завис — через 400мс підміняємо все одно
-  big.onload=()=>{ if(!big.decode){ swap(); return; } const t=setTimeout(swap,400); big.decode().then(()=>{ clearTimeout(t); swap(); },()=>{ clearTimeout(t); swap(); }); };
-  big.src=full;
-}
+// Відкриття сцени (23.10, відгук Богдана): раніше мініатюра _sm.webp → підміна на повний арт (було видно «мильну» картку, потім різку), а сцену (фон) 3,5-МБ PNG
+// гальмував. Тепер: СПОЧАТКУ сцена (≈0,2 МБ), ПОТІМ повний арт — карта з'являється одразу в повній якості; поки вантажиться — спінер. Прогрів при наведенні — warmUrl.
+function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im=new Image(); im.decoding='async'; let done=false;
+  const fin=v=>{ if(!done){ done=true; res(v); } };
+  im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
+  im.onerror=()=>fin(null); im.src=u; }); }
 function showFullCard(p, tier, card){
   card=card||{};
-  const scene=SCENE_FILE[tier]||'steel';
-  const isArt=!!card.current_card_png;                        // rare/mega — готовий арт-PNG на подіумі
+  const scene=SCENE_FILE[tier]||'steel', sceneUrl='scenes/'+scene+'.webp', full=card.current_card_png||'';
+  const isArt=!!full;                                         // rare/mega — готовий арт-PNG на подіумі
   const fx=isArt, reflect=false, mega=(tier==='mega_rare');   // віддзеркалення на підлозі прибрано (рішення Богдана) — лишається контактна тінь
-  const inner=isArt?`<img class="rarepng" src="${esc(showThumb(card.current_card_png))}" alt="${esc(p.name)}">`
-                   :squadCardHTML(p,tier,card,true);
+  const inner=isArt?`<img class="rarepng" alt="${esc(p.name)}">`:squadCardHTML(p,tier,card,true);
   const el=document.createElement('div'); el.className='sqfull';
-  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button>
-    <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}" style="background-image:url('scenes/${scene}.webp')">
-      ${fx?'<div class="glow"></div>':''}${reflect?'<div class="reflect"></div>':''}
+  el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button><div class="sqload"></div>
+    <div class="stage${mega?' mega':''}" data-base="${!isArt}" data-reflect="${reflect}">
+      ${fx?'<div class="glow"></div>':''}
       <div class="contact"></div>
-      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}"${isArt?` style="--m:url('${esc(showThumb(card.current_card_png))}')"`:''}>${inner}</div></div>
+      <div class="podium-card${mega?' mega':''}"><div class="tilt${fx?' fx':''}">${inner}</div></div>
     </div>`;
   el.onclick=(e)=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
-  if(isArt) upgradeArt(el,card.current_card_png);
-  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt');
-  fitPodium(stage); requestAnimationFrame(()=>fitPodium(stage));
+  const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
+  const showCard=()=>{ if(!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
+  loadImg(sceneUrl).then(sc=>{
+    if(!el.isConnected) return;
+    if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
+    el.classList.add('sc');
+    if(isArt) return loadImg(full).then(async big=>{
+      if(!el.isConnected) return;
+      let src=big?full:'';
+      if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
+      if(!el.isConnected) return;
+      if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); try{ if(im.decode) await im.decode(); }catch(e){} }
+      showCard(); });
+    // базова картка (рамка + фото): чекаємо фото/герб, але не довше 2,5 с
+    const pend=[...tilt.querySelectorAll('img')].filter(i=>!i.complete);
+    return Promise.race([Promise.all(pend.map(i=>new Promise(r=>{ i.addEventListener('load',r,{once:true}); i.addEventListener('error',r,{once:true}); }))), new Promise(r=>setTimeout(r,2500))]).then(showCard);
+  });
   stage.addEventListener('pointermove',e=>{
     const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
     tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*16+3).toFixed(1)}deg) rotateY(${(dx*22).toFixed(1)}deg)`;
@@ -3887,9 +3975,8 @@ async function viewCollection(){
                 : {cls:'shop', t:'🛒 У крамниці'};
   // картка каталогу (режим «Усі Rare/Mega»)
   const cardHTML=c=>{ const o=ownOf(c);
-    return `<div class="colcard" data-c="${c.id}" tabindex="0">
-      <div class="colc-art" data-tier="${c.tier}"><img src="${esc(showThumb(c.png_path))}" alt="${esc(c.title)}" loading="lazy" decoding="async"${imgFallback(c.png_path)}>
-        ${c.kind==='team'?'<span class="colc-kind" title="Командна картка">👥</span>':''}</div>
+    return `<div class="colcard" data-c="${c.id}">
+      <div class="colc-face" tabindex="0" role="button" aria-label="Відкрити картку: ${esc(c.title)}"><div class="colc-art" data-tier="${c.tier}"><img src="${esc(showThumb(c.png_path))}" alt="${esc(c.title)}" loading="lazy" decoding="async"${imgFallback(c.png_path)}></div></div>
       <div class="colc-name">${esc(c.title)}</div>
       <div class="colc-rar ${c.tier}">${c.tier==='mega_rare'?'Mega Rare':'Rare'}</div>
       <div class="colc-own ${o.cls}">${o.t}</div></div>`; };
@@ -3916,9 +4003,9 @@ async function viewCollection(){
     const rar = u.sel.card ? (u.sel.card.tier==='mega_rare'?'Mega Rare':'Rare') : FR_LBL[u.sel.frame];
     const st = u.cur ? {cls:'mine', t:'У складі'} : u.ever ? {cls:'', t:'Був у складі'} : {cls:'', t:'Лише картка'};
     const holder=p.owner_participant_id?(S.names[p.owner_participant_id]||'інший учасник'):'вільний';
-    return `<div class="colcard" data-p="${p.id}" tabindex="0">
-      <div class="colc-face" data-face="1">${face}</div>
-      <div class="colc-name" data-name="1" title="Відкрити гравця">${esc(p.name)}</div>
+    return `<div class="colcard" data-p="${p.id}">
+      <div class="colc-face" tabindex="0" role="button" aria-label="Відкрити картку: ${esc(p.name)}">${face}</div>
+      <div class="colc-name">${esc(p.name)}</div>
       <div class="colc-rar ${u.sel.card&&u.sel.card.tier==='mega_rare'?'mega_rare':''}">${rar}</div>
       ${chipsHTML}
       <div class="colc-own ${st.cls}"${u.cur?'':` title="Зараз: ${esc(holder)}"`}>${st.t}</div></div>`; };
@@ -3976,10 +4063,15 @@ async function viewCollection(){
     apply();
   };
   // великий показ на чистому подіумі (той самий, що в Ринку/Крамниці), без підписів (відгук Богдана 22.10)
-  const openCard=id=>{ const c=all.find(x=>x.id===id); if(c) showFullCard({name:c.title}, c.tier, {current_card_png:c.png_path}); };
-  const openUnit=pl=>{ const u=(S.colF.mode==='mine'?mineUnits:unitsOf(S.colF.who)).find(x=>x.p.id===pl); if(!u) return;
-    if(u.sel.card) showFullCard({name:u.p.name}, u.sel.card.tier, {current_card_png:u.sel.card.png_path});
-    else showFullCard(u.p, u.sel.frame, {...(S.cards[u.p.id]||{}), current_card_png:null, current_card_key:null}); };
+  // ціль картки: що показати на подіумі й що прогрівати (сцена + повний арт)
+  const faceTarget=el=>{
+    if(el.dataset.c){ const c=all.find(x=>x.id===el.dataset.c); return c && {name:c.title, tier:c.tier, png:c.png_path}; }
+    const u=(S.colF.mode==='mine'?mineUnits:unitsOf(S.colF.who)).find(x=>x.p.id===el.dataset.p); if(!u) return null;
+    return u.sel.card ? {u, tier:u.sel.card.tier, png:u.sel.card.png_path} : {u, tier:u.sel.frame, png:null}; };
+  const openFace=el=>{ const t=faceTarget(el); if(!t) return;
+    if(el.dataset.c) showFullCard({name:t.name}, t.tier, {current_card_png:t.png});
+    else if(t.png) showFullCard({name:t.u.p.name}, t.tier, {current_card_png:t.png});
+    else showFullCard(t.u.p, t.tier, {...(S.cards[t.u.p.id]||{}), current_card_png:null, current_card_key:null}); };
   // зміна дизайну (лише мої): поточному гравцю — як на полі, колишньому — у collection_design (565); при відсутності 565 — старий RPC для поточних
   const setDesign=async(pl,key)=>{
     const y=window.scrollY, args = key.startsWith('f:') ? {p_player:pl, p_frame:key.slice(2)} : {p_player:pl, p_card_item:key.slice(2)};
@@ -3997,15 +4089,17 @@ async function viewCollection(){
   bind('colPos','pos'); bind('colClub','club'); bind('colColl','coll'); bind('colRarity','rarity'); bind('colOwner','owner'); bind('colSort','sort');
   $('view').querySelectorAll('.cmode').forEach(b=>b.onclick=()=>setMode(b.dataset.m,b.dataset.who));
   // картки перемальовуються через innerHTML → клік/Enter через делегування на контейнері (обробники самих карток би губились)
-  const onAct=(e,key)=>{
+  // картки перемальовуються через innerHTML → делегування на контейнері; реагує ЛИШЕ картка (.colc-face) і чіпи дизайну — ім'я/рідкість/статус «німі»
+  g.onclick=e=>{
     const dz=e.target.closest('[data-design]');
-    if(dz){ if(dz.disabled) return true; if(dz.dataset.locked){ alert('Смарагдова рамка ще не розблокована.'); return true; } setDesign(dz.dataset.pl, dz.dataset.design); return true; }
-    const el=e.target.closest('.colcard'); if(!el) return false;
-    if(el.dataset.c){ openCard(el.dataset.c); return true; }
-    if(e.target.closest('[data-name]')) openPlayerModal(el.dataset.p); else openUnit(el.dataset.p);
-    return true; };
-  g.onclick=e=>{ onAct(e); };
-  g.onkeydown=e=>{ if(e.key!=='Enter' && e.key!==' ') return; if(e.target.closest('[data-design]')) return; const el=e.target.closest('.colcard'); if(el){ e.preventDefault(); if(el.dataset.c) openCard(el.dataset.c); else openUnit(el.dataset.p); } };
+    if(dz){ if(dz.disabled) return; if(dz.dataset.locked){ alert('Смарагдова рамка ще не розблокована.'); return; } setDesign(dz.dataset.pl, dz.dataset.design); return; }
+    const f=e.target.closest('.colc-face'); if(f) openFace(f.closest('.colcard')); };
+  g.onkeydown=e=>{ if(e.key!=='Enter' && e.key!==' ') return; const f=e.target.closest('.colc-face'); if(f && e.target===f){ e.preventDefault(); openFace(f.closest('.colcard')); } };
+  // прогрів при наведенні/дотику/фокусі на картку: сцена + повний арт вантажаться ДО кліку
+  const warmFace=e=>{ const f=e.target.closest && e.target.closest('.colc-face'); if(!f) return; const t=faceTarget(f.closest('.colcard')); if(!t) return;
+    warmScene(SCENE_FILE[t.tier]||'steel'); if(t.png) warmUrl(t.png); };
+  ['pointerover','touchstart','focusin'].forEach(ev=>g.addEventListener(ev,warmFace,{passive:true}));
+  setTimeout(()=>['steel','gold','rare','mega_rare'].concat(S.myEmerald?['emerald']:[]).forEach(warmScene),1200);   // сцени невеликі (0,1–0,2 МБ) — прогріваємо наперед
   apply();
 }
 
@@ -4126,7 +4220,7 @@ function newsLine(n){
   const who=id=>esc(S.names[id]||'—');
   const pl =id=>{ const p=S.players.find(x=>x.id===id); return '<b>'+esc(p?p.name:'гравець')+'</b>'; };
   const m=n.meta||{}, amt=(m.amount!=null)?eur(m.amount):'';
-  const t=new Date(n.created_at).toLocaleString('uk',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'});
+  const t=new Date(n.created_at).toLocaleTimeString('uk',{hour:'2-digit',minute:'2-digit'});
   let ico='•', txt='';
   switch(n.kind){
     case 'buynow':            ico='💰'; txt=`<b>${who(n.actor_participant)}</b> купив ${pl(n.player_id)} · ${amt}`; break;
@@ -4144,13 +4238,21 @@ function newsLine(n){
                     txt=`<b>${who(n.actor_participant)}</b> — ${bb.name} на Тур ${m.round_number||'?'}${m.delta!=null?` · ${m.delta>0?'+':''}${m.delta} оч.`:''}${(m.boost==='squad_autopilot'&&n.player_id)?` (×2 на ${pl(n.player_id)})`:''}`; break; }
     default:                  txt=esc(n.kind);
   }
-  return `<div class="nrow"><span class="nico">${ico}</span><span class="ntxt">${txt}</span><span class="ntime">${t}</span></div>`;
+  return `<div class="nrow"><span class="ntime">${t}</span><span class="nico">${ico}</span><span class="ntxt">${txt}</span></div>`;
 }
 async function viewNews(){
   let rows=null;
   try{ rows = await sbSel(`market_news?tournament_id=eq.${S.tour.id}&order=created_at.desc&limit=200&select=id,kind,actor_participant,subject_participant,player_id,meta,created_at`); }
   catch(e){ rows=null; }   // 425 ще не залито → degrade
   S.news=rows; renderNews();
+}
+// групи по днях: «Сьогодні» / «Вчора» / дата
+function newsGrouped(list){
+  const day=d=>new Date(d).toLocaleDateString('uk',{day:'2-digit',month:'2-digit'});
+  const today=day(Date.now()), yest=day(Date.now()-864e5);
+  let out='', cur='';
+  list.forEach(n=>{ const d=day(n.created_at); if(d!==cur){ cur=d; out+=`<div class="nday">${d===today?'Сьогодні · '+d:d===yest?'Вчора · '+d:d}</div>`; } out+=newsLine(n); });
+  return out;
 }
 function renderNews(){
   const rows=S.news;
@@ -4171,7 +4273,7 @@ function renderNews(){
       <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
       <select id="newsPl"><option value="">Гравець: усі</option>${plOpts.map(([id,nm])=>`<option value="${id}"${f.player===id?' selected':''}>${esc(nm)}</option>`).join('')}</select>
     </div>
-    <div class="news-feed">${list.length?list.map(newsLine).join(''):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
+    <div class="news-feed">${list.length?newsGrouped(list):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
   $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
   const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
 }
