@@ -673,6 +673,13 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .admc h3{font:700 13px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--text-dim);margin:0 0 10px}
 .admchips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .admbtns{display:flex;gap:8px;flex-wrap:wrap}
+.admdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}.admdot.red{background:var(--down)}.admdot.yellow{background:var(--gold)}   /* 23.10: що горить — видно з будь-якої вкладки */
+.admlight{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.admlight .big{font:700 20px var(--mono)}.admlight .cnt{font:600 12px var(--mono);color:var(--text-dim)}
+.sigrow{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin:0 0 6px}
+.sigrow.red{border-color:#8b3438;background:#2a1c1c}.sigrow.yellow{border-color:#5a4a1c;background:#27241a}
+.sigrow .sd{flex:none}.sigrow .sx{flex:1;min-width:0;font-size:13px;line-height:1.4}.sigrow .sx .it{display:block;color:var(--text-dim);font-size:11.5px;margin-top:2px}
+.admkv{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:8px}.admkv>div{border:1px solid var(--line);border-radius:9px;background:var(--panel2);padding:8px 10px}
+.admkv span{display:block;font:600 9.5px var(--mono);text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);margin-bottom:3px}.admkv b{font-size:13px}
 .adm-badge{font:700 11px var(--mono);border:1px solid var(--line);border-radius:999px;padding:2px 9px;color:var(--text-dim)} .adm-badge.up{color:var(--up);border-color:var(--accent-d)} .adm-badge.gold{color:var(--gold);border-color:rgba(230,193,75,.5)}
 .admt{width:100%;border-collapse:collapse;font-size:13px} .admt th{text-align:left;font:700 11px var(--mono);color:var(--text-dim);padding:4px 8px;border-bottom:1px solid var(--line)}
 .admt td{padding:6px 8px;border-bottom:1px solid var(--line);vertical-align:top} .admt tr.bad td{background:rgba(204,60,60,.08)} .admt .msg{font-size:12px;color:var(--text-dim)} .admt tr.bad .msg{color:var(--down)}
@@ -1220,6 +1227,7 @@ function renderTabs(){
   if(S.me && S.me.is_admin) tabs.push(['admin','⚙','Адмінка']);
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
+  paintAdmDot(); admBadgeRefresh(false);   // 23.10: крапка 🔴/🟡 «що горить» на вкладці «Адмінка» (раз на хвилину)
 }
 // 22.10: тур, що зараз іде (відкритий складами або минув дедлайн, результатів ще нема) — для «Зміна · Тур N» у шапці
 function liveRoundNow(){ const now=Date.now(); return (S.rounds||[]).find(r=>!r.results_entered_at && (r.opened_at || new Date(r.deadline_at).getTime()<=now)) || null; }
@@ -4308,15 +4316,14 @@ function kyToISO(y,mo,d,h,mi){   // київський «настінний» ч
   return new Date(t).toISOString(); }
 const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); return m?kyToISO(+m[1],+m[2],+m[3],+m[4],+m[5]):null; };
 
-const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',false],['config','⚙','Налаштування',false],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
+const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',false],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
 const ADM_SOON={
-  people:['👥 Учасники й пошти','Додати учасника (ім\'я + пошта + стартові бюджети), перейменувати, змінити пошту, адмін-права, прибрати (лише без майна й угод).'],
   config:['⚙ Налаштування турніру','Редактор параметрів з поясненнями й діапазонами: ролі й штрафи, очки челенджів, старт Rivals, очки менеджменту, ліміти складу, вікно ціни, зарплати; кожна зміна — в журнал.'],
   disputes:['⚖ Спірне й ручні дії','Скасувати/закрити аукціон, скасувати трансфер чи обмін, коригування балансу (з причиною), примусовий продаж гравця в ринок, видача картки, «скинути етап» (небезпечне: слово + причина).'],
   pool:['🎛 Пул гравців і клуби','Додати/прибрати гравця (лише без власника), стартова вартість, фото, ручна травма; клуби пулу й клуби-суперники.']
 };
 const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
-  fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано'};
+  fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено'};
 const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
 const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
 const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
@@ -4331,7 +4338,7 @@ async function admCall(fn,args,okMsg){
   const {data,error}=await sb.rpc(fn,args);
   if(error){ alert('⛔ '+String(error.message||error).replace(/^.*?(Squad: )/,'$1')); return {error}; }
   if(okMsg) alert('✅ '+okMsg);
-  await loadRefs(); return {data};
+  await loadRefs(); admBadgeRefresh(true); return {data};
 }
 // модалка небезпечної дії: слово + причина (кнопка активна, лише коли обидва ок; сервер перевіряє те саме)
 function admDanger({title,body,word,label,reasonLabel,onOk}){
@@ -4421,15 +4428,96 @@ function admClubForm(done){
     modalClose(); done(data&&data.id); };
 }
 
-// ───────── вкладка «Огляд» (поки: розблокування складів, борги; повний огляд — фаза 2) ─────────
-function admOverview(body){
-  const rs=(S.rounds||[]).map(r=>{ const st=admState(r), a=(S.attn||{})[r.number]; const [t,cl]=ADM_STL[st];
-    return `<tr><td>Тур ${r.number}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${a&&a.reason?`<span class="down">${esc(a.reason)}</span>`:'—'}</td></tr>`; }).join('');
-  body.innerHTML=`${adminConfBlock()}${adminPenBlock()}
-    <div class="admc"><h3>🗓 Тури зараз</h3><table class="admt"><thead><tr><th>Тур</th><th>Дедлайн (Київ)</th><th>Стан</th><th>Увага</th></tr></thead><tbody>${rs||'<tr><td colspan="4" class="dim">Турів ще нема</td></tr>'}</tbody></table>
-      <p class="mnote" style="margin-top:8px">Керування турами й матчами — у «🗓 Тури». Повний огляд «що горить» (health, свіжість рейтингів/травм, черги) — наступна фаза.</p></div>`;
-  { const r=lnRound(); if(r) bindUnconf(r); }
-  bindPenCancel();
+// ───────── вкладка «Огляд» (SQL 568, Фаза 2): що горить — сигнали (health, календар, передперевірка турів, склади, борги, акаунти) ─────────
+const admAgo=iso=>{ if(!iso) return 'ще не було'; const m=Math.round((Date.now()-new Date(iso))/60000); if(m<1) return 'щойно'; if(m<60) return m+' хв тому'; const h=Math.round(m/60); if(h<48) return h+' год тому'; return Math.round(h/24)+' дн тому'; };
+const admRpcMissing=e=>!!(e && /PGRST202|could not find|schema cache/i.test((e.code||'')+' '+(e.message||'')));
+const ADM_LV={red:['🔴','Є що виправити'],yellow:['🟡','Варто глянути'],ok:['🟢','Усе гаразд']};
+const admItemTxt=i=> typeof i==='string'? i : (i&&i.club!=null)? `${i.club}: ${i.matches} матч.` : (i&&i.name!=null)? `${i.name} ${i.eur!=null?eur(+i.eur):''}` : '';
+function paintAdmDot(){ const b=document.querySelector('#tabs [data-tab="admin"]'); if(!b) return; let d=b.querySelector('.admdot'); const lv=S.admLevel;
+  if(lv!=='red'&&lv!=='yellow'){ if(d) d.remove(); return; }
+  if(!d){ d=document.createElement('i'); b.appendChild(d); } d.className='admdot '+lv; d.title=(lv==='red'?'🔴 ':'🟡 ')+(S.admCnt?`червоних ${S.admCnt[0]}, жовтих ${S.admCnt[1]}`:'')+' — відкрий «Адмінка → Огляд»'; }
+function admBadgeRefresh(force){
+  if(!(S.me && S.me.is_admin) || !S.tour) return;
+  if(!force && S.admBT && Date.now()-S.admBT<60000){ paintAdmDot(); return; }
+  S.admBT=Date.now();
+  sb.rpc('admin_squad_overview',{p_tournament:S.tour.id}).then(({data,error})=>{ if(error||!data) return; S.admLevel=data.level; S.admCnt=[data.red,data.yellow]; paintAdmDot(); }).catch(()=>{});
+}
+async function admOverview(body){
+  const A=S.adm; body.innerHTML='<div class="spin">завантаження…</div>';
+  let ov=null, err=null; try{ const r=await sb.rpc('admin_squad_overview',{p_tournament:S.tour.id}); ov=r.data; err=r.error; }catch(e){ err=e; }
+  const blocks=`<div class="admc"><h3>🔓 Ручні дії (поки тут)</h3>${adminConfBlock()}${adminPenBlock()}</div>`;
+  const bindBlocks=()=>{ { const r=lnRound(); if(r) bindUnconf(r); } bindPenCancel(); };
+  if(err||!ov){
+    const rs=(S.rounds||[]).map(r=>{ const st=admState(r), a=(S.attn||{})[r.number]; const [t,cl]=ADM_STL[st];
+      return `<tr><td>Тур ${r.number}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${a&&a.reason?`<span class="down">${esc(a.reason)}</span>`:'—'}</td></tr>`; }).join('');
+    body.innerHTML=`${admRpcMissing(err)?'<div class="soon">Огляд «що горить» запрацює після заливки SQL <b>568</b>; поки — базовий вигляд.</div>':`<div class="soon">Не вдалося завантажити Огляд: ${esc(String((err&&err.message)||'')).replace(/^.*?(Squad: )/,'$1')}</div>`}
+      <div class="admc"><h3>🗓 Тури зараз</h3><table class="admt"><thead><tr><th>Тур</th><th>Дедлайн (Київ)</th><th>Стан</th><th>Увага</th></tr></thead><tbody>${rs||'<tr><td colspan="4" class="dim">Турів ще нема</td></tr>'}</tbody></table></div>${blocks}`;
+    bindBlocks(); return; }
+  S.admLevel=ov.level; S.admCnt=[ov.red,ov.yellow]; paintAdmDot();
+  const [ic,lbl]=ADM_LV[ov.level]||['•',''];
+  const sigs=(ov.signals||[]).map(g=>{ const its=Array.isArray(g.items)?g.items.map(admItemTxt).filter(Boolean):[];
+    const go=g.tab&&g.tab!=='overview'?`<button class="mini" data-gosub="${esc(g.tab)}">${g.tab==='rounds'?'Тури →':g.tab==='people'?'Учасники →':'→'}</button>`:'';
+    return `<div class="sigrow ${esc(g.level)}"><span class="sd">${g.level==='red'?'🔴':'🟡'}</span><div class="sx">${esc(g.text)}${its.length?`<span class="it">${its.map(esc).join(' · ')}</span>`:''}</div>${go}</div>`; }).join('');
+  const rounds=(ov.rounds||[]).map(r=>{ const [t,cl]=ADM_STL[r.state]||[r.state,''];
+    return `<tr><td>${esc(r.title||('Тур '+r.number))}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${r.played||0} з ${r.fixtures||0}</td><td>${r.first_kickoff?kyDay(r.first_kickoff)+(r.last_kickoff&&kyDay(r.last_kickoff)!==kyDay(r.first_kickoff)?' – '+kyDay(r.last_kickoff):''):'—'}</td><td>${r.attention?`<span class="down">${esc(r.attention)}</span>`:'—'}</td></tr>`; }).join('');
+  const conf=p=>p.confirmed===null||p.confirmed===undefined?'—':(p.confirmed?'<span class="up">✓</span>':'<span class="down">ні</span>');
+  const people=(ov.people||[]).map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${p.is_admin?'✓':'—'}</td><td>${p.bound?'<span class="up">привʼязано</span>':'<span class="down">ще не заходив</span>'}</td><td>${p.players}</td><td>${conf(p)}</td><td>${+p.debt_eur>0?`<span class="down">${eur(+p.debt_eur)}</span>`:'—'}</td><td>${p.bank_eur!=null?eur(+p.bank_eur):'—'}</td><td>${p.wage_bank_eur!=null?eur(+p.wage_bank_eur):'—'}</td></tr>`).join('');
+  const fr=ov.freshness||{}, dl=ov.deals||{};
+  body.innerHTML=`<div class="admc"><div class="admlight"><span class="big">${ic} ${lbl}</span><span class="cnt">червоних ${ov.red||0} · жовтих ${ov.yellow||0} · оновлено ${admAgo(ov.generated_at)}</span><button class="mini" id="ovRef">⟳ Оновити</button></div>
+      <div style="margin-top:12px">${sigs||'<p class="mnote" style="margin:0">Жодних сигналів — усе, що перевіряється автоматично, гаразд.</p>'}</div>
+      <p class="mnote" style="margin-top:8px">Тут лише підказки: куди піти (кнопки справа). Що саме перевіряється: 23 перевірки health, календар (чи створено наступні тури), передперевірка кожного незакритого туру, склади найближчого туру, борги за ролі, привʼязка акаунтів.</p></div>
+    <div class="admc"><h3>🗓 Тури</h3><table class="admt"><thead><tr><th>Тур</th><th>Дедлайн (Київ)</th><th>Стан</th><th>Зіграно</th><th>Матчі (Київ)</th><th>Увага</th></tr></thead><tbody>${rounds||'<tr><td colspan="6" class="dim">Турів ще нема</td></tr>'}</tbody></table></div>
+    <div class="admc"><h3>👥 Учасники</h3><table class="admt"><thead><tr><th>Імʼя</th><th>Адмін</th><th>Акаунт</th><th>Гравців</th><th>Склад ближч. туру</th><th>Борг ролей</th><th>Трансферний</th><th>Зарплатний</th></tr></thead><tbody>${people}</tbody></table></div>
+    <div class="admc"><h3>📡 Автозбір (серцебиття)</h3><div class="admkv">
+      <div><span>Рейтинги матчів</span><b>${admAgo(fr.ratings_last)}</b></div><div><span>Черга рейтингів</span><b>${fr.ratings_queue??'—'}</b></div>
+      <div><span>Травми клубів</span><b>${admAgo(fr.injuries_last)}</b></div><div><span>Статистика гравців</span><b>${admAgo(fr.stats_last)}</b></div></div>
+      <p class="mnote" style="margin-top:8px">Пороги «застаріло» судить health (сигнал вище, якщо рутина мовчить). Рутини — у планувальнику Claude (рейтинги кожні 2 год; травми й стата — кілька разів на день).</p></div>
+    <div class="admc"><h3>💱 Угоди зараз</h3><div class="admkv">
+      <div><span>Пропозиції (трансфер)</span><b>${dl.transfers_pending??0}</b></div><div><span>Обміни</span><b>${dl.exchanges_pending??0}</b></div>
+      <div><span>Активні лоти</span><b>${dl.auctions_active??0}${dl.next_auction_end?` · найближчий до ${kyFmt(dl.next_auction_end)}`:''}</b></div>
+      <div><span>Вітрина</span><b>${dl.listings_active??0}</b></div><div><span>Події «просить піти»</span><b>${dl.wage_events_open??0}</b></div></div></div>${blocks}`;
+  $('ovRef').onclick=()=>admOverview(body);
+  body.querySelectorAll('[data-gosub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.gosub; viewAdmin(); });
+  bindBlocks();
+}
+
+// ───────── вкладка «Учасники» (SQL 569, Фаза 2) ─────────
+async function admPeople(body){
+  const A=S.adm, T=S.tour.id; body.innerHTML='<div class="spin">завантаження…</div>';
+  const {data:list,error}=await sb.rpc('admin_squad_people_list',{p_tournament:T});
+  if(error||!list){ body.innerHTML=admRpcMissing(error)?'<div class="soon">Учасники запрацюють після заливки SQL <b>569</b>.</div>':`<div class="soon">Не вдалося завантажити: ${esc(String((error&&error.message)||'')).replace(/^.*?(Squad: )/,'$1')}</div>`; return; }
+  const cfg=S.cfg||{}, me=S.me&&S.me.id;
+  const rows=list.map(p=>`<tr><td><b>${esc(p.name)}</b>${p.id===me?' <span class="dim">(ти)</span>':''}</td><td>${esc(p.email||'—')}</td><td>${p.is_admin?'✓ адмін':'—'}</td><td>${p.bound?'<span class="up">привʼязано</span>':'<span class="down">ще не заходив</span>'}</td><td>${p.players}</td>
+      <td>${p.bank_eur!=null?eur(+p.bank_eur):'—'}<div class="dim">${p.wage_bank_eur!=null?'зарпл. '+eur(+p.wage_bank_eur):''}</div></td>
+      <td>${(p.traces||[]).length?`<span class="dim" title="Є дані в таблицях: ${esc(p.traces.join(', '))}">${esc(p.traces.join(', '))}</span>`:'<span class="up">нема</span>'}</td>
+      <td class="admbtns"><button class="mini" data-pe="${p.id}">✏ Змінити</button><button class="mini" data-pd="${p.id}" ${p.can_remove&&p.id!==me?'':'disabled'} title="${p.id===me?'Себе видалити не можна':p.can_remove?'Видалити (помилково доданого)':'Є сліди — видалити не можна: '+esc((p.traces||[]).join(', '))}">🗑 Видалити</button></td></tr>`).join('');
+  body.innerHTML=`<div class="admc"><h3>👥 Учасники турніру (${list.length})</h3>
+      <table class="admt"><thead><tr><th>Імʼя</th><th>Пошта допуску</th><th>Права</th><th>Акаунт</th><th>Гравців</th><th>Баланси</th><th>Сліди</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <p class="mnote" style="margin-top:8px">«Сліди» — таблиці, де учасник уже фігурує (гравці, склади, угоди, очки…). Видалити можна лише того, у кого слідів нема (помилково доданого). Вихід учасника посеред турніру — окрема дія в «Спірне» (наступна фаза).</p></div>
+    <div class="admc"><h3>＋ Додати учасника</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
+        <div><label class="admlbl">Імʼя (2–24 символи)</label><input id="apN" class="admin-inp" maxlength="24" placeholder="Макс"></div>
+        <div><label class="admlbl">Пошта (з якою він заходитиме)</label><input id="apE" class="admin-inp" inputmode="email" placeholder="name@gmail.com"></div>
+        <div><label class="admlbl">Причина (піде в журнал)</label><input id="apR" class="admin-inp" value="додаємо учасника"></div></div>
+      <label style="display:block;margin:8px 0;font-size:13px"><input type="checkbox" id="apA"> Адмін турніру (бачить цю вкладку й може все, що ти)</label>
+      <div class="macts"><button id="apGo">Додати учасника</button></div>
+      <p class="mnote" style="margin-top:8px">Додати можна <b>лише між турами</b> (поки жоден тур не «у грі»). Стартові бюджети: трансферний <b>${eur(+cfg.budget_eur||0)}</b> + зарплатний <b>${eur(+cfg.wage_budget_eur||0)}</b>. Лист учаснику не надсилається — скажи йому зайти на сайт із цією поштою: акаунт привʼяжеться сам (якщо він уже реєструвався — привʼяжеться одразу). Склади турів відкриваються, коли підтвердили ВСІ — новий учасник теж має підтвердити.</p></div>`;
+  $('apGo').onclick=async()=>{ const {error:e}=await admCall('admin_squad_participant_add',{p_tournament:T,p_name:$('apN').value,p_email:$('apE').value,p_is_admin:$('apA').checked,p_reason:$('apR').value},'Учасника додано'); if(!e) viewAdmin(); };
+  body.querySelectorAll('[data-pe]').forEach(b=>b.onclick=()=>{ const p=list.find(x=>x.id===b.dataset.pe); if(!p) return;
+    modalOpen(`<h3>Змінити учасника «${esc(p.name)}»</h3>
+      <label class="admlbl">Імʼя</label><input id="ueN" class="admin-inp" maxlength="24" value="${esc(p.name)}">
+      <label class="admlbl">Пошта допуску ${p.id===me?'(свою пошту змінює інший адмін)':'(акаунт перепривʼяжеться за новою поштою)'}</label><input id="ueE" class="admin-inp" inputmode="email" value="${esc(p.email||'')}" ${p.id===me?'disabled':''}>
+      <label style="display:block;margin:8px 0;font-size:13px"><input type="checkbox" id="ueA" ${p.is_admin?'checked':''} ${p.id===me?'disabled':''}> Адмін турніру ${p.id===me?'(з себе не знімається)':''}</label>
+      <label class="admlbl">Причина (мінімум 5 символів; піде в журнал)</label><textarea id="ueR" class="admin-inp" rows="2"></textarea>
+      <div class="macts"><button data-do="ueok" disabled>Зберегти</button><button class="ghost" data-do="ueno">Скасувати</button></div>`);
+    const ok=$('mhost').querySelector('[data-do="ueok"]'), upd=()=>{ ok.disabled=$('ueR').value.trim().length<5; }; $('ueR').addEventListener('input',upd); upd();
+    $('mhost').querySelector('[data-do="ueno"]').onclick=modalClose;
+    ok.onclick=async()=>{ const n=$('ueN').value.trim(), em=$('ueE').value.trim(), ad=$('ueA').checked, why=$('ueR').value.trim(); modalClose();
+      const args={p_participant:p.id,p_name:(n&&n!==p.name)?n:null,p_is_admin:(p.id!==me&&ad!==!!p.is_admin)?ad:null,p_email:(p.id!==me&&em&&em.toLowerCase()!==String(p.email||'').toLowerCase())?em:null,p_reason:why};
+      const {error:e}=await admCall('admin_squad_participant_update',args,'Збережено'); if(!e) viewAdmin(); }; });
+  body.querySelectorAll('[data-pd]').forEach(b=>b.onclick=()=>{ const p=list.find(x=>x.id===b.dataset.pd); if(!p) return;
+    admDanger({title:`Видалити учасника «${esc(p.name)}»?`,body:`Видаляється допуск (<b>${esc(p.email||'—')}</b>), стартові бюджети й сам учасник. Це можливо лише тому, що слідів нема (помилково доданий). Цю дію не можна скасувати.`,word:'ВИДАЛИТИ',label:'Видалити учасника',
+      onOk:async(c,why)=>{ const {error:e}=await admCall('admin_squad_participant_remove',{p_participant:p.id,p_confirm:c,p_reason:why},'Учасника видалено'); if(!e) viewAdmin(); }}); });
 }
 
 // ───────── вкладка «Тури» ─────────
@@ -4554,6 +4642,9 @@ async function admLog(body){
     if(l.action==='round_delete') return `Тур ${t.round}: ${esc(b.title||'')}`;
     if(l.action==='round_update') return `Тур ${t.round}: ${esc(b.title||'')} → ${esc(a.title||'')}`;
     if(l.action==='club_add') return `${esc(t.club||'')} (${esc(a.league||'')}), tid ${t.sofascore_tid}`;
+    if(l.action==='participant_add') return `${esc(t.name||'')} (${esc(t.email||'')})${a.is_admin?' · адмін':''}${a.bound?' · акаунт привʼязано':' · акаунт ще не заходив'}`;
+    if(l.action==='participant_update'){ const ch=[]; if(b.name!==a.name) ch.push(`імʼя «${esc(b.name||'')}» → «${esc(a.name||'')}»`); if(b.is_admin!==a.is_admin) ch.push(a.is_admin?'став адміном':'знято адмінство'); if(a.email_changed) ch.push('пошту змінено'); return `${esc(a.name||t.participant||'')}: ${ch.join(', ')||'зміна'}`; }
+    if(l.action==='participant_remove') return `${esc(t.name||'')} (${esc(t.email||'')})`;
     return esc(JSON.stringify(t)); };
   body.innerHTML=`<div class="admc"><h3>📜 Журнал дій адміна</h3>${(data||[]).length?`<table class="admt"><thead><tr><th>Коли (Київ)</th><th>Хто</th><th>Дія</th><th>Деталі</th><th>Причина</th></tr></thead><tbody>${data.map(l=>`<tr><td>${kyFmt(l.created_at)}</td><td>${esc(l.actor)}</td><td>${esc(ADM_ACT[l.action]||l.action)}</td><td>${sum(l)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="dim">Дій адміна ще не було.</p>'}</div>`;
 }
@@ -4568,6 +4659,7 @@ async function viewAdmin(){
   const body=$('admBody');
   if(A.sub==='overview') return admOverview(body);
   if(!ok && (A.sub==='rounds'||A.sub==='log')){ body.innerHTML='<div class="soon">Адмін-функції ще не залито в базу (SQL <b>566</b> і <b>567</b>). Після заливки ця вкладка запрацює.</div>'; return; }
+  if(A.sub==='people') return admPeople(body);
   if(A.sub==='rounds') return admRounds(body);
   if(A.sub==='log') return admLog(body);
   const s=ADM_SOON[A.sub]; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;
