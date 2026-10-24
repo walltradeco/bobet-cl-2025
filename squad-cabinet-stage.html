@@ -689,6 +689,22 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .pf{display:flex;gap:8px;padding:4px 0;font-size:13px} .pfi{flex:none;width:18px;text-align:center;font-weight:700} .pfit{font-size:12px;color:var(--text-dim);margin-top:2px} .pflevel{font-weight:700;margin-bottom:6px}
 .pf.up .pfi,.pflevel.up{color:var(--up)} .pf.gold .pfi,.pflevel.gold,.admt .gold{color:var(--gold)} .pf.down .pfi,.pflevel.down{color:var(--down)} .pf.dim .pfi{color:var(--text-dim)}
 
+/* ⚙ Налаштування (Фаза 3, 24.10) */
+details.cfgrp>summary{cursor:pointer;list-style:none} details.cfgrp>summary::-webkit-details-marker{display:none} details.cfgrp>summary h3{margin:0} details.cfgrp[open]>summary{margin-bottom:8px}
+.cfrow{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(230px,1fr);gap:8px 18px;padding:9px 0;border-top:1px solid var(--line);align-items:start}
+.cfl b{font-size:13.5px} .cfh{font-size:12px;color:var(--text-dim);margin-top:3px;line-height:1.4}
+.cfchip{font:600 10px var(--mono);border:1px solid var(--line);border-radius:999px;padding:1px 7px;color:var(--text-dim);white-space:nowrap;vertical-align:middle} .cfchip.risk{color:var(--gold);border-color:rgba(230,193,75,.5)}
+.cfc{display:flex;flex-wrap:wrap;gap:6px 8px;align-items:center} .cfctl{display:inline-flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cfc .cfin{width:150px} .cfc select.cfin{width:auto} .cfc input[type=text].cfin{width:230px}
+.cfbr{display:flex;flex-direction:column;gap:5px} .cfbrow{display:flex;gap:5px;align-items:center;flex-wrap:wrap} .cfbrow .admin-inp{width:90px} .cfbrx{font-size:12px;color:var(--text-dim);min-width:90px}
+.cfu{font-size:12px;color:var(--text-dim)} .cferr{flex-basis:100%;font-size:12px;color:var(--down)} .cferr:empty{display:none}
+.cfrev{font-size:12px;margin-top:5px;color:var(--text-dim)}
+.cfdiff{font-size:14px} .cfdiff span{color:var(--text-dim);font-size:12px}
+.cfmod{display:grid;grid-template-columns:minmax(0,1.4fr) auto;gap:8px 18px;padding:9px 0;border-top:1px solid var(--line);align-items:center} .cfmc{display:flex;gap:12px;flex-wrap:wrap;align-items:center;font-size:13px}
+.admin-inp.w60{width:70px} .cfchal{margin-top:10px} .cfdt td{font-size:13px;padding:4px 8px}
+.cfchal,#tplBox{overflow-x:auto}
+@media(max-width:720px){.cfrow,.cfmod{grid-template-columns:1fr} .cfc .cfin,.cfc input[type=text].cfin{width:100%;max-width:260px}}
+
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
 .modal.pmodal{max-width:1180px;max-height:96vh;padding:0;overflow-x:hidden;overflow-y:auto}
 .modal.pmodal.settling{visibility:hidden}   /* 21.10 (Богдан: «картка мигає»): котирування/коридор приходять ПІСЛЯ відкриття й міняють висоту → вікно ховається, доки розмір не усталиться */   /* прокрутка: висока модалка (акцент на зарплаті) інакше обрізала б низ із примітками */
@@ -4316,14 +4332,14 @@ function kyToISO(y,mo,d,h,mi){   // київський «настінний» ч
   return new Date(t).toISOString(); }
 const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); return m?kyToISO(+m[1],+m[2],+m[3],+m[4],+m[5]):null; };
 
-const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',false],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
+const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
 const ADM_SOON={
-  config:['⚙ Налаштування турніру','Редактор параметрів з поясненнями й діапазонами: ролі й штрафи, очки челенджів, старт Rivals, очки менеджменту, ліміти складу, вікно ціни, зарплати; кожна зміна — в журнал.'],
   disputes:['⚖ Спірне й ручні дії','Скасувати/закрити аукціон, скасувати трансфер чи обмін, коригування балансу (з причиною), примусовий продаж гравця в ринок, видача картки, «скинути етап» (небезпечне: слово + причина).'],
   pool:['🎛 Пул гравців і клуби','Додати/прибрати гравця (лише без власника), стартова вартість, фото, ручна травма; клуби пулу й клуби-суперники.']
 };
 const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
-  fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено'};
+  fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
+  config_set:'Налаштування: параметр',module_set:'Модуль туру',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено'};
 const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
 const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
 const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
@@ -4629,6 +4645,7 @@ function admNewRound(box,rounds,body){
 // ───────── вкладка «Журнал» ─────────
 async function admLog(body){
   body.innerHTML='<div class="spin">завантаження…</div>';
+  const cat=await admCatalog(); const fk=(k,v)=>admFmt(cat[k]||{kind:'x'},v);
   const {data,error}=await sb.rpc('market_admin_log_list',{p_tournament:S.tour.id,p_limit:200});
   if(error){ body.innerHTML='<div class="soon">Журнал недоступний: '+esc(String(error.message).replace(/^.*?(Squad: )/,'$1'))+'</div>'; return; }
   const sum=l=>{ const t=l.target||{}, b=l.before||{}, a=l.after||{};
@@ -4645,8 +4662,234 @@ async function admLog(body){
     if(l.action==='participant_add') return `${esc(t.name||'')} (${esc(t.email||'')})${a.is_admin?' · адмін':''}${a.bound?' · акаунт привʼязано':' · акаунт ще не заходив'}`;
     if(l.action==='participant_update'){ const ch=[]; if(b.name!==a.name) ch.push(`імʼя «${esc(b.name||'')}» → «${esc(a.name||'')}»`); if(b.is_admin!==a.is_admin) ch.push(a.is_admin?'став адміном':'знято адмінство'); if(a.email_changed) ch.push('пошту змінено'); return `${esc(a.name||t.participant||'')}: ${ch.join(', ')||'зміна'}`; }
     if(l.action==='participant_remove') return `${esc(t.name||'')} (${esc(t.email||'')})`;
+    if(l.action==='config_set') return `${esc(t.label||t.key)}: ${esc(fk(t.key,b.value))} → <b>${esc(fk(t.key,a.value))}</b>${t.own_row_created?' · створено власний рядок налаштувань':''}`;
+    if(l.action==='module_set'){ const f=x=>x?`${x.enabled?'увімк.':'вимк.'}, з туру ${x.first_round}`:'—'; return `${t.module==='rivals'?'⚔️ Rivals':'🎯 Челенджі'}: ${f(b)} → <b>${f(a)}</b>`; }
+    if(l.action==='challenge_set'){ const f=x=>x?`${x.points} оч.${x.active?'':' (вимк.)'}`:'—'; return `Челендж «${esc(t.title||t.challenge)}»: ${f(b)} → <b>${f(a)}</b> (глобально)`; }
+    if(l.action==='mgmt_recompute') return `закритих турів: ${t.closed_rounds}`;
+    if(l.action==='template_save') return `«${esc(t.template)}» · параметрів ${a.keys}${(a.skipped||[]).length?' · пропущено: '+a.skipped.map(esc).join(', '):''}`;
+    if(l.action==='template_apply') return `«${esc(t.template)}»: змінено параметрів ${t.changed}${Object.keys(b).length?' ('+Object.keys(b).map(k=>esc((cat[k]||{}).label||k)).join(', ')+')':''}`;
+    if(l.action==='template_delete') return `«${esc(t.template)}»`;
     return esc(JSON.stringify(t)); };
   body.innerHTML=`<div class="admc"><h3>📜 Журнал дій адміна</h3>${(data||[]).length?`<table class="admt"><thead><tr><th>Коли (Київ)</th><th>Хто</th><th>Дія</th><th>Деталі</th><th>Причина</th></tr></thead><tbody>${data.map(l=>`<tr><td>${kyFmt(l.created_at)}</td><td>${esc(l.actor)}</td><td>${esc(ADM_ACT[l.action]||l.action)}</td><td>${sum(l)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="dim">Дій адміна ще не було.</p>'}</div>`;
+}
+
+// ───────── вкладка «Налаштування» (SQL 570, Фаза 3, 24.10): параметри з каталогу `market_config_catalog` (дані, не зашито — той самий каталог
+// потім читатиме конструктор турнірів) + модулі Rivals/Челенджі + перерахунок менеджменту + ШАБЛОНИ. Зміна = RPC + журнал; ризикові — слово «ЗМІНИТИ».
+const ADM_EFF={now:'діє одразу',new_deals:'для нових угод',new_participants:'для нових учасників',next_rounds:'з наступних турів',at_finalize:'при підсумку турніру'};
+const ADM_GRPI={auction:'🔨',roles:'🎭',mgmt:'💼',squad:'👥',prices:'💶',tech:'📡'};
+const admR=(x,d)=>{ const m=Math.pow(10,d==null?4:d); return Math.round(x*m)/m; };
+const admPct=v=>admR(+v*100,4)+'%';
+const admErr=e=>String((e&&e.message)||e||'').replace(/^.*?(Squad: )/,'$1');
+function admFmt(it,v){
+  if(v===null||v===undefined) return '—';
+  if(it.kind==='pct') return admPct(v);
+  if(it.kind==='eur') return eur(+v);
+  if(it.kind==='bool') return v?'увімкнено':'вимкнено';
+  if(it.kind==='ints') return (v||[]).join(' / ');
+  if(it.kind==='numarr') return (v||[]).map(admPct).join(' / ');
+  if(it.kind==='brackets') return (v||[]).map(b=>(b.up==null?'далі':'до '+eur(+b.up))+' — '+admPct(b.rate)).join('; ');
+  return String(v);
+}
+async function admCatalog(){
+  if(S.admCat) return S.admCat;
+  try{ const rows=await sbSel('market_config_catalog?select=key,grp,label,kind,sort'); S.admCat=Object.fromEntries(rows.map(r=>[r.key,r])); }catch(e){ S.admCat={}; }
+  return S.admCat;
+}
+function admBrRows(rows,minLen){
+  return rows.map((b,i)=>{ const last=i===rows.length-1;
+    return `<div class="cfbrow"><span class="cfu">${last?'далі':'до'}</span>${last?'<span class="cfbrx">без верхньої межі</span>':`<input class="admin-inp bu" type="number" step="any" value="${admR(b.up/1e6,3)}"><span class="cfu">M€</span>`}<span class="cfu">—</span><input class="admin-inp br" type="number" step="any" value="${admR(b.rate*100)}"><span class="cfu">%</span>${(!last&&rows.length>minLen)?`<button class="mini ghost" data-brdel="${i}" title="Прибрати сегмент">✕</button>`:''}</div>`; }).join('');
+}
+function admCtl(it,v){
+  const id='cf_'+it.key, at=(n,x)=>x==null?'':` ${n}="${x}"`;
+  if(it.kind==='int'||it.kind==='num') return `<input id="${id}" class="admin-inp cfin" type="number" step="${it.kind==='int'?1:'any'}"${at('min',it.min)}${at('max',it.max)} value="${v==null?'':v}">`;
+  if(it.kind==='pct') return `<input id="${id}" class="admin-inp cfin" type="number" step="any"${at('min',it.min!=null?admR(it.min*100):null)}${at('max',it.max!=null?admR(it.max*100):null)} value="${v==null?'':admR(v*100)}"><span class="cfu">%</span>`;
+  if(it.kind==='eur') return `<input id="${id}" class="admin-inp cfin" type="number" step="any"${at('min',it.min!=null?admR(it.min/1e6,3):null)}${at('max',it.max!=null?admR(it.max/1e6,3):null)} value="${v==null?'':admR(v/1e6,3)}"><span class="cfu">M€</span>`;
+  if(it.kind==='bool') return `<select id="${id}" class="admin-inp cfin"><option value="1"${v?' selected':''}>увімкнено</option><option value="0"${v?'':' selected'}>вимкнено</option></select>`;
+  if(it.kind==='enum') return `<select id="${id}" class="admin-inp cfin">${(it.options||[]).map(o=>`<option value="${esc(o)}"${o===v?' selected':''}>${esc(o)}</option>`).join('')}</select>`;
+  if(it.kind==='ints') return `<input id="${id}" class="admin-inp cfin" type="text" value="${esc((v||[]).join(', '))}" placeholder="через кому: 20, 14, 8">`;
+  if(it.kind==='numarr') return `<input id="${id}" class="admin-inp cfin" type="text" value="${esc((v||[]).map(x=>admR(x*100)).join(', '))}" placeholder="через кому, у %: 0, 5, 10"><span class="cfu">%</span>`;
+  if(it.kind==='brackets') return `<div id="${id}" class="cfbr">${admBrRows(v||[],it.len_min||1)}</div><button class="mini ghost" data-bradd="${esc(it.key)}">＋ сегмент</button>`;
+  return `<input id="${id}" class="admin-inp cfin" value="${esc(v)}">`;
+}
+// зчитує значення з поля; {v} або {err}
+function admRead(it){
+  const el=document.getElementById('cf_'+it.key); if(!el) return {err:'поле не знайдено'};
+  const num=s=>{ const x=String(s).trim(); if(x==='') return NaN; return Number(x.replace(',','.')); };
+  const list=s=>String(s).split(/[\s,;\/]+/).filter(Boolean).map(t=>Number(t.replace(',','.')));
+  if(it.kind==='bool') return {v:el.value==='1'};
+  if(it.kind==='enum') return {v:el.value};
+  if(it.kind==='int'||it.kind==='num'||it.kind==='pct'||it.kind==='eur'){
+    if(String(el.value).trim()==='') return it.nullable?{v:null}:{err:'порожнє значення'};
+    const n=num(el.value); if(!Number.isFinite(n)) return {err:'не число'};
+    if(it.kind==='int'){ if(!Number.isInteger(n)) return {err:'потрібне ціле число'}; return {v:n}; }
+    if(it.kind==='pct') return {v:admR(n/100,6)};
+    if(it.kind==='eur') return {v:Math.round(n*1e6)};
+    return {v:n};
+  }
+  if(it.kind==='ints'||it.kind==='numarr'){
+    const a=list(el.value); if(a.some(x=>!Number.isFinite(x))) return {err:'у списку є не число'};
+    if(it.kind==='ints'&&a.some(x=>!Number.isInteger(x))) return {err:'потрібні цілі числа'};
+    if(it.len_min!=null&&(a.length<it.len_min||a.length>it.len_max)) return {err:`потрібно значень: ${it.len_min}–${it.len_max}`};
+    return {v:it.kind==='numarr'?a.map(x=>admR(x/100,6)):a};
+  }
+  if(it.kind==='brackets'){
+    const rows=[...el.querySelectorAll('.cfbrow')], out=[];
+    for(let i=0;i<rows.length;i++){ const last=i===rows.length-1, ru=rows[i].querySelector('.bu'), rr=rows[i].querySelector('.br');
+      const r=num(rr.value); if(!Number.isFinite(r)) return {err:'ставка сегмента — не число'};
+      let up=null; if(!last){ const u=num(ru.value); if(!Number.isFinite(u)) return {err:'межа сегмента — не число'}; up=Math.round(u*1e6); }
+      out.push({up,rate:admR(r/100,6)}); }
+    return {v:out};
+  }
+  return {v:el.value};
+}
+function admCfgSave(it,oldV,newV,own){
+  const T=S.tour.id, why=ADM_EFF[it.effect]||'';
+  admDanger({title:`Змінити «${esc(it.label)}»`,
+    body:`<div class="cfdiff"><span>було</span> <b>${esc(admFmt(it,oldV))}</b> <span>→ стане</span> <b>${esc(admFmt(it,newV))}</b></div>
+      <div class="mnote" style="margin-top:6px">Діє: <b>${esc(why)}</b>.${it.risky?' Параметр <b>ризиковий</b> — зміна може вплинути на чинні угоди й склади (сервер перевірить health і відмовить, якщо щось зламається).':''}${own?'':' Це перша зміна: для турніру створиться <b>власний рядок налаштувань</b> (копія чинних) — надалі зміни в глобальних налаштуваннях на цей турнір не діятимуть.'}</div>`,
+    word:it.risky?'ЗМІНИТИ':null,label:'Зберегти',
+    onOk:async(c,reason)=>{ const {error}=await admCall('admin_squad_config_set',{p_tournament:T,p_key:it.key,p_value:newV,p_confirm:c||null,p_reason:reason},'Збережено · '+it.label); if(!error) admConfigRefresh(); }});
+}
+let ADM_CFG_BODY=null;
+async function admConfigRefresh(){ const y=window.scrollY; if(ADM_CFG_BODY) await admConfig(ADM_CFG_BODY); window.scrollTo(0,y); }
+function admJsonModal(title,text,fname){
+  modalOpen(`<h3>${esc(title)}</h3><textarea id="jsT" class="admin-inp" rows="14" readonly style="font:12px var(--mono)">${esc(text)}</textarea>
+    <div class="macts"><button data-do="jscp">Копіювати</button><button class="ghost" data-do="jsdl">Завантажити .json</button><button class="ghost" data-do="jsno">Закрити</button></div>`);
+  const h=$('mhost'), ta=$('jsT');
+  h.querySelector('[data-do="jscp"]').onclick=async()=>{ try{ await navigator.clipboard.writeText(text); }catch(e){ ta.select(); try{ document.execCommand('copy'); }catch(_){} } alert('✅ Скопійовано'); };
+  h.querySelector('[data-do="jsdl"]').onclick=()=>{ try{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([text],{type:'application/json'})); a.download=fname; document.body.appendChild(a); a.click(); a.remove(); }catch(e){ alert('Не вдалося завантажити — скопіюй текст'); } };
+  h.querySelector('[data-do="jsno"]').onclick=modalClose;
+}
+function admDiffHtml(d){
+  const ch=(d.changes||[]).map(c=>`<tr><td>${esc(c.label)}${c.risky?' <span class="cfchip risk">⚠</span>':''}</td><td>${esc(admFmt(c,c.current))}</td><td>→</td><td><b>${esc(admFmt(c,c.template))}</b></td></tr>`).join('');
+  const mname=m=>m==='rivals'?'⚔️ Rivals':'🎯 Челенджі';
+  const mf=x=>x?`${x.enabled?'увімкнено':'вимкнено'}, з туру ${x.first_round}`:'—';
+  const md=(d.modules||[]).map(m=>`<tr><td>${mname(m.module)}</td><td>${esc(mf(m.current))}</td><td>→</td><td><b>${esc(mf(m.template))}</b></td></tr>`).join('');
+  const cf=x=>x?`${x.points} оч.${x.active?'':' (вимк)'}`:'—';
+  const cc=(d.challenges||[]).map(c=>`<tr><td>Челендж «${esc(c.title)}»</td><td>${esc(cf(c.current))}</td><td>→</td><td><b>${esc(cf(c.template))}</b></td></tr>`).join('');
+  const sk=(d.skipped||[]).length?`<div class="mnote warn" style="margin-top:6px">Невідомі параметри шаблону пропущено: ${d.skipped.map(esc).join(', ')}</div>`:'';
+  const any=ch||md||cc;
+  return {any:!!any,html:(any?`<table class="admt cfdt"><tbody>${ch}${md?`<tr><td colspan="4" class="dim">модулі (потрібна галочка нижче)</td></tr>${md}`:''}${cc?`<tr><td colspan="4" class="dim">очки челенджів — глобальні (потрібна галочка нижче)</td></tr>${cc}`:''}</tbody></table>`:'<p>Шаблон збігається з поточними налаштуваннями — застосовувати нічого.</p>')+sk};
+}
+async function admTemplateApply(tpl,own){
+  const T=S.tour.id, {data:d,error}=await sb.rpc('admin_squad_template_diff',{p_tournament:T,p_id:tpl.id});
+  if(error){ alert('⛔ '+admErr(error)); return; }
+  const df=admDiffHtml(d);
+  if(!df.any){ modalOpen(`<h3>Порівняти з «${esc(tpl.name)}»</h3>${df.html}<div class="macts"><button class="ghost" data-do="dfno">Закрити</button></div>`); $('mhost').querySelector('[data-do="dfno"]').onclick=modalClose; return; }
+  let wm=false, wc=false;
+  const hasM=(d.modules||[]).length>0, hasC=(d.challenges||[]).length>0;
+  admDanger({title:`Застосувати шаблон «${esc(tpl.name)}»`,
+    body:`<p style="margin:0 0 8px">Зміниться (усе разом, атомарно; якщо щось порушить правила чи health — не застосується нічого):</p>${df.html}
+      ${hasM?'<label style="display:block;margin-top:8px;font-size:13px"><input type="checkbox" id="tpM"> Застосувати також модулі Rivals/Челенджі</label>':''}
+      ${hasC?'<label style="display:block;margin-top:4px;font-size:13px"><input type="checkbox" id="tpC"> Застосувати також очки челенджів (глобальні для всіх Squad-турнірів)</label>':''}
+      ${own?'':'<div class="mnote" style="margin-top:6px">Це перші зміни: для турніру створиться власний рядок налаштувань.</div>'}`,
+    word:'ЗМІНИТИ',label:'Застосувати',
+    onOk:async(c,why)=>{ const {error:e}=await admCall('admin_squad_template_apply',{p_tournament:T,p_id:tpl.id,p_with_modules:wm,p_with_challenges:wc,p_confirm:c,p_reason:why},'Шаблон застосовано'); if(!e) admConfigRefresh(); }});
+  const cm=$('tpM'), cc=$('tpC'); if(cm) cm.onchange=()=>{ wm=cm.checked; }; if(cc) cc.onchange=()=>{ wc=cc.checked; };
+}
+async function admTemplates(box,own){
+  const T=S.tour.id;
+  const {data:list,error}=await sb.rpc('admin_squad_template_list',{p_tournament:T});
+  if(error||!list){ box.innerHTML=`<p class="dim">Шаблони недоступні: ${esc(admErr(error))}</p>`; return; }
+  const rows=list.map(t=>`<tr><td><b>${esc(t.name)}</b>${t.builtin?' <span class="adm-badge">вбудований</span>':''}<div class="dim">${esc(t.description||'')}</div></td><td>${t.keys}</td><td>${t.created_by?esc(t.created_by)+' · ':''}${kyDay(t.created_at)}</td>
+    <td class="admbtns"><button class="mini ghost" data-tdiff="${t.id}">Порівняти</button><button class="mini" data-tapply="${t.id}">Застосувати</button><button class="mini ghost" data-tjson="${t.id}">JSON</button><button class="mini ghost" data-tdel="${t.id}" ${t.builtin?'disabled title="Вбудований шаблон видаляти не можна"':''}>🗑</button></td></tr>`).join('');
+  box.innerHTML=`<table class="admt"><thead><tr><th>Шаблон</th><th>Параметрів</th><th>Автор · дата</th><th></th></tr></thead><tbody>${rows||'<tr><td colspan="4" class="dim">Шаблонів нема</td></tr>'}</tbody></table>
+    <div class="admbtns" style="margin-top:10px"><button class="mini" id="tpSave">＋ Зберегти поточні налаштування як шаблон</button><button class="mini ghost" id="tpImp">⬆ Імпорт з JSON</button></div>
+    <p class="mnote" style="margin-top:8px">Шаблон = знімок усіх параметрів (+ за потреби Rivals/Челенджі й очки челенджів). Новому турніру можна задати такі самі правила одним кліком; JSON можна перенести між турнірами.</p>`;
+  const byId=id=>list.find(x=>x.id===id);
+  box.querySelectorAll('[data-tdiff]').forEach(b=>b.onclick=async()=>{ const t=byId(b.dataset.tdiff); const {data:d,error:e}=await sb.rpc('admin_squad_template_diff',{p_tournament:T,p_id:t.id}); if(e){ alert('⛔ '+admErr(e)); return; }
+    modalOpen(`<h3>Порівняти з «${esc(t.name)}»</h3>${admDiffHtml(d).html}<div class="macts"><button class="ghost" data-do="dfno">Закрити</button></div>`); $('mhost').querySelector('[data-do="dfno"]').onclick=modalClose; });
+  box.querySelectorAll('[data-tapply]').forEach(b=>b.onclick=()=>admTemplateApply(byId(b.dataset.tapply),own));
+  box.querySelectorAll('[data-tjson]').forEach(b=>b.onclick=async()=>{ const t=byId(b.dataset.tjson); const {data:d,error:e}=await sb.rpc('admin_squad_template_get',{p_tournament:T,p_id:t.id}); if(e){ alert('⛔ '+admErr(e)); return; }
+    const obj={name:d.name,description:d.description,settings:d.settings,modules:d.modules,challenges:d.challenges}; admJsonModal(`JSON шаблону «${t.name}»`,JSON.stringify(obj,null,2),'squad-template-'+String(t.name).replace(/[^a-zA-Z0-9А-Яа-яІіЇїЄє]+/g,'-')+'.json'); });
+  box.querySelectorAll('[data-tdel]').forEach(b=>b.onclick=()=>{ const t=byId(b.dataset.tdel); if(!t||t.builtin) return;
+    admDanger({title:`Видалити шаблон «${esc(t.name)}»?`,body:'Видаляється лише збережений знімок; налаштування турнірів не міняються.',word:'ВИДАЛИТИ',label:'Видалити',
+      onOk:async(c,why)=>{ const {error:e}=await admCall('admin_squad_template_delete',{p_tournament:T,p_id:t.id,p_confirm:c,p_reason:why},'Шаблон видалено'); if(!e) admTemplates(box,own); }}); });
+  $('tpSave').onclick=()=>{ modalOpen(`<h3>Зберегти поточні налаштування як шаблон</h3>
+      <label class="admlbl">Назва (унікальна)</label><input id="tpN" class="admin-inp" maxlength="60" placeholder="Напр. «Squad · лютий»">
+      <label class="admlbl">Опис (необовʼязково)</label><input id="tpD" class="admin-inp" maxlength="200">
+      <p class="mnote">Зберігаються значення всіх параметрів, стан Rivals/Челенджів і очки челенджів на зараз.</p>
+      <div class="macts"><button data-do="tpok">Зберегти</button><button class="ghost" data-do="tpno">Скасувати</button></div>`);
+    $('mhost').querySelector('[data-do="tpno"]').onclick=modalClose;
+    $('mhost').querySelector('[data-do="tpok"]').onclick=async()=>{ const n=$('tpN').value.trim(), d=$('tpD').value.trim(); modalClose();
+      const {data,error:e}=await admCall('admin_squad_template_save',{p_tournament:T,p_name:n,p_description:d||null,p_settings:null,p_modules:null,p_challenges:null},'Шаблон збережено'); if(!e) admTemplates(box,own); }; };
+  $('tpImp').onclick=()=>{ modalOpen(`<h3>Імпорт шаблону з JSON</h3>
+      <textarea id="tpJ" class="admin-inp" rows="12" style="font:12px var(--mono)" placeholder='{"name":"…","settings":{"bid_step_pct":0.05},"modules":{"rivals":{"enabled":true,"first_round":3}},"challenges":{"mid5":{"points":2,"active":true}}}'></textarea>
+      <label class="admlbl">Назва (якщо в JSON її нема)</label><input id="tpN2" class="admin-inp" maxlength="60">
+      <p class="mnote">Кожне значення проходить ту саму перевірку, що й зміна параметра; невідомі ключі пропускаються й показуються після збереження. Застосувати можна окремо кнопкою «Застосувати».</p>
+      <div class="macts"><button data-do="tiok">Зберегти шаблон</button><button class="ghost" data-do="tino">Скасувати</button></div>`);
+    $('mhost').querySelector('[data-do="tino"]').onclick=modalClose;
+    $('mhost').querySelector('[data-do="tiok"]').onclick=async()=>{ let o; try{ o=JSON.parse($('tpJ').value); }catch(e){ alert('⛔ Це не JSON: '+e.message); return; }
+      if(!o||typeof o!=='object'||Array.isArray(o)){ alert('⛔ Очікую об’єкт JSON'); return; }
+      const nm=String(o.name||$('tpN2').value||'').trim(); if(!nm){ alert('⛔ Вкажи назву шаблону'); return; } modalClose();
+      const {data,error:e}=await admCall('admin_squad_template_save',{p_tournament:T,p_name:nm,p_description:o.description||null,p_settings:o.settings||{},p_modules:o.modules||null,p_challenges:o.challenges||null},'Шаблон збережено');
+      if(!e){ if(data&&(data.skipped||[]).length) alert('ℹ️ Пропущено невідомі параметри: '+data.skipped.join(', ')); admTemplates(box,own); } }; };
+}
+function admModulesHtml(m){
+  const r=m.rivals, c=m.challenges, mn=m.min_first_round||1;
+  const mod=(id,ic,nm,desc,x)=>`<div class="cfmod"><div><b>${ic} ${nm}</b><div class="cfh">${desc}</div></div>
+    <div class="cfmc"><label><input type="checkbox" id="${id}E" ${x.enabled?'checked':''}> увімкнено</label><label>з туру <input id="${id}F" type="number" min="${mn}" class="admin-inp w60" value="${x.first_round}"></label><button class="mini" id="${id}S" disabled>Зберегти</button></div></div>`;
+  return `<div class="admc"><h3>🧩 Модулі туру</h3>
+    ${mod('mdR','⚔️','Rivals','Дуель на тур: суперник обирається наосліп; виграв +2, нічия +1. Вибір суперника обовʼязковий для підтвердження складу.',r)}
+    ${mod('mdC','🎯','Челенджі','Очки за композицію складу (раз за турнір на кожен), нараховуються при відкритті складів.',c)}
+    <p class="mnote">«З туру» — не раніше туру <b>${mn}</b> (найближчий, що ще не відкрито). Уже нараховані очки Rivals/Челенджів не перераховуються.</p>
+    <div class="cfchal"><table class="admt"><thead><tr><th>Челендж</th><th>Очки (0–5)</th><th>Активний</th><th></th></tr></thead><tbody>${(c.items||[]).map(h=>`<tr data-ch="${esc(h.key)}"><td><b>${esc(h.title)}</b><div class="dim">${esc(h.description||'')}</div></td><td><input type="number" min="0" max="5" step="1" class="admin-inp w60 chp" value="${h.points}"></td><td><input type="checkbox" class="cha" ${h.active?'checked':''}></td><td><button class="mini chs" disabled>Зберегти</button></td></tr>`).join('')}</tbody></table>
+    <p class="mnote">⚠ Очки й активність челенджів — <b>глобальні</b> (спільний довідник для всіх Squad-турнірів); потрібне слово «ЗМІНИТИ».</p></div></div>`;
+}
+function admBindModules(m,T){
+  const bindMod=(id,mod,label)=>{ const e=$(id+'E'), f=$(id+'F'), s=$(id+'S'), cur=m[mod]; if(!e) return;
+    const upd=()=>{ s.disabled=(e.checked===cur.enabled && (+f.value)===cur.first_round); }; e.onchange=upd; f.oninput=upd;
+    s.onclick=()=>admDanger({title:`${label}: змінити`,body:`<div class="cfdiff"><span>було</span> <b>${cur.enabled?'увімкнено':'вимкнено'}, з туру ${cur.first_round}</b> <span>→ стане</span> <b>${e.checked?'увімкнено':'вимкнено'}, з туру ${+f.value}</b></div>`,word:'ЗМІНИТИ',label:'Зберегти',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_module_set',{p_tournament:T,p_module:mod,p_enabled:e.checked,p_first_round:+f.value,p_confirm:c,p_reason:why},'Збережено · '+label); if(!error) admConfigRefresh(); }}); };
+  bindMod('mdR','rivals','⚔️ Rivals'); bindMod('mdC','challenges','🎯 Челенджі');
+  document.querySelectorAll('.cfchal tr[data-ch]').forEach(tr=>{ const key=tr.dataset.ch, h=(m.challenges.items||[]).find(x=>x.key===key), p=tr.querySelector('.chp'), a=tr.querySelector('.cha'), s=tr.querySelector('.chs');
+    const upd=()=>{ s.disabled=((+p.value)===h.points && a.checked===h.active); }; p.oninput=upd; a.onchange=upd;
+    s.onclick=()=>admDanger({title:`Челендж «${esc(h.title)}»`,body:`<div class="cfdiff"><span>було</span> <b>${h.points} оч.${h.active?'':' (вимкнено)'}</b> <span>→ стане</span> <b>${+p.value} оч.${a.checked?'':' (вимкнено)'}</b></div><div class="mnote" style="margin-top:6px">Зміна глобальна — діє на всі Squad-турніри; нараховані раніше очки не перераховуються.</div>`,word:'ЗМІНИТИ',label:'Зберегти',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_challenge_set',{p_tournament:T,p_key:key,p_points:+p.value,p_active:a.checked,p_confirm:c,p_reason:why},'Збережено · '+h.title); if(!error) admConfigRefresh(); }}); });
+}
+async function admConfig(body){
+  ADM_CFG_BODY=body; const T=S.tour.id; body.innerHTML='<div class="spin">завантаження…</div>';
+  const [cr,lr]=await Promise.all([sb.rpc('admin_squad_config_get',{p_tournament:T}), sb.rpc('market_admin_log_list',{p_tournament:T,p_limit:400}).then(r=>r,()=>({data:null}))]);
+  const cfg=cr.data, error=cr.error;
+  if(error||!cfg){ body.innerHTML=admRpcMissing(error)?'<div class="soon">Налаштування запрацюють після заливки SQL <b>570</b>.</div>':`<div class="soon">Не вдалося завантажити: ${esc(admErr(error))}</div>`; return; }
+  S.admCat=S.admCat||{}; (cfg.groups||[]).forEach(g=>g.items.forEach(it=>{ S.admCat[it.key]={key:it.key,grp:g.grp,label:it.label,kind:it.kind}; }));
+  const rev={}; (lr.data||[]).forEach(l=>{ if(l.action==='config_set'){ const k=l.target&&l.target.key; if(k&&!(k in rev)) rev[k]=(l.before||{}).value; }
+    else if(l.action==='template_apply'){ const b=l.before||{}; Object.keys(b).forEach(k=>{ if(!(k in rev)) rev[k]=b[k]; }); } });
+  const A=S.adm; A.cfgOpen=A.cfgOpen||{auction:true};
+  const row=it=>{ const hasRev=(it.key in rev) && JSON.stringify(rev[it.key])!==JSON.stringify(it.value);
+    return `<div class="cfrow" data-k="${esc(it.key)}"><div class="cfl"><b>${esc(it.label)}</b> <span class="cfchip">${esc(ADM_EFF[it.effect]||it.effect)}</span>${it.risky?' <span class="cfchip risk">⚠ ризиково</span>':''}<div class="cfh">${esc(it.help||'')}</div>
+        ${hasRev?`<div class="cfrev">↩ було: <b>${esc(admFmt(it,rev[it.key]))}</b> <button class="mini ghost" data-rev="${esc(it.key)}">Повернути як було</button></div>`:''}</div>
+      <div class="cfc"><span class="cfctl">${admCtl(it,it.value)}</span><button class="mini" data-cfs="${esc(it.key)}" disabled>Зберегти</button><div class="cferr"></div></div></div>`; };
+  const grp=g=>`<details class="admc cfgrp" data-g="${esc(g.grp)}" ${A.cfgOpen[g.grp]?'open':''}><summary><h3>${ADM_GRPI[g.grp]||'⚙'} ${esc(g.title)} <span class="dim">(${g.items.length})</span></h3></summary>
+      ${g.grp==='mgmt'?'<p class="mnote" style="margin:0 0 6px">Зміна цих параметрів НЕ перераховує закриті тури — для цього є окрема кнопка «Перерахувати менеджмент» нижче.</p>':''}
+      ${g.grp==='tech'?'<p class="mnote" style="margin:0 0 6px">Технічні пороги автозбору й сигналів — міняй лише, якщо розумієш наслідки; у публічний журнал правил не потрапляють.</p>':''}
+      ${g.items.map(row).join('')}</details>`;
+  const closed=+cfg.closed_rounds||0;
+  body.innerHTML=`<div class="admc"><h3>⚙ Налаштування турніру</h3>
+      <p class="mnote" style="margin:0">Кожен параметр має підказку, межі й позначку, <b>коли діє</b>. Зміна — кнопка «Зберегти» → вікно підтвердження (було → стане) і причина в журнал; ризикові — ще слово «ЗМІНИТИ». Сервер перевіряє тип, межі, узгодженість з іншими параметрами й чинні дані (health) — якщо щось порушується, зміну відхилено. Зміни правил видно всім у «Rules → Що змінилось».</p>
+      <p class="mnote ${cfg.own_row?'':'warn'}" style="margin-top:6px">${cfg.own_row?'У турніру є власний рядок налаштувань (зміни тут діють лише на нього).':'Турнір зараз використовує глобальні налаштування. Перша зміна створить власний рядок (копію чинних) — після цього зміни в глобальних налаштуваннях на цей турнір не діятимуть.'}</p></div>
+    ${(cfg.groups||[]).map(grp).join('')}
+    ${admModulesHtml(cfg.modules)}
+    <div class="admc"><h3>🧮 Перерахунок менеджменту закритих турів</h3>
+      <p class="mnote" style="margin:0 0 8px">Параметри менеджменту (очки 💎/💼, ваги, метрика) діють з наступних турів і при підсумку. Закриті тури <b>самі не перераховуються</b> — лише цією кнопкою. Закритих турів: <b>${closed}</b>.</p>
+      <div class="admbtns"><button class="mini" id="mgRc" ${closed?'':'disabled title="Закритих турів ще нема"'}>🧮 Перерахувати менеджмент</button></div></div>
+    <div class="admc"><h3>📋 Шаблони налаштувань</h3><div id="tplBox"><div class="spin">завантаження…</div></div></div>`;
+  body.querySelectorAll('details.cfgrp').forEach(d=>d.addEventListener('toggle',()=>{ A.cfgOpen[d.dataset.g]=d.open; }));
+  const items={}; (cfg.groups||[]).forEach(g=>g.items.forEach(it=>{ items[it.key]=it; }));
+  body.querySelectorAll('.cfrow').forEach(rw=>{ const it=items[rw.dataset.k], sv=rw.querySelector('[data-cfs]'), er=rw.querySelector('.cferr');
+    const upd=()=>{ const r=admRead(it); if(r.err){ sv.disabled=true; er.textContent=r.err; return; } er.textContent=''; sv.disabled=JSON.stringify(r.v)===JSON.stringify(it.value); };
+    rw.addEventListener('input',upd); rw.addEventListener('change',upd);
+    rw.addEventListener('click',e=>{ const add=e.target.closest('[data-bradd]'), del=e.target.closest('[data-brdel]'); if(!add&&!del) return;
+      const r=admRead(it); const rows=(r.v&&Array.isArray(r.v))?r.v:(it.value||[]);
+      let next=rows.slice(); if(add){ if(next.length>=(it.len_max||6)){ alert('Максимум сегментів: '+(it.len_max||6)); return; } const prev=next.length>1?next[next.length-2].up:null; next.splice(next.length-1,0,{up:(prev||0)+50000000,rate:next[next.length-1].rate}); }
+      else { next.splice(+del.dataset.brdel,1); }
+      rw.querySelector('.cfbr').innerHTML=admBrRows(next,it.len_min||1); upd(); });
+    sv.onclick=()=>{ const r=admRead(it); if(r.err) return; admCfgSave(it,it.value,r.v,cfg.own_row); };
+    const rb=rw.querySelector('[data-rev]'); if(rb) rb.onclick=()=>admCfgSave(it,it.value,rev[it.key],cfg.own_row); });
+  admBindModules(cfg.modules,T);
+  $('mgRc').onclick=()=>admDanger({title:'Перерахувати менеджмент закритих турів',body:`Для ${closed} закритих тур(ів) заново порахуються 💎 «Менеджер туру» за ПОТОЧНИМИ параметрами, а при закритих усіх турах формату — і 💼 «Менеджер турніру». Очки в таблиці можуть змінитись. Ціни, зарплати й очки матчів не чіпаються.`,word:'ПЕРЕРАХУВАТИ',label:'Перерахувати',
+    onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_mgmt_recompute',{p_tournament:T,p_confirm:c,p_reason:why},'Менеджмент перераховано'); if(!error) admConfigRefresh(); }});
+  admTemplates($('tplBox'),cfg.own_row);
 }
 
 async function viewAdmin(){
@@ -4660,6 +4903,7 @@ async function viewAdmin(){
   if(A.sub==='overview') return admOverview(body);
   if(!ok && (A.sub==='rounds'||A.sub==='log')){ body.innerHTML='<div class="soon">Адмін-функції ще не залито в базу (SQL <b>566</b> і <b>567</b>). Після заливки ця вкладка запрацює.</div>'; return; }
   if(A.sub==='people') return admPeople(body);
+  if(A.sub==='config') return admConfig(body);
   if(A.sub==='rounds') return admRounds(body);
   if(A.sub==='log') return admLog(body);
   const s=ADM_SOON[A.sub]; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;

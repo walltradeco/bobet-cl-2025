@@ -1317,6 +1317,28 @@ function mgCtx(){
   const plus=a=>a.map(n=>'+'+n).join('/');
   return {cfg,hy,k,pr,f1,pcs,fin5:cfg.fin.join('/'),tour3:plus(cfg.tour)};
 }
+// 🔄 «Що змінилось у правилах» (570): значення параметра за його типом (kind з market_config_catalog)
+function rcFmt(kind,v){
+  if(v===null||v===undefined) return '—';
+  const pc=x=>String(Math.round(+x*1e4)/100).replace('.',',')+'%';
+  if(kind==='pct') return pc(v);
+  if(kind==='eur') return eur(+v);
+  if(kind==='bool') return v?'увімкнено':'вимкнено';
+  if(kind==='ints') return (v||[]).join(' / ');
+  if(kind==='numarr') return (v||[]).map(pc).join(' / ');
+  if(kind==='brackets') return (v||[]).map(b=>(b.up==null?'далі':'до '+eur(+b.up))+' — '+pc(b.rate)).join('; ');
+  if(kind==='num') return String(v).replace('.',',');
+  return String(v);
+}
+function rcRow(c){
+  const b=c.before||{}, a=c.after||{};
+  const when=new Date(c.created_at).toLocaleString('uk-UA',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Europe/Kyiv'});
+  let what;
+  if(c.kind==='module'){ const f=x=>x&&x.enabled!=null?`${x.enabled?'увімкнено':'вимкнено'}, з туру ${x.first_round}`:'—'; what=`${esc(c.label)}: ${f(b)} → <b>${f(a)}</b>`; }
+  else if(c.kind==='challenge'){ const f=x=>x&&x.points!=null?`${x.points} оч.${x.active===false?' (вимкнено)':''}`:'—'; what=`${esc(c.label)}: ${f(b)} → <b>${f(a)}</b>`; }
+  else what=`${esc(c.label)}: ${esc(rcFmt(c.vkind,b.value))} → <b>${esc(rcFmt(c.vkind,a.value))}</b>`;
+  return `<tr><td>${when}</td><td style="white-space:normal">${what}</td></tr>`;
+}
 // 📜 Rules: лише ПРАВИЛА нарахування очків (як грати — окремо, у Playbook). Цифри з конфігу; приклади — на вигаданих числах.
 function renderRules(){
   const host=$('secRules'); if(!host) return;
@@ -1411,6 +1433,8 @@ function renderRules(){
       <li>Якщо в суперника немає зарахованого складу — нічия (+1). Якщо немає в тебе (не підтвердив) — 0.</li>
       <li>Окрема номінація «⚔️ Rivals — найбільше перемог за турнір» — лише титул, без додаткових очок.</li></ul>`]);
   }
+  if(S.ruleChg&&S.ruleChg.length) secs.unshift(['chg','🔄 Що змінилось',`<p>Адмін турніру змінив правила. Нижче — що саме й було → стало (найновіші зверху). Різні зміни діють по-різному: одні — одразу, інші — лише для нових угод чи з наступних турів. Тексти правил на цій сторінці вже показують чинні значення.</p>
+      <div class="rtbl"><table><tr><th>Коли (Київ)</th><th>Що змінилось</th></tr>${S.ruleChg.slice(0,40).map(rcRow).join('')}</table></div>${S.ruleChg.length>40?`<p class="rnote">Показано останні 40 з ${S.ruleChg.length}.</p>`:''}`]);
   const chips=secs.map(x=>`<button onclick="document.getElementById('r-${x[0]}').scrollIntoView({behavior:'smooth',block:'start'})">${x[1]}</button>`).join('');
   host.innerHTML=`<div class="head2"><h2>📜 Rules</h2><span class="sub">як нараховуються очки · лише правила</span></div>
     <div class="rchips">${chips}</div>
@@ -1521,6 +1545,9 @@ async function loadDynamic(){
   try{ S.rvCfg=(await sbGet(`market_rival_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null;
     S.rvBoard=await sbGet(`market_rival_board?tournament_id=eq.${S.tournament}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored&order=round_number.asc`);
     S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
+  // 🔄 зміни правил (570): публічний журнал «що змінилось» (лише параметр і було → стало; без причини й автора); нема вьюхи (570 не залито) → блок ховається
+  S.ruleChg=[];
+  try{ S.ruleChg=await sbGet(`market_rule_changes?tournament_id=eq.${S.tournament}&select=created_at,kind,key,vkind,label,before,after&order=created_at.desc&limit=200`); }catch(e){ S.ruleChg=[]; }
   // менеджмент (528): рядки туру (рахунок/місце/очки) і наскрізна; нема вьюх → вкладка «General · Management» прихована
   S.mg=[]; S.mgs=[]; S.mgReady=false;
   try{
