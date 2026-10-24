@@ -705,6 +705,13 @@ details.cfgrp>summary{cursor:pointer;list-style:none} details.cfgrp>summary::-we
 .cfchal,#tplBox{overflow-x:auto}
 @media(max-width:720px){.cfrow,.cfmod{grid-template-columns:1fr} .cfc .cfin,.cfc input[type=text].cfin{width:100%;max-width:260px}}
 
+/* ⚖ Спірне (Фаза 4, 24.10) */
+details.dspsec>summary,details.dpp>summary{cursor:pointer;list-style:none} details.dspsec>summary::-webkit-details-marker,details.dpp>summary::-webkit-details-marker{display:none}
+details.dspsec>summary h3{margin:0} details.dspsec[open]>summary{margin-bottom:8px}
+.dsph{font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin:12px 0 4px} .dsptw{overflow-x:auto}
+details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radius:10px} .dpm{display:block;font-size:12px;color:var(--text-dim);margin-top:3px;font-weight:400}
+.dgx .admin-inp{margin-bottom:2px}
+
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
 .modal.pmodal{max-width:1180px;max-height:96vh;padding:0;overflow-x:hidden;overflow-y:auto}
 .modal.pmodal.settling{visibility:hidden}   /* 21.10 (Богдан: «картка мигає»): котирування/коридор приходять ПІСЛЯ відкриття й міняють висоту → вікно ховається, доки розмір не усталиться */   /* прокрутка: висока модалка (акцент на зарплаті) інакше обрізала б низ із примітками */
@@ -1615,38 +1622,6 @@ function confOf(pid,rid){ return S.conf.some(c=>c.participant_id===pid && c.roun
 function lnBlocked(playerId){ return !!(S.confOK && S.myConfLn && S.myConfLn.has(playerId)); }
 function lnRound(){ return S.rounds.find(x=>new Date(x.deadline_at)>new Date()); }
 function lnMsg(){ const r=lnRound(); return `🔒 Гравець у підтвердженому складі${r?' туру '+r.number:''}: продаж, обмін і викуп з вітрини неможливі. Розблокувати склад може лише адмін.`; }
-// адмін: розблокування підтверджених складів (раніше жило в блоці «Підтвердили» на «Мій склад»; 15.10 перенесено в «Адмінку»)
-function adminConfBlock(){
-  const r=lnRound(); if(!S.confOK || !r || !(S.me && S.me.is_admin)) return '';
-  const pids=Object.keys(S.names), done=pids.filter(id=>confOf(id,r.id)).length;
-  const chips=pids.map(id=>{ const ok=confOf(id,r.id);
-    return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✓':'○'} ${esc(S.names[id])}${ok?` <button class="mini ghost" data-unconf="${id}" title="Розблокувати склад (лише адмін)">🔓</button>`:''}</span>`; }).join('');
-  return `<div class="stconf" style="margin:0 0 14px"><div class="cap">🔓 Підтвердження складів · Тур ${r.number} · <b>${done} з ${pids.length}</b></div>
-    <div class="cfchips">${chips}${done>0?'<button class="mini ghost" data-unconf="all" title="Розблокувати склади всіх (лише адмін)">🔓 Розблокувати всіх</button>':''}</div>
-    <div class="when">Підтвердження фінальне. Розблокований учасник змінює склад і підтверджує заново; склади всіх знову приховуються до нових підтверджень.</div></div>`;
-}
-// 542: адмінка — лише ФАКТ «є борг/подія» по учасниках (без ролей, гравців і сум) + «Скасувати»
-function adminPenBlock(){
-  if(!penOn() || !S.penOK || !(S.me && S.me.is_admin)) return '';
-  const rows=(S.flags||[]).filter(f=>f.has_debt||f.has_exit||f.has_void);
-  const body=rows.length ? rows.map(f=>{ const what=[f.has_debt?'є борг':'',f.has_exit?'вихід гравця':'',f.has_void?'склад не зараховано':''].filter(Boolean).join(' · ');
-      return `<span class="cfchip wait">${esc(f.display_name||S.names[f.participant_id]||'учасник')} — ${what} <button class="mini ghost" data-pencancel="${f.participant_id}" title="Скасувати борги, виходи й позначки учасника">Скасувати</button></span>`; }).join('')
-    : '<span class="dim">Боргів і порушень немає.</span>';
-  return `<div class="stconf" style="margin:0 0 14px"><div class="cap">💸 Борги й порушення ролей</div><div class="cfchips">${body}</div>
-    <div class="when">Адмін бачить лише факт (без ролей і сум). «Скасувати» прощає борги, виходи й позначки учасника та повертає його склад, якщо тур ще не закрито.</div></div>`;
-}
-function bindPenCancel(){
-  document.querySelectorAll('[data-pencancel]').forEach(b=>b.onclick=()=>{ const id=b.dataset.pencancel;
-    confirmModal(`Скасувати борги, виходи й позначки «порушив» учасника «${esc(S.names[id]||'учасника')}»? Склад на поточний тур (якщо його не зараховано) повернеться. Дію не можна скасувати.`, 'Скасувати',
-      ()=>act('admin_cancel_role_violations',{p_tournament:S.tour.id,p_participant:id},'Борги й порушення скасовано')); });
-}
-function bindUnconf(round){
-  document.querySelectorAll('[data-unconf]').forEach(b=>b.onclick=()=>{
-    const who=b.dataset.unconf, all=(who==='all');
-    confirmModal(all? `Розблокувати склади ВСІХ учасників на Тур ${round.number}? Склади знову стануть прихованими, кожен зможе змінити свій і підтвердити заново.`
-                    : `Розблокувати склад «${esc(S.names[who]||'учасника')}» на Тур ${round.number}? Склади всіх знову стануть прихованими, учасник зможе змінити свій склад і підтвердити заново.`,
-      'Розблокувати', ()=>act('market_unconfirm_lineup',{p_round:round.id,p_participant:all?null:who},'Склад розблоковано')); });
-}
 function lockedBoosts(){
   const parts=[]; if(S.boost) parts.push(`${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b>`);
   ['fwd','mid','dg'].forEach(k=>{ if(S.pos[k]){ const p=S.players.find(x=>x.id===S.pos[k]); parts.push(`⚡ <b>${POSB[k].name}</b> → ${p?esc(lastName(p.name)):'—'}`); } });
@@ -4332,14 +4307,14 @@ function kyToISO(y,mo,d,h,mi){   // київський «настінний» ч
   return new Date(t).toISOString(); }
 const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); return m?kyToISO(+m[1],+m[2],+m[3],+m[4],+m[5]):null; };
 
-const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',false],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
+const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
 const ADM_SOON={
-  disputes:['⚖ Спірне й ручні дії','Скасувати/закрити аукціон, скасувати трансфер чи обмін, коригування балансу (з причиною), примусовий продаж гравця в ринок, видача картки, «скинути етап» (небезпечне: слово + причина).'],
   pool:['🎛 Пул гравців і клуби','Додати/прибрати гравця (лише без власника), стартова вартість, фото, ручна травма; клуби пулу й клуби-суперники.']
 };
 const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
-  config_set:'Налаштування: параметр',module_set:'Модуль туру',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено'};
+  config_set:'Налаштування: параметр',module_set:'Модуль туру',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
+  auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто'};
 const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
 const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
 const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
@@ -4357,15 +4332,15 @@ async function admCall(fn,args,okMsg){
   await loadRefs(); admBadgeRefresh(true); return {data};
 }
 // модалка небезпечної дії: слово + причина (кнопка активна, лише коли обидва ок; сервер перевіряє те саме)
-function admDanger({title,body,word,label,reasonLabel,onOk}){
+function admDanger({title,body,word,label,reasonLabel,onOk,valid,collect}){
   modalOpen(`<h3>${title}</h3><div style="font-size:14px;margin:8px 0 10px;line-height:1.45">${body}</div>
     ${word?`<label class="admlbl">Впиши слово <b>${esc(word)}</b></label><input id="dgWord" class="admin-inp" autocomplete="off" placeholder="${esc(word)}">`:''}
     <label class="admlbl">${esc(reasonLabel||'Причина (мінімум 5 символів; піде в журнал)')}</label><textarea id="dgReason" class="admin-inp" rows="2"></textarea>
     <div class="macts"><button data-do="dgok" disabled>${esc(label)}</button><button class="ghost" data-do="dgno">Скасувати</button></div>`);
   const ok=$('mhost').querySelector('[data-do="dgok"]'), w=$('dgWord'), r=$('dgReason');
-  const upd=()=>{ ok.disabled=!((!word||(w.value.trim()===word)) && r.value.trim().length>=5); };
-  [w,r].forEach(el=>el&&el.addEventListener('input',upd)); upd();
-  ok.onclick=async()=>{ const c=w?w.value.trim():null, why=r.value.trim(); modalClose(); await onOk(c,why); };
+  const upd=()=>{ const vv=valid?valid():true; ok.disabled=!((!word||(w.value.trim()===word)) && r.value.trim().length>=5 && vv); };   // valid() викликаємо завжди (оновлює підказку форми)
+  const mod=$('mhost').querySelector('.modal'); mod.addEventListener('input',upd); mod.addEventListener('change',upd); upd();   // 24.10: усі поля форми (valid/collect) в одному вікні
+  ok.onclick=async()=>{ const c=w?w.value.trim():null, why=r.value.trim(), x=collect?collect():null; modalClose(); await onOk(c,why,x); };
   $('mhost').querySelector('[data-do="dgno"]').onclick=modalClose;
 }
 
@@ -4461,8 +4436,8 @@ function admBadgeRefresh(force){
 async function admOverview(body){
   const A=S.adm; body.innerHTML='<div class="spin">завантаження…</div>';
   let ov=null, err=null; try{ const r=await sb.rpc('admin_squad_overview',{p_tournament:S.tour.id}); ov=r.data; err=r.error; }catch(e){ err=e; }
-  const blocks=`<div class="admc"><h3>🔓 Ручні дії (поки тут)</h3>${adminConfBlock()}${adminPenBlock()}</div>`;
-  const bindBlocks=()=>{ { const r=lnRound(); if(r) bindUnconf(r); } bindPenCancel(); };
+  const blocks=`<div class="admc admgo"><h3>🔓 Ручні дії</h3><p class="mnote" style="margin:0">Розблокувати склад, пробачити борги, скасувати угоди, виправити баланс, продати чи передати гравця, скинути етап — у вкладці <button class="mini" data-gosub="disputes">⚖ Спірне →</button> (слово + причина + журнал).</p></div>`;
+  const bindBlocks=()=>body.querySelectorAll('.admgo [data-gosub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.gosub; viewAdmin(); });
   if(err||!ov){
     const rs=(S.rounds||[]).map(r=>{ const st=admState(r), a=(S.attn||{})[r.number]; const [t,cl]=ADM_STL[st];
       return `<tr><td>Тур ${r.number}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${a&&a.reason?`<span class="down">${esc(a.reason)}</span>`:'—'}</td></tr>`; }).join('');
@@ -4669,6 +4644,16 @@ async function admLog(body){
     if(l.action==='template_save') return `«${esc(t.template)}» · параметрів ${a.keys}${(a.skipped||[]).length?' · пропущено: '+a.skipped.map(esc).join(', '):''}`;
     if(l.action==='template_apply') return `«${esc(t.template)}»: змінено параметрів ${t.changed}${Object.keys(b).length?' ('+Object.keys(b).map(k=>esc((cat[k]||{}).label||k)).join(', ')+')':''}`;
     if(l.action==='template_delete') return `«${esc(t.template)}»`;
+    if(l.action==='auction_cancel') return `${esc(t.player)}: лідер ${esc(b.leader||'—')}, ставка ${eur(+b.bid)}`;
+    if(l.action==='transfer_cancel') return `${esc(t.player)}: ${esc(b.buyer||'—')} → ${esc(b.seller||'—')}, ${eur(+b.amount)}${b.had_event?' · була подія «просить піти»':''}`;
+    if(l.action==='exchange_cancel') return `${esc(b.from||'—')} ⇄ ${esc(b.to||'—')}: ${esc(t.offered)} за ${esc(t.wanted)}${+b.cash_delta?', доплата '+eur(Math.abs(+b.cash_delta)):''}`;
+    if(l.action==='listing_cancel') return `${esc(t.player)} (${esc(b.seller||'—')}), ${eur(+b.ask)}`;
+    if(l.action==='balance_adjust') return `${esc(t.participant)}: ${t.kind==='transfer'?'трансферний':'зарплатний'} ${eur(+b.balance)} → <b>${eur(+a.balance)}</b> (${admEurS(+a.delta)})`;
+    if(l.action==='force_sell') return `${esc(t.player)} (${esc(t.owner||'—')}) продано за ${eur(+a.amount)} без комісії`;
+    if(l.action==='player_transfer') return `${esc(t.player)}: ${esc(t.from||'—')} → <b>${esc(t.to||'—')}</b>${+a.price>0?' за '+eur(+a.price):' безкоштовно'}`;
+    if(l.action==='unconfirm') return `Тур ${esc(t.round)}: ${esc(t.participant)} · знято підтверджень: ${a.unconfirmed}`;
+    if(l.action==='forgive_violations') return `${esc(t.participant)}: борги ${a.debts||0}, виходи ${a.exits||0}, позначки ${a.marks||0}, склад повернуто ${a.restored||0}`;
+    if(l.action==='stage_reset') return `Етап ${esc(t.stage)}: гравців звільнено ${a.players_reset}, бюджетів скинуто ${a.budgets_reset}, угод скасовано ${a.cancelled}`;
     return esc(JSON.stringify(t)); };
   body.innerHTML=`<div class="admc"><h3>📜 Журнал дій адміна</h3>${(data||[]).length?`<table class="admt"><thead><tr><th>Коли (Київ)</th><th>Хто</th><th>Дія</th><th>Деталі</th><th>Причина</th></tr></thead><tbody>${data.map(l=>`<tr><td>${kyFmt(l.created_at)}</td><td>${esc(l.actor)}</td><td>${esc(ADM_ACT[l.action]||l.action)}</td><td>${sum(l)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="dim">Дій адміна ще не було.</p>'}</div>`;
 }
@@ -4892,6 +4877,106 @@ async function admConfig(body){
   admTemplates($('tplBox'),cfg.own_row);
 }
 
+// ───────── вкладка «Спірне» (SQL 571, Фаза 4, 24.10): скасувати угоди · гроші й гравці · склади й ролі · скидання етапу ─────────
+// Кожна дія — слово + причина + журнал (сервер перевіряє теж). Адмін бачить хто/кому/який гравець/скільки; ролей, зарплат і умов контрактів — НІКОЛИ.
+let ADM_DISP_BODY=null;
+const admEurS=v=>(+v>0?'+':+v<0?'−':'')+eur(Math.abs(+v));
+const admNum=s=>{ const x=String(s||'').trim().replace(/\s+/g,'').replace(',','.').replace('−','-'); if(x===''||x==='+'||x==='-') return NaN; return Number(x); };
+async function admDisputesRefresh(){ const y=window.scrollY; if(ADM_DISP_BODY) await admDisputes(ADM_DISP_BODY); window.scrollTo(0,y); }
+function admDispAct(rpc,args,okMsg){ return admCall(rpc,args,okMsg).then(r=>{ if(!r.error) admDisputesRefresh(); return r; }); }
+async function admDisputes(body){
+  ADM_DISP_BODY=body; const T=S.tour.id, A=S.adm; A.dispOpen=A.dispOpen||{deals:true,money:true,lineups:true,danger:false};
+  body.innerHTML='<div class="spin">завантаження…</div>';
+  const {data:d,error}=await sb.rpc('admin_squad_disputes',{p_tournament:T});
+  if(error||!d){ body.innerHTML=admRpcMissing(error)?'<div class="soon">«Спірне» запрацює після заливки SQL <b>571</b>.</div>':`<div class="soon">Не вдалося завантажити: ${esc(admErr(error))}</div>`; return; }
+  const nm=id=>{ const p=(d.people||[]).find(x=>x.id===id); return p?p.name:'—'; };
+  const sec=(k,title,cnt,inner)=>`<details class="admc dspsec" data-g="${k}" ${A.dispOpen[k]?'open':''}><summary><h3>${title} <span class="dim">${cnt!=null?'('+cnt+')':''}</span></h3></summary>${inner}</details>`;
+  // 1. угоди
+  const nDeals=(d.auctions||[]).length+(d.transfers||[]).length+(d.exchanges||[]).length+(d.listings||[]).length;
+  const tbl=(head,rows,empty)=>rows.length?`<div class="dsptw"><table class="admt"><thead><tr>${head.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${rows.join('')}</tbody></table></div>`:`<p class="dim" style="margin:4px 0 10px">${empty}</p>`;
+  const auRows=(d.auctions||[]).map(a=>`<tr><td><b>${esc(a.player)}</b></td><td>${esc(a.leader||'—')}</td><td>${eur(+a.bid)}</td><td>${kyFmt(a.ends_at)}</td><td>${a.bids}</td><td class="admbtns"><button class="mini ghost" data-dcancel="auction" data-id="${a.id}">Скасувати</button></td></tr>`);
+  const trRows=(d.transfers||[]).map(t=>`<tr><td><b>${esc(t.player)}</b>${t.event?' <span class="cfchip risk" title="Є відкрита подія «гравець просить піти» — скасування закриє й її">подія</span>':''}</td><td>${esc(t.seller||'—')}</td><td>${esc(t.buyer||'—')}</td><td>${eur(+t.amount)}</td><td>${esc(t.awaiting||'—')}</td><td class="admbtns"><button class="mini ghost" data-dcancel="transfer" data-id="${t.id}">Скасувати</button></td></tr>`);
+  const exRows=(d.exchanges||[]).map(e=>`<tr><td>${esc(e.from||'—')} ⇄ ${esc(e.to||'—')}</td><td>${esc(e.offered)} ⇄ ${esc(e.wanted)}</td><td>${+e.cash_delta?admEurS(+e.cash_delta):'—'}</td><td>${esc(e.awaiting||'—')}</td><td class="admbtns"><button class="mini ghost" data-dcancel="exchange" data-id="${e.id}">Скасувати</button></td></tr>`);
+  const liRows=(d.listings||[]).map(l=>`<tr><td><b>${esc(l.player)}</b></td><td>${esc(l.seller||'—')}</td><td>${eur(+l.ask)}</td><td class="admbtns"><button class="mini ghost" data-dcancel="listing" data-id="${l.id}">Зняти</button></td></tr>`);
+  const deals=`<p class="mnote" style="margin:0 0 8px">Скасування лише міняє статус: заморожені гроші й резерв зарплатного звільняються самі. Учасники про скасування не сповіщаються й публічної новини нема — лише журнал адміна.</p>
+    <h4 class="dsph">Аукціони</h4>${tbl(['Гравець','Лідер','Ставка','Закінчується (Київ)','Ставок',''],auRows,'Активних аукціонів немає')}
+    <h4 class="dsph">Пропозиції (трансфер)</h4>${tbl(['Гравець','Власник','Покупець','Сума','Чекає',''],trRows,'Відкритих пропозицій немає')}
+    <h4 class="dsph">Обміни</h4>${tbl(['Учасники','Гравці','Доплата','Чекає',''],exRows,'Відкритих обмінів немає')}
+    <h4 class="dsph">Вітрина</h4>${tbl(['Гравець','Продавець','Ціна',''],liRows,'Лотів вітрини немає')}`;
+  // 2. гроші й гравці
+  const people=(d.people||[]).map(p=>{
+    const prow=(p.players||[]).map(x=>`<tr><td><b>${esc(x.name)}</b></td><td>${esc(x.pos||'')}</td><td>${esc(x.club||'')}</td><td>${eur(+x.value)}</td><td class="admbtns"><button class="mini ghost" data-dsell="${x.id}" data-owner="${p.id}">Продати</button><button class="mini ghost" data-dgive="${x.id}" data-owner="${p.id}">Передати…</button></td></tr>`).join('');
+    return `<details class="admc dpp"><summary><b>${esc(p.name)}</b>${p.is_admin?' <span class="adm-badge">адмін</span>':''}
+        <span class="dpm">трансферний <b>${eur(+p.bank)}</b> · заморожено ${eur(+p.frozen)} · вільно <b>${eur(+p.bank-+p.frozen)}</b> · зарплатний <b>${eur(+p.wage_bank)}</b> · гравців ${(p.players||[]).length}</span></summary>
+      <div class="admbtns" style="margin:8px 0"><button class="mini" data-dbal="${p.id}">⚖ Виправити баланс</button></div>
+      ${prow?`<div class="dsptw"><table class="admt"><thead><tr><th>Гравець</th><th>Поз.</th><th>Клуб</th><th>Вартість</th><th></th></tr></thead><tbody>${prow}</tbody></table></div>`:'<p class="dim">Гравців немає.</p>'}</details>`; }).join('');
+  const money=`<p class="mnote" style="margin:0 0 8px">«Виправити баланс» — на ±суму, не нижче заморожено/резерву. «Продати» — гравця в ринок за <b>повну вартість</b> (без комісії −5%). «Передати» — іншому учаснику з НОВИМ контрактом (довжину й роль обираєш ти; ціна — від одержувача продавцю, 0 = безкоштовно). Ролі, зарплати й умови контрактів тут не показуються й у журнал не пишуться.</p>${people||'<p class="dim">Учасників немає.</p>'}`;
+  // 3. склади й ролі
+  const r=d.round; let lin;
+  if(!r) lin='<p class="dim">Незакритого туру з майбутнім дедлайном нема — розблоковувати нічого.</p>';
+  else{ const conf=new Set(r.confirmed||[]), ppl=d.people||[];
+    lin=`<div class="stconf" style="margin:0 0 12px"><div class="cap">🔓 Підтвердження складів · ${esc(r.title||('Тур '+r.number))} · дедлайн ${kyFmt(r.deadline_at)} · <b>${conf.size} з ${ppl.length}</b></div>
+      <div class="cfchips">${ppl.map(p=>{ const ok=conf.has(p.id); return `<span class="cfchip ${ok?'ok':'wait'}">${ok?'✓':'○'} ${esc(p.name)}${ok?` <button class="mini ghost" data-dunc="${p.id}" title="Розблокувати склад">🔓</button>`:''}</span>`; }).join('')}${conf.size>0?'<button class="mini ghost" data-dunc="all">🔓 Розблокувати всіх</button>':''}</div>
+      <div class="when">Підтвердження фінальне. Розблокований учасник змінює склад і підтверджує заново; склади всіх знову приховуються до нових підтверджень.</div></div>`; }
+  const fl=(d.flags||[]).map(f=>`<span class="cfchip wait">${esc(f.name)} — ${[f.has_debt?'є борг':'',f.has_exit?'вихід гравця':'',f.has_void?'склад не зараховано':''].filter(Boolean).join(' · ')} <button class="mini ghost" data-dforgive="${f.participant}" title="Пробачити борги, виходи й позначки учасника">Пробачити</button></span>`).join('');
+  const lineups=`${lin}<div class="stconf" style="margin:0"><div class="cap">💸 Борги й порушення ролей</div><div class="cfchips">${fl||'<span class="dim">Боргів і порушень немає.</span>'}</div>
+      <div class="when">Адмін бачить лише факт (без ролей і сум). «Пробачити» скасовує борги, виходи й позначки учасника та повертає його склад, якщо тур ще не закрито.</div></div>`;
+  // 4. небезпечна зона
+  const stRows=(d.stages||[]).map(s=>`<tr><td>Етап ${s.stage}</td><td>${s.closed}</td><td>${s.total}</td><td class="admbtns"><button class="mini ghost" data-dreset="${s.stage}" ${s.closed>0?'disabled title="В етапі є закриті тури — скинути не можна"':''}>⚠ Скинути етап</button></td></tr>`).join('');
+  const danger=`<p class="mnote warn" style="margin:0 0 8px">Скидання етапу: усі активні лоти/пропозиції/обміни/вітрина скасовуються; усі гравці стають вільними й повертаються до стартової вартості; баланси — до стартових; склади, бусти й підтвердження незіграних турів етапу видаляються; борги/виходи/ролі етапу очищуються. Можливе <b>лише коли в етапі нема закритих турів</b>. «Знімок до» (баланси й імена гравців) піде в журнал.</p>
+    <div class="dsptw"><table class="admt"><thead><tr><th>Етап</th><th>Закритих турів</th><th>Усього турів</th><th></th></tr></thead><tbody>${stRows}</tbody></table></div>`;
+  body.innerHTML=`${sec('deals','💱 Угоди зараз',nDeals,deals)}${sec('money','💶 Гроші й гравці',(d.people||[]).length,money)}${sec('lineups','🔓 Склади й ролі',null,lineups)}${sec('danger','⚠ Небезпечна зона',null,danger)}`;
+  body.querySelectorAll('details.dspsec').forEach(x=>x.addEventListener('toggle',()=>{ A.dispOpen[x.dataset.g]=x.open; }));
+  // ── скасування угод ──
+  const CAN={auction:['admin_squad_auction_cancel','p_auction','Лот скасовано'],transfer:['admin_squad_transfer_cancel','p_transfer','Пропозицію скасовано'],exchange:['admin_squad_exchange_cancel','p_exchange','Обмін скасовано'],listing:['admin_squad_listing_cancel','p_listing','Лот знято з вітрини']};
+  body.querySelectorAll('[data-dcancel]').forEach(b=>b.onclick=()=>{ const kind=b.dataset.dcancel, id=b.dataset.id, c=CAN[kind]; let what='';
+    if(kind==='auction'){ const a=(d.auctions||[]).find(x=>x.id===id); what=`Аукціон на <b>${esc(a.player)}</b>: лідер ${esc(a.leader||'—')}, ставка ${eur(+a.bid)}. Гроші лідера розморожуються.`; }
+    if(kind==='transfer'){ const t=(d.transfers||[]).find(x=>x.id===id); what=`Пропозиція на <b>${esc(t.player)}</b>: ${esc(t.buyer)} → ${esc(t.seller)}, ${eur(+t.amount)}.${t.event?' Відкриту подію «просить піти» буде закрито.':''} Заморожені гроші покупця звільняються.`; }
+    if(kind==='exchange'){ const e=(d.exchanges||[]).find(x=>x.id===id); what=`Обмін ${esc(e.from)} ⇄ ${esc(e.to)}: ${esc(e.offered)} за ${esc(e.wanted)}${+e.cash_delta?', доплата '+eur(Math.abs(+e.cash_delta)):''}.`; }
+    if(kind==='listing'){ const l=(d.listings||[]).find(x=>x.id===id); what=`Лот вітрини: <b>${esc(l.player)}</b> (${esc(l.seller)}), ${eur(+l.ask)}.`; }
+    admDanger({title:'Скасувати угоду',body:what,word:'СКАСУВАТИ',label:'Скасувати',onOk:(cf,why)=>admDispAct(c[0],{[c[1]]:id,p_confirm:cf,p_reason:why},c[2])}); });
+  // ── виправити баланс ──
+  body.querySelectorAll('[data-dbal]').forEach(b=>b.onclick=()=>{ const p=(d.people||[]).find(x=>x.id===b.dataset.dbal);
+    const cur=k=>k==='transfer'?+p.bank:+p.wage_bank;
+    admDanger({title:`Виправити баланс · ${esc(p.name)}`,
+      body:`<div class="dgx"><label class="admlbl">Який баланс</label><select id="bkK" class="admin-inp"><option value="transfer">Трансферний (зараз ${eur(+p.bank)}, заморожено ${eur(+p.frozen)})</option><option value="wage">Зарплатний (зараз ${eur(+p.wage_bank)})</option></select>
+        <label class="admlbl">Сума, M€ (з мінусом — зняти)</label><input id="bkA" class="admin-inp" type="text" inputmode="decimal" placeholder="+5 або −3,5" autocomplete="off"><div id="bkP" class="mnote" style="margin-top:6px"></div></div>`,
+      word:'ВИПРАВИТИ',label:'Виправити',
+      valid:()=>{ const k=$('bkK').value, x=admNum($('bkA').value), ok=Number.isFinite(x)&&x!==0; $('bkP').innerHTML=ok?`було <b>${eur(cur(k))}</b> → стане <b>${eur(cur(k)+Math.round(x*1e6))}</b>`:'Введи суму: +5 (додати) або −3,5 (зняти)'; return ok; },
+      collect:()=>({kind:$('bkK').value,amount:Math.round(admNum($('bkA').value)*1e6)}),
+      onOk:(cf,why,x)=>admDispAct('admin_squad_balance_adjust',{p_participant:p.id,p_kind:x.kind,p_amount:x.amount,p_confirm:cf,p_reason:why},'Баланс виправлено')}); });
+  // ── примусовий продаж ──
+  body.querySelectorAll('[data-dsell]').forEach(b=>b.onclick=()=>{ const ow=(d.people||[]).find(x=>x.id===b.dataset.owner), pl=(ow.players||[]).find(x=>x.id===b.dataset.dsell);
+    admDanger({title:`Продати гравця · ${esc(pl.name)}`,
+      body:`<b>${esc(pl.name)}</b> (${esc(ow.name)}) продається в ринок за <b>повну вартість ${eur(+pl.value)}</b> без комісії. Гравець зникне з майбутніх складів учасника, пропозиції на нього скасуються. Якщо склад учасника на найближчий тур уже підтверджено — він міг стати неповним: за потреби розблокуй його нижче («Склади й ролі»).`,
+      word:'ПРОДАТИ',label:'Продати',onOk:(cf,why)=>admDispAct('admin_squad_force_sell',{p_player:pl.id,p_confirm:cf,p_reason:why},'Гравця продано в ринок')}); });
+  // ── передача гравця ──
+  body.querySelectorAll('[data-dgive]').forEach(b=>b.onclick=()=>{ const ow=(d.people||[]).find(x=>x.id===b.dataset.owner), pl=(ow.players||[]).find(x=>x.id===b.dataset.dgive), others=(d.people||[]).filter(x=>x.id!==ow.id);
+    const roles=!!(S.cfg&&S.cfg.roles_enabled);
+    admDanger({title:`Передати гравця · ${esc(pl.name)}`,
+      body:`<div class="dgx"><p style="margin:0 0 6px"><b>${esc(pl.name)}</b> (${eur(+pl.value)}) від <b>${esc(ow.name)}</b>. Старий контракт анулюється; одержувач отримує НОВИЙ контракт за поточною вартістю.</p>
+        <label class="admlbl">Одержувач</label><select id="gvT" class="admin-inp">${others.map(x=>`<option value="${x.id}">${esc(x.name)} (вільно ${eur(+x.bank-+x.frozen)})</option>`).join('')}</select>
+        <label class="admlbl">Ціна, M€ (від одержувача продавцю; 0 = безкоштовно)</label><input id="gvP" class="admin-inp" type="text" inputmode="decimal" value="0" autocomplete="off">
+        <label class="admlbl">Довжина контракту, турів</label><input id="gvL" class="admin-inp" type="number" min="1" step="1" value="1">
+        ${roles?`<label class="admlbl">Роль у складі одержувача</label><select id="gvR" class="admin-inp"><option value="main">Основний</option><option value="bench">Лавка</option></select>`:''}
+        <p class="mnote" style="margin:6px 0 0">Довжина й роль в журнал не пишуться (адмін теж гравець).</p></div>`,
+      word:'ПЕРЕДАТИ',label:'Передати',
+      valid:()=>{ const pr=admNum($('gvP').value), l=Number($('gvL').value); return !!$('gvT').value && Number.isFinite(pr) && pr>=0 && Number.isInteger(l) && l>=1; },
+      collect:()=>({to:$('gvT').value,price:Math.round(admNum($('gvP').value)*1e6),len:Number($('gvL').value),role:roles?$('gvR').value:null}),
+      onOk:(cf,why,x)=>admDispAct('admin_squad_player_transfer',{p_player:pl.id,p_to:x.to,p_price:x.price,p_length:x.len,p_role:x.role,p_confirm:cf,p_reason:why},'Гравця передано')}); });
+  // ── склади й ролі ──
+  body.querySelectorAll('[data-dunc]').forEach(b=>b.onclick=()=>{ const who=b.dataset.dunc, all=(who==='all');
+    admDanger({title:'Розблокувати склад',body:all?`Розблокувати склади ВСІХ учасників на ${esc(r.title||('Тур '+r.number))}? Склади знову стануть прихованими, кожен зможе змінити свій і підтвердити заново.`:`Розблокувати склад «${esc(nm(who))}» на ${esc(r.title||('Тур '+r.number))}? Склади всіх знову стануть прихованими; учасник змінить склад і підтвердить заново.`,
+      word:'РОЗБЛОКУВАТИ',label:'Розблокувати',onOk:(cf,why)=>admDispAct('admin_squad_unconfirm',{p_round:r.id,p_participant:all?null:who,p_confirm:cf,p_reason:why},'Склад розблоковано')}); });
+  body.querySelectorAll('[data-dforgive]').forEach(b=>b.onclick=()=>{ const id=b.dataset.dforgive;
+    admDanger({title:'Пробачити порушення',body:`Скасувати борги, виходи й позначки «порушив» учасника «${esc(nm(id))}»? Склад на поточний тур (якщо його не зараховано) повернеться. Дію не можна скасувати.`,
+      word:'СКАСУВАТИ',label:'Пробачити',onOk:(cf,why)=>admDispAct('admin_squad_forgive_violations',{p_participant:id,p_confirm:cf,p_reason:why},'Порушення пробачено')}); });
+  // ── скидання етапу ──
+  body.querySelectorAll('[data-dreset]').forEach(b=>b.onclick=()=>{ const st=+b.dataset.dreset, cfg=S.cfg||{};
+    admDanger({title:`⚠ Скинути етап ${st}`,body:`<p style="margin:0 0 6px">Буде скасовано всі активні угоди, <b>усі гравці стануть вільними</b>, баланси повернуться до стартових (трансферний ${eur(+cfg.budget_eur||0)}, зарплатний ${eur(+cfg.wage_budget_eur||0)}), склади й бусти незіграних турів етапу видаляться. Закритих турів у етапі нема — реальні результати не постраждають. Дію не можна скасувати (знімок «до» піде в журнал).</p>`,
+      word:'СКИНУТИ',label:'Скинути етап',onOk:(cf,why)=>admDispAct('admin_squad_stage_reset',{p_tournament:T,p_stage:st,p_confirm:cf,p_reason:why},`Етап ${st} скинуто`)}); });
+}
+
 async function viewAdmin(){
   if(!(S.me && S.me.is_admin)){ $('view').innerHTML='<div class="soon">Адмінка — лише для адміна турніру.</div>'; return; }
   const A=S.adm||(S.adm={sub:'rounds',rid:null});
@@ -4904,6 +4989,7 @@ async function viewAdmin(){
   if(!ok && (A.sub==='rounds'||A.sub==='log')){ body.innerHTML='<div class="soon">Адмін-функції ще не залито в базу (SQL <b>566</b> і <b>567</b>). Після заливки ця вкладка запрацює.</div>'; return; }
   if(A.sub==='people') return admPeople(body);
   if(A.sub==='config') return admConfig(body);
+  if(A.sub==='disputes') return admDisputes(body);
   if(A.sub==='rounds') return admRounds(body);
   if(A.sub==='log') return admLog(body);
   const s=ADM_SOON[A.sub]; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;
