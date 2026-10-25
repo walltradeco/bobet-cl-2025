@@ -711,6 +711,8 @@ details.dspsec>summary h3{margin:0} details.dspsec[open]>summary{margin-bottom:8
 .dsph{font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin:12px 0 4px} .dsptw{overflow-x:auto}
 details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radius:10px} .dpm{display:block;font-size:12px;color:var(--text-dim);margin-top:3px;font-weight:400}
 .dgx .admin-inp{margin-bottom:2px}
+.pooltiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:0 0 12px} .pooltile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px} .pooltile b{display:block;font:700 18px var(--mono)} .pooltile span{font-size:11px;color:var(--text-dim)}
+.plf{display:grid;grid-template-columns:2fr 1.5fr 1.2fr 1fr;gap:8px;margin:0 0 10px} .plfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px} @media(max-width:700px){.plf{grid-template-columns:1fr 1fr}}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
 .modal.pmodal{max-width:1180px;max-height:96vh;padding:0;overflow-x:hidden;overflow-y:auto}
@@ -1078,7 +1080,7 @@ async function loadRefs(){
   const g=async(q)=>{ try{ return await sbSel(q); }catch(e){ return null; } };
   const roundsP = sbSel(`market_rounds?tournament_id=eq.${T}&select=id,number,title,deadline_at,results_entered_at,opened_at&order=number.asc`).then(r=>{ S.rounds=r; return r; });
   const cfgP = Promise.resolve(sb.rpc('market_cfg', { p_tournament:T })).then(r=>{ S.cfg=r.data||null; return S.cfg; });
-  const playersP = sbSel(`market_players?tournament_id=eq.${T}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,injury,shirt_number,sofascore_player_id&order=market_value_current.desc`).then(r=>{ S.players=r; return r; });
+  const playersP = sbSel(`market_players?tournament_id=eq.${T}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,injury,shirt_number,sofascore_player_id,in_pool&order=market_value_current.desc`).then(r=>{ S.players=r; return r; });
   await Promise.all([
     sbSel('market_clubs?select=id,name,league,sofascore_tid').then(cs=>{ S.clubs={}; cs.forEach(c=>S.clubs[c.id]=c); }),
     cfgP, roundsP, playersP,
@@ -1197,9 +1199,9 @@ async function loadRefs(){
   // після всіх запитів: мої контракти → у гравців (роль/зарплата/позначка)
   S.players.forEach(p=>{ const c=S.myContracts[p.id]; if(c){ p.wage_per_round=c.wage_per_round; p.role=c.role||'main'; p.marked=!!c.marked; } });
   // межі слайдерів (рейтинг/ціна) з реального пулу; значення фільтра ставимо лише раз
-  const rs = S.players.map(p=>p.season_avg_rating).filter(v=>v!=null);
+  const rs = S.players.filter(poolOnly).map(p=>p.season_avg_rating).filter(v=>v!=null);
   S.rBounds = rs.length ? [Math.floor(Math.min(...rs)*10)/10, Math.ceil(Math.max(...rs)*10)/10] : [6,10];
-  const ps = S.players.map(p=>p.market_value_current||0);
+  const ps = S.players.filter(poolOnly).map(p=>p.market_value_current||0);
   S.pBounds = [0, Math.max(1e6, Math.ceil(Math.max(0,...ps)/1e6)*1e6)];
   if(S.f.rMin==null){ S.f.rMin=S.rBounds[0]; S.f.rMax=S.rBounds[1]; }
   if(S.f.pMin==null){ S.f.pMin=S.pBounds[0]; S.f.pMax=S.pBounds[1]; }
@@ -2459,8 +2461,10 @@ async function loadCardMeta(){
     try{ S.collReg=await sbSel(`card_collections?select=key,title&order=sort_order`); }catch(e){ S.collReg=[]; }
   }
 }
+// 572: «прибрати з пулу» (in_pool=false) ховає ВІЛЬНОГО гравця з Ринку, Статистики й слайдерів; гравці з власником показуються завжди (у пулі все true — нічого не міняється)
+const poolOnly=p=>p.in_pool!==false||!!p.owner_participant_id;
 function marketList(){
-  const f=S.f; let list=S.players.slice();
+  const f=S.f; let list=S.players.filter(poolOnly);
   if(f.status==='free')  list=list.filter(p=>!p.owner_participant_id);
   else if(f.status==='owned') list=list.filter(p=>p.owner_participant_id);
   else if(f.status==='mine')  list=list.filter(p=>p.owner_participant_id===S.me.id);
@@ -2488,7 +2492,7 @@ function marketList(){
 function filterBar(){
   const f=S.f;
   // показуємо лише клуби з гравцями в пулі (порожні засіяні клуби ховаємо; з'являться самі, коли додамо гравців)
-  const activeClubs=new Set(S.players.map(p=>p.club_id));
+  const activeClubs=new Set(S.players.filter(poolOnly).map(p=>p.club_id));
   const leagues=[...new Set(Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).map(c=>c.league))].sort((a,b)=>leagueEn(a).localeCompare(leagueEn(b)));
   const clubs=Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
@@ -4143,7 +4147,7 @@ async function loadTourLog(rid,force){
 function viewStats(){
   const N=20;   // топ-20 (було 10); фільтри — як на «Ринку»: ліга · клуб · позиція · власник
   const F=S.stF||(S.stF={league:'',club:'',pos:'',own:'',q:'',round:''});
-  const all=S.players.slice();
+  const all=S.players.filter(poolOnly);
   let pool=all;
   { const q=(F.q||'').trim().toLowerCase(); if(q) pool=pool.filter(p=>(p.name||'').toLowerCase().includes(q)); }   // пошук по імені — як на «Ринку»
   if(F.league) pool=pool.filter(p=>(S.clubs[p.club_id]||{}).league===F.league);
@@ -4307,14 +4311,12 @@ function kyToISO(y,mo,d,h,mi){   // київський «настінний» ч
   return new Date(t).toISOString(); }
 const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/); return m?kyToISO(+m[1],+m[2],+m[3],+m[4],+m[5]):null; };
 
-const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',false],['log','📜','Журнал',true]];
-const ADM_SOON={
-  pool:['🎛 Пул гравців і клуби','Додати/прибрати гравця (лише без власника), стартова вартість, фото, ручна травма; клуби пулу й клуби-суперники.']
-};
+const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Тури',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',true],['log','📜','Журнал',true]];
+const ADM_SOON={};
 const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
   config_set:'Налаштування: параметр',module_set:'Модуль туру',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
-  auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто'};
+  auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
 const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
 const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
 const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
@@ -4654,6 +4656,14 @@ async function admLog(body){
     if(l.action==='unconfirm') return `Тур ${esc(t.round)}: ${esc(t.participant)} · знято підтверджень: ${a.unconfirmed}`;
     if(l.action==='forgive_violations') return `${esc(t.participant)}: борги ${a.debts||0}, виходи ${a.exits||0}, позначки ${a.marks||0}, склад повернуто ${a.restored||0}`;
     if(l.action==='stage_reset') return `Етап ${esc(t.stage)}: гравців звільнено ${a.players_reset}, бюджетів скинуто ${a.budgets_reset}, угод скасовано ${a.cancelled}`;
+    if(l.action==='pool_player_add') return `+${t.count}: ${(a.players||[]).map(x=>`${esc(x.name)} (${esc(x.club||'')}, ${ADM_PK[x.pos]||esc(x.pos)}, ${eur(+x.value)})`).join('; ')}`;
+    if(l.action==='pool_player_update'){ const L={name:'імʼя',photo_url:'фото',shirt_number:'номер',country:'країна',birth_date:'дата народж.',club:'клуб',pos:'позиція',sofa_id:'SofaScore id',start:'старт. вартість'}; const v=(k,o)=>k==='start'?eur(+o[k]):(o[k]==null?'—':o[k]); return `${esc(t.player)}: ${Object.keys(a).map(k=>`${L[k]||k} «${esc(v(k,b))}» → «${esc(v(k,a))}»`).join(', ')}`; }
+    if(l.action==='pool_player_remove'||l.action==='pool_player_restore') return `${esc(t.player)} (${esc(t.club||'')})`;
+    if(l.action==='pool_player_delete') return `${esc(t.player)} (${esc(t.club||'')}), ${ADM_PK[b.pos]||esc(b.pos||'')}, старт ${eur(+b.start)}`;
+    if(l.action==='injury_set') return `${esc(t.player)}: ${esc(admInjTxt(a.injury))}${b.injury?` (було: ${esc(admInjTxt(b.injury))})`:''}`;
+    if(l.action==='injury_clear') return `${esc(t.player)}: знято (було: ${esc(admInjTxt(b.injury))})`;
+    if(l.action==='club_update'){ const L={name:'назва',league:'ліга',logo_url:'логотип',league_id:'id ліги'}; return `${esc(t.club)}: ${Object.keys(a).map(k=>`${L[k]||k} «${esc(b[k]==null?'—':b[k])}» → «${esc(a[k]==null?'—':a[k])}»`).join(', ')}`; }
+    if(l.action==='club_delete') return `${esc(t.club)} (tid ${esc(t.sofascore_tid)}), ліга ${esc(b.league||'')}`;
     return esc(JSON.stringify(t)); };
   body.innerHTML=`<div class="admc"><h3>📜 Журнал дій адміна</h3>${(data||[]).length?`<table class="admt"><thead><tr><th>Коли (Київ)</th><th>Хто</th><th>Дія</th><th>Деталі</th><th>Причина</th></tr></thead><tbody>${data.map(l=>`<tr><td>${kyFmt(l.created_at)}</td><td>${esc(l.actor)}</td><td>${esc(ADM_ACT[l.action]||l.action)}</td><td>${sum(l)}</td><td>${esc(l.reason||'—')}</td></tr>`).join('')}</tbody></table>`:'<p class="dim">Дій адміна ще не було.</p>'}</div>`;
 }
@@ -4977,6 +4987,237 @@ async function admDisputes(body){
       word:'СКИНУТИ',label:'Скинути етап',onOk:(cf,why)=>admDispAct('admin_squad_stage_reset',{p_tournament:T,p_stage:st,p_confirm:cf,p_reason:why},`Етап ${st} скинуто`)}); });
 }
 
+// ───────── вкладка «Пул» (SQL 572, Фаза 5, 25.10): гравці й клуби пулу · додати/виправити/прибрати/видалити · ручна травма · клуби ─────────
+// Косметика (імʼя/фото/номер/країна/дата) — лише причина; позиція/клуб/sofa id/стартова вартість — слово ЗМІНИТИ й лише вільному гравцю БЕЗ історії;
+// «Прибрати з пулу» (ПРИБРАТИ) ховає гравця з Ринку й забороняє купівлю — зворотно; «Видалити назавжди» (ВИДАЛИТИ) — лише без слідів.
+// Ролей, зарплат і умов контрактів тут нема (адмін теж грає). Клуби ГЛОБАЛЬНІ — правка клубу діє в усіх Squad-турнірах.
+let ADM_POOL_BODY=null;
+const ADM_PK={G:'GK',D:'DEF',M:'MID',F:'FWD'};
+const ADM_INJK={injury:'травма',suspension:'дискваліфікація',other:'інше'};
+const admInjTxt=j=>!j?'—':`${ADM_INJK[j.kind]||j.kind||'травма'}, ${j.status==='doubtful'?'під питанням':'не зіграє'}${j.note&&j.note!=='під питанням'?' — '+j.note:''}${j.source==='admin'?' · ручна':''}`;
+const admFileCache={};
+function admFileExists(path){   // чи є файл на сайті (HEAD); фото пулу: players/pool/<sofa>.webp
+  if(!path) return Promise.resolve(false);
+  if(admFileCache[path]!==undefined) return Promise.resolve(admFileCache[path]);
+  return fetch(path,{method:'HEAD',cache:'no-store'}).then(r=>{ admFileCache[path]=r.ok; return r.ok; }).catch(()=>false);
+}
+function admPosOf(s){ const x=admNorm(s).replace(/ /g,''); if(/^(g|gk|gkp|воротар|голкіпер)$/.test(x)) return 'G'; if(/^(d|df|def|defender|захисник)$/.test(x)) return 'D';
+  if(/^(m|mf|mid|midfielder|півзахисник|півзах)$/.test(x)) return 'M'; if(/^(f|fw|fwd|forward|нападник|напад|атакуючий)$/.test(x)) return 'F'; return ''; }
+function admEurOf(s){ const x=admNum(String(s||'').replace(/€|eur|[mм]/gi,'')); if(!Number.isFinite(x)) return NaN; return x<1000?Math.round(x*1e6):Math.round(x); }   // «45» і «45,5M» = млн; «45000000» = євро
+// рядок списку: «Клуб; Імʼя; Позиція; Вартість M€[; SofaScore id[; Країна]]» (розділювач ; | табуляція; якщо їх нема — кома)
+function admParsePlayers(text){
+  const rows=[], seenS=new Set(), have=new Set((S.players||[]).filter(p=>p.sofascore_player_id!=null).map(p=>String(p.sofascore_player_id))), haveN=new Set((S.players||[]).map(p=>p.club_id+'|'+(p.name||'').toLowerCase()));
+  String(text||'').split(/\n+/).map(s=>s.trim()).filter(Boolean).forEach(line=>{
+    let parts=line.split(/\s*[;|\t]\s*/); if(parts.length<4 && line.includes(',')) parts=line.split(/\s*,\s*/);
+    if(parts.length<4){ rows.push({line,err:'формат: Клуб; Імʼя; Позиція; Вартість M€[; SofaScore id[; Країна]]'}); return; }
+    const club=admMatchClub(parts[0]), pos=admPosOf(parts[2]), val=admEurOf(parts[3]), sofa=(parts[4]||'').trim();
+    const r={line, club:club?club.id:'', clubTxt:parts[0], name:parts[1].trim(), pos, value:val, sofa, country:(parts[5]||'').trim()};
+    if(!club) r.err='клуб «'+parts[0]+'» не знайдено (спершу додай у «Клубах»)';
+    else if(r.name.length<2) r.err='замале імʼя';
+    else if(!pos) r.err='позиція: G/D/M/F (GK/DEF/MID/FWD)';
+    else if(!Number.isFinite(val)||val<1e5||val>5e8) r.err='вартість — від 0,1 до 500 M€';
+    else if(sofa&&!/^\d+$/.test(sofa)) r.err='SofaScore id — число';
+    else if(sofa&&have.has(sofa)) r.err='SofaScore id '+sofa+' уже в пулі';
+    else if(sofa&&seenS.has(sofa)) r.err='SofaScore id '+sofa+' повторюється у списку';
+    else if(haveN.has(r.club+'|'+r.name.toLowerCase())) r.err='такий гравець уже є в цьому клубі';
+    if(!r.err){ if(sofa) seenS.add(sofa); haveN.add(r.club+'|'+r.name.toLowerCase()); }
+    rows.push(r); });
+  return rows;
+}
+const admPoolItem=r=>{ const it={club_id:r.club,name:r.name,position:r.pos,value_eur:r.value}; if(r.sofa) it.sofa_id=+r.sofa; if(r.country) it.country=r.country; if(r.birth) it.birth_date=r.birth; if(r.shirt!=null&&r.shirt!=='') it.shirt=+r.shirt; if(r.photo) it.photo_url=r.photo; return it; };
+async function admPoolRefresh(){ const y=window.scrollY; if(ADM_POOL_BODY) await admPool(ADM_POOL_BODY); window.scrollTo(0,y); }
+function admPoolAct(rpc,args,okMsg){ return admCall(rpc,args,okMsg).then(r=>{ if(!r.error) admPoolRefresh(); return r; }); }
+function admAddItems(items){
+  const T=S.tour.id, names=items.slice(0,6).map(i=>esc(i.name)).join(', ')+(items.length>6?` та ще ${items.length-6}`:'');
+  admDanger({title:`Додати гравців: ${items.length}`,body:`Буде додано в пул: <b>${names}</b>. Гравці зʼявляться в Ринку як вільні (поточна вартість = стартова). Статистику й форму для них збере рутина — якщо вказано SofaScore id; фото ставиться окремо (файл заливаєш у репо сайту).`,
+    word:'ДОДАТИ',label:`Додати ${items.length}`,onOk:(cf,why)=>admPoolAct('admin_squad_player_add',{p_tournament:T,p_items:items,p_confirm:cf,p_reason:why},`Додано гравців: ${items.length}`)});
+}
+async function admPool(body){
+  ADM_POOL_BODY=body; const T=S.tour.id, A=S.adm; const P=A.pool||(A.pool={q:'',club:'',st:'all',pos:'',lim:80,cf:'all',open:{players:true,add:false,clubs:true,inj:false}});
+  body.innerHTML='<div class="spin">завантаження…</div>';
+  const {data:d,error}=await sb.rpc('admin_squad_pool',{p_tournament:T});
+  if(error||!d){ body.innerHTML=admRpcMissing(error)?'<div class="soon">«Пул» запрацює після заливки SQL <b>572</b>.</div>':`<div class="soon">Не вдалося завантажити: ${esc(admErr(error))}</div>`; return; }
+  const cb={}; (d.clubs||[]).forEach(c=>cb[c.id]=c); const clubNm=id=>(cb[id]||{}).name||'—'; const c0=d.counts||{};
+  const nPoolClubs=(d.clubs||[]).filter(c=>c.in_pool>0).length, nOpp=(d.clubs||[]).filter(c=>c.in_pool===0&&c.fixtures>0).length;
+  const tile=(n,l)=>`<div class="pooltile"><b>${n}</b><span>${l}</span></div>`;
+  const tiles=`<div class="pooltiles">${tile(c0.in_pool||0,'гравців у пулі')}${tile(c0.free||0,'вільних')}${tile(c0.owned||0,'із власником')}${tile(c0.removed||0,'поза пулом')}${tile(c0.injured||0,'з травмою'+(c0.manual_injured?` (ручних ${c0.manual_injured})`:''))}${tile(nPoolClubs,'клубів пулу')}${tile(nOpp,'клубів-суперників')}</div>`;
+  const sec=(k,title,cnt,inner)=>`<details class="admc dspsec" data-g="${k}" ${P.open[k]?'open':''}><summary><h3>${title} <span class="dim">${cnt!=null?'('+cnt+')':''}</span></h3></summary>${inner}</details>`;
+  const opt=(v,t,sel)=>`<option value="${esc(v)}"${String(v)===String(sel)?' selected':''}>${esc(t)}</option>`;
+  // 1. гравці
+  const clubsWithP=[...new Set((d.players||[]).map(p=>p.club_id))].map(id=>cb[id]).filter(Boolean).sort((a,b)=>a.name.localeCompare(b.name));
+  const players=`<p class="mnote" style="margin:0 0 8px">«Прибрати з пулу» ховає гравця з Ринку й забороняє його купувати — зворотно. Позицію/клуб/SofaScore id/стартову вартість можна міняти лише вільному гравцю без історії; гравцю з власником — лише косметику (імʼя, фото, номер, країну, дату). Ролей і зарплат тут не видно.</p>
+    <div class="plf"><input id="plQ" class="admin-inp" placeholder="Пошук по імені" value="${esc(P.q)}">
+      <select id="plClub" class="admin-inp"><option value="">Клуб: усі</option>${clubsWithP.map(c=>opt(c.id,c.name,P.club)).join('')}</select>
+      <select id="plSt" class="admin-inp">${opt('all','Усі',P.st)}${opt('free','Вільні',P.st)}${opt('owned','Із власником',P.st)}${opt('removed','Поза пулом',P.st)}${opt('inj','З травмою',P.st)}${opt('man','Ручна травма',P.st)}${opt('nophoto','Без фото',P.st)}</select>
+      <select id="plPos" class="admin-inp">${opt('','Позиція: усі',P.pos)}${['G','D','M','F'].map(x=>opt(x,ADM_PK[x],P.pos)).join('')}</select></div><div id="plList"></div>`;
+  // 2. додати гравців
+  const clubOpts=admClubList().map(c=>`<option value="${c.id}">${esc(c.name)} · ${esc(leagueEn(c.league))}</option>`).join('');
+  const add=`<p class="mnote" style="margin:0 0 8px">Додати можна одного (форма) або списком. Гравець зʼявиться в Ринку як вільний. Назву клубу бери як у SofaScore (клуба нема — спершу додай у «Клубах»). Вартість — у млн € (45 або 45,5). SofaScore id потрібен, щоб рутина збирала статистику й форму.</p>
+    <h4 class="dsph">Один гравець</h4><div class="plfg">
+      <div><label class="admlbl">Клуб</label><select id="paC" class="admin-inp">${clubOpts}</select></div>
+      <div><label class="admlbl">Імʼя (англ.)</label><input id="paN" class="admin-inp" maxlength="80" placeholder="Bukayo Saka"></div>
+      <div><label class="admlbl">Позиція</label><select id="paP" class="admin-inp">${['G','D','M','F'].map(x=>opt(x,ADM_PK[x],'F')).join('')}</select></div>
+      <div><label class="admlbl">Вартість, M€</label><input id="paV" class="admin-inp" inputmode="decimal" placeholder="45,5"></div>
+      <div><label class="admlbl">SofaScore id</label><input id="paS" class="admin-inp" inputmode="numeric" placeholder="необовʼязково"></div>
+      <div><label class="admlbl">Країна</label><input id="paT" class="admin-inp" maxlength="40" placeholder="необовʼязково"></div>
+      <div><label class="admlbl">Дата народження</label><input id="paB" class="admin-inp" type="date"></div>
+      <div><label class="admlbl">Номер</label><input id="paH" class="admin-inp" type="number" min="0" max="99" placeholder="необовʼязково"></div></div>
+    <div class="macts" style="margin-top:8px"><button id="paGo">Додати гравця…</button></div>
+    <h4 class="dsph">Списком</h4><textarea id="plT" class="admin-inp" rows="5" placeholder="Arsenal; Bukayo Saka; F; 120; 433177&#10;Arsenal; David Raya; GK; 35; 827605; Spain&#10;(один гравець на рядок: Клуб; Імʼя; Позиція; Вартість M€[; SofaScore id[; Країна]])"></textarea>
+    <div style="margin:8px 0"><button class="mini" id="plP">Розібрати список</button></div><div id="plV"></div>`;
+  // 3. клуби
+  const cks=[['all','Усі'],['pool','У пулі'],['opp','Суперники'],['unused','Не використовуються']];
+  const ck=c=>c.in_pool>0?'pool':(c.fixtures>0?'opp':'unused');
+  const clubs=`<p class="mnote warn" style="margin:0 0 8px">Клуби — спільні для всіх Squad-турнірів: правка назви/ліги/логотипа діє всюди. SofaScore team id змінити не можна (помилився — видали невикористаний клуб і додай новий).</p>
+    <div class="subtabs" id="clF">${cks.map(([k,l])=>`<button data-clf="${k}" class="${P.cf===k?'on':''}">${l}</button>`).join('')}</div><div id="clList"></div>
+    <div class="macts" style="margin-top:8px"><button class="mini" id="clAdd">＋ Додати клуб</button></div>`;
+  // 4. ручні травми
+  const man=(d.players||[]).filter(p=>p.injury&&p.injury.source==='admin');
+  const inj=`<p class="mnote" style="margin:0 0 8px">Ручну травму збирач SofaScore <b>не зцілює</b> — вона живе, доки ти її не знімеш. Травма/дискваліфікація звільняє гравця від штрафу за роль на вердикті, тож став її лише коли справді треба. Автоматичних травм зараз: <b>${(c0.injured||0)-(c0.manual_injured||0)}</b> (їх веде рутина).</p>
+    ${man.length?`<div class="dsptw"><table class="admt"><thead><tr><th>Гравець</th><th>Клуб</th><th>Що</th><th>З</th><th></th></tr></thead><tbody>${man.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td>${esc(clubNm(p.club_id))}</td><td>${esc(admInjTxt(p.injury))}</td><td>${esc(p.injury.snapshot||'—')}</td><td class="admbtns"><button class="mini ghost" data-injx="${p.id}">Зняти</button></td></tr>`).join('')}</tbody></table></div>`:'<p class="dim">Ручних травм немає.</p>'}`;
+  body.innerHTML=tiles+sec('players','👥 Гравці',(d.players||[]).length,players)+sec('add','＋ Додати гравців',null,add)+sec('clubs','🏟 Клуби',(d.clubs||[]).length,clubs)+sec('inj','🤕 Ручні травми',man.length,inj);
+  body.querySelectorAll('details.dspsec').forEach(x=>x.addEventListener('toggle',()=>{ P.open[x.dataset.g]=x.open; }));
+
+  // ── гравці: фільтри й список ──
+  const filt=()=>{ let l=(d.players||[]).slice(); const q=P.q.trim().toLowerCase();
+    if(q) l=l.filter(p=>(p.name||'').toLowerCase().includes(q)); if(P.club) l=l.filter(p=>p.club_id===P.club); if(P.pos) l=l.filter(p=>p.pos===P.pos);
+    if(P.st==='free') l=l.filter(p=>!p.owner_id&&p.in_pool); else if(P.st==='owned') l=l.filter(p=>p.owner_id); else if(P.st==='removed') l=l.filter(p=>!p.in_pool);
+    else if(P.st==='inj') l=l.filter(p=>p.injury); else if(P.st==='man') l=l.filter(p=>p.injury&&p.injury.source==='admin'); else if(P.st==='nophoto') l=l.filter(p=>!p.photo_url);
+    return l; };
+  const prow=p=>{ const chips=[ !p.in_pool?'<span class="cfchip wait">поза пулом</span>':'', p.injury?`<span class="cfchip ${p.injury.source==='admin'?'risk':''}" title="${esc(admInjTxt(p.injury))}">🤕${p.injury.source==='admin'?' ручна':''}</span>`:'', !p.photo_url?'<span class="cfchip" title="Фото не привʼязано">без фото</span>':'' ].filter(Boolean).join(' ');
+    return `<tr class="${p.in_pool?'':'dimrow'}"><td><b>${esc(p.name)}</b> ${chips}</td><td>${esc(clubNm(p.club_id))}</td><td>${ADM_PK[p.pos]||esc(p.pos)}</td><td>${eur(+p.value)}${+p.value!==+p.start?`<div class="dim">старт ${eur(+p.start)}</div>`:''}</td><td>${p.owner?esc(p.owner):'<span class="dim">вільний</span>'}</td><td class="dim">${p.sofa_id||'—'}</td><td class="admbtns"><button class="mini" data-ple="${p.id}">✏ Відкрити</button></td></tr>`; };
+  const drawList=()=>{ const l=filt(), sh=l.slice(0,P.lim);
+    $('plList').innerHTML=l.length?`<div class="dsptw"><table class="admt"><thead><tr><th>Гравець</th><th>Клуб</th><th>Поз.</th><th>Вартість</th><th>Власник</th><th>Sofa id</th><th></th></tr></thead><tbody>${sh.map(prow).join('')}</tbody></table></div>
+      <div class="dim" style="margin:6px 0">Показано ${sh.length} з ${l.length}${l.length>sh.length?' <button class="mini ghost" id="plMore">Показати ще 80</button>':''}</div>`:'<p class="dim">Нікого не знайдено.</p>';
+    const mo=$('plMore'); if(mo) mo.onclick=()=>{ P.lim+=80; drawList(); };
+    $('plList').querySelectorAll('[data-ple]').forEach(b=>b.onclick=()=>admPlayerEdit(d,(d.players||[]).find(x=>x.id===b.dataset.ple))); };
+  $('plQ').oninput=e=>{ P.q=e.target.value; P.lim=80; drawList(); };
+  $('plClub').onchange=e=>{ P.club=e.target.value; P.lim=80; drawList(); };
+  $('plSt').onchange=e=>{ P.st=e.target.value; P.lim=80; drawList(); };
+  $('plPos').onchange=e=>{ P.pos=e.target.value; P.lim=80; drawList(); };
+  drawList();
+
+  // ── додати: один гравець ──
+  $('paGo').onclick=()=>{ const v=admEurOf($('paV').value), nm=$('paN').value.trim(), sofa=$('paS').value.trim();
+    if(nm.length<2) return alert('⛔ Вкажи імʼя гравця');
+    if(!Number.isFinite(v)||v<1e5||v>5e8) return alert('⛔ Вартість — від 0,1 до 500 M€');
+    if(sofa&&!/^\d+$/.test(sofa)) return alert('⛔ SofaScore id — число');
+    admAddItems([admPoolItem({club:$('paC').value,name:nm,pos:$('paP').value,value:v,sofa,country:$('paT').value.trim(),birth:$('paB').value,shirt:$('paH').value})]); };
+  // ── додати: список з попереднім переглядом ──
+  let rows=[];
+  const drawPrev=()=>{ const bad=rows.filter(r=>r.err).length;
+    $('plV').innerHTML=rows.length?`<div class="dsptw"><table class="admt"><thead><tr><th>#</th><th>Клуб</th><th>Гравець</th><th>Поз.</th><th>Вартість</th><th>Sofa id</th><th>Фото</th><th></th></tr></thead><tbody>${rows.map((r,i)=>r.err
+      ?`<tr class="bad"><td>${i+1}</td><td colspan="6">${esc(r.line)}</td><td class="msg">${esc(r.err)}</td></tr>`
+      :`<tr class="ok"><td>${i+1}</td><td>${esc(clubNm(r.club))}</td><td><b>${esc(r.name)}</b></td><td>${ADM_PK[r.pos]}</td><td>${eur(r.value)}</td><td>${r.sofa||'—'}</td><td id="plF${i}" class="dim">${r.sofa?'…':'—'}</td><td class="msg">✓</td></tr>`).join('')}</tbody></table></div>
+      <div style="margin-top:10px"><button id="plGo" ${bad||!rows.length?'disabled':''}>Додати ${rows.length}…</button>${bad?` <span class="dim">виправ ${bad} рядок(ів)</span>`:''}</div>`:'';
+    rows.forEach((r,i)=>{ if(r.err||!r.sofa) return; const path='players/pool/'+r.sofa+'.webp'; admFileExists(path).then(ok=>{ r.photo=ok?path:''; const c=$('plF'+i); if(c) c.innerHTML=ok?'<span class="up">✓ файл є</span>':'○ файла нема'; }); });
+    const go=$('plGo'); if(go) go.onclick=()=>admAddItems(rows.map(admPoolItem)); };
+  $('plP').onclick=()=>{ rows=admParsePlayers($('plT').value); drawPrev(); };
+
+  // ── клуби ──
+  const drawClubs=()=>{ const l=(d.clubs||[]).filter(c=>P.cf==='all'||ck(c)===P.cf);
+    $('clList').innerHTML=l.length?`<div class="dsptw"><table class="admt"><thead><tr><th>Клуб</th><th>Ліга</th><th>SofaScore tid</th><th>id ліги</th><th>У пулі</th><th>Матчів</th><th>Статус</th><th></th></tr></thead><tbody>${l.map(c=>{ const k=ck(c), free=c.in_pool===0&&c.removed===0&&c.fixtures===0&&!c.used_elsewhere;
+      return `<tr><td><b>${esc(c.name)}</b></td><td>${esc(leagueEn(c.league))}</td><td class="dim">${c.tid}</td><td class="dim">${c.league_id||'—'}</td><td>${c.in_pool}${c.removed?` <span class="dim">(+${c.removed} прибрано)</span>`:''}</td><td>${c.fixtures}</td>
+        <td><span class="cfchip ${k==='pool'?'ok':k==='opp'?'wait':''}">${k==='pool'?'пул':k==='opp'?'суперник':'не використовується'}</span>${c.used_elsewhere?' <span class="cfchip" title="Клуб використовується й в іншому турнірі">ще й в іншому турнірі</span>':''}</td>
+        <td class="admbtns"><button class="mini" data-cle="${c.id}">✏ Змінити</button><button class="mini ghost" data-cld="${c.id}" ${free?'':'disabled'} title="${free?'Видалити невикористаний клуб':'Є гравці або матчі — видалити не можна'}">🗑</button></td></tr>`; }).join('')}</tbody></table></div>`:'<p class="dim">Таких клубів немає.</p>';
+    $('clList').querySelectorAll('[data-cle]').forEach(b=>b.onclick=()=>admClubEdit(d,(d.clubs||[]).find(x=>x.id===b.dataset.cle)));
+    $('clList').querySelectorAll('[data-cld]').forEach(b=>b.onclick=()=>{ const c=(d.clubs||[]).find(x=>x.id===b.dataset.cld);
+      admDanger({title:`Видалити клуб «${esc(c.name)}»?`,body:'Клуб без гравців і без матчів видаляється з довідника (спільного для всіх Squad-турнірів). Цю дію не можна скасувати.',word:'ВИДАЛИТИ',label:'Видалити клуб',
+        onOk:(cf,why)=>admPoolAct('admin_squad_club_delete',{p_tournament:T,p_club:c.id,p_confirm:cf,p_reason:why},'Клуб видалено')}); }); };
+  $('clF').querySelectorAll('[data-clf]').forEach(b=>b.onclick=()=>{ P.cf=b.dataset.clf; $('clF').querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b)); drawClubs(); });
+  drawClubs();
+  $('clAdd').onclick=()=>admClubForm(async cid=>{ if(cid){ await loadRefs(); admPoolRefresh(); } });
+  // ── ручні травми: зняти ──
+  body.querySelectorAll('[data-injx]').forEach(b=>b.onclick=()=>{ const p=(d.players||[]).find(x=>x.id===b.dataset.injx); admInjClear(p); });
+}
+function admInjClear(p){
+  admDanger({title:`Зняти травму · ${esc(p.name)}`,body:`Зараз: <b>${esc(admInjTxt(p.injury))}</b>. Після зняття гравець знову вважається здоровим (якщо SofaScore ще позначає його травмованим — збирач поставить травму знову при наступному зборі). На вердикті ролей травма більше не звільнятиме його від штрафу.`,
+    word:'ЗМІНИТИ',label:'Зняти травму',onOk:(cf,why)=>admPoolAct('admin_squad_injury_clear',{p_player:p.id,p_confirm:cf,p_reason:why},'Травму знято')});
+}
+function admInjSet(p){
+  const j=p.injury||{}; let inited=false;
+  admDanger({title:`Ручна травма · ${esc(p.name)}`,
+    body:`<div class="dgx"><label class="admlbl">Тип</label><select id="ijK" class="admin-inp"><option value="injury">Травма</option><option value="suspension">Дискваліфікація</option><option value="other">Інше</option></select>
+      <label class="admlbl">Статус</label><select id="ijS" class="admin-inp"><option value="missing">Не зіграє</option><option value="doubtful">Під питанням</option></select>
+      <label class="admlbl">Примітка (необовʼязково, до 120 символів)</label><input id="ijN" class="admin-inp" maxlength="120" autocomplete="off" placeholder="розтягнення, 2 тижні">
+      <p class="mnote warn" style="margin:8px 0 0">Збирач SofaScore цю травму не зцілює — знімаєш її лише ти. Травма/дискваліфікація звільняє гравця від штрафу за роль на вердикті.</p></div>`,
+    word:'ЗМІНИТИ',label:'Зберегти травму',
+    valid:()=>{ if(!inited){ inited=true; if(j.kind) $('ijK').value=j.kind; if(j.status) $('ijS').value=j.status; if(j.note&&j.note!=='під питанням') $('ijN').value=j.note; } return $('ijN').value.length<=120; },
+    collect:()=>({kind:$('ijK').value,status:$('ijS').value,note:$('ijN').value.trim()||null}),
+    onOk:(cf,why,x)=>admPoolAct('admin_squad_injury_set',{p_player:p.id,p_kind:x.kind,p_status:x.status,p_note:x.note,p_confirm:cf,p_reason:why},'Травму збережено')});
+}
+function admPlayerEdit(d,p){
+  if(!p) return; const cb={}; (d.clubs||[]).forEach(c=>{ cb[c.id]=c; }); const free=!p.owner_id, clean=free&&!p.has_history;
+  modalOpen(`<h3>${esc(p.name)} <span class="dim" style="font-weight:400">· ${esc((cb[p.club_id]||{}).name||'—')} · ${ADM_PK[p.pos]||esc(p.pos)}</span></h3>
+    <p class="mnote" style="margin:0 0 6px">Вартість <b>${eur(+p.value)}</b>${+p.value!==+p.start?` (старт ${eur(+p.start)})`:''} · ${p.owner?`власник: <b>${esc(p.owner)}</b>`:'вільний'}${p.in_pool?'':' · <b>поза пулом</b>'}${p.injury?' · 🤕 '+esc(admInjTxt(p.injury)):''}</p>
+    <h4 class="dsph">Косметика <span class="dim">(лише причина)</span></h4>
+    <div class="plfg"><div><label class="admlbl">Імʼя</label><input id="peN" class="admin-inp" maxlength="80" value="${esc(p.name)}"></div>
+      <div><label class="admlbl">Номер</label><input id="peH" class="admin-inp" type="number" min="0" max="99" value="${p.shirt==null?'':esc(p.shirt)}"></div>
+      <div><label class="admlbl">Країна</label><input id="peT" class="admin-inp" maxlength="40" value="${esc(p.country||'')}"></div>
+      <div><label class="admlbl">Дата народження</label><input id="peB" class="admin-inp" type="date" value="${esc(p.birth_date||'')}"></div></div>
+    <label class="admlbl">Фото (шлях на сайті) <span id="peS" class="dim"></span></label>
+    <div style="display:flex;gap:6px"><input id="peP" class="admin-inp" placeholder="players/pool/&lt;SofaScore id&gt;.webp" value="${esc(p.photo_url||'')}">${p.sofa_id?`<button class="mini ghost" id="peAuto" title="players/pool/${p.sofa_id}.webp">Підставити</button>`:''}</div>
+    <label class="admlbl">Причина (мінімум 5 символів; піде в журнал)</label><textarea id="peR" class="admin-inp" rows="2"></textarea>
+    <div class="macts"><button data-do="peok" disabled>Зберегти косметику</button><button class="ghost" data-do="peno">Закрити</button></div>
+    <h4 class="dsph">Структура, травма, пул</h4>
+    <div class="admbtns" style="margin:4px 0 6px">
+      <button class="mini" id="peStr" ${clean?'':'disabled'} title="${clean?'Позиція, клуб, SofaScore id, стартова вартість':(free?'Є історія (ціни, оцінки, склади…) — міняти не можна':'Є власник — міняти не можна')}">✎ Позиція / клуб / id / вартість…</button>
+      <button class="mini" id="peInj">🤕 ${p.injury?'Змінити травму…':'Поставити травму…'}</button>${p.injury?'<button class="mini ghost" id="peInjX">Зняти травму</button>':''}
+      ${p.in_pool?`<button class="mini ghost" id="peRm" ${free?'':'disabled'} title="${free?'Прибрати з пулу (зворотно)':'Є власник — прибрати не можна'}">Прибрати з пулу</button>`:'<button class="mini" id="peBack">Повернути в пул</button>'}
+      <button class="mini ghost" id="peDel" ${clean?'':'disabled'} title="${clean?'Видалити назавжди':'Є власник або сліди — видалити не можна (скористайся «Прибрати з пулу»)'}">🗑 Видалити назавжди</button></div>
+    ${clean?'':`<p class="mnote">${free?'У гравця вже є історія (ціни, оцінки, склади…) — структуру міняти й видаляти не можна; можна «Прибрати з пулу».':'У гравця є власник — доступна лише косметика й травма. Прибрати з пулу чи змінити структуру можна, коли він знову вільний («Спірне» → продати).'}</p>`}`);
+  const H=$('mhost'), ok=H.querySelector('[data-do="peok"]'), R=$('peR');
+  const patch=()=>{ const o={}; const n=$('peN').value.trim(); if(n!==p.name) o.name=n;
+    const sh=$('peH').value.trim(); if((sh===''?null:+sh)!==(p.shirt==null?null:+p.shirt)) o.shirt_number=sh===''?null:+sh;
+    const ct=$('peT').value.trim(); if(ct!==(p.country||'')) o.country=ct||null;
+    const bd=$('peB').value; if(bd!==(p.birth_date||'')) o.birth_date=bd||null;
+    const ph=$('peP').value.trim(); if(ph!==(p.photo_url||'')) o.photo_url=ph||null; return o; };
+  const upd=()=>{ ok.disabled=!(R.value.trim().length>=5 && Object.keys(patch()).length>0 && $('peN').value.trim().length>=2); };
+  H.querySelector('.modal').addEventListener('input',upd); H.querySelector('.modal').addEventListener('change',upd); upd();
+  const chk=()=>{ const v=$('peP').value.trim(), s=$('peS'); if(!v){ s.textContent=''; return; } s.textContent='…'; admFileExists(v).then(x=>{ if($('peS')&&$('peP').value.trim()===v) s.innerHTML=x?'<span class="up">✓ файл є на сайті</span>':'<span class="down">✗ файла нема — залий у репо сайту</span>'; }); };
+  $('peP').addEventListener('input',chk); chk();
+  const au=$('peAuto'); if(au) au.onclick=()=>{ $('peP').value='players/pool/'+p.sofa_id+'.webp'; chk(); upd(); };
+  H.querySelector('[data-do="peno"]').onclick=modalClose;
+  ok.onclick=async()=>{ const pt=patch(), why=R.value.trim(); modalClose(); await admPoolAct('admin_squad_player_update',{p_player:p.id,p_patch:pt,p_confirm:null,p_reason:why},'Збережено'); };
+  const str=$('peStr'); if(str) str.onclick=()=>{
+    const cl=admClubList();
+    admDanger({title:`Структура · ${esc(p.name)}`,
+      body:`<div class="dgx"><p class="mnote" style="margin:0 0 6px">Лише для вільного гравця без історії. Зміна стартової вартості міняє й поточну.</p>
+        <label class="admlbl">Клуб</label><select id="psC" class="admin-inp">${cl.map(c=>`<option value="${c.id}"${c.id===p.club_id?' selected':''}>${esc(c.name)} · ${esc(leagueEn(c.league))}</option>`).join('')}</select>
+        <label class="admlbl">Позиція</label><select id="psP" class="admin-inp">${['G','D','M','F'].map(x=>`<option value="${x}"${x===p.pos?' selected':''}>${ADM_PK[x]}</option>`).join('')}</select>
+        <label class="admlbl">SofaScore id (порожньо — прибрати)</label><input id="psS" class="admin-inp" inputmode="numeric" value="${p.sofa_id==null?'':p.sofa_id}">
+        <label class="admlbl">Стартова вартість, M€</label><input id="psV" class="admin-inp" inputmode="decimal" value="${admR(+p.start/1e6,3)}"></div>`,
+      word:'ЗМІНИТИ',label:'Зберегти',
+      valid:()=>{ const v=admEurOf($('psV').value), s=$('psS').value.trim(); return Number.isFinite(v)&&v>=1e5&&v<=5e8&&(!s||/^\d+$/.test(s))&&Object.keys(collectS()).length>0; },
+      collect:()=>collectS(),
+      onOk:(cf,why,x)=>admPoolAct('admin_squad_player_update',{p_player:p.id,p_patch:x,p_confirm:cf,p_reason:why},'Збережено')});
+    function collectS(){ const o={}; const c=$('psC').value, ps=$('psP').value, s=$('psS').value.trim(), v=admEurOf($('psV').value);
+      if(c!==p.club_id) o.club_id=c; if(ps!==p.pos) o.position=ps; if((s===''?null:+s)!==(p.sofa_id==null?null:+p.sofa_id)) o.sofa_id=s===''?null:+s; if(Number.isFinite(v)&&v!==+p.start) o.value_start=v; return o; } };
+  $('peInj').onclick=()=>admInjSet(p);
+  const ix=$('peInjX'); if(ix) ix.onclick=()=>admInjClear(p);
+  const rm=$('peRm'); if(rm) rm.onclick=()=>admDanger({title:`Прибрати з пулу · ${esc(p.name)}`,body:'Гравець зникне з Ринку й не купуватиметься (аукціон/«купити зараз»); з автозбору статистики й травм також випадає. Зворотно — «Повернути в пул». Власника в нього нема, активних угод теж.',
+    word:'ПРИБРАТИ',label:'Прибрати з пулу',onOk:(cf,why)=>admPoolAct('admin_squad_player_pool',{p_player:p.id,p_in_pool:false,p_confirm:cf,p_reason:why},'Гравця прибрано з пулу')});
+  const bk=$('peBack'); if(bk) bk.onclick=()=>admDanger({title:`Повернути в пул · ${esc(p.name)}`,body:'Гравець знову зʼявиться в Ринку як вільний і зможе купуватись.',word:null,label:'Повернути',
+    onOk:(cf,why)=>admPoolAct('admin_squad_player_pool',{p_player:p.id,p_in_pool:true,p_confirm:null,p_reason:why},'Гравця повернуто в пул')});
+  const dl=$('peDel'); if(dl) dl.onclick=()=>admDanger({title:`Видалити назавжди · ${esc(p.name)}`,body:'Гравець без власника й без слідів видаляється остаточно. Якщо сліди зʼявилися — сервер відмовить (тоді «Прибрати з пулу»). Цю дію не можна скасувати.',
+    word:'ВИДАЛИТИ',label:'Видалити',onOk:(cf,why)=>admPoolAct('admin_squad_player_delete',{p_player:p.id,p_confirm:cf,p_reason:why},'Гравця видалено')});
+}
+function admClubEdit(d,c){
+  if(!c) return; const T=S.tour.id, leagues=[...new Set((d.clubs||[]).map(x=>x.league))].sort();
+  const cur=()=>{ const o={}; const n=$('ceN').value.trim(), lg=$('ceL').value.trim(), lo=$('ceO').value.trim(), li=$('ceI').value.trim();
+    if(n!==c.name) o.name=n; if(lg!==c.league) o.league=lg; if(lo!==(c.logo_url||'')) o.logo_url=lo||null; if((li===''?null:+li)!==(c.league_id==null?null:+c.league_id)) o.league_id=li===''?null:+li; return o; };
+  admDanger({title:`Клуб «${esc(c.name)}»`,
+    body:`<div class="dgx"><p class="mnote warn" style="margin:0 0 6px">Клуб спільний для всіх Squad-турнірів — зміна діє всюди. SofaScore tid (${c.tid}) змінити не можна.</p>
+      <label class="admlbl">Назва (англ., як у SofaScore)</label><input id="ceN" class="admin-inp" maxlength="60" value="${esc(c.name)}" autocomplete="off">
+      <label class="admlbl">Ліга</label><input id="ceL" class="admin-inp" list="ceLL" maxlength="40" value="${esc(c.league)}" autocomplete="off"><datalist id="ceLL">${leagues.map(l=>`<option value="${esc(l)}">`).join('')}</datalist>
+      <label class="admlbl">Логотип (посилання https://… або шлях; необовʼязково)</label><input id="ceO" class="admin-inp" maxlength="300" value="${esc(c.logo_url||'')}" autocomplete="off">
+      <label class="admlbl">id ліги SofaScore (для збору статистики; необовʼязково)</label><input id="ceI" class="admin-inp" inputmode="numeric" value="${c.league_id==null?'':c.league_id}" autocomplete="off"></div>`,
+    word:'ЗМІНИТИ',label:'Зберегти',
+    valid:()=>{ const n=$('ceN').value.trim(), lg=$('ceL').value.trim(), li=$('ceI').value.trim(); return n.length>=2&&lg.length>=2&&(!li||/^\d+$/.test(li))&&Object.keys(cur()).length>0; },
+    collect:cur,
+    onOk:(cf,why,x)=>admPoolAct('admin_squad_club_update',{p_tournament:T,p_club:c.id,p_patch:x,p_confirm:cf,p_reason:why},'Клуб збережено')});
+}
+
 async function viewAdmin(){
   if(!(S.me && S.me.is_admin)){ $('view').innerHTML='<div class="soon">Адмінка — лише для адміна турніру.</div>'; return; }
   const A=S.adm||(S.adm={sub:'rounds',rid:null});
@@ -4990,9 +5231,10 @@ async function viewAdmin(){
   if(A.sub==='people') return admPeople(body);
   if(A.sub==='config') return admConfig(body);
   if(A.sub==='disputes') return admDisputes(body);
+  if(A.sub==='pool') return admPool(body);
   if(A.sub==='rounds') return admRounds(body);
   if(A.sub==='log') return admLog(body);
-  const s=ADM_SOON[A.sub]; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;
+  const s=ADM_SOON[A.sub]||['Вкладка недоступна','']; body.innerHTML=`<div class="admc"><h3>${s[0]}</h3><p>${esc(s[1])}</p><p class="mnote">Робиться наступними фазами (план адмінки, 23.10); до того — через Claude.</p></div>`;
 }
 
 // 542: «Сплатити борг» з банера (делегування: банер є і на «Мій склад», і на «Ринок»)

@@ -1584,7 +1584,7 @@ async function loadDynamic(){
   // розклад матчів (публічний) — час старту на плитках «матч попереду»; нема доступу → без часу
   try{ S.fix=await sbGet(`market_fixtures?tournament_id=eq.${S.tournament}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc`); }catch(e){ S.fix=[]; }
   // весь пул (публічний): імена гравців у вкладці «Матчі» + які клуби мають гравців; статичний — вантажимо раз
-  if(!S.pool){ try{ S.pool=await sbGet(`market_players?tournament_id=eq.${S.tournament}&select=id,name,position,club_id`); S.poolBy={}; S.pool.forEach(x=>S.poolBy[x.id]=x); }catch(e){ S.pool=null; } }
+  if(!S.pool){ try{ S.pool=await sbGet(`market_players?tournament_id=eq.${S.tournament}&select=id,name,position,club_id,in_pool`); S.poolBy={}; S.pool.forEach(x=>S.poolBy[x.id]=x); }catch(e){ S.pool=null; } }
   S.live=[]; S.liveBy={}; S.liveReady=false;
   try{
     S.live=await sbGet(`market_squad_live?tournament_id=eq.${S.tournament}&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice,state,points,avg_rating,counted,dbl`);
@@ -1984,7 +1984,7 @@ function renderMatches(){
   const host=$('mtList'); if(!host) return;
   const rnd=S.rounds.find(r=>r.number===S.tour);
   if(!rnd){ host.innerHTML=''; return; }
-  const active=new Set((S.pool||[]).map(p=>p.club_id));
+  const active=new Set((S.pool||[]).filter(p=>p.in_pool!==false).map(p=>p.club_id));
   const rf=S.fix.filter(f=>f.round_id===rnd.id && (!active.size || active.has(f.home_club_id) || active.has(f.away_club_id)))
                 .sort((a,b)=>new Date(a.kickoff_at)-new Date(b.kickoff_at));
   host.innerHTML=rf.length? rf.map(f=>{
