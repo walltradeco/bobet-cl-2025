@@ -77,22 +77,6 @@
     font-size:13px;
     color:var(--text-dim);
   }
-  #refresh-btn{
-    background:var(--panel-2);
-    border:1px solid var(--line);
-    color:var(--text);
-    font-family:'IBM Plex Mono',monospace;
-    font-size:13px;
-    padding:9px 16px;
-    border-radius:6px;
-    cursor:pointer;
-    margin-top:8px;
-    transition:border-color .15s;
-  }
-  #refresh-btn:hover{border-color:var(--green);}
-  #refresh-btn:focus-visible{outline:2px solid var(--green); outline-offset:2px;}
-  #refresh-btn:disabled{opacity:0.6; cursor:wait;}
-
   /* Підпис над рядом навігації — той самий стиль, що «Турнір» /
      «Етап» у підписах медалей, щоб слова читались як одна система. */
   .nav-lbl{
@@ -1379,8 +1363,16 @@
     .wrap{padding:0 12px 60px;}
     header{padding-top:22px;}
     .head-top{flex-direction:column; gap:10px; margin-bottom:14px;}
-    .meta-block{text-align:left; display:flex; align-items:center; gap:12px;}
-    #refresh-btn{margin-top:0;}
+    /* Шапка: підпис «Оновлено» окремим рядком, під ним три кнопки однакової
+       ширини (Кабінет · Профіль · Спільноти). Раніше всі елементи йшли в один
+       рядок і не влазили — сторінка розтягувалась убік (25.10.2026). Для кнопок
+       потрібен селектор з #cabinet-btn: однойменні правила нижче мають id. */
+    .meta-block{text-align:left; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-self:stretch;}
+    .meta-block #updated-at{grid-column:1 / -1;}
+    .meta-block #cabinet-btn, .meta-block .hdr-btn2{
+      margin:0; min-width:0; padding:10px 6px; font-size:12px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
     h1{font-size:24px;}
     nav.tournaments{padding-bottom:14px; gap:6px;}
     nav.tournaments button{padding:8px 12px; font-size:12px;}
@@ -1524,7 +1516,7 @@
      кабінеті. Ховаємо все, що в кабінеті зайве або дублюється — логотип,
      перемикач ліг, шапку з кнопками, обидві навігації.
      ⚠️ Елементи саме ХОВАЮТЬСЯ, а не прибираються з розмітки: код
-     сторінки звертається до `#tournament-title`, `#refresh-btn`,
+     сторінки звертається до `#tournament-title`,
      `#updated-at` і `#cabinet-overlay` без перевірок, і видалення
      будь-якого з них поклало б сторінку і в звичайному режимі теж.
      =================================================================== */
@@ -1593,8 +1585,7 @@
     header{padding-top:max(18px, env(safe-area-inset-top));}
     h1{font-size:30px; letter-spacing:-0.02em;}
     .brand-tag{font-size:11px; margin-bottom:6px;}
-    .meta-block{font-size:12px; gap:10px;}
-    #refresh-btn{font-size:13px; padding:10px 14px;}
+    .meta-block{font-size:12px;}
 
     nav.tournaments{gap:8px; padding-bottom:16px;}
     nav.tournaments button{font-size:13px; padding:10px 14px;}
@@ -1664,6 +1655,7 @@
   /* маленькі iPhone (SE / mini) */
   @media(max-width:380px){
     h1{font-size:26px;}
+    .meta-block #cabinet-btn, .meta-block .hdr-btn2{font-size:11px; padding:10px 3px;}
     nav.tournaments button{font-size:12px; padding:9px 12px;}
     .gp-summary-cell{flex:1 1 44%;}
   }
@@ -1990,7 +1982,6 @@
       </div>
       <div class="meta-block">
         <div id="updated-at">Завантаження...</div>
-        <button id="refresh-btn">⟳ Оновити дані</button>
         <button id="cabinet-btn">⚽ Кабінет</button>
         <button id="profile-btn" class="hdr-btn2" type="button">👤 Профіль</button>
         <button id="comm-btn" class="hdr-btn2" type="button">👥 Спільноти</button>
@@ -5280,16 +5271,13 @@ function updateTimestamp(){
     'Оновлено: ' + new Date().toLocaleTimeString('uk-UA', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
 }
 
+/* Кнопку «Оновити дані» прибрано (25.10.2026, рішення Богдана): оновити можна
+   перезавантаженням сторінки; крім того борд сам оновлюється кожні 5 хв (INIT). */
 async function refreshAll(){
-  const btn = document.getElementById('refresh-btn');
-  btn.disabled = true;
   Object.keys(cache).forEach(k => delete cache[k]);
   await loadActiveTab();
   updateTimestamp();
-  btn.disabled = false;
 }
-
-document.getElementById('refresh-btn').addEventListener('click', refreshAll);
 
 /* ======== КАБІНЕТ (модалка з app.html) ======== */
 (function(){
