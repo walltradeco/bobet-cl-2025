@@ -1575,6 +1575,50 @@
   }
 
   /* ===================================================================
+     ЛИПКИЙ БЛОК НА ТЕЛЕФОНІ Й ПЛАНШЕТІ ≤1100 px (25.10.2026)
+     Прохання Богдана: «як на вебі — коли гортаєш вниз, очки гравців і
+     шапка таблиці лишаються зверху». Рішення (через вибір): ЗВЕРХУ ПОВНІ
+     КАРТКИ, як були; коли їх прогорнули — з'являється тонкий ряд
+     «ім'я + очки» (~50 px), а коли шапка таблиці виїхала — під ним її копія.
+
+     ⚠️ ЧОМУ НЕ `position:sticky`, як на вебі (блок «ПРИЛИПЛА ШАПКА» вище).
+     Нижче 1100 px таблиця має ВЛАСНУ горизонтальну прокрутку всередині
+     картки, а sticky клеїться до найближчого контейнера прокрутки, не до
+     вікна — шапка їхала б разом зі сторінкою. Тому тут окремий `fixed`-блок:
+     ряд будується з карток, шапка — копія `thead` справжньої таблиці, а її
+     зсув убік синхронізує JS (`mobileSticky`) з прокруткою картки.
+     ⚠️ Блок скрізь `pointer-events:none`: дотики йдуть крізь нього на
+     таблицю, тож свайп по копії шапки гортає таблицю, а не «ловиться».
+     =================================================================== */
+  #mstick{
+    display:none; position:fixed; top:0; left:0; right:0; z-index:60;
+    background:var(--bg); padding-top:env(safe-area-inset-top, 0px);
+    box-shadow:0 8px 16px rgba(0,0,0,.5);
+    pointer-events:none;
+  }
+  #mstick.on{display:block;}
+  #mstick .ms-sum{display:flex; gap:6px; padding:6px 0 7px;}
+  #mstick .ms-cell{
+    flex:1 1 0; min-width:0; display:flex; flex-direction:column; align-items:center; gap:1px;
+    background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:4px 2px 3px;
+  }
+  #mstick .ms-name{
+    max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+    font-family:'Montserrat',sans-serif; font-weight:700; font-size:11.5px; color:var(--text);
+  }
+  #mstick .ms-pts{
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:15px; line-height:1.1;
+    color:var(--gold); font-variant-numeric:tabular-nums;
+  }
+  #mstick .ms-head{display:none; overflow:hidden; border-bottom:1px solid var(--line);}
+  #mstick .ms-in{will-change:transform;}
+  @media(max-width:380px){
+    #mstick .ms-sum{gap:4px;}
+    #mstick .ms-name{font-size:10px;}
+  }
+  @media(min-width:1101px){ #mstick{display:none !important;} }
+
+  /* ===================================================================
      iPhone (15 / 16 / 17, у т.ч. Pro Max) — 390-440pt
      =================================================================== */
   @media(max-width:640px){
@@ -5133,6 +5177,99 @@ function syncStickyOffset(){
     stickyRO.observe(sum);
   }
 }
+
+/* ---------------------------------------------------------------------
+   Липкий блок на телефоні/планшеті ≤1100 px (25.10.2026): тонкий ряд
+   «ім'я + очки» з'являється, коли картки очок прогорнули, а під ним —
+   копія шапки таблиці матчів, коли справжня шапка виїхала вгору. Чому не
+   `sticky` — див. CSS «ЛИПКИЙ БЛОК НА ТЕЛЕФОНІ». Блок живе в <body>, а не
+   в #content: борд перемальовується цілком, а копія не повинна гинути.
+   Копія шапки зсувається вбік разом із прокруткою картки таблиці.
+   --------------------------------------------------------------------- */
+(function mobileSticky(){
+  const MQ = window.matchMedia('(max-width:1100px)');
+  let box = null, sumEl = null, headEl = null, headIn = null;
+  let sumKey = '', curTable = null, raf = 0;
+
+  function build(){
+    box = document.createElement('div');
+    box.id = 'mstick';
+    box.setAttribute('aria-hidden', 'true');
+    box.innerHTML = '<div class="ms-sum"></div><div class="ms-head"><div class="ms-in"></div></div>';
+    document.body.appendChild(box);
+    sumEl  = box.querySelector('.ms-sum');
+    headEl = box.querySelector('.ms-head');
+    headIn = box.querySelector('.ms-in');
+  }
+  function hide(){ if(box) box.classList.remove('on'); }
+
+  function update(){
+    raf = 0;
+    const content = document.getElementById('content');
+    const sum = content && content.querySelector('.gp-summary');
+    if(!MQ.matches || document.body.classList.contains('embed') || !sum){ hide(); return; }
+    const sr = sum.getBoundingClientRect();
+    if(sr.bottom > 0 || sr.width < 1){ hide(); return; }   // картки ще на екрані — тонкий ряд не потрібен
+    if(!box) build();
+
+    // тонкий ряд: ім'я + очки з карток (без значків — вони лишаються в повних картках)
+    const cells = Array.from(sum.querySelectorAll('.gp-summary-cell')).map(c => ({
+      n: (c.querySelector('.gp-summary-name') || {}).textContent || '',
+      p: (c.querySelector('.gp-summary-pts')  || {}).textContent || ''
+    }));
+    const key = cells.map(c => c.n + '\u0001' + c.p).join('\u0002');
+    if(key !== sumKey){
+      sumKey = key;
+      sumEl.textContent = '';
+      cells.forEach(c => {
+        const d = document.createElement('div'); d.className = 'ms-cell';
+        const n = document.createElement('span'); n.className = 'ms-name'; n.textContent = c.n;
+        const p = document.createElement('span'); p.className = 'ms-pts';  p.textContent = c.p;
+        d.appendChild(n); d.appendChild(p); sumEl.appendChild(d);
+      });
+    }
+    sumEl.style.marginLeft = sr.left + 'px';
+    sumEl.style.width = sr.width + 'px';
+    box.classList.add('on');
+    const stripH = sumEl.getBoundingClientRect().bottom;
+
+    // копія шапки: беремо таблицю, чия справжня шапка вже виїхала, а сама таблиця ще на екрані
+    let tbl = null;
+    content.querySelectorAll('table.matches').forEach(t => {
+      if(tbl || !t.tHead) return;
+      const hr = t.tHead.getBoundingClientRect(), tr = t.getBoundingClientRect();
+      if(hr.top < stripH && tr.bottom > stripH + hr.height + 24) tbl = t;
+    });
+    if(!tbl){ headEl.style.display = 'none'; return; }
+
+    if(tbl !== curTable){
+      curTable = tbl;
+      headIn.textContent = '';
+      const t = document.createElement('table');
+      t.className = tbl.className;
+      const cg = tbl.querySelector('colgroup');
+      if(cg) t.appendChild(cg.cloneNode(true));
+      t.appendChild(tbl.tHead.cloneNode(true));
+      headIn.appendChild(t);
+    }
+    const card = tbl.closest('.matches-card, .table-card') || tbl.parentElement;
+    const cr = card.getBoundingClientRect();
+    headEl.style.display = 'block';
+    headEl.style.marginLeft = (cr.left + card.clientLeft) + 'px';
+    headEl.style.width = card.clientWidth + 'px';
+    const ct = headIn.firstChild;
+    ct.style.width = tbl.offsetWidth + 'px';
+    ct.style.minWidth = '0';
+    headIn.style.transform = 'translateX(' + (-card.scrollLeft) + 'px)';
+  }
+
+  function schedule(){ if(!raf) raf = requestAnimationFrame(update); }
+  // capture: `scroll` не спливає, а горизонтальну прокрутку картки таблиці треба ловити теж
+  document.addEventListener('scroll', schedule, { capture:true, passive:true });
+  window.addEventListener('resize', schedule);
+  const content = document.getElementById('content');
+  if(content) new MutationObserver(schedule).observe(content, { childList:true, subtree:true });
+})();
 
 async function loadActiveTab(){
   const content = document.getElementById('content');
