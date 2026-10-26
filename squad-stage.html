@@ -350,6 +350,7 @@ table.grid{min-width:0}
 .ovl .pcard{cursor:pointer;transition:border-color .12s,transform .12s}
 .ovl .pcard:hover{border-color:var(--gold);transform:translateY(-1px)}
 .sqwrap{position:relative;width:212px;height:318px}
+.pm-cardside button.sqwrap{border:0;background:none;padding:0;cursor:pointer;display:block} /* 26.10: картка гравця в <button> — без скидання браузер малює світлий фон/рамку кнопки під артом (в кабінеті це скидання вже є) */
 .sqwrap .sqcard{position:absolute;top:0;left:0;transform-origin:top left;transform:scale(.70667)}
 .sqcard{position:relative;width:300px;aspect-ratio:1024/1536;
   --acc:#63f2ad;--nm:#fff;--posbd:#3ddd8b;filter:drop-shadow(0 14px 26px rgba(0,0,0,.55))}
@@ -1131,7 +1132,7 @@ function formList(card, fallbackForm){
       d=f.ts? new Date(f.ts*1000).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit',timeZone:'Europe/Kyiv'}) : '';
       const o=(f.home_game===false)? f.home : (f.home_game===true? f.away : null);
       opp=(f.home&&f.away)? (o? `${esc(o)} <i>${f.home_game===false?'(В)':'(Д)'}</i>` : `${esc(f.home)} – ${esc(f.away)}`) : '';
-      sc=fxScore(f); mn=f.min!=null? f.min+'′' : ''; ut=esc(utName(f));
+      sc=fxScore(f); mn=f.min!=null? f.min+'′' : '<span class="dim" title="Хвилини зʼявляться, коли рутина статистики збере цього гравця">—</span>'; ut=esc(utName(f));
     }
     return `<div class="frow" title="${ok?esc(fxTip(f)):''}"><span class="fd">${d}</span><span class="fo">${opp||'—'}</span><span class="fu" title="${ut}">${ut}</span><span class="fs ${sc.cls}">${sc.txt}</span><span class="fm">${mn}</span><b class="fr ${cls(r)}">${r.toFixed(1)}</b></div>`;
   }).join('');

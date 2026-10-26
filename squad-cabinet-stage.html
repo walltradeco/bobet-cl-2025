@@ -713,6 +713,8 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .dgx .admin-inp{margin-bottom:2px}
 .pooltiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:8px;margin:0 0 12px} .pooltile{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 10px} .pooltile b{display:block;font:700 18px var(--mono)} .pooltile span{font-size:11px;color:var(--text-dim)}
 .plf{display:grid;grid-template-columns:2fr 1.5fr 1.2fr 1fr;gap:8px;margin:0 0 10px} .plfg{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px} @media(max-width:700px){.plf{grid-template-columns:1fr 1fr}}
+.stg{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:6px 8px} .stg .admlbl{margin:4px 0 3px} .stfr{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin:6px 0}
+.stfr .stm{display:grid;grid-template-columns:minmax(120px,1.4fr) minmax(90px,1fr) auto;gap:6px;align-items:center} .stfr .stfd{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:6px;margin-top:6px}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт дизайну ChatGPT-handoff 12.09) ── */
 .modal.pmodal{max-width:1180px;max-height:96vh;padding:0;overflow-x:hidden;overflow-y:auto}
@@ -982,6 +984,7 @@ const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>'
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
 function eur(v){ return v==null?'—':'€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 // межі ПОЛЯ ВВОДУ суми (трансфер/ставка/вітрина/контр): мінімум округлюємо ВГОРУ, максимум ВНИЗ до 0,01M — інакше показана межа («мін 14.9») відхиляється (точний мін 14 904 750)
+const rtM=v=>{ const x=Number(v), t=Math.round(x*10)/10; return Math.abs(x-t)<0.005?t.toFixed(1):x.toFixed(2); };   // 26.10: оцінка за МАТЧ у SofaScore — лише десяті (8.3, а не 8.30); середній рейтинг (сезон / кілька матчів) лишається в сотих (7.58)
 const mCeil=v=>(Math.ceil(v/1e4)/100).toFixed(2), mFloor=v=>(Math.floor(v/1e4)/100).toFixed(2), eurUp=v=>'€'+mCeil(v)+'M', eurDown=v=>'€'+mFloor(v)+'M';
 const pOchk=n=>{ const a=Math.abs(n)%100, b=a%10; return (a>10&&a<15)?'очок':(b===1?'очко':(b>1&&b<5?'очки':'очок')); };   // 1 очко · 2–4 очки · 5+ очок
 function lastName(f){ const p=(f||'').trim().split(/\s+/); return p[p.length-1]||f; }
@@ -1432,7 +1435,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
     <div class="when dgr">${n<min?`ще мін ${min-n} до старту`:`мін ${min} ✓`} · ≥${cfg.defgk_start_min||1} DEF/GK в основі · ≥${need} DEF/GK у складі (основа або лавка)${n?(n>=max?` ${dgOk?'✓':'✕'}`:`, є ${mine.filter(isDG).length}${dgOk?' ✓':''}`):''}</div></div>`;
   const a=inplay?(S.attn||{})[inplay.number]:null;
   const why=!inplay?'':(!a?'':(a.state==='blocked' ? `⚠️ Чекає рішення адміна: ${esc(a.reason||'проблема з матчем')}.`
-            : a.state==='closing' ? 'Усі матчі завершені — розрахунок за ~1 год.'
+            : a.state==='closing' ? 'Усі матчі завершені — чекаємо остаточні оцінки SofaScore (він дооцінює гравців до ≈14 год після матчу); розрахунок туру — одразу, як вони усталяться.'
             : `Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`));
   let hero;
   if(firstFut){
@@ -3562,7 +3565,7 @@ function formList(card, fallbackForm){
       d=f.ts? new Date(f.ts*1000).toLocaleDateString('uk-UA',{day:'2-digit',month:'2-digit',timeZone:'Europe/Kyiv'}) : '';
       const o=(f.home_game===false)? f.home : (f.home_game===true? f.away : null);
       opp=(f.home&&f.away)? (o? `${esc(o)} <i>${f.home_game===false?'(В)':'(Д)'}</i>` : `${esc(f.home)} – ${esc(f.away)}`) : '';
-      sc=fxScore(f); mn=f.min!=null? f.min+'′' : ''; ut=esc(utName(f));
+      sc=fxScore(f); mn=f.min!=null? f.min+'′' : '<span class="dim" title="Хвилини зʼявляться, коли рутина статистики збере цього гравця">—</span>'; ut=esc(utName(f));
     }
     return `<div class="frow" title="${ok?esc(fxTip(f)):''}"><span class="fd">${d}</span><span class="fo">${opp||'—'}</span><span class="fu" title="${ut}">${ut}</span><span class="fs ${sc.cls}">${sc.txt}</span><span class="fm">${mn}</span><b class="fr ${cls(r)}">${r.toFixed(1)}</b></div>`;
   }).join('');
@@ -4203,7 +4206,7 @@ function viewStats(){
     ${fbar}
     <div class="statboards">
       ${rnd
-        ? board('🏅 Топ рейтинг','SofaScore · '+tn, byRating.length?statRows(byRating, p=>Number(L[p.id].avg_rating).toFixed(2)):null)
+        ? board('🏅 Топ рейтинг','SofaScore · '+tn, byRating.length?statRows(byRating, p=>rtM(L[p.id].avg_rating)):null)
         : board('🏅 Топ рейтинг','SofaScore · увесь пул', statRows(byRating, p=>Number(p.season_avg_rating).toFixed(2)))}
       ${rnd
         ? board('⚽ Найбільше очок','очки гравця за '+tn, byPoints.length?statRows(byPoints, p=>L[p.id].points):null)
@@ -4316,7 +4319,7 @@ const ADM_SOON={};
 const ADM_ACT={round_create:'Створено тур',round_update:'Тур: назва/тиждень',round_delete:'Тур видалено',round_deadline:'Дедлайн зсунуто',round_close:'Тур закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
   config_set:'Налаштування: параметр',module_set:'Модуль туру',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
-  auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',fixture_ratings:'Ручні оцінки матчу',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
+  auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',fixture_ratings:'Ручні оцінки матчу',player_stats_set:'Статистика гравця (вручну)',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
 const ADM_ST={scheduled:'заплановано',played:'зіграно',postponed:'перенесено',cancelled:'скасовано'};
 const admState=r=> r.results_entered_at?'closed' : r.opened_at?'open' : (new Date(r.deadline_at)<=new Date()?'started':'draft');
 const ADM_STL={closed:['закрито','up'],open:['тур іде','gold'],started:['дедлайн минув','gold'],draft:['чернетка / попереду','']};
@@ -4658,6 +4661,10 @@ async function admLog(body){
     if(l.action==='forgive_violations') return `${esc(t.participant)}: борги ${a.debts||0}, виходи ${a.exits||0}, позначки ${a.marks||0}, склад повернуто ${a.restored||0}`;
     if(l.action==='stage_reset') return `Етап ${esc(t.stage)}: гравців звільнено ${a.players_reset}, бюджетів скинуто ${a.budgets_reset}, угод скасовано ${a.cancelled}`;
     if(l.action==='fixture_ratings') return `Тур ${t.round}: ${esc(t.match||'')} · рахунок ${esc(b.score||'—')} → <b>${esc(a.score||'—')}</b> · оцінок ${b.ratings}→${a.ratings}${(a.changes||[]).length?' · змінено '+(a.changes||[]).length+': '+(a.changes||[]).slice(0,6).map(c=>`${esc(c.player)} ${c.from==null?'—':c.from}→${c.to==null?'не грав':c.to}`).join(', ')+((a.changes||[]).length>6?'…':''):''}`;
+    if(l.action==='player_stats_set'){ const L={rating:'сер. рейтинг',appearances:'матчі',minutes:'хвилини',goals:'голи',assists:'асисти',clean_sheets:'сухі',saves:'сейви'};
+      const ch=Object.keys(a).filter(k=>k!=='form').map(k=>`${L[k]||k} ${b[k]==null?'—':b[k]} → <b>${a[k]==null?'—':a[k]}</b>`);
+      const fm=a.form?`форма: ${(b.form||[]).length} → <b>${a.form.length}</b> матч.${a.form.length?' ('+a.form.map(f=>`${esc(f.date)} ${f.rating}`).join(', ')+')':''}`:'';
+      return `${esc(t.player)} (${esc(t.club||'')}): ${ch.concat(fm?[fm]:[]).join(' · ')}`; }
     if(l.action==='pool_player_add') return `+${t.count}: ${(a.players||[]).map(x=>`${esc(x.name)} (${esc(x.club||'')}, ${ADM_PK[x.pos]||esc(x.pos)}, ${eur(+x.value)})`).join('; ')}`;
     if(l.action==='pool_player_update'){ const L={name:'імʼя',photo_url:'фото',shirt_number:'номер',country:'країна',birth_date:'дата народж.',club:'клуб',pos:'позиція',sofa_id:'SofaScore id',start:'старт. вартість'}; const v=(k,o)=>k==='start'?eur(+o[k]):(o[k]==null?'—':o[k]); return `${esc(t.player)}: ${Object.keys(a).map(k=>`${L[k]||k} «${esc(v(k,b))}» → «${esc(v(k,a))}»`).join(', ')}`; }
     if(l.action==='pool_player_remove'||l.action==='pool_player_restore') return `${esc(t.player)} (${esc(t.club||'')})`;
@@ -5165,6 +5172,7 @@ function admPlayerEdit(d,p){
     <div class="admbtns" style="margin:4px 0 6px">
       <button class="mini" id="peStr" ${clean?'':'disabled'} title="${clean?'Позиція, клуб, SofaScore id, стартова вартість':(free?'Є історія (ціни, оцінки, склади…) — міняти не можна':'Є власник — міняти не можна')}">✎ Позиція / клуб / id / вартість…</button>
       <button class="mini" id="peInj">🤕 ${p.injury?'Змінити травму…':'Поставити травму…'}</button>${p.injury?'<button class="mini ghost" id="peInjX">Зняти травму</button>':''}
+      <button class="mini" id="peStat" title="Ручна статистика й форма (запасний варіант для рутини)">📊 Статистика й форма…</button>
       ${p.in_pool?`<button class="mini ghost" id="peRm" ${free?'':'disabled'} title="${free?'Прибрати з пулу (зворотно)':'Є власник — прибрати не можна'}">Прибрати з пулу</button>`:'<button class="mini" id="peBack">Повернути в пул</button>'}
       <button class="mini ghost" id="peDel" ${clean?'':'disabled'} title="${clean?'Видалити назавжди':'Є власник або сліди — видалити не можна (скористайся «Прибрати з пулу»)'}">🗑 Видалити назавжди</button></div>
     ${clean?'':`<p class="mnote">${free?'У гравця вже є історія (ціни, оцінки, склади…) — структуру міняти й видаляти не можна; можна «Прибрати з пулу».':'У гравця є власник — доступна лише косметика й травма. Прибрати з пулу чи змінити структуру можна, коли він знову вільний («Спірне» → продати).'}</p>`}`);
@@ -5196,6 +5204,7 @@ function admPlayerEdit(d,p){
     function collectS(){ const o={}; const c=$('psC').value, ps=$('psP').value, s=$('psS').value.trim(), v=admEurOf($('psV').value);
       if(c!==p.club_id) o.club_id=c; if(ps!==p.pos) o.position=ps; if((s===''?null:+s)!==(p.sofa_id==null?null:+p.sofa_id)) o.sofa_id=s===''?null:+s; if(Number.isFinite(v)&&v!==+p.start) o.value_start=v; return o; } };
   $('peInj').onclick=()=>admInjSet(p);
+  $('peStat').onclick=()=>admStatsEdit(p);
   const ix=$('peInjX'); if(ix) ix.onclick=()=>admInjClear(p);
   const rm=$('peRm'); if(rm) rm.onclick=()=>admDanger({title:`Прибрати з пулу · ${esc(p.name)}`,body:'Гравець зникне з Ринку й не купуватиметься (аукціон/«купити зараз»); з автозбору статистики й травм також випадає. Зворотно — «Повернути в пул». Власника в нього нема, активних угод теж.',
     word:'ПРИБРАТИ',label:'Прибрати з пулу',onOk:(cf,why)=>admPoolAct('admin_squad_player_pool',{p_player:p.id,p_in_pool:false,p_confirm:cf,p_reason:why},'Гравця прибрано з пулу')});
@@ -5265,6 +5274,75 @@ async function admRatingsEdit(f,onDone){
       body:`Буде записано <b>${set}</b> оцінок${removed?`, «не грав» (оцінку прибрано): <b>${removed}</b>`:''}${home!=null?`, рахунок <b>${home}:${away}</b>`:''}; змінено проти поточних: <b>${changed}</b>. Матч стане «зіграно», ціни гравців перерахуються наживо. Тур не закривається сам — закриєш його вручну. Якщо SofaScore пізніше віддасть оцінки — вони перекриють ці.`,
       word:'ЗАПИСАТИ',label:'Записати',
       onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_fixture_ratings',{p_fixture:f.id,p_home_score:home,p_away_score:away,p_items:items,p_confirm:c,p_reason:why},'Оцінки записано'); if(!error&&onDone) onDone(); }}); };
+}
+
+// ───────── ручна статистика й форма гравця (SQL 577, запасний варіант для рутини squad-collect-player-stats): Адмінка → Пул → гравець → «📊 Статистика й форма…» ─────────
+// Це лише ПОКАЗ (картка гравця, Ринок, «Топ рейтинг»): на очки, ціни й ролі не впливає. Рутина перекриє ручне при найближчому зборі гравця. Поточні значення читаємо з публічної market_players.
+const ADM_STS=[['rating','Сер. рейтинг','0–10'],['appearances','Матчі','0–100'],['minutes','Хвилини','0–6000'],['goals','Голи','0–100'],['assists','Асисти','0–100'],['clean_sheets','Сухі матчі','0–60'],['saves','Сейви','0–600']];
+const ADM_STR={rating:[0,10],appearances:[0,100],minutes:[0,6000],goals:[0,100],assists:[0,100],clean_sheets:[0,60],saves:[0,600]};
+const admKyDate=iso=>{ const p=kyParts(iso); return `${p.year}-${p.month}-${p.day}`; };
+async function admStatsEdit(p){
+  let cur=null; try{ cur=(await sbSel(`market_players?id=eq.${p.id}&select=season_avg_rating,appearances,minutes,goals,assists,clean_sheets,saves,recent_form,stats_asof`))[0]; }catch(e){ cur=null; }
+  if(!cur) return alert('⛔ Не вдалося прочитати поточну статистику гравця');
+  const nz=x=>(x===null||x===undefined||x==='')?null:x, r2=x=>Math.round(+x*100)/100;
+  const s0={rating:cur.season_avg_rating,appearances:cur.appearances,minutes:cur.minutes,goals:cur.goals,assists:cur.assists,clean_sheets:cur.clean_sheets,saves:cur.saves};
+  const norm=f=>({date:f.date||'',rating:r2(f.rating),home:f.home||'',away:f.away||'',hs:nz(f.hs),as:nz(f.as),ut:f.ut||'',home_game:typeof f.home_game==='boolean'?f.home_game:null,min:nz(f.min)});
+  const fm0=(Array.isArray(cur.recent_form)?cur.recent_form:[]).filter(f=>f&&f.ts&&f.rating!=null).slice(0,5).map(f=>norm({date:admKyDate(new Date(f.ts*1000).toISOString()),rating:f.rating,home:f.home,away:f.away,hs:f.hs,as:f.as,ut:f.ut,home_game:f.home_game,min:f.min}));
+  const sig=l=>JSON.stringify(l.slice().sort((a,b)=>(b.date>a.date?1:b.date<a.date?-1:0)));
+  const dsum=f=>{ const t=[(f.home||f.away)?`${f.home||'?'} – ${f.away||'?'}${f.hs!=null?` ${f.hs}:${f.as}`:''}`:'',f.ut||'',f.min!=null?`${f.min}′`:'',f.home_game===true?'удома':f.home_game===false?'на виїзді':''].filter(Boolean).join(' · '); return t?'деталі: '+esc(t):'деталі матчу (необовʼязково)'; };
+  const frow=(f,i)=>`<div class="stfr" data-i="${i}"><div class="stm"><input class="admin-inp" data-k="date" type="date" min="2024-01-01" value="${esc(f.date||'')}"><input class="admin-inp" data-k="rating" type="number" min="1" max="10" step="0.1" inputmode="decimal" placeholder="оцінка 1–10" value="${f.rating==null?'':esc(f.rating)}"><button type="button" class="mini ghost" data-x="${i}" title="Очистити рядок">✕</button></div>
+    <details><summary class="dim" style="cursor:pointer;font-size:12px">${dsum(f)}</summary><div class="stfd">
+      <input class="admin-inp" data-k="home" maxlength="60" placeholder="господарі" value="${esc(f.home||'')}"><input class="admin-inp" data-k="away" maxlength="60" placeholder="гості" value="${esc(f.away||'')}">
+      <input class="admin-inp" data-k="hs" type="number" min="0" max="30" placeholder="голи господарів" value="${f.hs==null?'':esc(f.hs)}"><input class="admin-inp" data-k="as" type="number" min="0" max="30" placeholder="голи гостей" value="${f.as==null?'':esc(f.as)}">
+      <input class="admin-inp" data-k="ut" maxlength="60" placeholder="турнір" value="${esc(f.ut||'')}"><input class="admin-inp" data-k="min" type="number" min="0" max="150" placeholder="хвилини" value="${f.min==null?'':esc(f.min)}">
+      <select class="admin-inp" data-k="home_game"><option value=""${f.home_game==null?' selected':''}>вдома чи на виїзді?</option><option value="1"${f.home_game===true?' selected':''}>гравець удома</option><option value="0"${f.home_game===false?' selected':''}>гравець на виїзді</option></select></div></details></div>`;
+  const rd=(i,k)=>{ const e=$('mhost').querySelector(`.stfr[data-i="${i}"] [data-k="${k}"]`); return e?String(e.value).trim():''; };
+  const readSeason=()=>{ const o={}, bad=[];
+    for(const [k,lbl] of ADM_STS){ const e=$('mhost').querySelector(`[data-s="${k}"]`); const raw=e?String(e.value).trim().replace(',','.'):''; let nv=null;
+      if(raw!==''){ const x=Number(raw), [lo,hi]=ADM_STR[k]; if(!Number.isFinite(x)||x<lo||x>hi||(k!=='rating'&&!Number.isInteger(x))){ bad.push(`${lbl}: ${k==='rating'?'число':'ціле число'} від ${lo} до ${hi}`); continue; } nv=k==='rating'?r2(x):x; }
+      const ov=nz(s0[k])==null?null:(k==='rating'?r2(s0[k]):+s0[k]);
+      if(nv!==ov) o[k]=nv; }
+    return {o,bad}; };
+  const readForm=()=>{ const items=[], bad=[], seen=new Set(), today=admKyDate(new Date().toISOString());
+    for(let i=0;i<5;i++){
+      if(!['date','rating','home','away','hs','as','ut','min','home_game'].some(k=>rd(i,k)!=='')) continue;
+      const d=rd(i,'date'), rs=rd(i,'rating').replace(',','.'), n=i+1;
+      if(d===''||rs===''){ bad.push(`матч ${n}: потрібні і дата, і оцінка (або очисти рядок ✕)`); continue; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ bad.push(`матч ${n}: дата — РРРР-ММ-ДД`); continue; }
+      if(d>today){ bad.push(`матч ${n}: дата у майбутньому`); continue; }
+      if(d<'2024-01-01'){ bad.push(`матч ${n}: дата надто давня (від 2024-01-01)`); continue; }
+      if(seen.has(d)){ bad.push(`матч ${n}: дата ${d} повторюється`); continue; } seen.add(d);
+      const r=Number(rs); if(!Number.isFinite(r)||r<1||r>10){ bad.push(`матч ${n}: оцінка — від 1 до 10`); continue; }
+      const it={date:d,rating:r2(r)}; let err=null;
+      for(const k of ['home','away','ut']){ const v=rd(i,k); if(v.length>60) err=`матч ${n}: назва — не довше 60 символів`; if(v) it[k]=v; }
+      const hs=rd(i,'hs'), as=rd(i,'as');
+      if((hs==='')!==(as==='')) err=err||`матч ${n}: рахунок — обидва числа або жодного`;
+      else if(hs!==''){ const a=Number(hs), b=Number(as); if(!Number.isInteger(a)||!Number.isInteger(b)||a<0||b<0||a>30||b>30) err=err||`матч ${n}: рахунок — цілі від 0 до 30`; else { it.hs=a; it.as=b; } }
+      const mn=rd(i,'min'); if(mn!==''){ const m=Number(mn); if(!Number.isInteger(m)||m<0||m>150) err=err||`матч ${n}: хвилини — цілі від 0 до 150`; else it.min=m; }
+      const hg=rd(i,'home_game'); if(hg!=='') it.home_game=hg==='1';
+      if(err){ bad.push(err); continue; }
+      items.push(it); }
+    return {items,bad}; };
+  let bound=false;
+  const st=()=>{ const S1=readSeason(), F1=readForm(), bad=S1.bad.concat(F1.bad);
+    const fch=!bad.length && sig(F1.items.map(norm))!==sig(fm0), sch=Object.keys(S1.o).length;
+    return {S1,F1,bad,fch,sch}; };
+  const body=`<p class="mnote" style="margin:0 0 8px">Запасний варіант, коли рутина не збирає статистику. Це лише <b>показ</b> (картка гравця, Ринок, «Топ рейтинг») — на очки, ціни й ролі не впливає. <b>Рутина перекриє ручне</b> при найближчому зборі гравця (власник — до 8 год, вільний — до 24 год${p.sofa_id?'':'; цього гравця рутина НЕ збирає — нема SofaScore id, ручне лишиться'}). Порожнє поле = значення очистити. Рутина востаннє збирала цього гравця: <b>${cur.stats_asof?kyFmt(cur.stats_asof):'ще ні'}</b>.</p>
+    <h4 class="dsph">Сезонні числа</h4><div class="stg">${ADM_STS.map(([k,l,r])=>`<div><label class="admlbl">${l} <span class="dim">${r}</span></label><input class="admin-inp" data-s="${k}" type="number" step="${k==='rating'?'0.01':'1'}" inputmode="decimal" value="${s0[k]==null?'':esc(k==='rating'?r2(s0[k]):s0[k])}"></div>`).join('')}</div>
+    <h4 class="dsph">Форма · до 5 останніх матчів <span class="dim" style="text-transform:none;letter-spacing:0">(дата + оцінка обовʼязкові; порядок будь-який — найновіші підуть першими)</span></h4>
+    ${[0,1,2,3,4].map(i=>frow(fm0[i]||{},i)).join('')}
+    <p id="stMsg" class="mnote" style="margin:6px 0 0"></p>`;
+  admDanger({title:`📊 Статистика й форма · ${esc(p.name)}`,body,word:null,label:'Зберегти',
+    valid:()=>{
+      if(!bound){ bound=true; $('mhost').querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{ $('mhost').querySelectorAll(`.stfr[data-i="${b.dataset.x}"] [data-k]`).forEach(e=>{ e.value=''; }); $('mhost').querySelector('.modal').dispatchEvent(new Event('input',{bubbles:true})); }); }
+      const {S1,bad,fch,sch}=st(), m=$('stMsg');
+      if(m) m.innerHTML=bad.length?`<span class="down">⛔ ${esc(bad[0])}${bad.length>1?` (і ще ${bad.length-1})`:''}</span>`:((sch||fch)?`Буде змінено: ${sch?`сезон — ${Object.keys(S1.o).length} ${Object.keys(S1.o).length===1?'поле':'полів'}`:''}${sch&&fch?'; ':''}${fch?'форма':''}.`:'Змін поки нема.');
+      return !bad.length&&(sch>0||fch); },
+    collect:()=>{ const {S1,F1,fch,sch}=st(); return {season:sch?S1.o:null,form:fch?F1.items.map(it=>{ const o={date:it.date,rating:it.rating}; ['home','away','ut','hs','as','home_game','min'].forEach(k=>{ if(it[k]!==undefined) o[k]=it[k]; }); return o; }):null}; },
+    onOk:async(cf,why,x)=>{
+      const {error}=await sb.rpc('admin_squad_player_stats_set',{p_player:p.id,p_season:x.season,p_form:x.form,p_reason:why});
+      if(error){ alert(admRpcMissing(error)?'⏳ «Статистика й форма» запрацює після заливки SQL 577.':'⛔ '+admErr(error)); return; }
+      alert('✅ Статистику збережено'); await loadRefs(); admBadgeRefresh(true); admPoolRefresh(); }});
 }
 
 async function viewAdmin(){
