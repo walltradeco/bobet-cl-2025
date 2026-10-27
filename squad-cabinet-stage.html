@@ -1704,6 +1704,16 @@ async function viewRoundView(r, editRound){
 // 16.10 (Богдан): у результаті туру чужі склади НЕ показуємо — це дає занадто наочно вивчити склад суперника (на борді все й так є після відкриття);
 // чужі склади повернемо разом з механікою Rivals (як у ЄвроСезоні) — тоді OTHERS_IN_TOUR = true.
 const OTHERS_IN_TOUR=false;
+// спільний текст про закриття туру (Богдан 27.10) — ОДНАКОВИЙ на борді й у кабінеті; числа з market_config (дефолти 16 / 6 / 60 год·хв)
+function closeNoteHtml(left,c){
+  c=c||{}; const cap=+c.autoclose_cap_hours||16, rc=+c.ratings_recheck_hours||6, buf=+c.autoclose_buffer_min||60;
+  const l1 = left>0 ? 'Матчі ще тривають — тур закриється автоматично, коли зіграють усі матчі й усталяться рейтинги.'
+                    : 'Усі матчі зіграні — тур закриється автоматично, щойно зберуться й усталяться рейтинги.';
+  const l2 = c.autoclose_adaptive===false
+    ? `Рейтинги збираються після матчів; тур закривається приблизно через ${buf} хв після збору.`
+    : `Після матчу SofaScore ще кілька годин уточнює оцінки, тому рейтинги збираємо знову приблизно кожні ${rc} год. Тур закривається, коли оцінки усталились (останній збір без змін), але не пізніше ніж через ≈${cap} год після завершення останнього матчу.`;
+  return `<div class="ln">${l1}</div><div class="ln">${l2}</div>`;
+}
 function viewRoundResult(r){
   const rr=S.rr||{}, me=S.me.id, who=(OTHERS_IN_TOUR&&S.rrp)||me, closed=!!r.results_entered_at;
   const fx=(rr.fix||[]).filter(f=>f.round_id===r.id), played=fx.filter(f=>f.status==='played').length;
@@ -1711,7 +1721,8 @@ function viewRoundResult(r){
   const prog = fx.length ? `<div class="rr-prog ${closed?'done':(off.length?'warn':'')}"><div>${closed?`✅ Тур ${r.number} закрито`:`⏳ Тур ${r.number} у грі`} · зіграно <b>${played}</b> з <b>${fx.length}</b>${(!closed&&left>0)?` · попереду <b>${left}</b>`:''}</div>
       <div class="bar"><i style="width:${Math.round(played/fx.length*100)}%"></i></div>
       ${off.map(f=>`<div class="ln w">⚠️ ${esc(clubName(f.home_club_id))} — ${esc(clubName(f.away_club_id))}: ${f.status==='postponed'?'перенесено':'скасовано/перервано'}</div>`).join('')}
-      ${(!closed&&off.length)?'<div class="ln">Поки є такий матч, тур сам не закривається — чекаємо рішення адміна. Ринок до того заморожений.</div>':''}</div>` : '';
+      ${(!closed&&off.length)?'<div class="ln">Поки є такий матч, тур сам не закривається — чекаємо рішення адміна. Ринок до того заморожений.</div>':''}
+      ${(!closed&&!off.length)?closeNoteHtml(left,S.cfg):''}</div>` : '';
   const pids=Object.keys(S.names);
   const pick=!OTHERS_IN_TOUR?'':`<div class="cfchips" style="margin:0 0 12px">${pids.map(id=>`<button class="cfchip pc ${id===who?'on':''}" data-rrp="${id}">${esc(S.names[id])}${id===me?' (я)':''}</button>`).join('')}</div>`;
   const rows=(rr.live||[]).filter(l=>l.round_id===r.id && l.participant_id===who);
