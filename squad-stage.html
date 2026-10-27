@@ -1609,7 +1609,8 @@ async function boot(){
       const row=cf&&(cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null));
       if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round;
       // правила закриття туру для спільного тексту в банері (579/575); окремим запитом, щоб старі БД без цих колонок не ламали решту
-      try{ const ac=await sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min');
+      try{ const ac=await sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min,ratings_settle_hours')
+          .catch(()=>sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min'));   // до SQL 583 колонки ratings_settle_hours нема
         S.acCfg=(ac||[]).find(c=>c.tournament_id===S.tournament)||(ac||[]).find(c=>c.tournament_id==null)||null; }catch(eAc){ S.acCfg=null; }
       if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25, pw:row.mgmt_pct_weight!=null?+row.mgmt_pct_weight:0,
         pr:{top:row.price_up_top_threshold!=null?+row.price_up_top_threshold:9, topP:row.price_up_top_pct!=null?+row.price_up_top_pct:0.10, hi:row.price_up_hi_threshold!=null?+row.price_up_hi_threshold:7.5, hiP:row.price_up_hi_pct!=null?+row.price_up_hi_pct:0.05,
@@ -1832,11 +1833,13 @@ function tiles(pid){
 // показується, коли дедлайн туру минув (до того склади приховані, матчі не стартували)
 // спільний текст про закриття туру (Богдан 27.10) — ОДНАКОВИЙ на борді й у кабінеті; числа з market_config (дефолти 16 / 6 / 60 год·хв)
 function closeNoteHtml(left,c){
-  c=c||{}; const cap=+c.autoclose_cap_hours||16, rc=+c.ratings_recheck_hours||6, buf=+c.autoclose_buffer_min||60;
+  c=c||{}; const cap=+c.autoclose_cap_hours||16, rc=+c.ratings_recheck_hours||6, buf=+c.autoclose_buffer_min||60, st=+c.ratings_settle_hours||0;
+  const capEff=Math.max(cap, st);   // 583: кап не менший за години усталення
   const l1 = left>0 ? 'Матчі ще тривають — тур закриється автоматично, коли зіграють усі матчі й усталяться рейтинги.'
                     : 'Усі матчі зіграні — тур закриється автоматично, щойно зберуться й усталяться рейтинги.';
   const l2 = c.autoclose_adaptive===false
     ? `Рейтинги збираються після матчів; тур закривається приблизно через ${buf} хв після збору.`
+    : st>0 ? `Після матчу SofaScore ще кілька годин уточнює оцінки: збираємо їх приблизно кожні ${rc} год, а остаточно — коли мине ${st} год після кінця матчу. Тур закривається, щойно для останнього матчу зібрано остаточні оцінки (за збою — не пізніше ≈${capEff} год після кінця матчу).`
     : `Після матчу SofaScore ще кілька годин уточнює оцінки, тому рейтинги збираємо знову приблизно кожні ${rc} год. Тур закривається, коли оцінки усталились (останній збір без змін), але не пізніше ніж через ≈${cap} год після завершення останнього матчу.`;
   return `<div class="ln">${l1}</div><div class="ln">${l2}</div>`;
 }
