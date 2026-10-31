@@ -1261,7 +1261,7 @@ function renderLB(){
     </div>
     ${(S.mgReady && S.mgs) || S.rvReady ? `<div class="nomgrid">${S.mgReady && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}</div>` : ''}
     <div class="hint">${S.mgReady
-      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
+      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''}${S.lgReady?' + 🐐 Club Legend (за місце в паралельній грі — нараховується, коли закрито всі тури)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
       : 'Наскрізний залік · General = сума всіх турів'} · рівні очки → ділять місце · клік на учасника → його склад</div>`;
 }
 // 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
@@ -1355,7 +1355,7 @@ function renderRules(){
       <li>Турнір — <b>${total} турів</b>. Тур = один вікенд: рахуються лише матчі національних чемпіонатів, по одному матчу на клуб (без кубків і єврокубків).</li>
       <li>Склад — до 8 гравців: <b>основа 5 + лавка 3</b> (мінімум 5). Не більше 3 гравців з одного клубу й 1 воротаря на клуб. Якщо у складі 8 гравців — не менше 2 DEF/GK у складі й не менше 1 в основі.</li>
       <li>Перед дедлайном туру ти виставляєш склад: основу, порядок лавки, капітана, віце й буст. Підтвердження — кнопкою й остаточне. Склади й бусти всіх відкриваються, коли підтвердили всі учасники або минув дедлайн.</li>
-      <li><b>Загальний залік (General)</b> = очки матчів + 💎 Менеджер туру + 💼 Менеджер турніру${S.chReady?' + 🎯 Челенджі':''}${S.rvReady?' + ⚔️ Rivals':''}.</li></ul>`]);
+      <li><b>Загальний залік (General)</b> = очки матчів + 💎 Менеджер туру + 💼 Менеджер турніру${S.chReady?' + 🎯 Челенджі':''}${S.rvReady?' + ⚔️ Rivals':''}${S.lgReady?' + 🐐 Club Legend':''}.</li></ul>`]);
   // 2. Очки за матч
   secs.push(['points','⚽ Очки за матч',`<p>Очки гравцю дає його оцінка за матч (SofaScore):</p>
       <div class="rtbl"><table><tr><th>Оцінка</th><th class="n">Очки</th></tr>${band('9,5 – 10','4')}${band('8,0 – 9,4','3')}${band('7,0 – 7,9','2')}${band('6,5 – 6,9','1')}${band('нижче 6,5','0')}</table></div>
@@ -1547,6 +1547,9 @@ async function loadDynamic(){
   try{ S.rvCfg=(await sbGet(`market_rival_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null;
     S.rvBoard=await sbGet(`market_rival_board?tournament_id=eq.${S.tournament}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored&order=round_number.asc`);
     S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
+  // 🐐 Club Legend (586/587): очки Legend уже всередині total_points (General) — тут лише прапорець для підпису; нема таблиці/рядка налаштувань → підпис ховається
+  S.lgReady=false;
+  try{ const lc=(await sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]; S.lgReady=!!(lc && lc.enabled!==false); }catch(e){ S.lgReady=false; }
   // 🔄 зміни правил (570): публічний журнал «що змінилось» (лише параметр і було → стало; без причини й автора); нема вьюхи (570 не залито) → блок ховається
   S.ruleChg=[];
   try{ S.ruleChg=await sbGet(`market_rule_changes?tournament_id=eq.${S.tournament}&select=created_at,kind,key,vkind,label,before,after&order=created_at.desc&limit=200`); }catch(e){ S.ruleChg=[]; }
