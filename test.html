@@ -3691,7 +3691,10 @@ function hxBuild(raw, prizeRows){
   (raw.tours || []).slice().sort(function(a, b){
     return String(a.starts_at) < String(b.starts_at) ? -1 : 1;
   }).forEach(function(t, i){
-    tour[t.id] = { order: i, stage: String(t.title || '').split(' · ').pop() };
+    // Етапи в нас англійською (як вкладки August/September/October); невідомий етап — як є.
+    var st = String(t.title || '').split(' · ').pop();
+    var en = { 'серпень': 'August', 'вересень': 'September', 'жовтень': 'October' }[st.toLowerCase()];
+    tour[t.id] = { order: i, stage: en || st };
   });
   var gw = {};
   (raw.gws || []).forEach(function(g){ gw[g.id] = g.title; });
