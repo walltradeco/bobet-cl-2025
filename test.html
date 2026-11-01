@@ -710,6 +710,38 @@
   .rv-tip .loss{ color:var(--red); }
   .rv-tip .pending{ color:var(--text); opacity:0.6; }
   .rv-tip .cap{ color:var(--text); opacity:0.55; }
+  /* HX-CSS:BEGIN */
+  /* ІСТОРІЯ Rivals / MVP (01.11.2026): пунктир під цифрою + плаваюча підказка на body.
+     ⚠️ Блок ІДЕНТИЧНИЙ у test.html і app-test.html (між HX-CSS:BEGIN/END). */
+  .hx{ cursor:help; border-bottom:1px dotted currentColor; padding:0 1px; -webkit-tap-highlight-color:transparent; }
+  .hx:focus{ outline:1px solid var(--gold); outline-offset:2px; border-radius:3px; }
+  .hx-pop{
+    position:fixed; z-index:9999; left:0; top:0;
+    width:max-content; min-width:230px; max-width:min(92vw,370px); overflow-y:auto;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:10px;
+    padding:10px 12px; box-shadow:0 8px 24px rgba(0,0,0,0.55);
+    font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:1.5; font-weight:400;
+    letter-spacing:0; color:var(--text); text-align:left;
+  }
+  .hx-h{ font-size:13px; font-weight:700; color:var(--gold); margin-bottom:6px; }
+  .hx-lbl{ opacity:.6; margin-bottom:4px; }
+  .hx-empty{ opacity:.7; }
+  .hx-opp + .hx-opp, .hx-m + .hx-m{ margin-top:5px; padding-top:5px; border-top:1px solid var(--line); }
+  .hx-opp-h{ cursor:pointer; }
+  .hx-caret{ display:inline-block; width:10px; color:var(--text-dim); }
+  .hx-opp.open .hx-caret{ transform:rotate(90deg); }
+  .hx-opp-rows{ display:none; margin:4px 0 2px 12px; }
+  .hx-opp.open .hx-opp-rows{ display:block; }
+  .hx-w{ display:flex; justify-content:space-between; gap:12px; padding:1px 0; }
+  .hx-w > span:first-child{ opacity:.8; }
+  .hx-m-t{ display:flex; justify-content:space-between; gap:12px; font-weight:700; }
+  .hx-sub{ opacity:.7; }
+  .hx-foot{ margin-top:7px; padding-top:6px; border-top:1px solid var(--line); opacity:.85; }
+  .hx-win{ color:var(--green); font-weight:700; }
+  .hx-draw{ color:var(--gold); }
+  .hx-loss{ color:var(--red); }
+  .hx-pending{ opacity:.6; }
+  /* HX-CSS:END */
 
 
   /* BoOrbit — логотип по центру над шапкою */
@@ -2348,10 +2380,27 @@ async function buildMonthRows(tournamentKey){
   // ⚠️ Заразом менше даних по мережі: було «весь сезон» на кожній вкладці.
   const gwIds = weeks.map(w => w.gameweek_id).join(',');
   const board = gwIds ? await sbGet(
-    'match_board?select=gameweek_id,position,home_team,away_team,kickoff_at,' +
+    'match_board?select=match_id,participant_id,gameweek_id,position,home_team,away_team,kickoff_at,' +
     'home_score,away_score,display_name,pred_home,pred_away,' +
     'pred_home_2,pred_away_2,boost_code,competition' +
     '&gameweek_id=in.(' + gwIds + ')') : [];
+
+  // Автопілот без ×2 (01.11): зіграні кандидати, яким ×2 не дістався (обидва по 0 або другий із пари)
+  // recalculate_gameweek ×2 тоді не ставить (boost_code порожній), а match_board
+  // позначає кандидатів лише ПОКИ матч не зіграний — тож після матчів на борді не
+  // лишалось жодного сліду. Підсвічуємо їх тут із таблиці кандидатів (колонки
+  // match_id, participant_id читаються анонімно; чужі — після відкриття вікенда).
+  // Лише показ, розрахунків не чіпає; збій → борда як раніше.
+  try {
+    const apc = gwIds ? await sbGet('autopilot_candidates?select=match_id,participant_id') : [];
+    const apCand = new Set(apc.map(c => c.participant_id + '|' + c.match_id));
+    board.forEach(b => {
+      if(b.boost_code || b.home_score == null) return;   // ×2 дістався (або матч ще попереду — його позначає сама вьюха)
+      if(!apCand.has(b.participant_id + '|' + b.match_id)) return;
+      b.boost_code = 'autopilot';
+      LIVE_AP_MISS.add(b.display_name + '|' + normGame(b.home_team + ' — ' + b.away_team));
+    });
+  } catch(e){ console.warn('автопілот: кандидатів не отримано', e); }
 
   const boostTypes = await sbGet('boost_types?select=code,title,sort_order&order=sort_order.asc');
 
@@ -2638,6 +2687,8 @@ async function fetchSupabaseTab(tab){
     try { prizeDelta = await sbGet('season_prize_rank_delta?select=person_key,mvp_delta,rival_delta'); } catch(e) {}
     const prizeDeltaByPerson = {};
     prizeDelta.forEach(d => { prizeDeltaByPerson[d.person_key] = d; });
+    // Історія Rivals/MVP за цифрами (01.11): лише читання; збій → борда як раніше.
+    await hxEnsure(prizeBoard, (tb, sel) => sbGet(tb + '?select=' + sel));
     return {
       rows: await buildLeaderboardRows(),
       // Season-номінації призового фонду (MVP 5%, ⚔️ Rivals 5% — Rules,
@@ -3460,15 +3511,15 @@ function renderLeaderboard(data){
         title: 'MVP — найбільше нагород за турнір',
         titleHtml: '<span style="color:var(--gold);font-weight:700">MVP</span> — найбільше нагород за турнір',
         goldOnly: true,
-        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, delta: r.mvp_delta ?? null }))
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.mvp_count, ptsHtml: hxCell('m', r.person_key, r.mvp_count), delta: r.mvp_delta ?? null }))
       },
       {
         title: '⚔️ Rivals — найбільше перемог за турнір',
         goldOnly: true,
-        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, delta: r.rival_delta ?? null }))
+        entries: data.prizeBoard.map(r => ({ name: r.display_name, pts: r.rival_wins, ptsHtml: hxCell('r', r.person_key, r.rival_wins), delta: r.rival_delta ?? null }))
       }
     ];
-    out += `<div class="boards-subhead">Окремі номінації призового фонду · рахується наскрізно за весь турнір</div>`
+    out += `<div class="boards-subhead">Окремі номінації призового фонду · рахується наскрізно за весь турнір${hxHint()}</div>`
          + renderBoards(prizeBoards);
   }
 
@@ -3569,7 +3620,7 @@ function renderBoards(finalBoards){
           <div class="lb-rank">${rankInner}</div>
           <div class="lb-name">${escapeHtml(canonPerson(e.name))}</div>
           <div class="lb-delta">${lbDelta(e.delta)}</div>
-          <div class="lb-pts">${e.pts}</div>
+          <div class="lb-pts">${e.ptsHtml || e.pts}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -3599,6 +3650,268 @@ function renderPointsSummary(players, totals){
     </div>`;
 }
 
+/* HX:BEGIN */
+/* ======== ІСТОРІЯ Rivals / MVP за весь турнір (01.11.2026) ========
+   Підказка біля цифр «Rivals — найбільше перемог» і «MVP — найбільше нагород»:
+   звідки взялась цифра (проти кого / у які вікенди / за що MVP). ЛИШЕ читання вже
+   порахованого (rival_board, mvp_board + довідники) — розрахунків не чіпає.
+   Людина = person_key = coalesce(profile_id, display_name), як у season_prize_board
+   (181); суперник зводиться тим самим ключем (у кожному етапі в нього інший
+   participants.id). Імена — тільки для підпису (rename-safe).
+   Паритет: ✅ == season_prize_board.rival_wins, MVP-рядків == mvp_count; розбіг →
+   для цієї людини підказки НЕМАЄ (не показуємо неправди) + console.warn.
+   ⚠️ Блок ІДЕНТИЧНИЙ у test.html і app-test.html (між HX:BEGIN/HX:END) — міняти в обох. */
+var HX = { data: null, pop: null, anchor: null, hoverMode: true, timer: null, inited: false };
+
+function hxEsc(s){
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function(c){
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c];
+  });
+}
+function hxName(n){ return (typeof canonPerson === 'function') ? canonPerson(n) : n; }
+function hxPl(n, one, few, many){
+  var m10 = n % 10, m100 = n % 100;
+  if(m10 === 1 && m100 !== 11) return one;
+  if(m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+  return many;
+}
+
+/* raw: { rivals, mvp, parts, tours, gws } — масиви рядків з REST; prizeRows —
+   season_prize_board (person_key, display_name, mvp_count, rival_wins). */
+function hxBuild(raw, prizeRows){
+  var partKey = {};
+  (raw.parts || []).forEach(function(p){
+    partKey[p.id] = p.profile_id ? String(p.profile_id) : p.display_name;
+  });
+  var names = {};
+  (prizeRows || []).forEach(function(r){ names[r.person_key] = r.display_name; });
+  function nm(k, fallback){ return names[k] || fallback || k; }
+
+  var tour = {};
+  (raw.tours || []).slice().sort(function(a, b){
+    return String(a.starts_at) < String(b.starts_at) ? -1 : 1;
+  }).forEach(function(t, i){
+    tour[t.id] = { order: i, stage: String(t.title || '').split(' · ').pop() };
+  });
+  var gw = {};
+  (raw.gws || []).forEach(function(g){ gw[g.id] = g.title; });
+
+  var people = {};
+  function person(k){
+    return people[k] || (people[k] = {
+      rivals: { W: 0, D: 0, L: 0, P: 0, pts: 0, opps: {} },
+      mvp: { rows: [], pts: 0 }
+    });
+  }
+
+  (raw.rivals || []).forEach(function(r){
+    var ck = partKey[r.chooser_id], rk = partKey[r.rival_id];
+    if(!ck || !rk) return;
+    var t = tour[r.tournament_id] || { order: 99, stage: '' };
+    var R = person(ck).rivals;
+    var o = R.opps[rk] || (R.opps[rk] = { key: rk, name: nm(rk, r.rival_name), W: 0, D: 0, L: 0, P: 0, rows: [] });
+    var st = r.status;
+    if(st === 'win'){ o.W++; R.W++; }
+    else if(st === 'draw'){ o.D++; R.D++; }
+    else if(st === 'loss'){ o.L++; R.L++; }
+    else { o.P++; R.P++; st = 'pending'; }
+    if(st !== 'pending') R.pts += (r.points || 0);
+    o.rows.push({
+      sort: t.order * 100 + (r.gameweek_number || 0), stage: t.stage,
+      title: gw[r.gameweek_id] || ('Вікенд ' + r.gameweek_number), status: st, points: r.points
+    });
+  });
+
+  var byGw = {};
+  (raw.mvp || []).forEach(function(m){ (byGw[m.gameweek_id] = byGw[m.gameweek_id] || []).push(m); });
+  (raw.mvp || []).forEach(function(m){
+    var k = partKey[m.participant_id];
+    if(!k) return;
+    var t = tour[m.tournament_id] || { order: 99, stage: '' };
+    var mates = (byGw[m.gameweek_id] || [])
+      .filter(function(x){ return x.participant_id !== m.participant_id; })
+      .map(function(x){ var xk = partKey[x.participant_id]; return nm(xk, x.display_name); });
+    var M = person(k).mvp;
+    M.rows.push({
+      sort: t.order * 100 + (m.gameweek_number || 0), stage: t.stage,
+      title: gw[m.gameweek_id] || ('Вікенд ' + m.gameweek_number),
+      points: m.points || 0, mp: m.match_points, ex: m.exact_count, mates: mates
+    });
+    M.pts += (m.points || 0);
+  });
+
+  var ok = {};
+  (prizeRows || []).forEach(function(p){
+    var P = person(p.person_key);
+    var rOk = P.rivals.W === Number(p.rival_wins || 0);
+    var mOk = P.mvp.rows.length === Number(p.mvp_count || 0);
+    if(!rOk || !mOk){
+      console.warn('HX: розбіг історії з бордою для ' + p.display_name + ' — Rivals ' + P.rivals.W + ' vs ' + p.rival_wins
+        + ', MVP ' + P.mvp.rows.length + ' vs ' + p.mvp_count + '; підказку для цієї людини вимкнено');
+    }
+    ok[p.person_key] = { r: rOk, m: mOk };
+  });
+
+  Object.keys(people).forEach(function(k){
+    var R = people[k].rivals;
+    R.list = Object.keys(R.opps).map(function(x){ return R.opps[x]; }).sort(function(a, b){
+      return (b.W - a.W) || (b.D - a.D) || (String(a.name) < String(b.name) ? -1 : 1);
+    });
+    R.list.forEach(function(o){ o.rows.sort(function(a, b){ return a.sort - b.sort; }); });
+    people[k].mvp.rows.sort(function(a, b){ return a.sort - b.sort; });
+  });
+  return { people: people, ok: ok, names: names };
+}
+
+function hxRivalsHtml(key){
+  var D = HX.data, R = D.people[key].rivals, name = hxName(D.names[key] || key);
+  var h = '<div class="hx-h">⚔️ ' + hxEsc(name) + ' · ' + R.W + ' ' + hxPl(R.W, 'перемога', 'перемоги', 'перемог') + ' у Rivals</div>';
+  if(!R.list.length) return h + '<div class="hx-empty">Дуелей ще не було.</div>';
+  h += '<div class="hx-lbl">Суперники · натисни, щоб розгорнути вікенди</div>';
+  h += R.list.map(function(o){
+    var parts = [];
+    if(o.W) parts.push('<span class="hx-win">' + o.W + ' ✅</span>');
+    if(o.D) parts.push('<span class="hx-draw">' + o.D + ' 🤝</span>');
+    if(o.L) parts.push('<span class="hx-loss">' + o.L + ' ❌</span>');
+    if(o.P) parts.push('<span class="hx-pending">' + o.P + ' ⏳</span>');
+    var rows = o.rows.map(function(r){
+      var mark = r.status === 'win' ? '<span class="hx-win">✅ +' + (r.points || 0) + '</span>'
+        : r.status === 'draw' ? '<span class="hx-draw">🤝 +' + (r.points || 0) + '</span>'
+        : r.status === 'loss' ? '<span class="hx-loss">❌ 0</span>'
+        : '<span class="hx-pending">⏳ очікує</span>';
+      return '<div class="hx-w"><span>' + hxEsc(r.stage) + ' · ' + hxEsc(r.title) + '</span>' + mark + '</div>';
+    }).join('');
+    return '<div class="hx-opp"><div class="hx-opp-h" data-hx-toggle="1"><span class="hx-caret">▸</span> <b>'
+      + hxEsc(hxName(o.name)) + '</b> — ' + parts.join(' · ') + '</div><div class="hx-opp-rows">' + rows + '</div></div>';
+  }).join('');
+  var foot = 'Усього: ' + R.W + ' ✅ · ' + R.D + ' 🤝 · ' + R.L + ' ❌' + (R.P ? ' · ' + R.P + ' ⏳' : '') + ' · очки Rivals ' + R.pts;
+  return h + '<div class="hx-foot">' + foot + '</div>';
+}
+
+function hxMvpHtml(key){
+  var D = HX.data, M = D.people[key].mvp, name = hxName(D.names[key] || key);
+  if(!M.rows.length) return '<div class="hx-h">🏆 ' + hxEsc(name) + ' · MVP ще не було</div>';
+  var h = '<div class="hx-h">🏆 ' + hxEsc(name) + ' · ' + M.rows.length + ' MVP</div>';
+  h += M.rows.map(function(r){
+    var sub = [];
+    if(r.mp != null) sub.push(r.mp + ' ' + hxPl(r.mp, 'очко', 'очки', 'очок') + ' за матчі');
+    if(r.ex != null) sub.push(r.ex > 0 ? r.ex + ' ' + hxPl(r.ex, 'точний рахунок', 'точні рахунки', 'точних рахунків') : 'без точних рахунків');
+    if(r.mates.length) sub.push('спільний MVP (також: ' + r.mates.map(function(n){ return hxEsc(hxName(n)); }).join(', ') + ')');
+    return '<div class="hx-m"><div class="hx-m-t"><span>' + hxEsc(r.stage) + ' · ' + hxEsc(r.title)
+      + '</span><span class="hx-win">+' + r.points + '</span></div><div class="hx-sub">' + sub.join(' · ') + '</div></div>';
+  }).join('');
+  return h + '<div class="hx-foot">Усього: ' + M.rows.length + ' MVP · +' + M.pts + ' ' + hxPl(M.pts, 'очко', 'очки', 'очок') + '</div>';
+}
+
+/* Обгортка цифри: kind 'r' (Rivals) | 'm' (MVP). Без даних / при розбігу — просто цифра. */
+function hxCell(kind, key, val){
+  if(!HX.data) return val;
+  var ok = HX.data.ok[key];
+  if(!ok || !(kind === 'r' ? ok.r : ok.m)) return val;
+  return '<span class="hx" tabindex="0" role="button" data-hx="' + kind + '" data-key="' + hxEsc(key) + '">' + val + '</span>';
+}
+function hxHint(){
+  return HX.data ? ' · наведи на цифру (на телефоні — тапни), щоб побачити, звідки вона' : '';
+}
+
+/* get(table, select) → Promise<array>. Будь-який збій → HX.data = null, борда як раніше. */
+async function hxEnsure(prizeRows, get){
+  try{
+    var r = await Promise.all([
+      get('rival_board', 'tournament_id,gameweek_id,gameweek_number,chooser_id,chooser_name,rival_id,rival_name,points,status'),
+      get('mvp_board', 'tournament_id,gameweek_id,gameweek_number,participant_id,display_name,points,match_points,exact_count'),
+      get('participants', 'id,display_name,profile_id,tournament_id'),
+      get('tournaments', 'id,key,title,starts_at,status'),
+      get('gameweeks', 'id,tournament_id,number,title')
+    ]);
+    HX.data = hxBuild({ rivals: r[0], mvp: r[1], parts: r[2], tours: r[3], gws: r[4] }, prizeRows);
+    hxInit();
+  }catch(e){
+    HX.data = null;
+    console.warn('HX: історію Rivals/MVP не завантажено', e);
+  }
+}
+
+function hxOpen(a){
+  if(!HX.data || !HX.pop) return;
+  var kind = a.getAttribute('data-hx'), key = a.getAttribute('data-key');
+  if(!HX.data.people[key]) return;
+  HX.pop.innerHTML = kind === 'r' ? hxRivalsHtml(key) : hxMvpHtml(key);
+  HX.pop.style.display = 'block';
+  HX.anchor = a;
+  hxPlace();
+}
+function hxClose(){
+  if(HX.pop) HX.pop.style.display = 'none';
+  HX.anchor = null;
+}
+function hxPlace(){
+  var p = HX.pop, a = HX.anchor;
+  if(!p || !a) return;
+  var r = a.getBoundingClientRect();
+  var vw = document.documentElement.clientWidth, vh = window.innerHeight;
+  p.style.left = '0px'; p.style.top = '0px';
+  p.style.maxHeight = (vh - 16) + 'px';
+  var w = p.offsetWidth, h = p.offsetHeight;
+  var left = Math.min(Math.max(8, r.right - w), Math.max(8, vw - w - 8));
+  var top = r.bottom + 4;
+  if(top + h > vh - 8){
+    var up = r.top - h - 4;
+    top = up >= 8 ? up : Math.max(8, vh - h - 8);
+  }
+  p.style.left = left + 'px';
+  p.style.top = top + 'px';
+}
+
+function hxInit(){
+  if(HX.inited || typeof document === 'undefined') return;
+  HX.inited = true;
+  HX.hoverMode = !!(window.matchMedia && window.matchMedia('(hover: hover) and (pointer: fine)').matches);
+  var pop = document.createElement('div');
+  pop.id = 'hx-pop';
+  pop.className = 'hx-pop';
+  pop.style.display = 'none';
+  document.body.appendChild(pop);
+  HX.pop = pop;
+
+  // Десктоп: підказка по наведенню (закривається з невеликою затримкою, щоб можна було
+  // перевести курсор у саму підказку й розгорнути вікенди). Телефон: тап відкриває/закриває.
+  document.addEventListener('mouseover', function(e){
+    if(!HX.hoverMode || !e.target.closest) return;
+    var a = e.target.closest('.hx');
+    if(a){ clearTimeout(HX.timer); if(HX.anchor !== a) hxOpen(a); return; }
+    if(e.target.closest('#hx-pop')){ clearTimeout(HX.timer); return; }
+    if(HX.anchor){ clearTimeout(HX.timer); HX.timer = setTimeout(hxClose, 220); }
+  });
+  document.addEventListener('click', function(e){
+    var t = e.target;
+    if(!t || !t.closest) return;
+    var a = t.closest('.hx');
+    if(a){
+      if(HX.hoverMode){ if(HX.anchor !== a) hxOpen(a); }
+      else if(HX.anchor === a) hxClose();
+      else hxOpen(a);
+      return;
+    }
+    var tg = t.closest('[data-hx-toggle]');
+    if(tg){ tg.parentNode.classList.toggle('open'); hxPlace(); return; }
+    if(t.closest('#hx-pop')) return;
+    hxClose();
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.key === 'Escape'){ hxClose(); return; }
+    if((e.key === 'Enter' || e.key === ' ') && e.target && e.target.classList && e.target.classList.contains('hx')){
+      e.preventDefault();
+      if(HX.anchor === e.target) hxClose(); else hxOpen(e.target);
+    }
+  });
+  window.addEventListener('scroll', function(e){
+    if(HX.pop && e.target !== document && e.target.nodeType === 1 && HX.pop.contains(e.target)) return;
+    hxClose();
+  }, true);
+  window.addEventListener('resize', hxClose);
+}
+/* HX:END */
 /* Бейдж ⚔️ з дуелями учасника біля його імені в рядку Points.
    Показуємо лише в місячній таблиці EuroSeason (LIVE_RIVALS != null).
    Деталі кожної дуелі — у підказці по наведенню. */
@@ -3865,7 +4178,8 @@ function renderBoostsBlock(boosts, players, predMap){
               const game = lines[0];
               const scores = lines.slice(1).join(' ').split('/').map(cellStr).filter(Boolean);
               // жирним — той рахунок, який реально стоїть у таблиці матчів
-              const counted = cellStr(predMap[players[i].col + '|' + normGame(game)]);
+              const counted = LIVE_AP_MISS.has(cellStr(players[i].name) + '|' + normGame(game))
+                ? '' : cellStr(predMap[players[i].col + '|' + normGame(game)]);
               const scoreHtml = scores.length
                 ? `<span class="boost-scores">${scores.map(sc =>
                     counted && sc === counted ? `<b>${escapeHtml(sc)}</b>` : escapeHtml(sc)).join(' / ')}</span>`
@@ -3884,6 +4198,10 @@ function renderBoostsBlock(boosts, players, predMap){
    Predict»), і за текстом їх не розрізнити. Архів має лишитись
    у старих кольорах із Google Sheets, EuroSeason — у нових. */
 let LIVE_BOOSTS = false;
+
+/* Автопілот без очок (01.11): ключі «Імʼя|матч» кандидатів, що зіграли, а ×2 не дістався.
+   Заповнює buildMonthRows, читає renderBoostsBlock: такий рахунок НЕ жирним — бо не зарахований. */
+const LIVE_AP_MISS = new Set();
 
 /* Дуелі Rivals для рядка Points місячної таблиці. null — не показувати
    бейджі (архів, інші вкладки). Заповнює buildMonthRows, читає
