@@ -5314,7 +5314,7 @@ function dnaPortrait(d, person){
             `${p.exact_hits} ${plural(p.exact_hits, 'раз', 'рази', 'разів')} —
              по 3 очки за кожен`),
         row('Найдовша серія', `${p.streak_result}`,
-            'вгаданих результатів поспіль, наскрізь через усі чотири турніри'),
+            'вгаданих результатів поспіль, наскрізь через усі турніри'),
         row('Точний рахунок наодинці', `${p.lone_exact}`,
             `${plural(p.lone_exact, 'раз', 'рази', 'разів')} вгадав точний
              рахунок, якого в тому матчі не взяв більше ніхто`),
@@ -5327,7 +5327,7 @@ function dnaPortrait(d, person){
                  (по обох командах разом)`) : '',
       ].join(''), 'скільки вгадано і скільки це очок')}
 
-      ${teamsFor('clubs', 'Клуби', 'ЛЧ 2025 + Клубний ЧС 2025', r.clubs_matches)}
+      ${teamsFor('clubs', 'Клуби', 'ЛЧ 2025 + Клубний ЧС 2025 + EuroSeason 2026', r.clubs_matches)}
       ${teamsFor('nations', 'Збірні', 'Євро 2024 + ЧС 2026', r.nations_matches)}
 
       ${block('Сильні й слабкі типи матчів', [
@@ -5349,10 +5349,10 @@ function dnaPortrait(d, person){
         r.group_pct != null && r.playoff_pct != null
           ? row('Груповий етап → плей-оф', `${r.group_pct}% → ${r.playoff_pct}%`,
                 (r.playoff_pct > r.group_pct ? 'оживає на вильоті. ' : 'на вильоті грає гірше. ')
-                + 'Плей-оф — це Knockout і Play-off у всіх чотирьох турнірах') : '',
+                + 'Плей-оф — це Knockout і Play-off; усе інше (групи й етапи EuroSeason) — «груповий етап»') : '',
         r.nations_pct != null && r.clubs_pct != null
           ? row('Збірні / клуби', `${r.nations_pct}% / ${r.clubs_pct}%`,
-                'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025') : '',
+                'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025 + EuroSeason 2026') : '',
         r.group_goals != null && r.playoff_goals != null
           ? row('Голів у прогнозі на вильоті', `${r.group_goals} → ${r.playoff_goals}`,
                 r.playoff_goals < r.group_goals ? 'стає обережнішим' : 'не стримується') : '',
@@ -5373,6 +5373,7 @@ function dnaPortrait(d, person){
                                b.kind === 'special' ? ' · чемпіон, бомбардир і подібне — ставилось до старту турніру'
                              : b.kind === 'group'   ? ' · місця команд у групах A-F, було тільки на Євро 2024'
                              : b.kind === 'pair'    ? ' · ставилось уже по ходу, коли пари були відомі'
+                             : b.kind === 'season'  ? ' · питання етапів і General ЄвроСезону — ставились по ходу сезону'
                                                     : ''))).join('')
         : '<div class="dna-row"><span class="n">Не відповідав на бонусні питання</span></div>')}
 
