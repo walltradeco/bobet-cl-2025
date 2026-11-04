@@ -684,6 +684,12 @@ function stageSum(stage){   // сума очок кожного учасника
 // Нема вьюх (528 не залито) → S.mgReady=false: нічого не показуємо, борда як раніше.
 // Формат «1 етап»: турнір = mgmt_total_rounds турів і вони вміщаються в 1-й етап → 2-й етап і його картки ховаємо.
 const oneStage=()=>!!(S.mgReady && S.mgCfg && S.mgCfg.total && S.mgCfg.total<=stage1Max());
+// 03.11 (Богдан): менеджмент 💎/💼 ховаємо, коли ОБИДВІ сітки очок = нулі (Адмінка → Налаштування): зникає реклама (вкладка, картка 💼, тексти правил), а вже нараховане в Турах 1–4 лишається в сумі й у значках 💎+N.
+// Дані (S.mgReady) лишаються для oneStage/lbFinished/Squad Price; mgShown() — лише для того, що ПОКАЗУЄТЬСЯ. Пізніше це замінить явний mgmt_enabled у конструкторі.
+const mgShown=()=>!!(S.mgReady && (!S.mgCfg || [].concat(S.mgCfg.tour||[], S.mgCfg.fin||[]).some(v=>+v>0)));
+// 03.11 (Богдан): Club Legend score_mode='sum' (SQL 597/598): очки = сума очок виборів (стеля слота), у General — одразу після матчу, без шкали місць
+const lgSum=()=>!!(S.lgCfg && S.lgCfg.score_mode==='sum');
+const lgGenTxt=()=>lgSum()?'сума очок виборів — одразу після матчу':'за місце в паралельній грі — нараховується, коли закрито всі тури';
 function mgRow(pid,rid){ return S.mg.find(m=>m.participant_id===pid && m.round_id===rid)||null; }
 const eurSg=d=>(d>0?'+':d<0?'−':'')+'€'+(Math.abs(d)/1e6).toFixed(1)+'M';
 const ppSg=v=>(v>0?'+':v<0?'−':'')+Math.abs(v).toFixed(1)+' п.п.';   // Σ% руху цін гравців лайнапу (531)
@@ -890,7 +896,7 @@ function lgExamplesHtml(){
 // стан таблиці Legend: рядки впорядковані за місцем (підсумковим, якщо вже є; інакше поточним)
 function lgStandings(){
   const stand=(S.lgStand||[]).slice(), fin=stand.some(x=>x.final_place!=null);
-  const place=x=>x.final_place!=null?x.final_place:x.live_place, gpts=x=>x.final_place!=null?x.final_points:x.live_points;
+  const place=x=>x.final_place!=null?x.final_place:x.live_place, gpts=x=>lgSum()?(x.raw_points||0):(x.final_place!=null?x.final_points:x.live_points);
   stand.sort((a,b)=>(place(a)-place(b))||String(a.display_name).localeCompare(String(b.display_name),'uk'));
   return {stand,fin,place,gpts,best:stand.length?Math.max(...stand.map(x=>x.raw_points||0)):0};
 }
@@ -903,7 +909,7 @@ function lgRows(L,tot,compact){
   return L.stand.map(x=>{ const gold=L.best>0 && (x.raw_points||0)===L.best;
     return `<div class="lbr bk mg ${gold?'p1':''}">
       <div class="rnk">${gold?`<span class="crown">${medal[0]}</span>`:L.place(x)}</div>
-      <div class="nm">${esc(x.display_name)}${compact?'':`<span class="bsub">${x.raw_points||0} з ${tot} очок Legend · ${L.fin?'':'≈ '}+${L.gpts(x)||0} у General</span>`}</div>${dl?lbDeltaHtml(dl[x.participant_id]):''}
+      <div class="nm">${esc(x.display_name)}${compact?'':`<span class="bsub">${x.raw_points||0} з ${tot} очок Legend · ${lgSum()?'усі вже в General':`${L.fin?'':'≈ '}+${L.gpts(x)||0} у General`}</span>`}</div>${dl?lbDeltaHtml(dl[x.participant_id]):''}
       <div class="pts">${x.raw_points||0}${compact?'':'<small>очок</small>'}</div></div>`; }).join('');
 }
 // картка для Leaderboard (як 💼 і ⚔️): місця за очками Legend; до відкриття складів Туру first_round — підказка
@@ -941,8 +947,8 @@ function renderLg(){
   const roleList=(S.lgRoles||[]).map(r=>`${esc(r.icon)} ${esc(r.title)}`).join(' · ');
   host.innerHTML=`<div class="head2"><h2>🐐 General Club Legend</h2><span class="sub">паралельна гра · очки ролей з реальних матчів клубів</span></div>
     <div class="mgintro" style="border-left-color:var(--up)"><b>Club Legend</b> — паралельна гра поруч з очками за матчі. Кожен учасник обрав <b>${n} вибори «клуб + роль»</b>${roleList?` (${roleList})`:''}; очки ролі рахуються з реальних результатів обраного клубу${first?` у турах від <b>Туру ${first}</b>`:''} — <b>одразу після матчу</b>. Кожен вибір — не більше <b>${cap}</b> очок за турнір.
-      <ul><li>Коли закрито всі тури, місце в Legend → очки в General${fp.length?`: ${fp.map((v,i)=>`${i+1}-ше <b>${v}</b>`).join(' · ')} (шкала тестова)`:''}. Рівні очки ділять місце, а очки за ці місця усереднюються.</li>
-      <li>До підсумку очки Legend у General ще не входять; «≈» показує, скільки вийшло б за поточним місцем.</li>
+      <ul>${lgSum()?`<li>Очки Legend — це <b>сума очок ${n} виборів</b> (кожен — до ${cap}); вони додаються до General <b>одразу після матчу</b>, без шкали місць. Рівні очки лише ділять місце в таблиці.</li>`:`<li>Коли закрито всі тури, місце в Legend → очки в General${fp.length?`: ${fp.map((v,i)=>`${i+1}-ше <b>${v}</b>`).join(' · ')} (шкала тестова)`:''}. Рівні очки ділять місце, а очки за ці місця усереднюються.</li>
+      <li>До підсумку очки Legend у General ще не входять; «≈» показує, скільки вийшло б за поточним місцем.</li>`}
       <li>Після підтвердження складу можна зробити <b>одну заміну одного вибору</b> за турнір — попередній вибір лишається в списку («↪ раніше») разом з тим, що встиг заробити.</li></ul>
       <p class="mglink">Усі правила, ролі й приклади — нижче та у вкладці <a onclick="goStage('rules');return false">Rules</a>.</p></div>
     ${sec('🏆 Загальна таблиця · Club Legend')}
@@ -1374,9 +1380,10 @@ function renderLB(){
       ${one? '' : lbCard('blueh','Rounds '+(stage1Max()+1)+'-'+stage2End(), s2, false, lbDeltas(s2, lbBack('s2')))}
       ${lbCard('goldh','General', tot, true, lbDeltas(tot, lbBack(null)))}
     </div>
-    ${(S.mgReady && S.mgs) || S.rvReady || S.lgReady ? `<div class="nomgrid">${S.mgReady && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}${S.lgReady ? lgNomCard('🐐 Club Legend') : ''}</div>` : ''}
-    <div class="hint">${S.mgReady
-      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''}${S.lgReady?' + 🐐 Club Legend (за місце в паралельній грі — нараховується, коли закрито всі тури)':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
+    ${(mgShown() && S.mgs) || S.rvReady || S.lgReady ? `<div class="nomgrid">${mgShown() && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}${S.lgReady ? lgNomCard('🐐 Club Legend') : ''}</div>` : ''}
+    <div class="hint">${mgShown()
+      ? `General = очки матчів + 💎 бонуси «Менеджер туру» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} турів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''}${S.lgReady?' + 🐐 Club Legend ('+lgGenTxt()+')':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
+      : S.mgReady ? `General = очки матчів${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель туру)':''}${S.lgReady?' + 🐐 Club Legend ('+lgGenTxt()+')':''}`
       : 'Наскрізний залік · General = сума всіх турів'} · рівні очки → ділять місце</div>`;
 }
 // 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
@@ -1463,14 +1470,14 @@ function renderRules(){
   const chFirst=(S.chCfg&&S.chCfg.first_round)||null, rvFirst=(S.rvCfg&&S.rvCfg.first_round)||null;
   const band=(lbl,v)=>`<tr><td>${lbl}</td><td class="n">${v}</td></tr>`;
   const exOk = cfg.pw===0.5 && cfg.w===0.25;   // приклад підібрано під ваги 0,5 і 0,25
-  const mg2 = S.mgReady;
+  const mg2 = mgShown();
   const secs=[];
   // 1. Формат
   secs.push(['format','📋 Формат',`<ul>
       <li>Турнір — <b>${total} турів</b>. Тур = один вікенд: рахуються лише матчі національних чемпіонатів, по одному матчу на клуб (без кубків і єврокубків).</li>
       <li>Склад — до 8 гравців: <b>основа 5 + лавка 3</b> (мінімум 5). Не більше 3 гравців з одного клубу й 1 воротаря на клуб. Якщо у складі 8 гравців — не менше 2 DEF/GK у складі й не менше 1 в основі.</li>
       <li>Перед дедлайном туру ти виставляєш склад: основу, порядок лавки, капітана, віце й буст. Підтвердження — кнопкою й остаточне. Склади й бусти всіх відкриваються, коли підтвердили всі учасники або минув дедлайн.</li>
-      <li><b>Загальний залік (General)</b> = очки матчів + 💎 Менеджер туру + 💼 Менеджер турніру${S.chReady?' + 🎯 Челенджі':''}${S.rvReady?' + ⚔️ Rivals':''}${S.lgReady?' + 🐐 Club Legend':''}.</li></ul>`]);
+      <li><b>Загальний залік (General)</b> = очки матчів${mg2?' + 💎 Менеджер туру + 💼 Менеджер турніру':''}${S.chReady?' + 🎯 Челенджі':''}${S.rvReady?' + ⚔️ Rivals':''}${S.lgReady?' + 🐐 Club Legend':''}.</li></ul>`]);
   // 2. Очки за матч
   secs.push(['points','⚽ Очки за матч',`<p>Очки гравцю дає його оцінка за матч (SofaScore):</p>
       <div class="rtbl"><table><tr><th>Оцінка</th><th class="n">Очки</th></tr>${band('9,5 – 10','4')}${band('8,0 – 9,4','3')}${band('7,0 – 7,9','2')}${band('6,5 – 6,9','1')}${band('нижче 6,5','0')}</table></div>
@@ -1495,7 +1502,7 @@ function renderRules(){
       <li>Гравець не грав — ціна <b>не змінюється</b>.</li>
       <li>Пороги ціни й пороги очок різні: ціна рахується за <b>середньою оцінкою гравця за тур</b> (від ${f1(pr.top)} — ${pcs(pr.topP)}), а очки — за оцінкою кожного матчу (4 очки лише від 9,5). Тож оцінка 9,0–9,49 дає ${pcs(pr.topP)} до ціни, але 3 очки.</li>
       <li>Ціна не падає нижче €1M (гравці, які стартували дешевше за €1M, — не нижче стартової ціни).</li>
-      <li>Нова ціна з’являється, щойно відомі оцінки; 💎 і 💼 рахуються, коли тур закрито.</li>
+      <li>Нова ціна з’являється, щойно відомі оцінки${mg2?'; 💎 і 💼 рахуються, коли тур закрито':''}.</li>
       <li>Вартість гравця — <b>ринкова</b>: її міняють лише оцінки за матчі. Ціна угод між учасниками (трансфер, аукціон, обмін) на неї не впливає.</li></ul>`]);
   // 4. 💎
   if(mg2){
@@ -1563,18 +1570,20 @@ function renderRules(){
       ${sub('Вибір і заміна')}<ul>
       <li>Вибір <b>обов’язковий</b> для підтвердження складу${lgFirst?` Туру ${lgFirst}`:''}. До підтвердження міняти можна скільки завгодно.</li>
       <li>Далі — <b>одна заміна одного вибору</b> за турнір: вона діє на матчі, що ще не почались; зароблене старим вибором лишається, серія нового клубу рахується з нуля.</li></ul>
-      ${sub('Підсумок')}<ul>
+      ${lgSum()?`${sub('Нарахування')}<ul>
+      <li>Очки Legend = сума очок твоїх ${lgN} виборів (кожен — до <b>${lgCap}</b>); вони додаються до General <b>одразу після матчу</b>, без шкали місць.</li>
+      <li>Місце в таблиці Legend — за сумою очок; однакова сума — однакове місце (на очки це не впливає).</li></ul>`:`${sub('Підсумок')}<ul>
       <li>Коли закрито всі тури, учасники ранжуються за очками Legend; <b>місце → очки в General</b>${lgFp.length?`: ${lgFp.map((v,i)=>`${i+1}-ше <b>${v}</b>`).join(' · ')} (шкала тестова)`:''}.</li>
-      <li>Рівні очки ділять місце, а очки за ці місця усереднюються — див. «Рівність очок».</li></ul>
+      <li>Рівні очки ділять місце, а очки за ці місця усереднюються — див. «Рівність очок».</li></ul>`}
       ${lgExamplesHtml()}`]);
   }
   // 9. 🤝 Рівність очок: 💎/💼 — повні очки місця кожному; Legend — середнє
-  if(mg2 || S.lgReady){
+  if(mg2 || (S.lgReady && !lgSum())){
     const avgP=(place,kk)=>{ let s=0; for(let g=place; g<place+kk; g++) s+=(lgFp[g-1]||0); return Math.floor(s/kk+0.5); };
     const parts=[];
     if(mg2) parts.push(`<li><b>💎 Менеджер туру і 💼 Менеджер турніру.</b> Однаковий результат — однакове місце, а наступне місце пропускається (1, 1, 3, 3, 5). Кожен, хто ділить місце, отримує <b>повні очки цього місця</b> — вони не діляться навпіл, тож сума очок у такому турі виходить більшою. Додаткового розрізнення нема (хто дорожчий чи хто вищий у General). Рахунок — дробове число, тому рівність трапляється рідко.<br>
       <span style="color:var(--muted)">Приклад на вигаданих числах: двоє поділили 1-ше місце в 💎 (${cfg.tour.map(v=>'+'+v).join('/')}) — обидва отримують <b>+${cfg.tour[0]||0}</b>, наступний учасник — 3-тє місце, <b>+${cfg.tour[2]||0}</b>. У 💼 (${fin5}): двоє на 1-му місці — по <b>${cfg.fin[0]||0}</b>, наступний — 3-тє, <b>${cfg.fin[2]||0}</b>.</span></li>`);
-    if(S.lgReady) parts.push(`<li><b>🐐 Club Legend.</b> Місця — за сумою очок трьох виборів; однакова сума — однакове місце. Очки за місця, які діляться, <b>усереднюються</b>: складаємо очки цих місць, ділимо на кількість учасників і округляємо до цілого (.5 — вгору). Місця за межами шкали дають 0.<br>
+    if(S.lgReady && !lgSum()) parts.push(`<li><b>🐐 Club Legend.</b> Місця — за сумою очок трьох виборів; однакова сума — однакове місце. Очки за місця, які діляться, <b>усереднюються</b>: складаємо очки цих місць, ділимо на кількість учасників і округляємо до цілого (.5 — вгору). Місця за межами шкали дають 0.<br>
       <span style="color:var(--muted)">Приклад на вигаданих числах і поточній тестовій шкалі (${lgFp.join('/')||'—'}): двоє на 1-му місці — по <b>${avgP(1,2)}</b>, наступний учасник — 3-тє місце, <b>${avgP(3,1)}</b>; троє на 1-му — по <b>${avgP(1,3)}</b>; двоє на 2-му місці — по <b>${avgP(2,2)}</b>.</span></li>`);
     secs.push(['ties','🤝 Рівність очок',`<ul>${parts.join('')}</ul>`]);
   }
@@ -1588,6 +1597,7 @@ function renderRules(){
 function renderMg(){
   const host=$('secMg'); if(!host) return;
   if(!S.mgReady){ host.innerHTML='<div class="hint" style="padding:16px 2px">Вкладка зʼявиться після оновлення бази (SQL 528).</div>'; return; }
+  if(!mgShown()){ host.innerHTML='<div class="hint" style="padding:16px 2px">Менеджмент 💎/💼 у цьому турнірі вимкнено — очки за нього не нараховуються.</div>'; return; }
   const cfg=S.mgCfg||{tour:[3,2,1],fin:[10,8,6,4,2],total:6,w:0.25,pw:0};
   const plus=a=>a.map(n=>'+'+n).join('/');
   const byName=(a,b)=>String(S.names[a.participant_id]||'').localeCompare(String(S.names[b.participant_id]||''),'uk');
@@ -1694,7 +1704,7 @@ async function loadDynamic(){
     S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
   // 🐐 Club Legend (586/587): очки Legend уже всередині total_points (General) — тут лише прапорець для підпису; нема таблиці/рядка налаштувань → підпис ховається
   S.lgReady=false; S.lgCfg=null; S.lgRoles=[];
-  try{ const lc=(await sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points`))[0]; S.lgCfg=lc||null; S.lgReady=!!(lc && lc.enabled!==false);
+  try{ const lc=(await sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode`).catch(()=>sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points`)))[0]; S.lgCfg=lc||null; S.lgReady=!!(lc && lc.enabled!==false);
     if(S.lgReady){ try{ S.lgRoles=await sbGet('market_legend_roles?select=code,icon,title,description,examples,sort_order&order=sort_order.asc'); }catch(e2){ S.lgRoles=[]; } } }catch(e){ S.lgReady=false; }
   S.lgPicks=[]; S.lgLog=[]; S.lgStand=[];   // вьюхи самі віддають порожньо до відкриття складів Туру first_round
   if(S.lgReady){ const T=S.tournament;
@@ -1776,7 +1786,7 @@ async function boot(){
       if(b1) b1.textContent='Rounds 1-'+l1; if(b2) b2.textContent='Rounds '+(l1+1)+'-'+mx;
       if(b2) b2.classList.toggle('hide', one);          // формат «1 етап»: 2-го етапу нема
       const nl=document.getElementById('navLbl'); if(nl) nl.textContent = one ? 'Турнір' : 'Етапи';
-      if(bm) bm.classList.toggle('hide', !S.mgReady);
+      if(bm) bm.classList.toggle('hide', !mgShown());
       { const bc=document.querySelector('.stg-ch'); if(bc) bc.classList.toggle('hide', !S.chReady); }
       { const bl=document.querySelector('.stg-lg'); if(bl) bl.classList.toggle('hide', !S.lgReady); } }
 
@@ -2087,7 +2097,7 @@ function renderStandings(){
   if(!S.lb.length){ t.innerHTML=''; document.getElementById('tblHint').textContent='Ще немає учасників.'; return; }
   // 31.10 (Богдан): у таблиці туру місць нема — це просто таблиця (місця й рух — на Leaderboard); рядки за імʼям, не за місцем
   const order=[...S.lb].sort((a,b)=>String(a.display_name).localeCompare(String(b.display_name),'uk'));
-  const rndT=S.rounds.find(r=>r.number===S.tour), mgRid=(rndT||{}).id, mgOn=S.mgReady, zr=mgOn? mgZ(mgRid) : {};
+  const rndT=S.rounds.find(r=>r.number===S.tour), mgRid=(rndT||{}).id, mgOn=mgShown(), zr=mgOn? mgZ(mgRid) : {};
   const body=order.map(p=>{
     const pid=p.participant_id, vd=squadValDelta(pid), sp=squadPriceAt(pid,rndT);
     // очки складу = очки гравців з бустами (market_round_scores.points — те саме «12» в кабінеті «Разом (за гравцями)»); до відкриття складів/без складу — «–»
@@ -2144,7 +2154,7 @@ function renderPts(){
   }).join('');
   host.innerHTML=`<div class="head2"><h2>📊 Points by round</h2><span class="sub">очки кожного учасника за кожен тур</span></div>
     <div class="board"><div class="f1-scroll"><table class="f1 grid nocl">${head}<tbody>${body}</tbody></table></div></div>
-    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${S.mgReady?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>
+    <div class="hint">Очки за тур — основа + заміни (лавка лише коли заміна визначена) · «·» — тур ще без результатів · значок біля очок — буст туру${mgShown()?' · 💎+N — бонус «Менеджер туру», додається до очок матчів · Разом = очки матчів + 💎 бонуси'+(hasFin?' + 💼 наскрізна':' (💼 наскрізна зʼявиться після закриття останнього туру)'):''} · рівні очки → ділять місце</div>
     <div class="head2" style="margin-top:26px"><h2>💶 Squad Price by round</h2><span class="sub">вартість складу кожного туру: на старті → після туру</span></div>
     <div class="board"><div class="f1-scroll"><table class="f1 grid nocl"><thead><tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}<th title="Поточна вартість нинішнього складу">Зараз</th></tr></thead><tbody>${spBody}</tbody></table></div></div>
     <div class="hint">Вартість складу туру — це 8 гравців його лайнапу: «на старті туру → після туру» (поки тур іде — друга цифра наживо) · під нею: «тур» — рух цін гравців цього туру, «склад» — зміна вартості через купівлі/продажі між турами (гроші переходять між Squad Price і бюджетом — це не збиток; усе разом дає Банк) · «—» — складу на тур не було або його ще приховано · «Зараз» — вартість нинішнього складу · суми округлено до 0,1M (різниця в арифметиці до 0,1M — округлення)</div>`;
@@ -2238,7 +2248,7 @@ function openSquad(pid){
           : `<div class="m" title="Складу цього туру нема або його ще приховано. Нижче — поточна вартість нинішнього складу"><span>Squad Price · зараз</span><b class="tnum">${eurM1(p.squad_price)}</b></div>`; })()}
       <div class="m" title="На скільки € змінилась вартість 8 гравців складу за цей тур"><span>Δ € тура</span><b class="tnum ${vd.dirE||'eq'}">${valEurTxt(vd)}</b></div>
       <div class="m" title="Сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)"><span>Σ % гравців</span><b class="tnum ${vd.dir||'eq'}">${valPctTxt(vd)}</b></div>
-      ${(S.mgReady && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m" title="${esc(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}"><span>💎 Рахунок</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
+      ${(mgShown() && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m" title="${esc(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}"><span>💎 Рахунок</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
       ${(()=>{ const x=S.rvReady && (S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid); return x? `<div class="m" title="Rivals · дуель туру: очки матчів проти обраного суперника. Виграв +2 · нічия +1 · програв 0"><span>⚔️ Rivals</span><b class="tnum">${x.is_nobody?'Нікого':esc(x.opponent_name||'—')}<small style="display:block;font-weight:500">${x.scored?(x.status==='nobody'?'0':(RV_LBL[x.status]||x.status)+' +'+x.points):'очікує'}</small></b></div>` : ''; })()}
       <div class="m" title="Матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 менеджмент '+roundPtsParts(pid).g:''}${roundPtsParts(pid).c?' + 🎯 '+roundPtsParts(pid).c:''}${roundPtsParts(pid).r?' + ⚔️ '+roundPtsParts(pid).r:''}"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
       ${(()=>{ const bo=boostOf(pid,rid); if(!bo) return '';
