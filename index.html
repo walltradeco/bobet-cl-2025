@@ -865,11 +865,20 @@
     font-size:44px; line-height:1;
     filter:drop-shadow(0 3px 5px rgba(232,178,60,0.35));
   }
+  /* Нагорода MVP: замість емодзі — сам золотий напис без рамки (як іконка),
+     та сама висота 44px, щоб підписи під медалями не стрибали. */
+  .hn-m .ic.ic-txt{
+    display:flex; align-items:center; box-sizing:border-box; height:44px; padding:0 12px;
+    font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:24px; letter-spacing:1px;
+    color:var(--gold);
+  }
   .hn-m .cap{
     font-family:'IBM Plex Mono',monospace; font-size:13px; line-height:1.5;
     color:var(--text); word-break:break-word;
   }
   .hn-m .cap .lb{ color:var(--text-dim); opacity:0.65; }
+  /* Підпис нагороди («найбільше перемог» = 17 знаків) має влізти в один рядок і у вузьку картку 132px. */
+  .hn-m .cap .note{ font-size:12.5px; white-space:nowrap; }
   .hn-empty{
     padding:16px; text-align:center; color:var(--text-dim);
     font-family:'IBM Plex Mono',monospace; font-size:14px;
@@ -4983,6 +4992,17 @@ function honorsCase(d){
            <span class="lb">Турнір</span> ${escapeHtml(x.tournament)}<br>
            <span class="lb">Етап</span> ${escapeHtml(x.phase)}
          </div></div>`).join('');
+    // Нагороди сезону (Rivals, MVP) — на тій самій полиці після медалей, підпис
+    // у тому ж дворядковому форматі. Без цифр; другий рядок — що саме означає нагорода
+    // (тексти Богдана 02.11.2026).
+    // Обидва підписи — рівно два рядки (як у MVP), щоб картки на полиці були однакової висоти.
+    const AWARD_NOTE = { mvp: 'MVP —<br>найбільше нагород', rivals: 'Rivals —<br>найбільше перемог' };
+    const prizes = (d.awards || []).filter(a => a.person === m.person).map(a =>
+      `<div class="hn-m">${a.kind === 'mvp' ? '<div class="ic ic-txt">MVP</div>' : '<div class="ic">⚔️</div>'}
+         <div class="cap">
+           <span class="lb">Турнір</span> ${escapeHtml(a.tournament)}<br>
+           <span class="note">${AWARD_NOTE[a.kind] || escapeHtml(a.award)}</span>
+         </div></div>`).join('');
     const tally = [['🥇', m.gold], ['🥈', m.silver], ['🥉', m.bronze]]
       .filter(([, n]) => n > 0)
       .map(([ic, n]) => `<i>${ic} ${n}</i>`).join('');
@@ -4996,19 +5016,23 @@ function honorsCase(d){
               · ${m.tournaments_played} ${plural(m.tournaments_played, 'турнір', 'турніри', 'турнірів')}</span>
             <div class="hn-tally">${tally}</div>
           </div>
-          <div class="hn-shelf">${shelf}</div>
+          <div class="hn-shelf">${shelf}${prizes}</div>
         </div>
       </div>`;
   }).join('');
 
-  // Полиця сезону, що триває: місце під медалі вже стоїть порожнє
+  // Полиця ЄвроСезону: поки сезон іде — порожнє місце під медалі; після
+  // останнього матчу (EUROSEASON_LIVE === false) — підсумок із даних;
+  // коли ЄвроСезон уже в вітрині (архів Honors, SQL 590) — заглушки нема.
   const lead = (d.season || [])[0];
-  const euro = `
+  const euroInShelf = (d.facts || []).some(f => /^EuroSeason/i.test(f.tournament || ''));
+  const euroDone = EUROSEASON_LIVE === false;
+  const euro = euroInShelf ? '' : `
     <div class="hn-case dim">
       <div class="hn-lamp"></div>
       <div class="hn-empty">
-        <b>ЄвроСезон 2026</b> · сезон триває, полиця чекає
-        ${lead ? `<br>зараз попереду ${escapeHtml(lead.display_name)} — ${lead.total_points}` : ''}
+        <b>ЄвроСезон 2026</b> · ${euroDone ? 'сезон завершено, медалі на підході' : 'сезон триває, полиця чекає'}
+        ${lead ? `<br>${euroDone ? 'переміг' : 'зараз попереду'} ${escapeHtml(lead.display_name)} — ${lead.total_points}` : ''}
       </div>
     </div>`;
 
@@ -5599,7 +5623,7 @@ async function loadActiveTab(){
       if(!HONORS_CACHE){
         const [medals, detail, hof, facts, season,
                dnaProfile, dnaArch, dnaScore, dnaTeam, dnaRhythm, dnaBonus, dnaPair, dnaLeague,
-               dnaBelief, dnaShape, dnaVsLeague, dnaScoreKind]
+               dnaBelief, dnaShape, dnaVsLeague, dnaScoreKind, awards]
           = await Promise.all([
           sbGet('honors_medals?select=*&order=gold.desc,medals_total.desc,person.asc'),
           sbGet('honors_detail?select=*&order=tournament_order.asc,place.asc'),
@@ -5632,8 +5656,11 @@ async function loadActiveTab(){
           sbGet('dna_shape?select=*'),
           sbGet('dna_vs_league?select=*&order=person.asc,tournament_order.asc'),
           sbGet('dna_score_kind?select=*&order=person.asc,kind.asc,rn.asc'),
+          // Нагороди Rivals/MVP (590): вьюхи може ще не бути (фронт залили раніше
+          // за SQL) — тоді просто без значків, а не «Не вдалося завантажити HONORS».
+          sbGet('honors_awards?select=*&order=tournament_order.asc,kind.asc').catch(() => []),
         ]);
-        HONORS_CACHE = { medals, detail, hof, facts, season,
+        HONORS_CACHE = { medals, detail, hof, facts, season, awards,
                          dnaProfile, dnaArch, dnaScore, dnaTeam,
                          dnaRhythm, dnaBonus, dnaPair,
                          dnaBelief, dnaShape, dnaVsLeague, dnaScoreKind,
@@ -5967,10 +5994,11 @@ document.getElementById('comm-btn').addEventListener('click',
 /* ===== Вікно «Показати кубок» ===== */
 /* (на борді мапа не потрібна — кнопка одна, на галерею) */
 const TROPHY_WIN={ 'Євро 2024':{k:'euro2024',winner:'Антон'}, 'ЛЧ 2025':{k:'ucl2025',winner:'Денис'},
-  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'} };
+  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'},
+  'EuroSeason 2026':{k:'euroseason2026',winner:'Бо'} };
 const TROPHY_PLATE={ euro2024:['Євро 2024','Євро 2024','Антон'], ucl2025:['ЛЧ 2025','ЛЧ 2025','Денис'],
   cwc2025:['Клубний ЧС 2025','Клубний ЧС 2025','Антон'], wc2026:['ЧС 2026','ЧС 2026','Саня'],
-  euroseason2026:['сезон 2026 триває','2026','ЄвроСезон'] };
+  euroseason2026:['ЄвроСезон 2026','ЄвроСезон 2026','Бо'] };
 const TROPHY_GAL=['euro2024','ucl2025','cwc2025','wc2026','euroseason2026'];
 const TROPHY_GAL_X=[[11.4,20.9],[27.9,37.3],[44.9,54.4],[61.3,70.5],[77.3,87.8]];   // положення табличок на gallery.webp, % ширини
 function openTrophy(key,name){
@@ -5995,7 +6023,7 @@ function openTrophy(key,name){
   const plate=(k,x0,w,y0,h)=>{ const p=TROPHY_PLATE[k]; if(!p) return;
     const d=document.createElement('div'); d.className='tl-plate';
     d.style.cssText=`left:${x0}%;width:${w}%;top:${y0}%;height:${h}%`;
-    const who=(k==='euroseason2026'||!name)?p[2]:name;                 // у профілі — актуальне ім'я власника (не міняється з rename)
+    const who=!name?p[2]:name;                                         // у профілі — актуальне ім'я власника (не міняється з rename)
     d.innerHTML='<b></b><i></i>'; d.firstChild.textContent=who; d.lastChild.textContent=gal?p[1]:p[0];
     if(gal&&p[1].length>12) d.style.setProperty('--k1','.0064');
     fr.appendChild(d); };

@@ -770,10 +770,11 @@ function cupCardHTML(t){                                   // кубок = 🏆 
 }
 /* ===== Вікно «Показати кубок» ===== */
 const TROPHY_WIN={ 'Євро 2024':{k:'euro2024',winner:'Антон'}, 'ЛЧ 2025':{k:'ucl2025',winner:'Денис'},
-  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'} };
+  'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'},
+  'EuroSeason 2026':{k:'euroseason2026',winner:'Бо'} };
 const TROPHY_PLATE={ euro2024:['Євро 2024','Євро 2024','Антон'], ucl2025:['ЛЧ 2025','ЛЧ 2025','Денис'],
   cwc2025:['Клубний ЧС 2025','Клубний ЧС 2025','Антон'], wc2026:['ЧС 2026','ЧС 2026','Саня'],
-  euroseason2026:['сезон 2026 триває','2026','ЄвроСезон'] };
+  euroseason2026:['ЄвроСезон 2026','ЄвроСезон 2026','Бо'] };
 const TROPHY_GAL=['euro2024','ucl2025','cwc2025','wc2026','euroseason2026'];
 const TROPHY_GAL_X=[[11.4,20.9],[27.9,37.3],[44.9,54.4],[61.3,70.5],[77.3,87.8]];   // положення табличок на gallery.webp, % ширини
 function openTrophy(key,name){
@@ -798,7 +799,7 @@ function openTrophy(key,name){
   const plate=(k,x0,w,y0,h)=>{ const p=TROPHY_PLATE[k]; if(!p) return;
     const d=document.createElement('div'); d.className='tl-plate';
     d.style.cssText=`left:${x0}%;width:${w}%;top:${y0}%;height:${h}%`;
-    const who=(k==='euroseason2026'||!name)?p[2]:name;                 // у профілі — актуальне ім'я власника (не міняється з rename)
+    const who=!name?p[2]:name;                                         // у профілі — актуальне ім'я власника (не міняється з rename)
     d.innerHTML='<b></b><i></i>'; d.firstChild.textContent=who; d.lastChild.textContent=gal?p[1]:p[0];
     if(gal&&p[1].length>12) d.style.setProperty('--k1','.0064');
     fr.appendChild(d); };
