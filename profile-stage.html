@@ -261,6 +261,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .lg-h span{font-size:18px;font-weight:700;letter-spacing:.04em}
 .lg-h em{font-style:normal;color:var(--text-dim);font-size:11px;font-family:var(--mono)}
 .award .aw-ic{font-size:22px}
+.award .aw-ic.aw-txt{font-size:15px;font-weight:800;letter-spacing:.1em;color:var(--gold)}
 .award h4{margin:14px 0 6px;font-size:15px}
 .award p{margin:0;color:var(--text-dim);font-size:10px;line-height:1.5}
 .nom-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:16px}
@@ -575,12 +576,15 @@ function fetchProfileData(id){
     R('profile_nominations',{ p_profile:id }),
     layP,
     R('profile_history',{ p_profile:id }),    // 489: «Де грав» (відсутня функція → [] → лише «Зараз грає»)
-    BC?BC.load(sb,'profile',id):Promise.resolve(null)   // 492: рамка/ефект/скін/тема (немає таблиці → дефолт)
+    BC?BC.load(sb,'profile',id):Promise.resolve(null),   // 492: рамка/ефект/скін/тема (немає таблиці → дефолт)
+    // 590: нагороди Rivals/MVP (вьюху ще може не бути → [] без помилки); НЕ медалі, у medals_count не входять
+    sb.from('honors_awards').select('tournament,tournament_order,kind,award,person').order('tournament_order',{ascending:true}).order('kind',{ascending:true})
+      .then(r=>r.error?[]:(r.data||[])).catch(()=>[])
   ]);
 }
 
 async function loadProfile(pre){
-  const [ov,t,c,m,tr,rec,por,nm,lay,hist,cos]=await pre;
+  const [ov,t,c,m,tr,rec,por,nm,lay,hist,cos,aw]=await pre;
   S.ov=ov; S.cos=cos||null;
   if(!ov){
     $('phead').innerHTML=`<section class="hero"><div class="frame plain"><span class="av">👤</span></div>
@@ -591,6 +595,7 @@ async function loadProfile(pre){
   // 487: PSL-архів у трофеях. «Ціль» (phase_kind=psl_goal) — НЕ медаль: окремий список, у медалі/кубки не потрапляє
   S.trophies=(tr||[]).filter(x=>x.phase_kind!=='psl_goal'); S.goals=(tr||[]).filter(x=>x.phase_kind==='psl_goal');
   S.hist=hist||[];
+  S.awards=(ov.honor_name?(aw||[]).filter(a=>a.person===ov.honor_name):[]);   // Rivals/MVP саме цієї людини
   S.records=rec[0]||null; S.portrait=por[0]||null;
   // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
   S.pending = S.isOwn ? await sb.rpc('my_community_pending',{}).then(r=>r.error?[]:(r.data||[])).catch(()=>[]) : [];
@@ -604,17 +609,19 @@ async function loadProfile(pre){
 // повний DNA-портрет (ті самі вьюхи, що на борді у «Портретах гравців»), по одній людині
 async function loadDna(P){
   const g=(tbl,q)=>{ let r=sb.from(tbl).select('*').eq('person',P); if(q) r=q(r); return r.then(x=>x.error?[]:(x.data||[])).catch(()=>[]); };
-  const [prof,arch,score,team,rhythm,bonus,pair,belief,shape,vs,skind]=await Promise.all([
+  const [prof,arch,score,team,rhythm,bonus,pair,belief,shape,vs,skind,boostAll]=await Promise.all([
     g('dna_profile'), g('dna_archetype'), g('dna_score',r=>r.order('rn')),
     g('dna_team',r=>r.gte('backed',4).order('weighted_pct',{ascending:false}).order('backed',{ascending:false})),
     g('dna_rhythm'), g('dna_bonus'),
     g('dna_pair',r=>r.order('same_pct',{ascending:false})),
     g('dna_belief',r=>r.gte('played',4).order('belief_diff',{ascending:false}).order('played',{ascending:false})),
     g('dna_shape'), g('dna_vs_league',r=>r.order('tournament_order')),
-    g('dna_score_kind',r=>r.order('kind').order('rn'))
+    g('dna_score_kind',r=>r.order('kind').order('rn')),
+    // 601: «⚡ Бусти» — усі рядки (≈12), бо порівнюємо з лігою; вьюхи може ще не бути → []
+    sb.from('dna_boost').select('*').order('tournament_order').then(x=>x.error?[]:(x.data||[])).catch(()=>[])
   ]);
   S.dna={ profile:prof[0]||null, arch:arch[0]||null, score, team, rhythm:rhythm[0]||null,
-    bonus, pair, belief, shape:shape[0]||null, vs, scoreKind:skind };
+    bonus, pair, belief, shape:shape[0]||null, vs, scoreKind:skind, boostAll };
 }
 
 // ── шапка ──
@@ -770,6 +777,11 @@ function ovChipLabel(k,it){
   if(k==='collection') return esc((RAR[it.tier]||it.tier)+' '+it.card_key.replace(/_/g,' '));
   return '';
 }
+const AWARD_NOTE={ mvp:'MVP — найбільше нагород за турнір', rivals:'Rivals — найбільше перемог за турнір' };
+function seasonAwardCardHTML(a){                           // нагорода сезону (Rivals/MVP): не медаль, у medals_count не рахується
+  const ic=a.kind==='mvp'?'<span class="aw-ic aw-txt">MVP</span>':'<span class="aw-ic">⚔️</span>';
+  return `<article class="award">${ic}<h4>${esc(a.tournament)}</h4><p>${esc(AWARD_NOTE[a.kind]||a.award)}</p></article>`;
+}
 function cupCardHTML(t){                                   // кубок = 🏆 + назва турніру (без «Чемпіон BOBET»)
   const tr=TROPHY_WIN[t.tournament];                       // кубок є в картці лише в чемпіона → ім'я не звіряємо (воно міняється при rename)
   const can=!!tr;
@@ -779,7 +791,7 @@ function cupCardHTML(t){                                   // кубок = 🏆 
 /* ===== Вікно «Показати кубок» ===== */
 const TROPHY_WIN={ 'Євро 2024':{k:'euro2024',winner:'Антон'}, 'ЛЧ 2025':{k:'ucl2025',winner:'Денис'},
   'Клубний ЧС 2025':{k:'cwc2025',winner:'Антон'}, 'ЧС 2026':{k:'wc2026',winner:'Саня'},
-  'EuroSeason 2026':{k:'euroseason2026',winner:'Бо'} };
+  'EuroSeason 2026':{k:'euroseason2026',winner:'Бо'}, 'ЄвроСезон 2026':{k:'euroseason2026',winner:'Бо'} };
 const TROPHY_PLATE={ euro2024:['Євро 2024','Євро 2024','Антон'], ucl2025:['ЛЧ 2025','ЛЧ 2025','Денис'],
   cwc2025:['Клубний ЧС 2025','Клубний ЧС 2025','Антон'], wc2026:['ЧС 2026','ЧС 2026','Саня'],
   euroseason2026:['ЄвроСезон 2026','ЄвроСезон 2026','Бо'] };
@@ -822,10 +834,10 @@ document.addEventListener('click',e=>{ const b=e.target.closest('[data-trophy]')
 function ovModContent(k){                                  // ГОЛОВНА колонка (повні рендери); '' → сховати
   if(k==='cups'){ const it=ovPick('cups'); if(!it.length) return '';
     return `<div class="title-strip">${it.map(cupCardHTML).join('')}</div>`; }
-  if(k==='medals'){ const it=ovPick('medals'); if(!it.length) return '';
+  if(k==='medals'){ const it=ovPick('medals'); const aw=S.awards||[]; if(!it.length && !aw.length) return '';
     const cls=t=>t.place===1?'':t.place===2?'silver':'bronze';
     return `<div class="tr-grid">${it.map(t=>`<article class="award ${cls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
-      <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}</div>`; }
+      <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`).join('')}${aw.map(seasonAwardCardHTML).join('')}</div>`; }
   if(k==='collection'){ const it=ovPick('collection'); if(!it.length) return '';
     return `<div class="card-row">${it.map(cardCell).join('')}</div>`; }
   if(k==='playing') return historyBlock();
@@ -969,7 +981,7 @@ function commRail(){
 // ── ТРОФЕЇ ──
 function renderTrophies(box){
   const goals=(S.goals||[]).slice().sort((a,b)=>a.tournament_order-b.tournament_order);
-  if(!S.trophies.length && !goals.length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
+  if(!S.trophies.length && !goals.length && !(S.awards||[]).length){ box.innerHTML=`<section class="panel"><div class="empty">Нагороди зʼявляться після завершення турнірів. Медалі й рекорди підтягнуться автоматично.</div></section>`; return; }
   const medalCls=t=>t.place===1?'':t.place===2?'silver':'bronze';
   const awardCard=t=>`<article class="award ${medalCls(t)}"><span class="aw-ic">${esc(t.medal)}</span>
     <h4>${esc(t.tournament)} · ${esc(t.phase)}</h4><p>${esc(trophyLeagueLabel(t))} · ${esc(trophyPlaceLabel(t))}</p></article>`;
@@ -980,6 +992,7 @@ function renderTrophies(box){
   const cupSec = titles.length ? `<h4 class="cup-h">🏆 Кубки</h4><div class="title-strip">${titles.map(cupCardHTML).join('')}</div>` : '';
   const boMedals=bo.slice().sort(byPlace);
   const boSec = boMedals.length ? `${titles.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${boMedals.map(awardCard).join('')}</div>` : '';
+  const awSec = (S.awards||[]).length ? `<h4 class="cup-h"${(titles.length||boMedals.length)?' style="margin-top:22px"':''}>Нагороди сезону</h4><div class="tr-grid">${S.awards.map(seasonAwardCardHTML).join('')}</div>` : '';
   // PSuper League (487): МЕДАЛІ + «Ціль» окремою позначкою (це не медаль, у лічильник медалей не входить)
   const psMedals=ps.slice().sort(byPlace);
   const psSec = psMedals.length ? `${goals.length?'<h4 class="cup-h">Медалі</h4>':''}<div class="tr-grid">${psMedals.map(awardCard).join('')}</div>` : '';
@@ -990,8 +1003,8 @@ function renderTrophies(box){
   const boSub = `${bo.length} ${plural(bo.length,'медаль','медалі','медалей')}`;
   const psSub = [ps.length?`${ps.length} ${plural(ps.length,'медаль','медалі','медалей')}`:'', goals.length?`${goals.length} ${plural(goals.length,'ціль','цілі','цілей')}`:''].filter(Boolean).join(' · ');
   const body = (ps.length||goals.length)
-    ? lgBlock('bobet','BOBET',boSub,cupSec+boSec) + lgBlock('psl','PSuper League',psSub,psSec+goalSec)
-    : cupSec+boSec;
+    ? lgBlock('bobet','BOBET',boSub,cupSec+boSec+awSec) + lgBlock('psl','PSuper League',psSub,psSec+goalSec)
+    : cupSec+boSec+awSec;
   box.innerHTML=`<section class="panel"><div class="panel-title"><div><h3>Трофейна вітрина</h3><p>Усі офіційні нагороди за історію BoOrbit (архів завершених турнірів BoBet і PSL).</p></div></div>
     ${body}</section>`;
 }
@@ -1046,6 +1059,12 @@ function renderPortrait(box){
   const a=D.arch||{}, r=D.rhythm||{}, sh=D.shape||{};
   const scores=D.score||[], teams=D.team||[], bonus=D.bonus||[], pairs=D.pair||[], belief=D.belief||[], vsLg=D.vs||[], scoreKind=D.scoreKind||[];
   const twin=pairs[0], anti=pairs[pairs.length-1];
+  // 601: «⚡ Бусти» — ставки під бустом, точні серед них, очки від бусту; порівняння з усією лігою
+  const bAll=D.boostAll||[], bMine=bAll.filter(x=>x.person===p.person);
+  const bsum=(arr,k)=>arr.reduce((acc,x)=>acc+(x[k]||0),0);
+  const bPicks=bsum(bMine,'boosted_picks'), bEx=bsum(bMine,'exact_hits'), bPts=bsum(bMine,'points');
+  const lPicks=bsum(bAll,'boosted_picks'), lEx=bsum(bAll,'exact_hits'), lPts=bsum(bAll,'points');
+  const r1=(a,b)=>b?Math.round(a/b*1000)/10:0, r2=(a,b)=>b?Math.round(a/b*100)/100:0;
   const row=(l,v,n)=>`<div class="dna-row"><span class="l">${l}</span><span class="v">${v}</span>${n?`<span class="n">${n}</span>`:''}</div>`;
   const block=(t,inner,sub)=>`<div class="dna-block"><h4>${t}${sub?`<span class="sub">${sub}</span>`:''}</h4>${inner}</div>`;
   const teamsFor=(kind,kindTitle,tournaments,played)=>{
@@ -1079,13 +1098,18 @@ function renderPortrait(box){
       row('Проти більшості', `${p.against_crowd_pct}%`, `${p.against_crowd} прогнозів розійшлися з тим, що поставила більшість тих, хто грав той самий матч`),
       sh.miss_goals!=null?row('Промах у голах', sh.miss_goals, 'у середньому стільки голів різниці з реальним рахунком (по обох командах разом)'):'',
     ].join(''), 'скільки вгадано і скільки це очок'),
-    teamsFor('clubs','Клуби','ЛЧ 2025 + Клубний ЧС 2025 + EuroSeason 2026', r.clubs_matches),
+    bAll.length?block('⚡ Бусти', bPicks?[
+      row('Ставок під бустом', bPicks, bMine.map(x=>`${esc(x.tournament)}: ${x.boosted_picks}`).join(' · ')),
+      row('Точний рахунок під бустом', `${r1(bEx,bPicks)}%`, `${bEx} з ${bPicks} · по лізі ${r1(lEx,lPicks)}%`),
+      row('Очок додали бусти', `+${bPts}`, `у середньому ${r2(bPts,bPicks)} на ставку · по лізі ${r2(lPts,lPicks)}`),
+    ].join(''):'<div class="dna-row"><span class="n">Бустів у його турнірах не було</span></div>', 'ЧС 2026 + ЄвроСезон 2026 · автопілот ЄвроСезону теж буст'):'',
+    teamsFor('clubs','Клуби','ЛЧ 2025 + Клубний ЧС 2025 + ЄвроСезон 2026', r.clubs_matches),
     teamsFor('nations','Збірні','Євро 2024 + ЧС 2026', r.nations_matches),
     block('Сильні й слабкі типи матчів',[
       sh.rout_hit_pct!=null&&sh.calm_hit_pct!=null?row('Розгроми / в\'язкі матчі',`${sh.rout_hit_pct}% / ${sh.calm_hit_pct}%`,`вгадано в матчах із різницею 3+ голи (${sh.rout_matches} шт.) і в матчах, де на двох забили 0-1 (${sh.calm_matches} шт.)`):'',
       sh.blind_gap!=null?row('Наскільки різниця велика',`${sh.blind_gap} пункти`,(sh.rout_matches<8||sh.calm_matches<8)?'замало таких матчів, щоб робити висновок':sh.blind_gap>=50?'сліпа зона — в\'язкі матчі майже не читає':sh.blind_gap>=30?'як у більшості: розгроми даються легше всім':'рідкість — читає обидва типи майже однаково'):'',
-      r.group_pct!=null&&r.playoff_pct!=null?row('Груповий етап → плей-оф',`${r.group_pct}% → ${r.playoff_pct}%`,(r.playoff_pct>r.group_pct?'оживає на вильоті. ':'на вильоті грає гірше. ')+'Плей-оф — це Knockout і Play-off; усе інше (групи й етапи EuroSeason) — «груповий етап»'):'',
-      r.nations_pct!=null&&r.clubs_pct!=null?row('Збірні / клуби',`${r.nations_pct}% / ${r.clubs_pct}%`,'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025 + EuroSeason 2026'):'',
+      r.group_pct!=null&&r.playoff_pct!=null?row('Груповий етап → плей-оф',`${r.group_pct}% → ${r.playoff_pct}%`,(r.playoff_pct>r.group_pct?'оживає на вильоті. ':'на вильоті грає гірше. ')+'Плей-оф — це Knockout і Play-off; усе інше (групи й етапи ЄвроСезону) — «груповий етап»'):'',
+      r.nations_pct!=null&&r.clubs_pct!=null?row('Збірні / клуби',`${r.nations_pct}% / ${r.clubs_pct}%`,'Євро 2024 + ЧС 2026 проти ЛЧ 2025 + Клубного ЧС 2025 + ЄвроСезон 2026'):'',
       r.group_goals!=null&&r.playoff_goals!=null?row('Голів у прогнозі на вильоті',`${r.group_goals} → ${r.playoff_goals}`,r.playoff_goals<r.group_goals?'стає обережнішим':'не стримується'):'',
     ].join('')||'<div class="dna-row"><span class="n">Грав лише в одному типі турнірів</span></div>'),
     block('Відносно решти ліги', vsLg.length?vsLg.map(t=>row(esc(t.tournament),`${t.diff>0?'+':''}${t.diff} пункти`,`${t.my_pct}% проти ${t.league_pct}% у середньому по лізі`)).join('')+`<div class="dna-row"><span class="n">Голий відсоток порівнювати між турнірами не можна: у Клубному ЧС і ЧС було більше нерівних пар, і вгадувати стало легше всім (46% → 60%). Тут це вже враховано</span></div>`:'<div class="dna-row"><span class="n">Немає даних</span></div>'),
