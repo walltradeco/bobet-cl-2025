@@ -2292,7 +2292,34 @@ function registerPlayers(names){
   });
 }
 
+/* ======== ЗНІМОК ЄвроСезону (05.11.2026, рішення Богдана) ========
+   ЄвроСезон завершено 02.11, дані не змінюються. Раніше вкладка (вона відкрита за
+   замовчуванням) робила 65 запитів / ≈345 КБ у базу при кожному заході й раз на 5 хв.
+   Тепер відповіді беруться з assets/euroseason2026-snapshot.json (≈25 КБ gzip, вантажиться
+   ОДИН раз і лише для вкладок ЄвроСезону). Ключ знімка — рівно рядок запиту sbGet, тож підміна
+   точна. Запасний шлях: знімка нема / шляху в ньому нема → живий запит, як і раніше.
+   `?live=1` вимикає знімок (звірка «знімок = база»). Генерує tools/make_euroseason_snapshot.py. */
+const EURO_SNAP_OFF = new URLSearchParams(location.search).has('live');
+let EURO_SNAP = null;
+let EURO_SNAP_PROMISE = null;
+function loadEuroSnapshot(){
+  if(EURO_SNAP_OFF) return Promise.resolve();
+  if(!EURO_SNAP_PROMISE){
+    EURO_SNAP_PROMISE = fetch('assets/euroseason2026-snapshot.json')
+      .then(r => { if(!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(j => { EURO_SNAP = (j && j.data) || null; })
+      .catch(() => { EURO_SNAP = null; });      // нема знімка — працюємо з бази
+  }
+  return EURO_SNAP_PROMISE;
+}
+
 async function sbGet(path){
+  // знімок діє лише поки відкрито ЄвроСезон — Нагороди та інші розділи читають базу наживо
+  if(EURO_SNAP && typeof activeTournament !== 'undefined' && activeTournament
+     && activeTournament.key === 'euroseason2026'
+     && Object.prototype.hasOwnProperty.call(EURO_SNAP, path)){
+    return JSON.parse(JSON.stringify(EURO_SNAP[path]));   // копія: рендер може сортувати/міняти масиви
+  }
   const res = await fetch(SB_URL + '/rest/v1/' + path, {
     headers:{ apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
   });
@@ -2729,6 +2756,7 @@ async function fetchSupabaseTab(tab){
   LIVE_STYLES = null;             // бейдж стилю лише в місячній таблиці
   LIVE_STYLE_CAP = null;
   LIVE_LEGEND = null;             // бейдж 🐐 лише в місячній таблиці
+  await loadEuroSnapshot();       // знімок ЄвроСезону (див. sbGet); нема файла → далі з бази
   if(tab.source === 'leaderboard'){
     const prizeBoard = await sbGet('season_prize_board?select=person_key,display_name,mvp_count,rival_wins');
     // Зміна рангу для MVP/Rivals season-бордів (файл 184) — той самий
@@ -5863,6 +5891,10 @@ function renderTabs(){
 let EUROSEASON_LIVE = null;
 
 async function checkEuroseasonLive(){
+  // Знімок існує лише для ЗАВЕРШЕНОГО турніру (tools/make_euroseason_snapshot.py відмовляє інакше),
+  // тож бейджа LIVE нема — два запити в базу заради цього не робимо.
+  await loadEuroSnapshot();
+  if(EURO_SNAP) return false;
   try{
     const tours = await sbGet('tournaments?select=id&key=in.(aug2026,sep2026,oct2026)');
     const ids = tours.map(t => t.id).join(',');
