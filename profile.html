@@ -1091,7 +1091,7 @@ function renderPortrait(box){
       row('Ставок під бустом', bPicks, bMine.map(x=>`${esc(x.tournament)}: ${x.boosted_picks}`).join(' · ')),
       row('Точний рахунок під бустом', `${r1(bEx,bPicks)}%`, `${bEx} з ${bPicks} · по лізі ${r1(lEx,lPicks)}%`),
       row('Очок додали бусти', `+${bPts}`, `у середньому ${r2(bPts,bPicks)} на ставку · по лізі ${r2(lPts,lPicks)}`),
-    ].join(''):'<div class="dna-row"><span class="n">Бустів у його турнірах не було</span></div>', 'ЧС 2026 + ЄвроСезон 2026 · автопілот ЄвроСезону теж буст'):'',
+    ].join(''):'<div class="dna-row"><span class="n">Бустів у його турнірах не було</span></div>', 'ЧС 2026 + ЄвроСезон 2026'):'',
     teamsFor('clubs','Клуби','ЛЧ 2025 + Клубний ЧС 2025 + ЄвроСезон 2026', r.clubs_matches),
     teamsFor('nations','Збірні','Євро 2024 + ЧС 2026', r.nations_matches),
     block('Сильні й слабкі типи матчів',[
