@@ -41,6 +41,13 @@ h1,h2,h3{font-family:var(--mono);margin:0;text-wrap:balance;letter-spacing:.01em
 .mgb-tip{display:none;position:absolute;top:24px;right:-6px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;padding:8px 10px;min-width:230px;
   font-family:var(--mono);font-size:11px;font-weight:400;color:var(--text);z-index:40;text-align:left;white-space:nowrap;box-shadow:0 6px 18px rgba(0,0,0,.5)}
 .mgb:hover .mgb-tip,.mgb:focus .mgb-tip{display:block}
+/* 06.11 (Богдан): ⓘ-підказки й миттєвий поповер — як у шапці кабінету (title з'являється із затримкою й не працює на телефоні); MVP 💎 / Rivals ⚔️ / 🎯 на Leaderboard — той самий механізм */
+.tipi{position:relative;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;min-width:13px;margin:0 0 0 5px;padding:0;border:1px solid var(--dim);border-radius:50%;background:none;color:var(--text-dim);font-family:var(--body);font-size:9px;font-weight:700;font-style:italic;line-height:1;letter-spacing:0;text-transform:none;vertical-align:1px;cursor:pointer}
+.tipi::after{content:'';position:absolute;inset:-9px}
+.tipi:hover,.tipi:focus-visible,.tipi.on{color:var(--gold);border-color:var(--gold);background:rgba(244,196,48,.1);outline:0}
+[data-tip]:not(.tipi){cursor:help}
+td[data-tip]{text-decoration:underline dotted var(--dim);text-underline-offset:4px}
+#tipPop{position:fixed;left:0;top:0;z-index:10000;display:none;max-width:min(360px,calc(100vw - 16px));padding:9px 12px;background:var(--panel2);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.55);color:var(--text);font-family:var(--body);font-size:12.5px;font-weight:400;line-height:1.45;letter-spacing:0;text-transform:none;white-space:pre-line;pointer-events:none}
 .mgb-tip .r+.r{margin-top:5px;padding-top:5px;border-top:1px solid var(--line)}
 .mgb-tip .r.me{color:var(--gold)}
 .mgb-tip .mgsc{color:var(--dim)} .mgb-tip .r.me .mgsc{color:inherit;opacity:.8}
@@ -723,7 +730,7 @@ function mgScoreCell(pid,rid,zr){
   const m=mgRow(pid,rid);
   if(!m || m.score==null) return '<td class="tnum eq" style="white-space:nowrap" title="Рахунок зʼявиться, коли тур закрито">–</td>';
   const sc=+m.score, cl=sc>0.004?'up':sc<-0.004?'down':'eq';
-  return `<td class="tnum ${cl}" style="white-space:nowrap" title="${esc(mgScoreTxt(m,zr)+' · місце '+m.place+(m.points>0?' · 💎 +'+m.points:''))}">${zS(sc)}${m.points>0?` <small style="color:var(--rose);font-size:11px">💎+${m.points}</small>`:''}</td>`;
+  return `<td class="tnum ${cl}" style="white-space:nowrap" data-tip="${esc(mgScoreTxt(m,zr)+' · місце '+m.place+(m.points>0?' · 💎 +'+m.points:''))}">${zS(sc)}${m.points>0?` <small style="color:var(--rose);font-size:11px">💎+${m.points}</small>`:''}</td>`;
 }
 function mgPodium(rid){ return S.mg.filter(m=>m.round_id===rid && m.points>0).sort((a,b)=>(a.place-b.place)||(b.points-a.points)); }
 // 22.10 (відгук Богдана: «розрахунки треба показувати нормально, як приклади в Rules»): РЕАЛЬНІ розрахунки менеджменту на вкладці Management.
@@ -828,7 +835,7 @@ function chBadge(pid,rid){   // 🎯 без рамки; лише коли в ц�
 }
 function chChip(pid,rid){    // матриця «Points by round»: 🎯+N без рамки, деталі в title
   const a=chAwardsOf(pid,rid); if(!a.length) return '';
-  return `<span class="mgn" title="${esc('Челенджі: '+a.map(x=>x.title+' +'+x.awarded_points).join(' · '))}">🎯+${a.reduce((x,y)=>x+(y.awarded_points||0),0)}</span>`;
+  return `<span class="mgn" tabindex="0" data-tip="${esc('Челенджі: '+a.map(x=>x.title+' +'+x.awarded_points).join(' · '))}">🎯+${a.reduce((x,y)=>x+(y.awarded_points||0),0)}</span>`;
 }
 // ⚔️ Rivals (552): іконка на картці учасника (по наведенню — його дуелі за турнір), чіп у «Points by round», номінація «Rivals — найбільше перемог» на Leaderboard
 const RV_LBL={win:'переміг',draw:'нічия',loss:'поразка',nobody:'Нікого',void:'склад не зараховано',pending:'очікує'};
@@ -843,7 +850,7 @@ function rvBadge(pid){   // ⚔️ без рамки; лише коли є ду�
 function rvChip(pid,rid){    // матриця «Points by round»: ⚔️+N без рамки, деталі в title
   if(!S.rvReady) return '';
   const x=(S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid && r.scored && r.points>0); if(!x) return '';
-  return `<span class="mgn" title="${esc('Rivals: '+(x.is_nobody?'Нікого':'проти '+x.opponent_name)+' · '+(RV_LBL[x.status]||x.status)+' +'+x.points)}">⚔️+${x.points}</span>`;
+  return `<span class="mgn" tabindex="0" data-tip="${esc('Rivals: '+(x.is_nobody?'Нікого':'проти '+x.opponent_name)+' · '+(RV_LBL[x.status]||x.status)+' +'+x.points)}">⚔️+${x.points}</span>`;
 }
 // номінація «⚔️ Rivals — найбільше перемог за турнір» (як в ЄвроСезоні: лише титул і таблиця; золото лише 1-му місцю, усім, хто ділить найкраще число)
 function rvNomCard(title){
@@ -961,7 +968,7 @@ function renderLg(){
 }
 function mgChip(pid,rid){   // матриця «Очки по турах»: 💎+N без рамки, деталі в title
   const m=mgRow(pid,rid); if(!m || !(m.points>0)) return '';
-  return `<span class="mgn" title="${esc('Менеджер туру: '+m.place+'-е місце · +'+m.points+' очк. · приріст вартості складу '+eurSg(m.delta_eur)+(m.delta_pct!=null? ' · Σ% '+ppSg(+m.delta_pct) : '')+' · вартість складу на старті туру '+eurB(m.value_start_eur)+' · '+mgScoreTxt(m,mgZ(rid)))}">💎+${m.points}</span>`;
+  return `<span class="mgn" tabindex="0" data-tip="${esc('Менеджер туру: '+m.place+'-е місце · +'+m.points+' очк. · приріст вартості складу '+eurSg(m.delta_eur)+(m.delta_pct!=null? ' · Σ% '+ppSg(+m.delta_pct) : '')+' · вартість складу на старті туру '+eurB(m.value_start_eur)+' · '+mgScoreTxt(m,mgZ(rid)))}">💎+${m.points}</span>`;
 }
 // 💼 очки наскрізної учасника: лише коли вона вже нарахована (is_final), до того — 0 (прогноз показуємо окремо)
 // наскрізна: гібрид «€ + ROI» (563, final_metric='hybrid'), Σ приросту вартості складу (529, 'eur') чи Σ рахунків туру (528 / 'score')
@@ -982,6 +989,32 @@ function clubLg(cid){ const n=clubName(cid), l=leagueEn((S.clubs[cid]||{}).leagu
 function clubCol(cid){ return CLUB[clubName(cid)]||'#233'; }
 // ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ──
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// ── ⓘ-ПІДКАЗКИ (06.11, Богдан) ── будь-який елемент із data-tip: наведення (миша) / фокус (клавіатура) / тап (телефон) показують текст одразу; повторний клік або клік деінде закриває.
+// Один спільний поповер (position:fixed), не виходить за межі екрана; той самий код у кабінеті (squad-cabinet-stage.html). Кнопку ⓘ будує tipBtn().
+function tipBtn(t){ return '<button type="button" class="tipi" data-tip="'+esc(t)+'" aria-label="Пояснення">i</button>'; }
+(function(){
+  let pop=null, cur=null, pinned=false;
+  const hide=()=>{ if(pop) pop.style.display='none'; if(cur) cur.classList.remove('on'); cur=null; pinned=false; };
+  const show=(el,pin)=>{
+    const txt=el.getAttribute('data-tip'); if(!txt) return;
+    if(!pop){ pop=document.createElement('div'); pop.id='tipPop'; pop.setAttribute('role','tooltip'); document.body.appendChild(pop); }
+    if(cur && cur!==el) cur.classList.remove('on');
+    cur=el; pinned=!!pin; el.classList.add('on');
+    pop.textContent=txt; pop.style.display='block'; pop.style.left='0px'; pop.style.top='0px';
+    const r=el.getBoundingClientRect(), pw=pop.offsetWidth, ph=pop.offsetHeight, vw=document.documentElement.clientWidth, vh=window.innerHeight;
+    let x=r.left+r.width/2-pw/2; x=Math.max(8,Math.min(x,vw-pw-8));
+    let y=r.bottom+8; if(y+ph>vh-8 && r.top-ph-8>=8) y=r.top-ph-8;
+    pop.style.left=Math.round(x)+'px'; pop.style.top=Math.round(y)+'px';
+  };
+  const at=e=>(e.target && e.target.closest)? e.target.closest('[data-tip]') : null;
+  document.addEventListener('mouseover',e=>{ const el=at(e); if(el && el!==cur) show(el,false); });
+  document.addEventListener('mouseout',e=>{ const el=at(e); if(el && el===cur && !pinned && !el.contains(e.relatedTarget)) hide(); });
+  document.addEventListener('focusin',e=>{ const el=at(e); if(el) show(el,false); });
+  document.addEventListener('focusout',e=>{ if(at(e)===cur && !pinned) hide(); });
+  document.addEventListener('click',e=>{ const el=at(e); if(!el){ hide(); return; } e.preventDefault(); if(cur===el && pinned) hide(); else show(el,true); });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') hide(); });
+  window.addEventListener('scroll',hide,true); window.addEventListener('resize',hide);
+})();
 function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
 // недоступність (SofaScore): 🤕 травма / 🟥 дискваліфікація. null = здоровий
 // 20.10 (Богдан): на самій картці травму/дискваліфікацію НЕ показуємо — вони лише в «Детальній картці» (infо-смуга «Травмований»)
@@ -2108,7 +2141,7 @@ function renderStandings(){
       <td class="tnum" style="white-space:nowrap;font-weight:700;font-size:17px" title="Очки гравців складу за тур з бустами (К/V ×2, позиційні, Автопілот/All-in) — без 💎 🎯 ⚔️; сума за все — у картці зверху">${sqOn? roundPtsParts(pid).m : '<span style="color:var(--dim)">–</span>'}</td>
       <td class="sp tnum" style="white-space:nowrap" title="${esc(squadPriceTip(sp,S.tour))}">${sp.v==null? '<span style="color:var(--dim)">—</span>' : squadPriceRange(sp)}</td>
       <td style="white-space:nowrap" class="tnum ${vd.dirE||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі (розстановка прихована до дедлайну або матчі ще не зіграні)':'На скільки € змінилась вартість 8 гравців складу за ЦЕЙ тур (лише рух ринку)'}">${valEurTxt(vd)}</td>
-      <td style="white-space:nowrap" class="tnum ${vd.dir||'eq'}" title="${vd.none?'Немає цінового руху в цьому турі':'Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)'}">${valPctTxt(vd)}</td>${mgOn? mgScoreCell(pid,mgRid,zr) : ''}
+      <td style="white-space:nowrap" class="tnum ${vd.dir||'eq'}" data-tip="${vd.none?'Немає цінового руху в цьому турі':'Σ % гравців: сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)'}">${valPctTxt(vd)}</td>${mgOn? mgScoreCell(pid,mgRid,zr) : ''}
     </tr>`;
   }).join('');
   t.innerHTML=`<thead><tr><th>Учасник</th>
@@ -2123,7 +2156,7 @@ function renderPts(){
   // у форматі «1 етап» рядок «Етап 1» над турами зайвий
   const stH=(rs.length && !one)? `<tr class="stg-row"><th></th>${[[1,rs.filter(r=>r.number<=l1).length],[2,rs.filter(r=>r.number>l1).length]].filter(x=>x[1]>0).map(x=>`<th colspan="${x[1]}" style="text-align:center;color:var(--${x[0]===1?'teal':'blue'})">Етап ${x[0]}</th>`).join('')}<th></th></tr>` : '';
   const hasFin=S.mgs.some(x=>x.is_final);   // колонка 💼 зʼявляється, коли наскрізну нараховано (після закриття останнього туру)
-  const head=`<thead>${stH}<tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}${hasFin?'<th title="Менеджер турніру — наскрізна (General)">💼</th>':''}<th>Разом</th></tr></thead>`;
+  const head=`<thead>${stH}<tr><th>Учасник</th>${rs.map(r=>`<th>Тур ${r.number}</th>`).join('')}${hasFin?'<th tabindex="0" data-tip="Менеджер турніру — наскрізна (General)">💼</th>':''}<th>Разом</th></tr></thead>`;
   const body=S.lb.map(p=>{
     let sum=0;
     const cells=rs.map(r=>{
@@ -2247,9 +2280,9 @@ function openSquad(pid){
           ? `<div class="m" title="${esc(squadPriceTip(sp,S.tour))}"><span>Squad Price</span><b class="tnum spr"><span class="s">${eurM1(sp.start)} →</span> ${eurM1(sp.v)}</b></div>`
           : `<div class="m" title="Складу цього туру нема або його ще приховано. Нижче — поточна вартість нинішнього складу"><span>Squad Price · зараз</span><b class="tnum">${eurM1(p.squad_price)}</b></div>`; })()}
       <div class="m" title="На скільки € змінилась вартість 8 гравців складу за цей тур"><span>Δ € тура</span><b class="tnum ${vd.dirE||'eq'}">${valEurTxt(vd)}</b></div>
-      <div class="m" title="Сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)"><span>Σ % гравців</span><b class="tnum ${vd.dir||'eq'}">${valPctTxt(vd)}</b></div>
-      ${(mgShown() && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m" title="${esc(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}"><span>💎 Рахунок</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
-      ${(()=>{ const x=S.rvReady && (S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid); return x? `<div class="m" title="Rivals · дуель туру: очки матчів проти обраного суперника. Виграв +2 · нічия +1 · програв 0"><span>⚔️ Rivals</span><b class="tnum">${x.is_nobody?'Нікого':esc(x.opponent_name||'—')}<small style="display:block;font-weight:500">${x.scored?(x.status==='nobody'?'0':(RV_LBL[x.status]||x.status)+' +'+x.points):'очікує'}</small></b></div>` : ''; })()}
+      <div class="m"><span>Σ % гравців${tipBtn('Сума відсотків руху ціни 8 гравців за цей тур (ціна гравця не впливає; це НЕ % складу)')}</span><b class="tnum ${vd.dir||'eq'}">${valPctTxt(vd)}</b></div>
+      ${(mgShown() && mgRow(pid,rid) && mgRow(pid,rid).score!=null)? `<div class="m"><span>💎 Рахунок${tipBtn(mgScoreTxt(mgRow(pid,rid),mgZ(rid)))}</span><b class="tnum ${+mgRow(pid,rid).score>0.004?'up':+mgRow(pid,rid).score<-0.004?'down':'eq'}">${zS(+mgRow(pid,rid).score)}</b></div>` : ''}
+      ${(()=>{ const x=S.rvReady && (S.rvBoard||[]).find(r=>r.chooser_participant===pid && r.round_id===rid); return x? `<div class="m"><span>⚔️ Rivals${tipBtn('Rivals · дуель туру: очки матчів проти обраного суперника. Виграв +2 · нічия +1 · програв 0')}</span><b class="tnum">${x.is_nobody?'Нікого':esc(x.opponent_name||'—')}<small style="display:block;font-weight:500">${x.scored?(x.status==='nobody'?'0':(RV_LBL[x.status]||x.status)+' +'+x.points):'очікує'}</small></b></div>` : ''; })()}
       <div class="m" title="Матчі ${roundPtsParts(pid).m}${roundPtsParts(pid).g?' + 💎 менеджмент '+roundPtsParts(pid).g:''}${roundPtsParts(pid).c?' + 🎯 '+roundPtsParts(pid).c:''}${roundPtsParts(pid).r?' + ⚔️ '+roundPtsParts(pid).r:''}"><span>Очки Т${S.tour}</span><b class="tnum">${roundPts(pid)}</b></div>
       ${(()=>{ const bo=boostOf(pid,rid); if(!bo) return '';
         /* 23.10 (Богдан): буст — у тому ж рядку, що Очки й Рахунок; для All-in показуємо очки лавки, що зіграла (а не «лавка 0»), а внесок буста — у підказці */
