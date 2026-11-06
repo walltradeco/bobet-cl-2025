@@ -201,6 +201,34 @@ table.t{width:100%;border-collapse:collapse}
 .mtile:hover{border-color:var(--gold);transform:translateY(-1px)}
 .mtile.mine{border-color:rgba(244,196,48,.45)}
 .mtop{display:flex;justify-content:flex-start;gap:8px;align-items:center;margin-bottom:8px}
+/* ★ «Відслідковую» (604, 06.11): зірочка на плитці Ринку (правий верхній кут), біля імені в картці гравця і в рядках вкладки */
+.mtile{position:relative}
+.wstar{position:relative;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;padding:0;border:0;border-radius:8px;background:none;color:var(--text-dim);font-size:19px;line-height:1;cursor:pointer;transition:color .12s,background .12s}
+.wstar::after{content:'';position:absolute;inset:-7px}   /* більша зона дотику для телефона */
+.wstar:hover,.wstar:focus-visible{color:var(--gold);background:rgba(230,193,75,.1);outline:0}
+.wstar.on{color:var(--gold)}
+.mtile .wstar{position:absolute;top:6px;right:6px}
+.pm-identity h2 .wstar{vertical-align:3px;margin-left:8px;font-size:22px;width:30px;height:30px}
+.wlrow.unw td{opacity:.5}
+.wlrow.out td{opacity:.6}
+.wlp{display:flex;align-items:center;gap:10px}
+.wlp .mav{flex:0 0 auto}
+.wlform{font-size:11px;white-space:nowrap}
+.wlst{display:inline-flex;align-items:center;gap:6px;font-size:13px}
+.wlst.free{color:var(--up)}.wlst.mine{color:var(--gold)}
+.wlshop{display:block;font-size:11px;color:var(--gold);margin-top:2px}
+@media(max-width:640px){   /* телефон: рядок списку → компактна картка (зірочка й дія завжди на екрані, без бокової прокрутки) */
+  .wltbl thead{display:none}
+  .wltbl,.wltbl tbody{display:block}
+  .wltbl tr.wlrow{display:grid;grid-template-columns:minmax(0,1fr) 78px 124px;grid-template-areas:"pl pl star" "st pr act" "rt vd inj";gap:6px 12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .wltbl tr.wlrow td{display:block;border:0;padding:0;text-align:left;opacity:1;background:none!important}
+  .wltbl tr.wlrow.mine{background:rgba(244,196,48,.05)}
+  .wltbl tr.wlrow.unw,.wltbl tr.wlrow.out{opacity:.55}
+  .wltbl td.c-pl{grid-area:pl}.wltbl td.c-st{grid-area:st}.wltbl td.c-pr{grid-area:pr}.wltbl td.c-rt{grid-area:rt}.wltbl td.c-vd{grid-area:vd}.wltbl td.c-inj{grid-area:inj}
+  .wltbl td.c-act{grid-area:act;text-align:right}.wltbl td.c-star{grid-area:star;text-align:right}
+  .wltbl td.c-vd::before{content:'Val Δ ';color:var(--text-dim);font-size:11px}
+  .wltbl .wstar{width:34px;height:34px;font-size:24px}
+}
 .pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
 .pbadge.G{background:rgba(240,193,75,.14);color:#f0c14b;border-color:#5a4a1c}
 .pbadge.D{background:rgba(127,188,255,.12);color:#7fbcff;border-color:#274a63}
@@ -1220,6 +1248,10 @@ async function loadRefs(){
     (async()=>{ S.listings={}; S.listingsReady=false;
       try{ const ls = await sbSel(`market_listings?tournament_id=eq.${T}&status=eq.active&select=player_id,seller_participant,ask_price`);
            ls.forEach(l=>S.listings[l.player_id]=l); S.listingsReady=true; }catch(e){ S.listings={}; S.listingsReady=false; } })(),
+    // 604 «Відслідковую»: МОЇ відстежувані гравці цього турніру (приватна таблиця, RLS «лише свої»). Нема таблиці (604 не залито) → зірочки й вкладка ховаються
+    (async()=>{ S.watch=new Set(); S.watchReady=false;
+      try{ const w = await sbSel(`market_watchlist?tournament_id=eq.${T}&participant_id=eq.${ME}&select=player_id`);
+           w.forEach(x=>S.watch.add(x.player_id)); S.watchReady=true; }catch(e){ S.watch=new Set(); S.watchReady=false; } })(),
   ]);
   // після всіх запитів: мої контракти → у гравців (роль/зарплата/позначка)
   S.players.forEach(p=>{ const c=S.myContracts[p.id]; if(c){ p.wage_per_round=c.wage_per_round; p.role=c.role||'main'; p.marked=!!c.marked; } });
@@ -1385,12 +1417,14 @@ function renderHeader(){
       + (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
           // 05.11 (Богдан): «Приріст за тури» в € (+ROI) — це ІНФОРМАЦІЯ про ріст складу, а не очки; лишається й тоді, коли менеджмент 💎/💼 вимкнено (mgActive()=false): без 💼 у підписі й без слів про очки
           const mgOn=mgActive();
+          // 06.11 (Богдан): у підказці — приріст у € по кожному закритому туру («Тур 1: …, Тур 2: …»), як у Σ %
+          const byTour = mineMg.length? '\nПо турах:\n'+mineMg.map(x=>{ const dd=+x.delta_eur||0; return `Тур ${rNum(x.round_id)}: ${sgn(dd)}${eAbs(dd)}`; }).join('\n')+'\n' : ' ';
           const d=+ms.delta_eur||0, hyb=(ms.final_metric==='hybrid'), roi=(mgOn && hyb && ms.roi_sum!=null)? +ms.roi_sum : null;   // 06.11 (Богдан): ROI — лише коли менеджмент увімкнено (разом із 💼); без нього лишається тільки приріст у €
           const tip = !mgOn
-            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. Це довідкова цифра: очки за менеджмент у цьому турнірі не нараховуються. Покупки й продажі вже закритих турів її не змінюють. Поточний тур додається після закриття.'
+            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі.'+byTour+'Покупки й продажі вже закритих турів її не змінюють. Поточний тур додається після закриття.'
             : hyb
-            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. ROI — сума по турах від «приріст ÷ вартість складу на старті туру» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів) рахується з обох показників порівну: і € приросту, і ROI порівнюються з іншими учасниками (розрахунок з числами — на борді, вкладка General · Management). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.'
-            : 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі. Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.';
+            ? 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі.'+byTour+'ROI — сума по турах від «приріст ÷ вартість складу на старті туру» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів) рахується з обох показників порівну: і € приросту, і ROI порівнюються з іншими учасниками (розрахунок з числами — на борді, вкладка General · Management). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.'
+            : 'Скільки € додав (або втратив) твій склад по ЗАКРИТИХ турах — сума приросту вартості складу за кожен тур, коли гравці були в твоєму лайнапі.'+byTour+'Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 турів). Покупки й продажі вже закритих турів його не змінюють. Поточний тур сюди додається після закриття.';
           return col((mgOn?'💼 ':'')+'Приріст за тури', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ROI ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''}` : 'після 1-го туру', ms.rounds_done? (d>=0?'up':'down') : '', tip); })();
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
@@ -2698,6 +2732,28 @@ function buyerNote(t){
 }
 
 // ── плитка гравця (сітка ринку, за макетом) ──
+// ── ★ ВІДСЛІДКОВУЮ (604) ── приватний список гравців турніру; запис — лише через market_watch_set (оптимістично, при відмові — відкат)
+function starBtn(pid){
+  if(!S.watchReady) return '';
+  const on=S.watch.has(pid);
+  return `<button type="button" class="wstar${on?' on':''}" data-wstar="${pid}" aria-pressed="${on}" aria-label="${on?'Прибрати з відслідковуваних':'Відслідковувати'}">${on?'★':'☆'}</button>`;
+}
+function setWatch(pid,on){
+  if(on) S.watch.add(pid); else S.watch.delete(pid);
+  document.querySelectorAll('[data-wstar="'+pid+'"]').forEach(b=>{ b.classList.toggle('on',on); b.textContent=on?'★':'☆'; b.setAttribute('aria-pressed',on); b.setAttribute('aria-label',on?'Прибрати з відслідковуваних':'Відслідковувати'); });
+  const tb=document.querySelector('.subtabs button[data-s="watch"]'); if(tb) tb.textContent='Відслідковую'+(S.watch.size?` (${S.watch.size})`:'');
+  document.querySelectorAll('.wlrow[data-wp="'+pid+'"]').forEach(r=>r.classList.toggle('unw',!on));   // на вкладці «Відслідковую» рядок лишається приглушеним (можна повернути), зникне при наступному відкритті
+}
+async function toggleWatch(pid){
+  if(!S.watchReady) return;
+  S.watchBusy=S.watchBusy||new Set(); if(S.watchBusy.has(pid)) return;
+  const on=!S.watch.has(pid); S.watchBusy.add(pid); setWatch(pid,on);
+  let err=null; try{ const r=await sb.rpc('market_watch_set',{p_tournament:S.tour.id,p_player:pid,p_on:on}); err=r.error; }catch(e){ err=e; }
+  S.watchBusy.delete(pid);
+  if(err){ setWatch(pid,!on); alert('⛔ '+String(err.message||err).replace(/^.*?(Squad: )/,'$1')); }
+}
+// capture + stopPropagation: клік по зірочці не відкриває картку плитки/рядка під нею
+document.addEventListener('click',e=>{ const b=e.target&&e.target.closest&&e.target.closest('[data-wstar]'); if(!b) return; e.preventDefault(); e.stopPropagation(); toggleWatch(b.dataset.wstar); },true);
 function mtile(p){
   const cl=(S.clubs[p.club_id]||{}), d=vDelta(p), o=ownerInfo(p);
   // 514: вільний не-DEF/GK, якого вже не можна взяти через правило DEF/GK → приглушуємо й підписуємо
@@ -2705,6 +2761,7 @@ function mtile(p){
     // 16.10: на повному складі (8/8) купити нікого не можна — підпис «лише DEF/GK» там вводив в оману; показуємо лише коли ще є вільні слоти
     if(mine.length && mine.length<((S.cfg&&S.cfg.squad_max)||8) && dgRule(mine.length+1, mine.filter(isDG).length)) dgb='<div class="mdgb" title="Решта слотів — лише DEF/GK">лише DEF/GK</div>'; }
   return `<div class="mtile ${o.cls==='mine'?'mine':''}${dgb?' dgblock':''}" data-p="${p.id}">
+    ${starBtn(p.id)}
     <div class="mtop"><span class="pbadge ${p.position}">${posCat(p.position)}</span>${injuryBadge(p)}</div>
     ${S.listingsReady && S.listings[p.id] ? `<div class="mlistb" title="Виставлений на вітрину: ${S.listings[p.id].seller_participant===S.me.id?'твій лот':'викупити можна миттєво'}">🏷 вітрина ${eur(S.listings[p.id].ask_price)}</div>` : ''}
     ${avatar(p,76)}
@@ -2827,12 +2884,14 @@ function chTipHTML(){
 async function viewMarket(){
   if(!S.chDefs) await loadChallenges();   // 19.10: підказка «Челенджі» потребує довідника й моїх нарахувань навіть якщо «Мій склад» ще не відкривали
   if(S.mktSub==='bids' || S.mktSub==='transfers') S.mktSub='deals';       // старі назви вкладок (до об'єднання)
+  if(S.mktSub==='watch' && !S.watchReady) S.mktSub='free';                // 604 не залито → вкладки «Відслідковую» нема
   // 20.10 (Богдан): «Мої угоди (N)» = усе незавершене, під що заморожені мої гроші: пропозиції (мені й від мене) + обміни + аукціони, де я лідирую (як у тілі вкладки)
   const inCount=(S.transfers||[]).filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id).length
                +(S.exchanges||[]).filter(x=>x.to_participant===S.me.id||x.from_participant===S.me.id).length
                +(S.auctions||[]).filter(a=>a.leader_participant_id===S.me.id).length;
   const shopAll=Object.values(S.listings||{});
   const subs=[['free','Вільні'],['all','Усі гравці'],['shop','Вітрина'+(shopAll.length?` (${shopAll.length})`:'')],['deals','Мої угоди'+(inCount?` (${inCount})`:'')]];
+  if(S.watchReady) subs.push(['watch','Відслідковую'+(S.watch.size?` (${S.watch.size})`:'')]);   // 604: приватний список гравців
   const bar=`<div class="subbar"><div class="subtabs">${subs.map(([k,t])=>`<button data-s="${k}" class="${k===S.mktSub?'on':''}">${t}</button>`).join('')}</div>${chTipHTML()}</div>`;
   let body='';
   if(S.mktSub==='free'||S.mktSub==='all'){
@@ -2863,6 +2922,26 @@ async function viewMarket(){
           }).join('')}</tbody></table>`
           : `<div class="soon">Вітрина порожня. Виставити свого гравця можна в його картці («Мій склад» → клік по гравцю).</div>`);
     }
+  } else if(S.mktSub==='watch'){
+    // ★ ВІДСЛІДКОВУЮ (604): приватний список; статус · ціна · рейтинг і форма · Val Δ · травма — з тих самих даних, що й Ринок. Дія = відкрити картку (там вибір контракту/ролі й усі перевірки)
+    const rk=p=>!poolOnly(p)?4:p.owner_participant_id===S.me.id?3:p.owner_participant_id?2:1;   // доступні (вільні / аукціон / вітрина) спершу, далі чужі, мої, поза пулом
+    const wl=[...S.watch].map(id=>S.players.find(x=>x.id===id)).filter(Boolean)
+      .sort((a,b)=>(rk(a)-rk(b))||((b.season_avg_rating||0)-(a.season_avg_rating||0))||String(a.name||'').localeCompare(String(b.name||''),'uk'));
+    const watchRow=p=>{
+      const ok=poolOnly(p), mine=p.owner_participant_id===S.me.id, o=ownerInfo(p), l=(S.listingsReady&&S.listings[p.id])||null, d=vDelta(p);
+      const fm=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5).map(v=>(+v).toFixed(1)).join(' · ');
+      const j=p.injury, inj=j? `${j.kind==='suspension'?'🟥 Дискваліфікація':'🤕 Травма'}${(j.note||j.expected_return||j.status)?` <span class="dim">· ${esc(j.note||j.expected_return||j.status)}</span>`:''}` : '<span class="dim">—</span>';
+      const act=!ok?'': mine?'Моя картка' : inPlayRound()?'Відкрити' : !p.owner_participant_id ? (o.txt.startsWith('аукціон')?'Поставити':'Купити') : (l?'Викупити':'Запропонувати');
+      const st=!ok? '<span class="wlst">поза пулом</span>' : `<span class="wlst ${o.cls}">${o.dot}${o.txt}</span>${l?`<span class="wlshop">🏷 вітрина ${eur(l.ask_price)}</span>`:''}`;
+      return `<tr class="shoprow wlrow${mine?' mine':''}${ok?'':' out'}" data-wp="${p.id}"${ok?` data-open="${p.id}" style="cursor:pointer"`:''}>
+        <td class="c-pl"><div class="wlp">${avatar(p,34)}<div><b>${esc(p.name)}</b> <span class="dim">${esc(clubPos(p))}</span></div></div></td>
+        <td class="c-st">${st}</td><td class="n c-pr"><b>${eur(p.market_value_current)}</b></td>
+        <td class="n c-rt"><span class="rpill">${p.season_avg_rating??'—'}</span>${fm?`<div class="dim wlform">${fm}</div>`:''}</td>
+        <td class="n c-vd"><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></td><td class="c-inj">${inj}</td>
+        <td class="n c-act">${act?`<button type="button" class="mini">${act}</button>`:''}</td><td class="n c-star">${starBtn(p.id)}</td></tr>`; };
+    body = `<p class="dim">Твій особистий список гравців — його бачиш лише ти. Статус і ціна оновлюються самі. Щоб купити, поставити чи запропонувати — відкрий гравця (клік по рядку). Додати гравця — ☆ на його плитці в «Вільні» / «Усі гравці» або в картці.</p>`
+      + (wl.length ? `<div style="overflow-x:auto"><table class="t wltbl"><thead><tr><th>Гравець</th><th>Статус</th><th class="n">Вартість</th><th class="n">Рейтинг · форма</th><th class="n">Val Δ</th><th>Травма / дискваліфікація</th><th></th><th></th></tr></thead><tbody>${wl.map(watchRow).join('')}</tbody></table></div>`
+        : `<div class="soon">Список порожній. Познач гравця ☆ — на плитці в «Вільні» / «Усі гравці» або в його детальній картці — і він зʼявиться тут.</div>`);
   } else {
     // 🤝 МОЇ УГОДИ: усе незавершене, під що заморожені твої гроші — пропозиції (мені/від мене), обміни, мої ставки в аукціонах, моя вітрина
     const trInv=(S.transfers||[]).filter(t=>t.to_participant===S.me.id||t.from_participant===S.me.id);
@@ -2916,7 +2995,7 @@ async function viewMarket(){
   const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
   if(S.mktSub==='deals'){ bindTransfers(); bindExchanges(); }
-  if(S.mktSub==='shop'||S.mktSub==='deals'){
+  if(S.mktSub==='shop'||S.mktSub==='deals'||S.mktSub==='watch'){
     $('view').querySelectorAll('[data-unlistp]').forEach(b=>b.onclick=(e)=>{ e.stopPropagation();
       const p=S.players.find(x=>x.id===b.dataset.unlistp)||{name:'гравця'};
       confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини?`, 'Зняти', ()=>act('market_unlist_player',{p_player:b.dataset.unlistp},'Знято з продажу')); });
@@ -4037,7 +4116,7 @@ async function openPlayerModal(pid){
       </aside>
       <section class="pm-data">
         <div class="pm-identity">
-          <div><h2>${esc(p.name)}</h2><div class="pm-metarow">${meta}</div></div>
+          <div><h2>${esc(p.name)}${starBtn(p.id)}</h2><div class="pm-metarow">${meta}</div></div>
           <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${lgEn?' · '+esc(lgEn):''} ${SEASON_LABEL}</span></div>
         </div>
         <div class="pm-toprow">
