@@ -402,8 +402,15 @@
   /* HX-CSS:BEGIN */
   /* ІСТОРІЯ Rivals / MVP (01.11.2026): пунктир під цифрою + плаваюча підказка на body.
      ⚠️ Блок ІДЕНТИЧНИЙ у test.html і app-test.html (між HX-CSS:BEGIN/END). */
-  .hx{ cursor:help; border-bottom:1px dotted currentColor; padding:0 1px; -webkit-tap-highlight-color:transparent; }
+  /* 06.11.2026: замість пунктиру під цифрою — кнопка ⓘ поруч із нею (як у Squad: «все через i»). */
+  .hx{ cursor:pointer; -webkit-tap-highlight-color:transparent; }
   .hx:focus{ outline:1px solid var(--gold); outline-offset:2px; border-radius:3px; }
+  .hx-i{ position:relative; display:inline-flex; align-items:center; justify-content:center; width:13px; height:13px; min-width:13px;
+    margin:0 0 0 5px; padding:0; border:1px solid var(--text-dim); border-radius:50%; background:none; color:var(--text-dim);
+    font-family:'IBM Plex Mono',monospace; font-size:9px; font-weight:700; font-style:italic; line-height:1; letter-spacing:0;
+    text-transform:none; vertical-align:1px; }
+  .hx-i::after{ content:''; position:absolute; inset:-9px; }   /* більша зона дотику для телефона */
+  .hx-i:hover, .hx-i:focus-visible{ color:var(--gold); border-color:var(--gold); background:rgba(230,193,75,.1); outline:0; }
   .hx-pop{
     position:fixed; z-index:9999; left:0; top:0;
     width:max-content; min-width:230px; max-width:min(92vw,370px); overflow-y:auto;
@@ -3745,10 +3752,10 @@ function hxCell(kind, key, val){
   if(!HX.data) return val;
   var ok = HX.data.ok[key];
   if(!ok || !(kind === 'r' ? ok.r : ok.m)) return val;
-  return '<span class="hx" tabindex="0" role="button" data-hx="' + kind + '" data-key="' + hxEsc(key) + '">' + val + '</span>';
+  return val + '<button type="button" class="hx hx-i" data-hx="' + kind + '" data-key="' + hxEsc(key) + '" aria-label="Звідки ця цифра">i</button>';
 }
 function hxHint(){
-  return HX.data ? ' · наведи на цифру (на телефоні — тапни), щоб побачити, звідки вона' : '';
+  return HX.data ? ' · натисни ⓘ біля цифри (на телефоні — тапни), щоб побачити, звідки вона' : '';
 }
 
 /* get(table, select) → Promise<array>. Будь-який збій → HX.data = null, борда як раніше. */
@@ -3906,7 +3913,7 @@ async function viewMvpRivals(){
       <h2>MVP & Rivals — за весь турнір</h2>
       <p class="dim">Дві окремі номінації призового фонду (Rules): найбільше нагород
       MVP і найбільше перемог у дуелях Rivals за August + September + October
-      разом. Рахується само, оновлюється щовікенда.${HX.data ? ' <b>Наведи на цифру</b> (на телефоні — тапни) — побачиш, звідки вона: проти кого й у які вікенди.' : ''}</p>
+      разом. Рахується само, оновлюється щовікенда.${HX.data ? ' <b>Натисни ⓘ біля цифри</b> (на телефоні — тапни) — побачиш, звідки вона: проти кого й у які вікенди.' : ''}</p>
       <p class="dim">Тут <b>лише 1 призове місце</b> — 2-го і 3-го немає. Тайбрейків
       (точні рахунки) теж немає: у кого найбільше нагород MVP чи перемог Rivals за
       весь турнір — той перший, і медаль беруть усі, хто ділить найкраще число.
