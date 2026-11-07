@@ -553,7 +553,7 @@ table.grid{min-width:0}
 .pm-seasons>div{text-align:center;border-left:1px solid var(--line)}
 .pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
 .pm-seasons span{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim)}
-.pm-toprow .metric.delta .was.wks{white-space:normal}   /* Ріст гравця по вікендах — стовпчиком */
+.pm-toprow .metric.delta .was.wks{white-space:normal;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);column-gap:16px;justify-content:start}   /* 07.11 (Богдан): вікенди у ДВА стовпчики — 1 2 3 | 4 5 6 (3 рядки; до 3 вікендів — один стовпчик) */   /* Ріст вартості гравця по вікендах — стовпчиком */
 .pm-toprow .metric.delta .was .wk{display:block;white-space:nowrap;font-style:normal}   /* <em>, а не <span>: `.pm-value .metric span` робить будь-який span блоковим капсом */
 .pm-toprow .metric.delta .was .wk.up{color:var(--up)} .pm-toprow .metric.delta .was .wk.down{color:var(--down)}
 @media(min-width:721px) and (max-width:1290px){   /* 07.11 (Богдан): на вужчих екранах стискаємо верхній стат-рядок (вартість · Val Δ · очки · голи/асисти/матчі), щоб лишався в ОДИН рядок (≥≈1040px); підпис Val Δ переноситься, а не розпирає */
@@ -1219,18 +1219,18 @@ function cardDelta(p,card){
   const d=vDelta(p), n=d.pct*100;
   return { txt:(d.dir==='up'?'▲ +':d.dir==='down'?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%', dir:d.dir };
 }
-// 07.11 (Богдан): Ріст гравця по вікендах — стовпчиком (як у кабінеті), з журналу цін (market_price_log, публічний): множник вікенду → %; підсумок — «Ріст гравця · турнір» зверху
+// 07.11 (Богдан): Ріст вартості гравця по вікендах — стовпчиком (як у кабінеті), з журналу цін (market_price_log, публічний): множник вікенду → %; підсумок — «Ріст вартості гравця · турнір» зверху
 function playerWeeksSmall(pid){
   const rows=(S.rounds||[]).map(r=>({n:r.number,x:S.plog[pid+'|'+r.id]})).filter(r=>r.x).map(r=>({n:r.n,v:(r.x.mult-1)*100})).sort((a,b)=>a.n-b.n);
   if(!rows.length) return '<small class="was" title="Цінового руху ще не було">ще без руху</small>';
   const t=v=>v>0.05?'▲ +'+v.toFixed(1).replace(/\.0$/,'')+'%':v<-0.05?'▼ −'+Math.abs(v).toFixed(1).replace(/\.0$/,'')+'%':'0%';
-  return `<small class="was wks" title="Ріст гравця по вікендах (підсумок — від старту турніру)">${rows.map(r=>`<em class="wk ${r.v>0.05?'up':r.v<-0.05?'down':''}">Вікенд ${r.n} ${t(r.v)}</em>`).join('')}</small>`;
+  return `<small class="was wks" title="Ріст вартості гравця по вікендах (підсумок — від старту турніру)">${rows.map(r=>`<em class="wk ${r.v>0.05?'up':r.v<-0.05?'down':''}">Вікенд ${r.n} ${t(r.v)}</em>`).join('')}</small>`;
 }
 function lastTourSmall(card){
   const n=card&&card.val_delta_tour_pct; if(n==null) return '';
   const dir=n>0.05?'up':n<-0.05?'down':'';
   const t=(dir==='up'?'▲ +':dir==='down'?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%';
-  return `<small class="was ${dir}" title="Ріст гравця за останній вікенд із ціновим рухом">останній вікенд ${t}</small>`;
+  return `<small class="was ${dir}" title="Ріст вартості гравця за останній вікенд із ціновим рухом">останній вікенд ${t}</small>`;
 }
 // файл рамки: модель зве базову рамку 'silver', а webp — 'steel' (та сама срібна)
 const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};
@@ -1463,7 +1463,7 @@ async function openBoardCard(pid){
         <div class="pm-toprow">
           <div class="pm-value">
             <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
-            <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${S.plogReady? playerWeeksSmall(pid) : lastTourSmall(card)}<span>Ріст гравця · турнір</span></div>
+            <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${S.plogReady? playerWeeksSmall(pid) : lastTourSmall(card)}<span>Ріст вартості гравця · турнір</span></div>
           </div>
           <div class="pm-value pm-pts">
             <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
@@ -2060,7 +2060,7 @@ function pricePctChip(pid,rid){
   const n=(r.mult-1)*100; if(Math.abs(n)<0.05) return '';
   const t=Math.abs(n).toFixed(1).replace(/\.0$/,''), num=(S.rounds.find(x=>x.id===rid)||{}).number;
   const was=Math.round(r.value_after/r.mult);
-  return `<span class="pp ${n>0?'up':'down'}" title="Ріст гравця · вікенд ${num}: ${n>0?'+':'−'}${t}% (≈${eur2(was)} → ${eur2(r.value_after)})">${n>0?'▲':'▼'}${t}%</span>`;
+  return `<span class="pp ${n>0?'up':'down'}" title="Ріст вартості гравця · вікенд ${num}: ${n>0?'+':'−'}${t}% (≈${eur2(was)} → ${eur2(r.value_after)})">${n>0?'▲':'▼'}${t}%</span>`;
 }
 function tileOf(l){   // рядок market_squad_live → дані плитки
   const pl=plOf(l.player_id), raw=l.points;

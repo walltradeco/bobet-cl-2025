@@ -57,6 +57,8 @@ header{border-bottom:1px solid var(--line);background:rgba(12,19,16,.86);backdro
 .hcol .k i{font-style:normal;color:var(--text-dim);margin-right:3px}
 .hcol .v{font-family:var(--mono);font-weight:700;font-size:15px;margin-top:3px;white-space:nowrap}
 .hcol.main .v{font-size:23px;margin-top:2px}
+.hcol .vrow{display:flex;align-items:baseline;gap:2px 10px;flex-wrap:wrap}   /* 07.11 (Богдан): «вільно · заморожено» В ОДИН РЯДОК із сумою бюджету, а не окремим рядком під нею */
+.hcol .vrow .sub{margin-top:0}
 .hcol .sub{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--dim);margin-top:2px;white-space:nowrap}   /* 06.11: «Заморожено €X» під бюджетом, як у картках на Ринку */
 /* 06.11 (Богдан): ⓘ-підказки — миттєвий поповер замість title (title з'являється із затримкою й не працює на телефоні) */
 .tipi{position:relative;display:inline-flex;align-items:center;justify-content:center;width:13px;height:13px;min-width:13px;margin:0 0 0 5px;padding:0;border:1px solid var(--dim);border-radius:50%;background:none;color:var(--text-dim);font-family:var(--body);font-size:9px;font-weight:700;font-style:italic;line-height:1;letter-spacing:0;text-transform:none;vertical-align:1px;cursor:pointer}
@@ -234,7 +236,7 @@ table.t{width:100%;border-collapse:collapse}
   .wltbl.shoptbl td.c-pr::before{content:'Вартість ';color:var(--text-dim);font-size:11px}
   .wltbl.shoptbl td.c-ask::before{content:'Ціна ';color:var(--text-dim);font-size:11px}
   .wltbl td.c-act{grid-area:act;text-align:right}.wltbl td.c-star{grid-area:star;text-align:right}
-  .wltbl td.c-vd::before{content:'Ріст гравця ';color:var(--text-dim);font-size:11px}
+  .wltbl td.c-vd::before{content:'Ріст вартості гравця ';color:var(--text-dim);font-size:11px}
   .wltbl .wstar{width:34px;height:34px;font-size:24px}
 }
 .pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
@@ -841,7 +843,7 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .pm-seasons>div{text-align:center;border-left:1px solid var(--line)}
 .pm-seasons strong{display:block;font-family:var(--mono);font-weight:700;font-size:24px;line-height:1.1}
 .pm-seasons span{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim)}
-.pm-toprow .metric.delta .was.wks{white-space:normal}   /* 07.11: підсумок руху вартості по вікендах переноситься (раніше один рядок ≈350px розпирав блок і штовхав голи/асисти/матчі на другий рядок) */
+.pm-toprow .metric.delta .was.wks{white-space:normal;display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);column-gap:16px;justify-content:start}   /* 07.11 (Богдан): вікенди у ДВА стовпчики — 1 2 3 | 4 5 6 (3 рядки; до 3 вікендів — один стовпчик) */   /* 07.11: підсумок руху вартості по вікендах переноситься (раніше один рядок ≈350px розпирав блок і штовхав голи/асисти/матчі на другий рядок) */
 .pm-toprow .metric.delta .was .wk{display:block;white-space:nowrap;font-style:normal}
 .pm-toprow .metric.delta .was .wk.up{color:var(--up)} .pm-toprow .metric.delta .was .wk.down{color:var(--down)}   /* <em>, а не <span>: `.pm-value .metric span` робить будь-який span блоковим капсом */
 @media(min-width:721px) and (max-width:1290px){   /* 07.11 (Богдан): на вужчих екранах стискаємо верхній стат-рядок (вартість · Val Δ · очки · голи/асисти/матчі), щоб лишався в ОДИН рядок (≥≈1040px); підпис Val Δ переноситься, а не розпирає */
@@ -1413,13 +1415,15 @@ function renderHeader(){
   // Мій Банк (510) = Squad Price + трансферний + зарплатний (повні баланси, разом із замороженим). Свій — наживо.
   const tr=S.bank, wg=S.wageBank, ok=(tr!=null);
   const col=(k,v,cls,tip,sub)=>`<div class="hcol"><span class="k">${k}${tip?tipBtn(tip):''}</span><span class="v tnum ${cls||''}">${v}</span>${sub?`<span class="sub">${sub}</span>`:''}</div>`;   // 06.11: підказка — ⓘ (миттєвий поповер), «Заморожено» — підписом під бюджетом
+  // 07.11 (Богдан): бюджет у шапці = РАЗОМ (вільно + заморожено; Банк = Squad Price + обидва бюджети сходиться), а «вільно X · заморожено Y» — у тому самому рядку; такий самий вигляд у блоці «Переливання» (budgetPanel)
+  const bcol=(k,total,free,frozen,tip)=>`<div class="hcol"><span class="k">${k}${tip?tipBtn(tip):''}</span><span class="vrow"><span class="v tnum">${total}</span>${(free!=null&&frozen!=null)?`<span class="sub">вільно ${e1(free)} · заморожено ${e1(frozen)}</span>`:''}</span></div>`;
   const bk=$('h-bank'); if(bk) bk.textContent= ok? e1(price+tr+(wg||0)) : '—';
   const bp=$('h-bank-parts'); if(bp) bp.innerHTML= ok
     ? col('<i>=</i> Squad Price', e1(price), '', 'Поточна вартість усіх твоїх гравців')
-      + col('<i>+</i> Трансферний бюджет', e1(tr), '', `Гроші на купівлі/ставки. Доступно зараз: ${eur(S.spendable)}.\nЗаморожено — частина, що зараз під ставки в аукціонах і пропозиції (мені й від мене). Вона вже входить у трансферний бюджет і в Мій Банк; вільно — решта.`, S.frozen!=null? 'Заморожено '+e1(S.frozen) : '')
+      + bcol('<i>+</i> Трансферний бюджет', e1(tr), S.spendable, S.frozen, `Гроші на купівлі/ставки: разом = вільно + заморожено.\nЗаморожено — частина, що зараз під ставки в аукціонах і пропозиції (мені й від мене). Вона вже входить у трансферний бюджет і в Мій Банк; вільно — решта.`)
       // 05.11 (Богдан): розподіл «вільно/заморожено» — під кожним бюджетом у шапці. 06.11: не окремими колонками, а підписом «Заморожено €X» під бюджетом (як у картках на Ринку). Заморожений трансферний = `market_frozen` (під ставки й пропозиції); уже входить у суму трансферного й Банку
       // те саме для зарплатного (та сама цифра, що «Заморожено» в картці «💵 Зарплатний бюджет» на Ринку: резерв = зарплатний банк − вільний). Він УЖЕ входить у суму зарплатного й Банку
-      + col('<i>+</i> Зарплатний бюджет', e1(wg||0), '', `Гроші на зарплати контрактів. Доступно зараз: ${S.wageFree!=null?eur(S.wageFree):'—'}.\nЗаморожено — частина, що зараз під діючі контракти й ставки, де ти лідер. Вона вже входить у зарплатний бюджет і в Мій Банк; вільно — решта.`, S.wageFree!=null? 'Заморожено '+e1(Math.max(0,(wg||0)-S.wageFree)) : '')
+      + bcol('<i>+</i> Зарплатний бюджет', e1(wg||0), S.wageFree, S.wageFree!=null? Math.max(0,(wg||0)-S.wageFree) : null, `Гроші на зарплати контрактів: разом = вільно + заморожено.\nЗаморожено — частина, що зараз під діючі контракти й ставки, де ти лідер. Вона вже входить у зарплатний бюджет і в Мій Банк; вільно — решта.`)
     : '';
   const bb=$('h-bank-tip'); if(bb){ bb.hidden=!ok; bb.setAttribute('data-tip', ok? 'Мій Банк = Squad Price + Трансферний бюджет + Зарплатний бюджет (повні, разом із замороженим). Публічна лише сума Банку (вкладка «🏦 Банк» на борді); розклад балансів бачиш лише ти.' : ''); }
   const pr=$('h-price'); if(pr) pr.textContent=e1(price);   // 05.11: було eur() — від €100M воно округлює до цілих («€344M»), а в розкладі Банку стояло «€343.9M»: одна й та сама цифра виглядала різною; тепер скрізь 1 знак
@@ -1432,25 +1436,10 @@ function renderHeader(){
   const traj=mineMg.map(x=>{ const d=+x.delta_eur||0; return `Вікенд ${rNum(x.round_id)}: ${e1((+x.value_start_eur||0)+d)} (${sgn(d)}${eAbs(d)} за вікенд)`; });
   if(tc.state==='live') traj.push(`Вікенд ${tc.n} (наживо): ${e1(tc.v0+tc.eur)} (${Math.abs(tc.eur)>=50000? sgn(tc.eur)+eAbs(tc.eur)+' поки' : 'без змін поки'})`);
   const pbx=$('h-price-tip'); if(pbx) pbx.setAttribute('data-tip','Squad Price — поточна вартість усіх твоїх гравців.'+(traj.length? '\nВікенд за вікендом (вартість складу вікенду після нього):\n'+traj.join('\n') : '')+'\nРух цін гравців ДО того, як вони стали твоїми, тобі не зараховується — лише те, що вони зробили в вікендах, поки були в твоєму складі.');
-  let chg='';
-  if(tc.state!=='none'){
-    const lbl= `Ріст складу · вікенд ${tc.n}`+((tc.state==='closed' || tc.closed)? ' (закрито)' : '');
-    let val='—', cls='';
-    if(tc.state==='live'||tc.state==='closed'){ const on=Math.abs(tc.eur)>=50000; val= on? `${tc.eur>=0?'▲':'▼'} ${sgn(tc.eur)}${eAbs(tc.eur)}${tc.pct!=null? ` · ${sgn(tc.pct)}${Math.abs(tc.pct).toFixed(1)}%` : ''}` : 'без змін'; cls= on? (tc.eur>=0?'up':'down') : ''; }
-    else if(tc.state==='loading') val='…';
-    else if(tc.state==='nolineup' && !tc.closed) val='складу нема';
-    const tip= tc.state==='live'
-      ? `Рух цін твоїх 8 гравців лайнапу Вікенду ${tc.n} з початку вікенду (оновлюється, коли зʼявляються оцінки). % — частка від вартості твого складу на старті вікенду. Купівлі й продажі сюди не входять; рух цін гравців до того, як вони стали твоїми, не зараховується.`
-      : tc.state==='closed'
-        ? `Підсумок останнього закритого вікенду (Вікенд ${tc.n}): на скільки € змінилась вартість твоїх 8 гравців лайнапу за цей вікенд. % — частка від вартості складу на старті вікенду. Коли відкриється наступний вікенд, тут зʼявиться його рух наживо.`
-        : tc.state==='nolineup' ? `У Вікенді ${tc.n} у тебе не було виставленого складу, тому змін немає. Рахується лише рух цін гравців, які були в твоєму лайнапі в вікенді.`
-        : 'Зміна за вікенд зʼявиться, коли завантажаться ціни вікенду.';
-    chg=col(lbl, val, cls, tip);
-  }
+  // 07.11 (Богдан): клітинку «Ріст складу · вікенд N» із шапки ПРИБРАНО — рух поточного вікенду видно в ⓘ біля Squad Price («Вікенд N (наживо)») і на вкладці «Статистика», а підсумок — у «Ріст складу · турнір» і «Сума % гравців · турнір»
   const sigCol= hasPct? col('Сума % гравців · турнір', `${sumPct>=0?'▲':'▼'} ${ppSgn(sumPct)}`, sumPct>=0?'up':'down',
-        'Сума відсотків руху ціни 8 гравців твого лайнапу за ЗАКРИТІ вікенди (ціна гравця не впливає: дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша. По вікендах: '+mineMg.filter(x=>x.delta_pct!=null).map(x=>`Вікенд ${rNum(x.round_id)} ${ppSgn(+x.delta_pct)}`).join(' · ')+' — те саме, що «Сума % гравців» на борді.') : '';
-  const pp=$('h-price-parts'); if(pp) pp.innerHTML = chg
-      + (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
+        'Сума відсотків руху ціни 8 гравців твого лайнапу за ЗАКРИТІ вікенди (ціна гравця не впливає: дешевий гравець зі стрибком важить стільки ж, скільки дорогий). Це НЕ % складу — тому цифра більша.\nПо вікендах:\n'+mineMg.filter(x=>x.delta_pct!=null).map(x=>`Вікенд ${rNum(x.round_id)}: ${ppSgn(+x.delta_pct)}`).join('\n')+'\nТе саме, що «Сума % гравців» на борді.') : '';
+  const pp=$('h-price-parts'); if(pp) pp.innerHTML = (()=>{ const ms=(S.mgStand||[]).find(x=>x.participant_id===S.me.id); if(!ms) return '';
           // 05.11 (Богдан): «Приріст за вікенди» в € (+ROI) — це ІНФОРМАЦІЯ про ріст складу, а не очки; лишається й тоді, коли менеджмент 💎/💼 вимкнено (mgActive()=false): без 💼 у підписі й без слів про очки
           const mgOn=mgActive();
           // 06.11 (Богдан): у підказці — приріст у € по кожному закритому вікенду («Вікенд 1: …, Вікенд 2: …»), як у Σ %
@@ -1461,7 +1450,7 @@ function renderHeader(){
             : hyb
             ? 'Ріст складу за турнір: скільки € додав (або втратив) твій склад по ЗАКРИТИХ вікендах — сума приросту вартості складу за кожен вікенд, коли гравці були в твоєму лайнапі.'+byTour+'Друге число (%) — сума по вікендах від «ріст ÷ вартість складу на старті вікенду» (скільки % складу ти виростив). 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 вікендів) рахується з обох показників порівну: і € росту, і % складу порівнюються з іншими учасниками (розрахунок з числами — на борді, вкладка General · Management). Покупки й продажі вже закритих вікендів його не змінюють. Поточний вікенд сюди додається після закриття.'
             : 'Ріст складу за турнір: скільки € додав (або втратив) твій склад по ЗАКРИТИХ вікендах — сума приросту вартості складу за кожен вікенд, коли гравці були в твоєму лайнапі.'+byTour+'Це те число, за яким рахується 💼 «Менеджер турніру» (20/14/8/4/2 очок за місце наприкінці 6 вікендів). Покупки й продажі вже закритих вікендів його не змінюють. Поточний вікенд сюди додається після закриття.';
-          return col((mgOn?'💼 ':'')+'Ріст складу · турнір', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''}` : 'після 1-го вікенду', ms.rounds_done? (d>=0?'up':'down') : '', tip); })() + sigCol;   // порядок: Ріст складу · вікенд → Ріст складу · турнір → Сума % гравців · турнір
+          return col((mgOn?'💼 ':'')+'Ріст складу · турнір', ms.rounds_done? `${d>=0?'▲':'▼'} ${sgn(d)}${eAbs(d)}${roi!=null? ` · ${roi>=0?'+':'−'}${Math.abs(roi*100).toFixed(1)}%` : ''}` : 'після 1-го вікенду', ms.rounds_done? (d>=0?'up':'down') : '', tip); })() + sigCol;   // порядок: Ріст складу · турнір → Сума % гравців · турнір
   const nm=S.me.display_name||'—';
   const mn=$('my-name'); if(mn) mn.textContent=nm;
   const av=$('h-av'); if(av) av.textContent=(nm.trim()[0]||'—').toUpperCase();
@@ -1687,17 +1676,19 @@ function runwayHTML(wb){
 function budgetPanel(){
   const wb=S.wageBank, wf=S.wageFree, wr=(wb!=null&&wf!=null)?(wb-wf):null;
   const feePct=Math.round((S.cfg?.transfer_fee_pct??0.10)*100);
+  const m=v=>v!=null? '€'+(v/1e6).toFixed(1)+'M' : '—';   // 07.11 (Богдан): велике число = РАЗОМ (вільно + заморожено) — те саме, що в шапці; поруч «вільно · заморожено» в одному рядку
+  const line=(free,frozen,tFree,tFrozen)=>`<span class="bcl"><span title="${tFree}">вільно <b>${m(free)}</b></span> · <span title="${tFrozen}">заморожено ${m(frozen)}</span></span>`;   // одна обгортка: .bc-subs — flex-column, інакше кожен span і « · » стали б окремими рядками
   return `<div class="budg">
     <div class="budg-card">
       <div class="bc-h">💱 Трансферний бюджет</div>
-      <div class="bc-row"><div class="bc-main" title="Доступно">${eur(S.spendable)}</div>
-        <div class="bc-subs"><span title="Під ставки й пропозиції">Заморожено ${eur(S.frozen)}</span></div></div>
+      <div class="bc-row"><div class="bc-main" title="Разом: вільно + заморожено">${m(S.bank)}</div>
+        <div class="bc-subs">${line(S.spendable,S.frozen,'Можна витратити зараз','Під ставки й пропозиції')}</div></div>
     </div>
     <button class="budg-pour" data-do="pour">↔ Переливання<small>комісія −${feePct}%</small></button>
     <div class="budg-card">
       <div class="bc-h">💵 Зарплатний бюджет</div>
-      <div class="bc-row"><div class="bc-main" title="Доступно">${wf!=null?eur(wf):'—'}</div>
-        <div class="bc-subs"><span title="Під діючі контракти й ставки, де ти лідер">Заморожено ${wr!=null?eur(wr):'—'}</span>${runwayHTML(wb)}</div></div>
+      <div class="bc-row"><div class="bc-main" title="Разом: вільно + заморожено">${m(wb)}</div>
+        <div class="bc-subs">${line(wf,wr,'Можна витратити на зарплати зараз','Під діючі контракти й ставки, де ти лідер')}${runwayHTML(wb)}</div></div>
     </div>
   </div>`;
 }
@@ -2773,7 +2764,7 @@ function buyerNote(t){
 // «Форма» = оцінки гравця по ВІКЕНДАХ нашого турніру (S.form: середня за вікенд; останні 5, старіші ліворуч) — не матчі національних змагань (вони — у картці гравця).
 const PL_HEAD_PL='<th>Гравець</th>';
 const PL_FORM_TH='<th class="n">Форма'+tipBtn('Оцінки гравця за вікендами нашого турніру (середня за вікенд): останні 5, старіші ліворуч. Матчі всіх змагань гравця — у його детальній картці.')+'</th>';
-const PL_HEAD_INFO='<th class="n">Вартість зараз</th><th class="n">Рейтинг</th>'+PL_FORM_TH+'<th class="n">Ріст гравця</th><th>Травма / дискваліфікація</th>';
+const PL_HEAD_INFO='<th class="n">Вартість зараз</th><th class="n">Рейтинг</th>'+PL_FORM_TH+'<th class="n">Ріст вартості гравця</th><th>Травма / дискваліфікація</th>';
 function plRating(p){ return `<span class="rpill">${p.season_avg_rating??'—'}</span>`; }
 function plForm(p){ const a=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5); if(!a.length) return '<span class="dim">—</span>';
   const c=v=>v>=8?'hi':v>=7?'mid':v>=6.5?'lo':'bad'; return `<span class="plfm">${a.map(v=>`<span class="${c(+v)}">${(+v).toFixed(1)}</span>`).join('')}</span>`; }
@@ -2885,7 +2876,7 @@ function filterBar(){
       <input type="range" id="f-pmin" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMin}">
       <input type="range" id="f-pmax" min="${pB[0]}" max="${pB[1]}" step="1000000" value="${f.pMax}"></div>
       <span class="rv" id="rv-p">${eur(f.pMin)}–${eur(f.pMax)}</span></div>
-    <div class="msort"><span>Сортувати</span><select id="f-sort">${[['rating','за рейтингом'],['points','за очками'],['price','за ціною'],['val','за ростом гравця'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
+    <div class="msort"><span>Сортувати</span><select id="f-sort">${[['rating','за рейтингом'],['points','за очками'],['price','за ціною'],['val','за ростом вартості гравця'],['name','за іменем']].map(([v,t])=>opt(v,t,f.sort)).join('')}</select></div>
   </div>`;
 }
 function renderGrid(){
@@ -2956,7 +2947,7 @@ async function viewMarket(){
       const rows=shopAll.map(l=>({l, p:S.players.find(x=>x.id===l.player_id)})).filter(r=>r.p)
         .sort((a,b)=>((b.l.seller_participant===S.me.id)-(a.l.seller_participant===S.me.id))||(a.l.ask_price-b.l.ask_price));
       body = `<p class="dim">Гравці, яких власники виставили за <b>фіксованою ціною</b> (${winTxt()}, 0% комісії). Викуп — миттєвий, власник отримує суму повністю. Свій лот можна зняти.</p>`
-        + (rows.length ? `<div style="overflow-x:auto"><table class="t wltbl shoptbl"><thead><tr>${PL_HEAD_PL}<th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th class="n">Рейтинг</th>${PL_FORM_TH}<th class="n">Ріст гравця</th><th>Травма / дискваліфікація</th><th>Продавець</th><th></th></tr></thead><tbody>${
+        + (rows.length ? `<div style="overflow-x:auto"><table class="t wltbl shoptbl"><thead><tr>${PL_HEAD_PL}<th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th class="n">Рейтинг</th>${PL_FORM_TH}<th class="n">Ріст вартості гравця</th><th>Травма / дискваліфікація</th><th>Продавець</th><th></th></tr></thead><tbody>${
           rows.map(({l,p})=>{
             const mv=p.market_value_current||0, mine=l.seller_participant===S.me.id, pct=mv? Math.round((l.ask_price/mv-1)*100) : 0;
             const stale=(+l.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+l.ask_price>winMaxEur(mv));
@@ -3480,7 +3471,7 @@ function xcmpRows(pl,mineSide){
     + row('Вартість',eur(pl.market_value_current))
     + row('Сер. рейтинг',pl.season_avg_rating??'—')
     + row('Очки в турнірі',(sp&&sp.rounds_played>0)?sp.scored_points:'—')
-    + row('Ріст гравця · турнір',`<span class="${d.dir}">${fmtDelta(d)}</span>`)
+    + row('Ріст вартості гравця · турнір',`<span class="${d.dir}">${fmtDelta(d)}</span>`)
     + row('Контракт',mineSide?(ci.rl!=null?`${ci.rl} ${turW(ci.rl)}${rolesOn()?' · '+roleLabel(pl.role||'main'):''}`:'—'):'обереш нижче');
 }
 // блок обміну в модалці чужого гравця p (=wanted): порівняння двох гравців поруч, доплата, контракт, наживо-валідація
@@ -3919,13 +3910,13 @@ function cardDeltaSum(p,card,plog){
   const sum=(rows.reduce((a,r)=>a*(1+r.v/100),1)-1)*100, dir=sum>0.05?'up':sum<-0.05?'down':'flat';   // складений: Π(1+Δ вікенда) − 1 (як «Статистика»)
   const f=n=>(n>0.05?'▲ +':n<-0.05?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%';
   const wkT=v=>v>0.05?'▲ +'+v.toFixed(1).replace(/\.0$/,'')+'%':v<-0.05?'▼ −'+Math.abs(v).toFixed(1).replace(/\.0$/,'')+'%':'0%', per=rows.map(r=>`<em class="wk ${r.v>0.05?'up':r.v<-0.05?'down':''}">Вікенд ${r.n} ${wkT(r.v)}</em>`).join('');   // 07.11: кожен вікенд — цілим шматком (.wk nowrap), рядок переноситься між вікендами
-  return { txt:f(sum), dir, small:`<small class="was wks" title="Ріст гравця по вікендах (підсумок — від старту турніру)">${per}</small>` };
+  return { txt:f(sum), dir, small:`<small class="was wks" title="Ріст вартості гравця по вікендах (підсумок — від старту турніру)">${per}</small>` };
 }
 function lastTourSmall(card){
   const n=card&&card.val_delta_tour_pct; if(n==null) return '';
   const dir=n>0.05?'up':n<-0.05?'down':'';
   const t=(dir==='up'?'▲ +':dir==='down'?'▼ −':'– ')+Math.abs(n).toFixed(1).replace(/\.0$/,'')+'%';
-  return `<small class="was ${dir}" title="Ріст гравця за останній вікенд із ціновим рухом">останній вікенд ${t}</small>`;
+  return `<small class="was ${dir}" title="Ріст вартості гравця за останній вікенд із ціновим рухом">останній вікенд ${t}</small>`;
 }
 function ownerHist(card,p){
   const h=(card&&card.owner_history)||[];
@@ -4174,7 +4165,7 @@ async function openPlayerModal(pid){
         <div class="pm-toprow">
           <div class="pm-value">
             <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
-            <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Ріст гравця · турнір</span></div>
+            <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Ріст вартості гравця · турнір</span></div>
           </div>
           <div class="pm-value pm-pts">
             <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
