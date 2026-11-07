@@ -3220,6 +3220,20 @@ function lbDeltaHtml(d){
   return `<span class="dim">=</span>`;
 }
 
+// ⚠️ 07.11.2026 (прохання Богдана): коли етап/Турнір ЗАКРИТО (tournaments.status='finished'), місця фінальні —
+// «зміна місця» (▲▼) уже нічого не каже, тож її не показуємо (на публічному сайті так само, `test.html`).
+// stageKey — один етап; null — весь сезон (General, MVP/Rivals): усі три етапи ЄвроСезону закриті.
+// Збій запиту → false (показуємо дельти, як було): це лише косметика.
+async function stageClosed(stageKey){
+  try {
+    const keys = stageKey ? [stageKey] : ['aug2026', 'sep2026', 'oct2026'];
+    const { data } = await sb.from('tournaments').select('key,status').in('key', keys);
+    const st = {};
+    (data || []).forEach(t => { st[t.key] = t.status; });
+    return keys.every(k => st[k] === 'finished');
+  } catch(e) { return false; }
+}
+
 // =====================================================================
 //  ALL GAMES — усі матчі етапу з прогнозами всіх учасників
 //
@@ -3378,8 +3392,9 @@ async function viewBoard(){
   // на проді чи запит впав — просто нічого не показуємо, борд і без
   // цього працює.
   let deltaByKey = {};
+  const lbClosed = await stageClosed(season ? null : S.stage.key);   // закрито → без ▲▼
   try {
-    const deltaRows = season
+    const deltaRows = lbClosed ? [] : season
       ? (await sb.from('season_leaderboard_rank_delta').select('person_key,delta')).data
       : (await sb.from('leaderboard_rank_delta').select('participant_id,delta,tournament_key')
           .eq('tournament_key', S.stage.key)).data;
@@ -3874,8 +3889,9 @@ async function viewMvpRivals(){
   // Зміна рангу (файл 184) — той самий косметичний принцип, що в
   // viewBoard: немає в'юхи чи запит впав — просто нічого не показуємо.
   let deltaByPerson = {};
+  const mrClosed = await stageClosed(null);   // весь ЄвроСезон закрито → без ▲▼
   try {
-    const { data: deltaRows } = await sb.from('season_prize_rank_delta')
+    const { data: deltaRows } = mrClosed ? { data: [] } : await sb.from('season_prize_rank_delta')
       .select('person_key,mvp_delta,rival_delta');
     (deltaRows || []).forEach(d => { deltaByPerson[d.person_key] = d; });
   } catch(e) {}

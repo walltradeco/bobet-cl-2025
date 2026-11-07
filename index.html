@@ -2342,11 +2342,18 @@ function fmtDate(iso){
    борд із колонок [№ | Name | Points], а назва борда лежить рядком вище
    над колонкою №. Відтворюємо саме це.
    --------------------------------------------------------------------- */
+// ⚠️ 07.11.2026: коли етап/Турнір ЗАКРИТО (status='finished'), місця фінальні — «зміна місця» (▲▼) уже нічого
+// не каже, тож не показуємо. Місячний борд — за статусом свого етапу; General і MVP/Rivals-борди — коли закриті
+// ВСІ три етапи (General закривається разом із жовтнем). Запит нижче НЕ міняти: знімок ЄвроСезону
+// (assets/euroseason2026-snapshot.json) ключується саме цим шляхом.
+let EURO_SEASON_DONE = false;
 async function buildLeaderboardRows(){
   const tours = await sbGet(
     'tournaments?select=id,key,title,status&key=in.(aug2026,sep2026,oct2026)');
   const byKey = {};
   tours.forEach(t => { byKey[t.key] = t; });
+  const stageDone = t => !!t && t.status === 'finished';
+  EURO_SEASON_DONE = MONTHS.every(m => stageDone(byKey[m.key]));
 
   const monthly = await sbGet(
     'leaderboard?select=tournament_id,participant_id,display_name,total_points,place');
@@ -2373,7 +2380,7 @@ async function buildLeaderboardRows(){
     const t = byKey[m.key];
     const rows = t
       ? monthly.filter(r => r.tournament_id === t.id).sort((a, b) => a.place - b.place)
-        .map(r => ({ ...r, delta: deltaByParticipant[m.key + '|' + r.participant_id] }))
+        .map(r => ({ ...r, delta: stageDone(t) ? null : deltaByParticipant[m.key + '|' + r.participant_id] }))
       : [];
     // Місяць ще не стартував — показуємо борд із нулями, як у таблиці.
     boards.push({
@@ -2384,7 +2391,7 @@ async function buildLeaderboardRows(){
   }
   boards.push({
     title:'General',
-    rows: season.map(r => ({ ...r, delta: deltaByPerson[r.person_key] }))
+    rows: season.map(r => ({ ...r, delta: EURO_SEASON_DONE ? null : deltaByPerson[r.person_key] }))
   });
 
   const BOARD_W = 4;                       // №, Name, Points, зміна місця
@@ -2759,16 +2766,17 @@ async function fetchSupabaseTab(tab){
     prizeDelta.forEach(d => { prizeDeltaByPerson[d.person_key] = d; });
     // Історія Rivals/MVP за цифрами (01.11): лише читання; збій → борда як раніше.
     await hxEnsure(prizeBoard, (tb, sel) => sbGet(tb + '?select=' + sel));
+    const lbRows = await buildLeaderboardRows();   // ставить EURO_SEASON_DONE (турнір закрито → без ▲▼)
     return {
-      rows: await buildLeaderboardRows(),
+      rows: lbRows,
       // Season-номінації призового фонду (MVP 5%, ⚔️ Rivals 5% — Rules,
       // нова модель від 12.08.2026; було 7% і 6%),
       // раніше лише текст без підрахунку. Лише на живій вкладці EuroSeason,
       // тому окремим полем, не в rows: архівні борди (fetchSheet) його не мають.
       prizeBoard: prizeBoard.map(r => ({
         ...r,
-        mvp_delta: prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].mvp_delta : null,
-        rival_delta: prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].rival_delta : null
+        mvp_delta: !EURO_SEASON_DONE && prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].mvp_delta : null,
+        rival_delta: !EURO_SEASON_DONE && prizeDeltaByPerson[r.person_key] ? prizeDeltaByPerson[r.person_key].rival_delta : null
       }))
     };
   }
