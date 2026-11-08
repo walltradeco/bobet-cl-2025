@@ -82,7 +82,9 @@ export function createStore(sb) {
     const next = { ...run, seq, state };
     if (state.done) {
       const res = state.result;
-      const summary = { trajectory: res.trajectory, title: res.title, season: res.season, hero: { name: state.hero.name, pos: state.hero.pos, archetype: state.hero.archetype, club: state.hero.club } };
+      // Назву підставляємо ТУТ (res.title — шаблон, напр. «Надійна опора {youth.gen}»): у списках «Мої проходження» й «Як зіграли друзі»
+      // стану й контенту нема, і шаблон світився б сирим. Екран кінцівки рендерить його сам через E.view.
+      const summary = { trajectory: res.trajectory, title: E.renderText(res.title, state, content), season: res.season, hero: { name: state.hero.name, pos: state.hero.pos, archetype: state.hero.archetype, club: state.hero.club } };
       await rpc('stories_finish', { p_run: run.id, p_ending: res.trajectory, p_trajectory: res.trajectory, p_summary: summary, p_state: null });
       next.status = 'finished'; next.summary = summary; next.trajectory = res.trajectory;
     }

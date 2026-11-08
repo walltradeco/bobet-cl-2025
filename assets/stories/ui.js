@@ -45,6 +45,7 @@ const STAT_HELP = {
 };
 const GROUPS = [
   ['core', 'Кар’єра', 'Стрілки показують зміну від початку епізоду.'],
+  ['state', 'Стан', 'Фізична форма й ментальність. Вони додаються до шансів у моментах матчу та в рішеннях.'],
   ['skill', 'Навички', 'Три навички твоєї позиції. Вони додаються до шансів у моментах матчу.'],
   ['hidden', 'Характер', 'Приховані за замовчуванням показники; на Рівні 1 ти їх бачиш.'],
 ];
@@ -90,6 +91,10 @@ async function loadHome(allowResume) {
     App.root.innerHTML = shell('', `<div class="card"><h2>Не вдалося завантажити історії</h2><p class="dim">${esc(e.message)}</p><div class="actions"><button class="btn" data-act="retry">Спробувати ще раз</button></div></div>`);
     return;
   }
+  // старі підсумки із сирим шаблоном у назві: підвантажуємо контент, щоб підставити клуб героя (див. tplFree)
+  if (!App.content && App.runs.some((r) => r.summary && /\{[^}]*\}/.test(String(r.summary.title || '')))) {
+    try { App.content = await App.store.loadContent(); } catch (e) { /* не критично: tplFree прибере шаблон */ }
+  }
   const active = App.runs.find((r) => r.status === 'active');
   if (allowResume && active && ss.get('stories_screen') === 'game') return openRun(active);
   App.screen = 'home'; ss.set('stories_screen', null);
@@ -131,7 +136,7 @@ function renderHome() {
       const st = r.state || {};
       const ep = st.cursor ? st.cursor.ep + 1 : 1;
       const sum = r.summary;
-      const meta = r.status === 'active' ? `У грі · епізод ${ep}` : `Завершено · ${esc((sum && sum.title) || '')}`;
+      const meta = r.status === 'active' ? `У грі · епізод ${ep}` : `Завершено · ${esc(tplFree(sum, App.content))}`;
       const acts = r.status === 'active'
         ? `<button class="btn primary sm" data-act="resume" data-id="${esc(r.id)}">Продовжити</button>${App.confirm === r.id ? `<button class="btn danger sm" data-act="abandon" data-id="${esc(r.id)}">Точно кинути?</button>` : `<button class="btn ghost sm" data-act="abandon-ask" data-id="${esc(r.id)}">Кинути</button>`}`
         : `<button class="btn sm" data-act="resume" data-id="${esc(r.id)}">Підсумок</button>`;
@@ -207,7 +212,7 @@ async function renderCreate() {
 
 // ───────────────────────── гра ─────────────────────────
 function statsPanel(v, content) {
-  const byGroup = { core: [], skill: [], hidden: [] };
+  const byGroup = { core: [], state: [], skill: [], hidden: [] };
   for (const s of v.stats) { if (s.mode !== 'hidden') byGroup[s.group].push(s); }
   const groups = GROUPS.map(([g, title, help]) => {
     const rows = byGroup[g];
@@ -219,19 +224,31 @@ function statsPanel(v, content) {
       return `<div class="st"><div class="srow"><span>${esc(s.label)}${help1 ? tipBtn(help1) : ''}</span><span class="sv">${val !== '' ? val : esc(s.word || '')}${tr}</span></div>${val !== '' ? `<div class="bar ${s.group}"><i style="width:${val}%"></i></div>` : ''}</div>`;
     }).join('')}</div>`;
   }).join('');
+  const people = v.people && v.people.length
+    ? `<div class="sgrp"><h3>Люди${tipBtn('Ставлення цих людей до тебе: від −100 до +100, старт біля нуля. Змінюється від твоїх рішень; імена — як у цій історії.')}</h3>${v.people.map((p) => `<div class="st"><div class="srow"><span>${esc(p.name)} <em class="role">${esc(p.role)}</em></span><span class="sv ${p.value > 0 ? 'pos' : p.value < 0 ? 'neg' : ''}">${p.value != null ? (p.value === 0 ? '0' : fmt(p.value)) : esc(p.word)}</span></div></div>`).join('')}</div>`
+    : '';
   const traces = v.traces.length
     ? `<div class="sgrp"><h3>Сліди${tipBtn('Рішення, які історія запам’ятала. Вони можуть повернутись пізніше.')}</h3><ol class="traces">${v.traces.map((t) => `<li>${esc(t.t)}</li>`).join('')}</ol></div>` : '';
-  return `<div class="card">${groups}${traces}</div>`;
+  return `<div class="card">${groups}${people}${traces}</div>`;
 }
 function miniStats(v) {
   return `<div class="ministats">${v.stats.filter((s) => s.group === 'core' && s.mode !== 'hidden').map((s) => `<span class="mini">${esc(s.label)}<b>${s.value != null ? s.value : esc(s.word || '')}</b></span>`).join('')}</div>`;
 }
-function npcName(key, content) { const c = (content.cast || {})[key]; return c ? c.name : key; }
-function reportHtml(delta, content) {
+// Ім'я NPC у чіпі змін — з іменами ЦЬОГО клубу (E.nameVars) і роллю: раніше брали базове cast-імʼя («Монтефьоре»),
+// хоч в історії Динамо тренер Коваленко, — звідси плутанина «хто є хто» (Богдан, 08.11).
+function npcName(key, content, state) {
+  const base = (content.cast || {})[key];
+  if (!state) return base ? base.name : key;
+  const vars = E.nameVars(state, content);
+  const name = vars[key] || (base ? base.name : key);
+  const role = key === 'close' ? vars.close_role : (base && base.role_label);
+  return role ? `${name} (${role})` : name;
+}
+function reportHtml(delta, content, state) {
   if (!delta) return '';
   const chips = [];
   for (const d of delta.delta || []) chips.push(`<span class="chip ${d.d > 0 ? 'up' : 'down'}">${esc(d.label)} ${d.from} → ${d.to} (${fmt(d.d)})</span>`);
-  for (const n of delta.npc || []) chips.push(`<span class="chip ${n.d > 0 ? 'up' : 'down'}">${esc(npcName(n.key, content))}: ${fmt(n.d)}</span>`);
+  for (const n of delta.npc || []) chips.push(`<span class="chip ${n.d > 0 ? 'up' : 'down'}">${esc(npcName(n.key, content, state))}: ${fmt(n.d)}</span>`);
   for (const t of delta.traces || []) chips.push(`<span class="chip trace">Слід: ${esc(t)}</span>`);
   return chips.length ? `<div class="report">${chips.join('')}</div>` : '';
 }
@@ -265,11 +282,11 @@ function storyBody(v, run, content) {
       return `${pills.length ? `<div class="kicker">${pills.join('')}</div>` : ''}${v.speaker ? `<div class="speaker">${esc(v.speaker)}</div>` : ''}<p class="txt">${para(v.text)}</p>${optionsHtml(v)}`;
     }
     case 'scene':
-      return `${rollHtml(v.roll, content, level)}<p class="txt">${para(v.text)}</p>${reportHtml(v.delta, content)}${next('Далі')}`;
+      return `${rollHtml(v.roll, content, level)}<p class="txt">${para(v.text)}</p>${reportHtml(v.delta, content, run.state)}${next('Далі')}`;
     case 'match_result':
       return `<div class="kicker"><span class="pill match">⚽ ${esc(v.title)}</span></div><div class="score">${esc(v.score)}</div>
         <div class="facts"><span><b>${v.rating.toFixed(1)}</b>оцінка</span><span><b>${v.goals}</b>голи</span><span><b>${v.assists}</b>передачі</span></div>
-        <p class="txt">${para(v.text)}</p>${reportHtml(v.delta, content)}${next('Далі')}`;
+        <p class="txt">${para(v.text)}</p>${reportHtml(v.delta, content, run.state)}${next('Далі')}`;
     case 'episode_end': {
       const ch = v.changes.length ? `<div class="changes">${v.changes.map((c) => `<div><span>${esc(c.label)}</span><span class="${c.d > 0 ? 'dim' : 'dim'}">${c.from} → ${c.to} <span style="color:var(${c.d > 0 ? '--up' : '--down'})">(${fmt(c.d)})</span></span></div>`).join('')}</div>` : '';
       const s = v.season;
@@ -281,7 +298,7 @@ function storyBody(v, run, content) {
       const s = v.season;
       const titles = Object.fromEntries((content.trajectories || []).map((t) => [t.key, t.title]));
       const fr = App.friends;
-      const friends = fr == null ? '' : `<div class="friends"><h3>Як зіграли друзі</h3>${fr.length ? fr.map((f) => `<div class="frow"><span>${esc(f.display_name)}</span><span class="tj">${esc(friendTitle(f, titles))}</span></div>`).join('') : '<p class="dim" style="margin:0">Поки ти перший, хто дограв цей розділ.</p>'}</div>`;
+      const friends = fr == null ? '' : `<div class="friends"><h3>Як зіграли друзі</h3>${fr.length ? fr.map((f) => `<div class="frow"><span>${esc(f.display_name)}</span><span class="tj">${esc(friendTitle(f, titles, content))}</span></div>`).join('') : '<p class="dim" style="margin:0">Поки ти перший, хто дограв цей розділ.</p>'}</div>`;
       return `<div class="kicker"><span class="pill">Кінець сезону</span></div><h2>${esc(v.title)}</h2><p class="txt">${para(v.text)}</p>
         <div class="facts"><span><b>${s.goals}</b>голи</span><span><b>${s.assists}</b>передачі</span><span><b>${s.avg_rating != null ? s.avg_rating.toFixed(2) : '—'}</b>середня оцінка</span><span><b>${s.matches}</b>матчів</span></div>
         <p class="txt coda">${para(v.coda)}</p>
@@ -293,11 +310,20 @@ function storyBody(v, run, content) {
     default: return `<p class="dim">Невідомий екран ${esc(v.type)}</p>`;
   }
 }
+// Назва кінцівки зі збереженого підсумку для списків. Нові проходження зберігають уже підставлену назву (store.js);
+// проходження, збережені до виправлення 08.11, мають шаблон («Надійна опора {youth.gen}») — підставляємо клуб героя з підсумку,
+// а що підставити нічим (контент не завантажений) — прибираємо, щоб не світити сирий шаблон.
+function tplFree(sum, content) {
+  let t = String((sum && sum.title) || '');
+  if (!/\{[^}]*\}/.test(t)) return t;
+  if (content && sum.hero) { try { t = E.renderText(t, { settings: {}, hero: sum.hero }, content); } catch (e) { /* лишаємо шаблон — нижче приберемо */ } }
+  return t.replace(/\s*\{[^}]*\}/g, '').trim();
+}
 // Назва траєкторії друга: беремо вже відрендерену назву з його підсумку (вона містить ЙОГО клуб);
 // запасний варіант — шаблонна назва без змінних (змінні клубу не показуємо сирими).
-function friendTitle(f, titles) {
+function friendTitle(f, titles, content) {
   const t = f.summary && typeof f.summary.title === 'string' ? f.summary.title : null;
-  if (t) return t;
+  if (t) return tplFree(f.summary, content) || t;
   const raw = titles[f.trajectory_key] || f.trajectory_key;
   return String(raw).replace(/\s*\{[^}]*\}/g, '').trim() || f.trajectory_key;
 }

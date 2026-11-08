@@ -326,8 +326,29 @@ export function statsView(state, content) {
   };
   const out = [];
   for (const k of meta.core_stats) out.push(mk(k, 'core', vis.core, false));
+  // Фізична форма й Ментальність — видимі стати Рівня 1 (рішення 14 і 62), але не входять у core_stats (4 спільні для ролей) і не є прихованими:
+  // тому раніше випадали з панелі зовсім (виправлено 08.11, Богдан: «показувати всі змінні»).
+  for (const k of ['fit', 'ment']) if (has(state.stats, k)) out.push(mk(k, 'state', vis.core, false));
   for (const k of ['sk1', 'sk2', 'sk3']) out.push(mk(k, 'skill', vis.skills, false));
   for (const k of Object.keys(state.hidden)) out.push(mk(k, 'hidden', vis.hidden, true));
+  return out;
+}
+// «Люди»: ставлення NPC до героя (state.npc −100…+100) з іменами ЦЬОГО клубу й ролями — щоб не плутати, хто є хто.
+// Імена беремо з nameVars (клубові перевизначення: Динамо → тренер Коваленко, а не базовий Монтефьоре). Порядок — за близькістю до героя.
+const PEOPLE_ORDER = ['coach', 'mate', 'agent', 'captain', 'rival', 'doctor', 'journalist', 'close'];
+export function peopleView(state, content) {
+  const mode = presetOf(content, state.settings.level).visibility.core;
+  if (mode === 'hidden') return [];
+  const vars = nameVars(state, content);
+  const out = [];
+  for (const key of PEOPLE_ORDER) {
+    if (!has(state.npc, key)) continue;
+    if (key === 'close' && !vars.close) continue;
+    const role = key === 'close' ? vars.close_role : (content.cast && content.cast[key] ? content.cast[key].role_label : null);
+    if (!role) continue;
+    const v = state.npc[key];
+    out.push({ key, name: vars[key], role, value: mode === 'number' ? v : null, word: v >= 5 ? 'добре' : v <= -5 ? 'напружено' : 'рівно' });
+  }
   return out;
 }
 function targetOf(opt, state) {
@@ -361,7 +382,7 @@ function getNode(state, content, key) {
 export function view(state, content) {
   const c = state.cursor;
   const ep = content.episodes[c.ep];
-  const base = { ep: c.ep + 1, ep_count: content.episodes.length, ep_title: ep ? renderText(ep.title, state, content) : '', stats: statsView(state, content), traces: state.traces.slice(-8) };
+  const base = { ep: c.ep + 1, ep_count: content.episodes.length, ep_title: ep ? renderText(ep.title, state, content) : '', stats: statsView(state, content), people: peopleView(state, content), traces: state.traces.slice(-8) };
   if (c.phase === 'episode_start') {
     return { ...base, type: 'episode_start', title: renderText(ep.title, state, content), text: renderText(ep.intro, state, content) };
   }
