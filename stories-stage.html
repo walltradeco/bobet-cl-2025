@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BoBet Stories — STAGE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/common/tokens.css">
+<link rel="stylesheet" href="assets/stories/stories.css">
+</head>
+<body>
+<div id="root"></div>
+<script type="module">
+// BoBet Stories — STAGE. Спільна база з основним сайтом: anon-ключ публічний, захист — RLS (stories_* читає лише власник).
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { boot } from './assets/stories/ui.js';
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+boot({ sb, root: document.getElementById('root') });
+</script>
+</body>
+</html>
