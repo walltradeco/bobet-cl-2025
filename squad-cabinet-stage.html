@@ -684,6 +684,38 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .lg-log{font-size:12.5px;color:var(--text-dim);margin-top:3px;line-height:1.5}
 .lg-prev{font-size:12px;color:var(--text-dim);margin-top:2px}
 .lg-err{font-size:12.5px;color:var(--down);margin:6px 0 0}
+/* 09.11 (Богдан): Club Legend у кабінеті — як у ЄвроСезоні й на борді: кольорові чіпи клубів з емблемами, таблиця з медаллю, картки учасників, «Матчі вікендів» на самій вкладці */
+.lgx-box{margin-top:14px}
+.lgx-h{display:flex;align-items:baseline;gap:10px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);margin:0 0 8px}
+.lgx-chip{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--lgc,var(--line));background:var(--lgb,rgba(111,143,127,.12));border-radius:8px;padding:5px 10px;font-size:13.5px;color:var(--text);max-width:100%}
+.lgx-chip .crest{width:16px;height:16px;border-radius:4px;flex:none}.lgx-chip .crest.img{border-radius:0}
+.lgx-pick{padding:11px 0;border-top:1px solid var(--line)}.lgx-pick:first-of-type{border-top:0}
+.lgx-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.lgx-top button{padding:4px 11px;font-size:12.5px}
+.lgx-pts{margin-left:auto;font-family:var(--mono);font-weight:700;color:var(--gold);font-size:15px}
+.lgx-wk{color:var(--text-dim);font-size:12.5px;margin-top:6px;line-height:1.6}.lgx-wk b.up{color:var(--up)}.lgx-wk b:not(.up){color:var(--text)}.lgx-no{opacity:.55}.lgx-wk b.lgx-tot{color:var(--gold)}
+.lgx-prev{margin-top:8px;font-size:12.5px;color:var(--text-dim);line-height:1.6}.lgx-prev .lgx-chip{font-size:12.5px;padding:3px 8px;opacity:.85}.lgx-prev b{color:var(--gold)}
+.lgx-slotc{border-top:1px solid var(--line);padding:9px 0}.lgx-slotc:first-of-type{border-top:0}
+.lgx-r{display:flex;align-items:center;gap:12px;padding:10px 14px;border-top:1px solid var(--line)}.lgx-r:first-child{border-top:0}
+.lgx-r.p1{background:rgba(230,193,75,.09)}.lgx-r.lgme .lgx-nm{color:var(--gold)}
+.lgx-rk{width:30px;text-align:center;font-family:var(--mono);font-weight:700;color:var(--text-dim);font-size:16px;flex:none}
+.lgx-nm{font-weight:700;font-size:16px;min-width:0}.lgx-nm small{display:block;font-weight:400;color:var(--text-dim);font-size:11.5px;font-family:var(--mono)}
+.lgx-rp{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:21px;white-space:nowrap}.lgx-rp small{font-size:11px;font-weight:400;color:var(--text-dim);margin-left:4px}
+.lgx-tbl{padding:0;overflow:hidden}.lgx-tbl .lgx-h{padding:12px 14px 4px;margin:0}
+.lgx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:12px}
+.lgx-card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+.lgx-card.lgme{border-color:rgba(230,193,75,.45)}
+.lgx-ct{display:flex;align-items:baseline;gap:8px;font-weight:700;font-size:15px;margin-bottom:2px}.lgx-card.lgme .lgx-ct>span:first-child{color:var(--gold)}.lgx-ct .lgx-cp{margin-left:auto;font-family:var(--mono);color:var(--gold)}
+.lgx-wkrow{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
+.lgx-wkb{background:var(--panel2);color:var(--text-dim);border:1px solid var(--line);border-radius:9px;padding:6px 13px;font-family:var(--mono);font-size:13.5px;font-weight:600;cursor:pointer;text-align:left}
+.lgx-wkb small{display:block;font-size:10.5px;font-weight:600;color:var(--text-dim);margin-top:1px}
+.lgx-wkb.on{background:rgba(244,196,48,.10);border-color:var(--gold);color:var(--gold)}
+.lgx-mg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}@media(max-width:860px){.lgx-mg{grid-template-columns:minmax(0,1fr)}}
+.lgx-mb{border:1px solid var(--line);border-radius:12px;background:var(--panel2);padding:2px 10px}
+.lgx-m{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:10px;align-items:center;padding:9px 4px;border-bottom:1px solid var(--line)}.lgx-m:last-child{border-bottom:0}
+.lgx-m .t{display:flex;align-items:center;gap:8px;min-width:0;justify-content:flex-end}.lgx-m .t.away{justify-content:flex-start}
+.lgx-m .t span:not(.crest){overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lgx-m .t.dim span:not(.crest),.lgx-m .t.dim .crest{opacity:.5}
+.lgx-sc{font-family:var(--mono);font-weight:700;font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:3px 11px;min-width:72px;text-align:center}
+.lgx-sc.sched{color:var(--text-dim);font-size:12.5px;font-weight:600}.lgx-sc.go{background:rgba(204,60,60,.85);color:#fff;border-color:transparent;font-size:12.5px}.lgx-sc.off{color:var(--down);font-size:12px;font-weight:600}
 .chr .cp{font-family:var(--mono);font-weight:700;color:var(--gold);white-space:nowrap;margin-left:6px}
 .chr.ok{border-color:var(--gold)}.chr.ok .ci{color:var(--gold)}.chr.ok .cs{color:var(--gold)}
 .chr.done{border-color:var(--accent);background:var(--green-soft)}.chr.done .ci{color:var(--up)}.chr.done .cs{color:var(--up)}
@@ -1765,8 +1797,8 @@ async function loadRR(force){
   Object.assign(rr,{fix,live,rs,mg,boost,posb,at:Date.now()});
 }
 const MON_UK=['січ.','лют.','бер.','квіт.','трав.','черв.','лип.','серп.','вер.','жовт.','лист.','груд.'];
-function tourDates(r){   // «17–19 жовт.» / «30 жовт.–1 лист.» — за матчами вікенду (Київ)
-  const fx=((S.rr&&S.rr.fix)||[]).filter(f=>f.round_id===r.id); if(!fx.length) return '';
+function tourDates(r,src){   // «17–19 жовт.» / «30 жовт.–1 лист.» — за матчами вікенду (Київ); src — інший список матчів (Legend: S.lgFix)
+  const fx=(src||(S.rr&&S.rr.fix)||[]).filter(f=>f.round_id===r.id); if(!fx.length) return '';
   const ky=iso=>new Date(new Date(iso).toLocaleString('en-US',{timeZone:'Europe/Kyiv'}));
   const ts=fx.map(f=>ky(f.kickoff_at)).sort((a,b)=>a-b), a=ts[0], b=ts[ts.length-1];
   if(a.getMonth()===b.getMonth()) return a.getDate()===b.getDate() ? a.getDate()+' '+MON_UK[a.getMonth()] : a.getDate()+'–'+b.getDate()+' '+MON_UK[a.getMonth()];
@@ -2176,9 +2208,10 @@ function rivalsModalHtml(round){
 // Вибір вільний, доки не підтверджено склад Вікенду first_round (потім — ОДНА заміна одного вибору за турнір); без 3 виборів склад підтвердити не можна (сервер теж відмовить).
 // Немає таблиць/рядка налаштувань (586/587 не залито або Legend вимкнено) → чіп і блоки ховаються, підтвердження не блокується.
 async function loadLegend(){
-  S.lgOK=true; S.lgCfg=null; S.lgRoles=[]; S.lgCat=[]; S.lgPicks=[]; S.lgLog=[]; S.lgStand=[];
+  S.lgOK=true; S.lgCfg=null; S.lgRoles=[]; S.lgCat=[]; S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgFix=[];
   try{
     const T=S.tour.id, q='tournament_id=eq.'+T;
+    S.lgFix=await sbSel(`market_fixtures?${q}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc&limit=1000`).catch(()=>[]);   // 09.11: розклад і рахунки — для блоку «Матчі вікендів» на вкладці Legend
     S.lgCfg=(await sbSel(`market_legend_settings?${q}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode`).catch(()=>sbSel(`market_legend_settings?${q}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round`)))[0]||null;
     if(S.lgCfg && S.lgCfg.enabled!==false){
       const r=await Promise.all([
@@ -2284,18 +2317,60 @@ async function viewLegend(){
   S.lgDraft=Array.from({length:n},(_,i)=>{ const p=mine.find(x=>x.slot===i+1); return {club:p?p.club_id:'', role:p?p.role_code:''}; });
   drawLegend();
 }
+// ── 🐐 вигляд вкладки (09.11): кольорові чіпи клубів з емблемами (як ЄвроСезон/борда), очки по вікендах без рахунків, таблиця з медаллю, картки учасників, матчі вікендів ──
+function lgCol(cid,cname){ const c=CLUB[clubName(cid)||cname||'']; return (c && c[0]==='#') ? c : '#6f8f7f'; }
+function lgxChip(x){ const col=lgCol(x.club_id,x.club_name), r=lgRole(x.role_code);
+  return `<span class="lgx-chip" style="--lgc:${col};--lgb:${col}22">${crestImg(x.club_id)}${esc(x.club_name)} — ${r.icon} <b>${esc(x.legend_name||r.title)}</b></span>`; }
+// очки вибору по вікендах: «Вікенд 5: +2 · Вікенд 6: —» (— = матчу ще нема); only — лише вікенди з матчем (для «раніше»)
+function lgxWk(p,only){
+  const ls=(S.lgLog||[]).filter(l=>l.participant_id===p.participant_id && l.slot===p.slot && l.club_id===p.club_id && l.role_code===p.role_code);
+  const rds=(S.rounds||[]).map(r=>r.number).filter(n=>n>=lgFirst()).sort((a,b)=>a-b);
+  return rds.filter(n=>!only || ls.some(l=>l.round_number===n)).map(n=>{ const l=ls.find(q=>q.round_number===n);
+    return l ? `<span title="${esc(l.result==='W'?'перемога':l.result==='L'?'поразка':'нічия')}">Вікенд ${n}: <b class="${l.points>0?'up':''}">${l.points>0?'+':''}${l.points}</b></span>` : `<span class="lgx-no">Вікенд ${n}: —</span>`; }).join(' · '); }
+function lgWkList(){ return (S.rounds||[]).filter(r=>r.number>=lgFirst()).sort((a,b)=>a.number-b.number); }
+function lgWkSel(){ const l=lgWkList(); if(!l.length) return null; if(l.some(r=>r.number===S.lgWk)) return S.lgWk;
+  return (l.find(r=>!r.results_entered_at)||l[l.length-1]).number; }   // за замовчуванням — поточний (перший незакритий) вікенд
+function lgxKick(f){ const k=new Date(f.kickoff_at), now=new Date(), TZ='Europe/Kyiv', mins=(now-k)/60000;
+  const hm=k.toLocaleTimeString('uk-UA',{hour:'2-digit',minute:'2-digit',hour12:false,timeZone:TZ}), wd=k.toLocaleDateString('uk-UA',{weekday:'short',timeZone:TZ});
+  const same=k.toLocaleDateString('en-CA',{timeZone:TZ})===now.toLocaleDateString('en-CA',{timeZone:TZ});
+  if(mins<0) return {txt:same?hm:wd+' '+hm, cls:'sched'}; if(mins<135) return {txt:'йде', cls:'go'}; return {txt:'⏳', cls:'sched'}; }
+function lgxMatchesHtml(){   // список матчів обраного вікенду: клуби Legend яскраво, другу команду приглушено; довгий список — у дві колонки
+  const n=lgWkSel(), rnd=(S.rounds||[]).find(r=>r.number===n); if(!rnd) return '';
+  const set=new Set((S.lgCat||[]).map(x=>x.club_id));
+  const rf=(S.lgFix||[]).filter(f=>f.round_id===rnd.id && (!set.size || set.has(f.home_club_id) || set.has(f.away_club_id))).sort((a,b)=>new Date(a.kickoff_at)-new Date(b.kickoff_at));
+  if(!rf.length) return '<p class="rv-hint">Матчів цього вікенду ще немає.</p>';
+  const row=f=>{ const off=f.status==='postponed'?'перенесено':f.status==='cancelled'?'скасовано/перервано':''; let sc, cls='';
+    if(off){ sc=off; cls='off'; } else if(f.status==='played' || (f.home_score!=null && f.away_score!=null)){ sc=f.home_score+':'+f.away_score; } else { const k=lgxKick(f); sc=k.txt; cls=k.cls; }
+    const dm=cid=>(set.size && !set.has(cid))?' dim':'';
+    return `<div class="lgx-m"><div class="t${dm(f.home_club_id)}"><span>${esc(clubName(f.home_club_id))}</span>${crestImg(f.home_club_id)}</div><div class="lgx-sc ${cls}">${sc}</div><div class="t away${dm(f.away_club_id)}">${crestImg(f.away_club_id)}<span>${esc(clubName(f.away_club_id))}</span></div></div>`; };
+  const box=l=>`<div class="lgx-mb">${l.map(row).join('')}</div>`;
+  if(rf.length<=6) return `<div class="lgx-mg" style="grid-template-columns:minmax(0,640px)">${box(rf)}</div>`;
+  const dk=f=>new Date(f.kickoff_at).toLocaleDateString('en-CA',{timeZone:'Europe/Kyiv'}), mid=rf.length/2; let cut=Math.ceil(mid), best=1e9;
+  for(let i=1;i<rf.length;i++){ if(dk(rf[i])!==dk(rf[i-1])){ const d=Math.abs(i-mid); if(d<best){ best=d; cut=i; } } }
+  if(best>1.5) cut=Math.ceil(mid);
+  return `<div class="lgx-mg">${box(rf.slice(0,cut))}${box(rf.slice(cut))}</div>`;
+}
+function lgxMatchesBox(){
+  const wl=lgWkList(); if(!wl.length) return '';
+  const sel=lgWkSel(), nowD=new Date(), nCl=new Set((S.lgCat||[]).map(x=>x.club_id)).size;
+  const chips=wl.map(r=>`<button type="button" class="lgx-wkb ${r.number===sel?'on':''}" data-lgwk="${r.number}">Вікенд ${r.number}${r.results_entered_at?' ✔':(new Date(r.deadline_at)<=nowD?' ⏳':'')}<small>${esc(tourDates(r,S.lgFix)||'—')}</small></button>`).join('');
+  return `<div class="rvbox lgx-box"><div class="lgx-h">📅 Матчі вікендів · ${nCl?'клуби Club Legend':'клуби пулу'}</div>
+    <div class="lgx-wkrow">${chips}</div><div id="lgx-mt">${lgxMatchesHtml()}</div>
+    <p class="rv-hint" style="margin-bottom:0">Показано матчі ${nCl?nCl+' клубів Club Legend':'клубів пулу'} — другу команду в матчі приглушено. Очки Legend рахуються з вікендів від Вікенду ${lgFirst()}: обирай клуб, дивлячись на розклад.</p></div>`; }
 function drawLegend(){
   const n=lgNeedPicks(), fr=lgRound(), free=lgFree(), mineAll=lgMine(), act=lgActive(), used=mineAll.some(x=>x.is_replacement), fin=lgFinished(), vis=lgVisible();
-  const myRow=(S.lgStand||[]).find(x=>x.participant_id===S.me.id), tot=lgTotal();
+  const myRow=(S.lgStand||[]).find(x=>x.participant_id===S.me.id), tot=lgTotal(), cap=lgCap();
   const frTxt=fr?`Вікенд ${fr.number}`:'першого вікенду', frGen=fr?`Вікенду ${fr.number}`:'першого вікенду';   // frTxt — «на Вікенд N», frGen — «від/з/склади Вікенду N»
-  let h=`<div class="rv-h"><b>🐐 Твої вибори</b><span class="rv-pts ${tot?'up':''}" title="твої очки Legend: сума ${n} виборів, кожен зі стелею ${lgCap()}">${tot}/${n*lgCap()}</span></div>
+  let h=`<div class="rv-h"><b>🐐 Твої вибори</b><span class="rv-pts ${tot?'up':''}" title="твої очки Legend: сума ${n} виборів, кожен зі стелею ${cap}">${tot}/${n*cap}</span></div>
     <p class="rv-desc">${n} вибори «клуб + роль»: очки ролі рахуються з реальних матчів клубу від ${frGen} — одразу після матчу. Наприкінці місце в Legend → очки в General.</p>${lgRulesBlock()}`;
   if(fin){
     h+=`<p class="rv-hint"><b style="color:var(--gold)">Club Legend завершено.</b> Підсумкові місця й очки — в таблиці нижче.</p>`;
   }else if(free){
     const d=S.lgDraft||[], ck=lgCheck(d), saved=act.length===n && act.every((p,i)=>d[i] && d[i].club===p.club_id && d[i].role===p.role_code);
-    h+=`<p class="rv-hint">Обери ${n} вибори — <b>без них склад на ${esc(frTxt)} підтвердити не можна</b>. До підтвердження складу міняй скільки завгодно, потім — одна заміна за турнір.</p>`
-      + d.map((v,i)=>`<div class="lg-slot"><div class="lg-n">Вибір ${i+1}</div>${lgClubSelect('data-lgc="'+i+'"', v.club)}${lgRoleChips('data-lgr', v.role, v.club).replace(/data-lgr="/g,'data-lgr="'+i+':')}</div>`).join('')
+    const cn=cid=>((S.lgCat||[]).find(x=>x.club_id===cid)||{}).club_name||clubName(cid);
+    const pickBadge=(club,role)=>{ const col=lgCol(club,cn(club)); return `<span class="lgx-chip" style="--lgc:${col};--lgb:${col}22">${crestImg(club)}${esc(cn(club))}${role?` — ${lgRole(role).icon} <b>${esc(lgNameOf(club,role)||lgRole(role).title)}</b>`:''}</span>`; };   // клуб (і роль, коли вже обрано) — кольоровим чіпом з емблемою
+    h+=`<p class="rv-hint">Обери ${n} вибори — <b>без них склад на ${esc(frTxt)} підтвердити не можна</b>. До підтвердження складу міняй скільки завгодно, потім — одна заміна за турнір. Розклад матчів усіх вікендів — нижче, на цій же вкладці.</p>`
+      + d.map((v,i)=>`<div class="lg-slot"><div class="lg-n">Вибір ${i+1}</div>${lgClubSelect('data-lgc="'+i+'"', v.club)}${v.club?`<div style="margin-top:7px">${pickBadge(v.club,v.role)}</div>`:''}${lgRoleChips('data-lgr', v.role, v.club).replace(/data-lgr="/g,'data-lgr="'+i+':')}</div>`).join('')
       + (!ck.ok&&d.some(x=>x.club||x.role)?`<div class="lg-err">${esc(ck.errs.join(' · '))}</div>`:'')
       + `<button class="btn" id="lg-save" style="width:100%;margin-top:10px" ${(!ck.ok||saved)?'disabled':''}>${saved?'✓ Вибір збережено':'Зберегти вибір'}</button>`;
   }else{
@@ -2306,27 +2381,32 @@ function drawLegend(){
   if(!free || fin){
     const bySlot={}; mineAll.forEach(x=>{ (bySlot[x.slot]=bySlot[x.slot]||[]).push(x); });
     h+=Object.keys(bySlot).map(Number).sort((a,b)=>a-b).map(s=>{
-      const rows=bySlot[s], a=rows.find(x=>x.is_active), prev=rows.filter(x=>!x.is_active), r=a?lgRole(a.role_code):null;
-      return `<div class="lg-pick"><div class="lg-top">${a?`<span>${r.icon}</span><b>${esc(a.legend_name||a.club_name)}</b><span class="dim">· ${esc(a.club_name)} · ${esc(r.title)}</span><span class="lg-pts" title="очки цього вибору (стеля ${lgCap()})">${a.slot_points||0}/${lgCap()}</span>${(!used&&!fin)?`<button class="ghost" data-lgrep="${s}">Замінити</button>`:''}`:`<span class="dim">Вибір ${s} — порожній</span>`}</div>`
-        + lgSlotLog(s)
-        + prev.map(x=>`<div class="lg-prev">↪ раніше: ${lgRole(x.role_code).icon} ${esc(x.legend_name||x.club_name)} · ${esc(x.club_name)} — зароблено ${x.points_raw||0}</div>`).join('')
+      const rows=bySlot[s], a=rows.find(x=>x.is_active), prev=rows.filter(x=>!x.is_active);
+      return `<div class="lgx-pick"><div class="lgx-top">${a?`${lgxChip(a)}<span class="lgx-pts" title="очки цього вибору (стеля ${cap})">${a.slot_points||0}/${cap}</span>${(!used&&!fin)?`<button class="ghost" data-lgrep="${s}">Замінити</button>`:''}`:`<span class="dim">Вибір ${s} — порожній</span>`}</div>`
+        + (a?`<div class="lgx-wk">${lgxWk(a,false)||'ще без зіграних матчів'}</div>`:'')
+        + prev.map(x=>`<div class="lgx-prev">↪ раніше: ${lgxChip(x)} <span>${lgxWk(x,true)||'без зіграних матчів'} · зароблено <b>${x.points_raw||0}</b></span></div>`).join('')
         + `</div>`;
     }).join('');
   }
+  if(!vis) h+=`<p class="rv-hint">Чужі вибори й таблиця відкриються, коли відкриють склади ${esc(frGen)} (як Rivals).</p>`;
+  let more='';
   if(vis && (S.lgStand||[]).length){
-    h+=`<div class="rv-sec">Таблиця Club Legend${fin?'':' · поки що'}</div>`+(S.lgStand||[]).map(x=>{
-      const pl=x.final_place!=null?x.final_place:x.live_place, pts=x.final_place!=null?x.final_points:x.live_points;
-      return `<div class="rv-rk"><span>${pl}. ${esc(x.display_name)}${x.participant_id===S.me.id?' <span class="dim">(ти)</span>':''}</span><span class="mono dim">${x.raw_points} оч. · ${lgSum()?'усі вже в General':`${fin?'':'≈ '}+${pts||0} у General`}</span></div>`; }).join('');
-    const others=(S.lgPicks||[]).filter(x=>!x.is_mine && x.is_active);
-    if(others.length){
-      const byP={}; others.forEach(x=>{ (byP[x.participant_id]=byP[x.participant_id]||{name:x.display_name,rows:[]}).rows.push(x); });
-      h+=`<div class="rv-sec" style="margin-top:12px">Хто що обрав</div>`+Object.values(byP).sort((a,b)=>String(a.name).localeCompare(String(b.name))).map(p=>
-        `<div class="rv-row"><b>${esc(p.name)}</b><div class="rv-hist">${p.rows.sort((a,b)=>a.slot-b.slot).map(x=>`${lgRole(x.role_code).icon} ${esc(x.legend_name||x.club_name)} <span class="dim">(${esc(x.club_name)})</span> <b>${x.slot_points||0}</b>`).join(' · ')}</div></div>`).join('');
-    }
-  }else if(!vis){
-    h+=`<p class="rv-hint">Чужі вибори й таблиця відкриються, коли відкриють склади ${esc(frGen)} (як Rivals).</p>`;
+    const stand=(S.lgStand||[]).slice(), place=x=>x.final_place!=null?x.final_place:x.live_place, best=Math.max(0,...stand.map(x=>x.raw_points||0));
+    stand.sort((a,b)=>(place(a)-place(b))||String(a.display_name).localeCompare(String(b.display_name),'uk'));
+    more+=`<div class="rvbox lgx-box lgx-tbl"><div class="lgx-h">🏆 Таблиця Club Legend${fin?' · підсумок':' · поки що'}</div>`+stand.map(x=>{
+      const gold=best>0 && (x.raw_points||0)===best, me=x.participant_id===S.me.id, pts=x.final_place!=null?x.final_points:x.live_points;
+      return `<div class="lgx-r ${gold?'p1':''} ${me?'lgme':''}"><div class="lgx-rk">${gold?'🥇':place(x)}</div><div class="lgx-nm">${esc(x.display_name)}${me?' <span class="dim" style="font-weight:400;font-size:13px">(ти)</span>':''}<small>${x.raw_points||0} з ${n*cap} очок Legend · ${lgSum()?'усі вже в General':`${fin?'':'≈ '}+${pts||0} у General`}</small></div><div class="lgx-rp">${x.raw_points||0}<small>очок</small></div></div>`; }).join('')+`</div>`;
+    // хто що обрав — картки всіх учасників у порядку таблиці (свої — золотом)
+    const byP={}; (S.lgPicks||[]).forEach(x=>{ (byP[x.participant_id]=byP[x.participant_id]||[]).push(x); });
+    const cards=stand.filter(x=>byP[x.participant_id]).map(x=>{ const pid=x.participant_id, rowsP=byP[pid], me=pid===S.me.id;
+      const slots=[...new Set(rowsP.map(r=>r.slot))].sort((a,b)=>a-b);
+      const body=slots.map(s=>{ const rs=rowsP.filter(r=>r.slot===s), a=rs.find(r=>r.is_active), prev=rs.filter(r=>!r.is_active);
+        return `<div class="lgx-slotc">${a?`<div>${lgxChip(a)}</div><div class="lgx-wk">${lgxWk(a,false)||'ще без зіграних матчів'} · разом <b class="lgx-tot">${a.slot_points||0}</b>/${cap}</div>`:''}`
+          + prev.map(r=>`<div class="lgx-prev">↪ раніше: ${lgxChip(r)} <span>${lgxWk(r,true)||'без зіграних матчів'} · зароблено <b>${r.points_raw||0}</b></span></div>`).join('')+`</div>`; }).join('');
+      return `<div class="lgx-card ${me?'lgme':''}"><div class="lgx-ct"><span>${esc(x.display_name)}${me?' <span class="dim" style="font-weight:400;font-size:12.5px">(ти)</span>':''}</span><span class="lgx-cp">${x.raw_points||0}/${n*cap}</span></div>${body}</div>`; }).join('');
+    if(cards) more+=`<div class="lgx-box"><div class="lgx-h">👥 Хто що обрав · очки по вікендах</div><div class="lgx-grid">${cards}</div></div>`;
   }
-  $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>🐐 Club Legend</h2><span class="sub">паралельна гра · з ${esc(frGen)}</span></div><div class="rvbox">${h}</div>`;
+  $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>🐐 Club Legend</h2><span class="sub">паралельна гра · з ${esc(frGen)}</span></div><div class="rvbox">${h}</div>${(free && !fin)?lgxMatchesBox()+more:more+lgxMatchesBox()}`;
   bindTourChips(); bindLegend();
 }
 function bindLegend(){
@@ -2338,6 +2418,8 @@ function bindLegend(){
   if(sv) sv.onclick=()=>{ if(sv.disabled) return; sv.disabled=true;
     act('market_legend_set',{p_tournament:S.tour.id,p_participant:S.me.id,p_picks:S.lgDraft.map(x=>({club:x.club,role:x.role}))},'Вибір Club Legend збережено',{quiet:true}); };
   box.querySelectorAll('[data-lgrep]').forEach(b=>b.onclick=()=>lgReplaceModal(+b.dataset.lgrep));
+  document.querySelectorAll('[data-lgwk]').forEach(b=>b.onclick=()=>{ S.lgWk=+b.dataset.lgwk; const host=$('lgx-mt'); if(host) host.innerHTML=lgxMatchesHtml();
+    document.querySelectorAll('[data-lgwk]').forEach(x=>x.classList.toggle('on', +x.dataset.lgwk===S.lgWk)); });
 }
 function lgReplaceModal(slot){
   const cur=lgActive().find(x=>x.slot===slot); if(!cur) return;
