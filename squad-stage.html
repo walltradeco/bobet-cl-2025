@@ -1064,13 +1064,13 @@ function renderLg(){
       <p class="mglink">Усі правила, ролі й приклади — нижче та у вкладці <a onclick="goStage('rules');return false">Rules</a>.</p></div>
     ${sec('🏆 Загальна таблиця · Club Legend')}
     <div class="lbboards one">${table}</div>
+    <details class="lgdet" id="lgDet" ${S.lgRulesOpen?'open':''}><summary>📖 Як це рахується — правила й приклади</summary><div class="rsec">${lgExamplesHtml()}</div></details>
     ${sec('👥 Хто що обрав · очки по вікендах')}
     ${cards?`<div class="chgrid">${cards}</div>`:'<div class="hint">Вибори учасників з’являться, коли відкриють склади Вікенду '+first+'.</div>'}
     ${lgWkList().length?`${sec('📅 Матчі вікендів · клуби Club Legend')}
     <div class="turnrow lgwk" id="lgWkRow">${lgWkList().map(r=>`<div class="turnc" aria-selected="${r.number===lgWkSel()}" data-lgwk="${r.number}">Вікенд ${r.number}${r.results_entered_at?' ✔':(new Date(r.deadline_at)<=new Date()?' ⏳':'')}</div>`).join('')}</div>
     <div id="lgMt" class="mtgrid one"></div>
     <div class="hint">Показано матчі клубів Club Legend (${(S.lgCat||[]).length?lgClubSet().size+' клубів':'клуби пулу'}); другу команду в матчі приглушено. Очки Legend рахуються з вікендів від Вікенду ${first}. Клік по матчу — оцінки гравців пулу.</div>`:''}
-    <details class="lgdet" id="lgDet" ${S.lgRulesOpen?'open':''}><summary>📖 Як це рахується — правила й приклади</summary><div class="rsec">${lgExamplesHtml()}</div></details>
     <div class="hint">Усі правила Club Legend — у вкладці <a style="color:var(--gold);cursor:pointer;text-decoration:underline" onclick="goStage('rules');return false">Rules</a> · рівні очки → ділять місце.</div>`;
   { const d=$('lgDet'); if(d) d.addEventListener('toggle',()=>{ S.lgRulesOpen=d.open; }); }
   host.querySelectorAll('[data-lgwk]').forEach(b=>b.onclick=()=>{ S.lgWk=+b.dataset.lgwk; lgDrawMatches(); });
