@@ -859,19 +859,30 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .pm-value .metric span{font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:5px;display:block}
 .pm-toprow{display:flex;justify-content:space-between;align-items:flex-start;gap:8px 16px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:10px}   /* 20.10: вартість · Val Δ · очки — ліворуч, голи/асисти/матчі ліги — праворуч */
 .pm-toprow .pm-value{padding:10px 0 0;gap:10px 22px}   /* 07.11 (Богдан): стат-блок (голи/асисти/матчі) мусить влазити в один рядок у ВСІХ гравців — раніше Barella/Palmer/Kane переносило на 4px */
-.pm-toprow .pm-pts{margin-left:auto;padding-right:6px}   /* 20.10: очки — праворуч, ближче до голів/асистів/матчів */
+.pm-toprow .pm-pts{flex-direction:column;flex-wrap:nowrap;gap:8px;padding-right:6px}   /* 09.11 (Богдан): «Набрав очок» і «Приніс у складах» — у 2 рядки (стовпчиком), щоб лишилось місце для «Очок по вікендах» ліворуч від них */   /* 20.10: очки — праворуч, ближче до голів/асистів/матчів */
 .pm-sbox{padding-top:10px}
-.pm-wkpts{padding-top:10px}   /* 09.11 (Богдан): очки по вікендах — на місці колишньої статистики ліги; усе про турнір (вартість, ріст, очки) — одним рядком */
+.pm-wkpts{padding-top:10px;margin-left:auto}   /* 09.11 (Богдан): очки по вікендах — на місці колишньої статистики ліги; усе про турнір (вартість, ріст, очки) — одним рядком */
 .pm-wkpts .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px}
 .pm-wkpts .wkp{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);column-gap:20px;justify-content:start}
 .pm-wkpts .wk{display:block;white-space:nowrap;font-style:normal;font-family:var(--mono);font-size:12px;font-weight:500;line-height:1.45;color:var(--text-dim)}   /* <em>, а не <span>: `.pm-value .metric span` робить будь-який span блоковим капсом */
 .pm-wkpts .wk b{color:var(--text);font-weight:700}
 .pm-wkpts .wk.up b{color:var(--up)} .pm-wkpts .wk.down b{color:var(--down)}
 .pm-wkpts .wkp0{font-family:var(--mono);font-size:12px}
+/* 09.11 (Богдан): другий рядок картки = [вартість · ріст] [очки по вікендах] [набрав / приніс — стовпчиком]; на вужчих вікнах «очки по вікендах» переходять у власний рядок під ними */
+.pm-toprow{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"v w p";align-items:start;gap:8px 16px}
+.pm-toprow>.pm-value:not(.pm-pts){grid-area:v}
+.pm-toprow>.pm-wkpts{grid-area:w;justify-self:end;margin-left:0}
+.pm-toprow>.pm-pts{grid-area:p}
+@media(min-width:721px) and (max-width:899px){
+  .pm-toprow{grid-template-columns:1fr auto;grid-template-areas:"v p" "w w"}
+  .pm-toprow>.pm-wkpts{justify-self:start}
+}
 @media(max-width:720px){   /* телефон: статистика ліги й рейтинг не вміщаються в один рядок — рейтинг переходить нижче, ліворуч */
   .pm-idr{flex:1 1 100%;flex-wrap:wrap;gap:10px 18px;max-width:100%}
   .pm-idr .pm-rating{margin-right:0;text-align:left}
   .pm-wkpts .wkp{grid-template-rows:repeat(3,auto)}
+  .pm-toprow .pm-wkpts{margin-left:0}
+  .pm-toprow{display:flex;flex-direction:column}
 }
 .pm-sbox .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px;text-align:center}
 .pm-sbox .pm-seasons{grid-template-columns:repeat(3,66px)}
@@ -900,6 +911,7 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
   .pm-toprow .pm-value .metric>span{max-width:112px}
   .pm-toprow .pm-value .metric strong{font-size:21px}
   .pm-toprow .pm-pts{padding-right:0}
+  .pm-toprow .pm-pts .metric>span{max-width:none;white-space:nowrap}   /* стовпчиком місця вистачає: підпис в один рядок */
   .pm-sbox .pm-seasons{grid-template-columns:repeat(3,56px)}
   .pm-seasons strong{font-size:21px}
 }
@@ -1305,11 +1317,14 @@ async function loadRefs(){
       if(adm) S.flags = fl||[];
     })(),
     // форма гравця (рейтинги по вікендах) — для спарклайну плитки й графіка в модалці
-    (async()=>{ S.form = {}; S.wkPts = {};
+    (async()=>{ if(!S.form) S.form={}; if(!S.wkPts) S.wkPts={};   // 09.11: НЕ скидаємо у {} на старті — паралельні loadRefs (INITIAL_SESSION/SIGNED_IN…) штовхали рядки в один спільний об'єкт → «Очки по вікендах» ×3; збираємо в локальні й присвоюємо одним рухом
       try{ const fr=[]; for(let off=0;;off+=1000){ const r=await sbSel(`market_player_round_points?tournament_id=eq.${T}&select=player_id,round_id,avg_rating,points&order=round_id.asc,player_id.asc&limit=1000&offset=${off}`); fr.push(...r); if(r.length<1000) break; }   // 09.11: рядків уже >1000 (ліміт PostgREST на відповідь) → сторінками; інакше очки по вікендах у картці розходяться з «Набрав очок»
 
-           fr.forEach(r=>{ (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating);
-                           (S.wkPts[r.player_id]=S.wkPts[r.player_id]||[]).push({rid:r.round_id,pts:r.points}); }); }catch(e){ S.form={}; S.wkPts={}; } })(),
+           const form={}, wk={}, seen=new Set();
+           fr.forEach(r=>{ const k=r.player_id+'|'+r.round_id; if(seen.has(k)) return; seen.add(k);
+                           (form[r.player_id]=form[r.player_id]||[]).push(r.avg_rating);
+                           (wk[r.player_id]=wk[r.player_id]||[]).push({rid:r.round_id,pts:r.points}); });
+           S.form=form; S.wkPts=wk; }catch(e){ S.form=S.form||{}; S.wkPts=S.wkPts||{}; } })(),
     // статистика гравця в турнірі (434; market_player_stats публічна). Поки 434 не залито → degrade
     (async()=>{ S.stats={}; S.statsReady=false;
       try{ (await sbSel(`market_player_stats?tournament_id=eq.${T}&select=player_id,scored_points,rounds_played,fielded_points,fielded_rounds,value_delta_pct`)).forEach(s=>S.stats[s.player_id]=s);
@@ -4023,7 +4038,8 @@ function fxRow(a, meta, W, pad){
 // (чисті, без ×2); сума вікендів = «Набрав очок (турнір)». Показуємо лише вікенди, де гравець грав.
 function ochW(n){ const a=Math.abs(n), m=a%100, d=a%10; return (m>=11&&m<=14)?'очок':d===1?'очко':(d>=2&&d<=4)?'очка':'очок'; }
 function wkPtsBox(pid){
-  const rows=(S.wkPts&&S.wkPts[pid]||[]).map(x=>({n:(S.rounds.find(r=>r.id===x.rid)||{}).number, v:+x.pts||0})).filter(r=>r.n!=null).sort((a,b)=>a.n-b.n);
+  const byN=new Map(); (S.wkPts&&S.wkPts[pid]||[]).forEach(x=>{ const n=(S.rounds.find(r=>r.id===x.rid)||{}).number; if(n!=null) byN.set(n,+x.pts||0); });   // Map за номером вікенду — дублів не буває
+  const rows=[...byN].map(([n,v])=>({n,v})).sort((a,b)=>a.n-b.n);
   const list=rows.length? `<div class="wkp">${rows.map(r=>`<em class="wk ${r.v>0?'up':r.v<0?'down':''}">Вікенд ${r.n} · <b>${r.v}</b> ${ochW(r.v)}</em>`).join('')}</div>` : '<div class="dim wkp0">ще не грав у турнірі</div>';
   return `<div class="pm-wkpts"><div class="pm-sl">Очки по вікендах · турнір</div>${list}</div>`;
 }
@@ -4302,11 +4318,11 @@ async function openPlayerModal(pid){
             <div class="metric"><strong>${eur(p.market_value_current)}</strong>${startWas(p)}<span>Вартість</span></div>
             <div class="metric delta ${dl.dir}"><strong>${dl.txt}</strong>${dl.small}<span>Ріст вартості гравця · турнір</span></div>
           </div>
+          ${wkPtsBox(p.id)}
           <div class="pm-value pm-pts">
             <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
             <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
           </div>
-          ${wkPtsBox(p.id)}
         </div>
         <div class="pm-midrow">
           <div class="pm-side">
