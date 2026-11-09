@@ -224,19 +224,19 @@ table.t{width:100%;border-collapse:collapse}
 @media(max-width:640px){   /* телефон: рядок списку → компактна картка (зірочка й дія завжди на екрані, без бокової прокрутки) */
   .wltbl thead{display:none}
   .wltbl,.wltbl tbody{display:block}
-  .wltbl tr.wlrow{display:grid;grid-template-columns:minmax(0,1fr) 78px 124px;grid-template-areas:"pl pl star" "st pr act" "rt fm fm" "vd inj inj";gap:6px 12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line)}
+  .wltbl tr.wlrow{display:grid;grid-template-columns:minmax(0,1fr) 78px 124px;grid-template-areas:"pl pl star" "st pr act" "vd vd inj" "rt fm fm";gap:6px 12px;align-items:center;padding:12px 2px;border-bottom:1px solid var(--line)}
   .wltbl tr.wlrow td{display:block;border:0;padding:0;text-align:left;opacity:1;background:none!important}
   .wltbl tr.wlrow.mine{background:rgba(244,196,48,.05)}
   .wltbl tr.wlrow.unw,.wltbl tr.wlrow.out{opacity:.55}
   .wltbl td.c-pl{grid-area:pl}.wltbl td.c-st{grid-area:st}.wltbl td.c-pr{grid-area:pr}.wltbl td.c-rt{grid-area:rt}.wltbl td.c-fm{grid-area:fm;text-align:left}.wltbl td.c-vd{grid-area:vd}.wltbl td.c-inj{grid-area:inj}
-  .wltbl td.c-fm::before{content:'Форма ';color:var(--text-dim);font-size:11px}
+  .wltbl td.c-fm::before{content:'Останні 5 матчів ';color:var(--text-dim);font-size:11px;margin-right:4px}
   /* Вітрина: ті ж колонки інфо про гравця + Ціна (ask) і Продавець */
-  .wltbl.shoptbl tr.wlrow{grid-template-columns:minmax(0,1fr) 150px 92px;grid-template-areas:"pl pl sel" "pr ask act" "rt fm fm" "vd inj inj"}
+  .wltbl.shoptbl tr.wlrow{grid-template-columns:minmax(0,1fr) 150px 92px;grid-template-areas:"pl pl sel" "pr ask act" "vd vd inj" "rt fm fm"}
   .wltbl.shoptbl td.c-ask{grid-area:ask}.wltbl.shoptbl td.c-sel{grid-area:sel;text-align:right}
   .wltbl.shoptbl td.c-pr::before{content:'Вартість ';color:var(--text-dim);font-size:11px}
   .wltbl.shoptbl td.c-ask::before{content:'Ціна ';color:var(--text-dim);font-size:11px}
   .wltbl td.c-act{grid-area:act;text-align:right}.wltbl td.c-star{grid-area:star;text-align:right}
-  .wltbl td.c-vd::before{content:'Ріст вартості гравця ';color:var(--text-dim);font-size:11px}
+  .wltbl td.c-vd::before{content:'Ріст вартості гравця · турнір ';color:var(--text-dim);font-size:11px}
   .wltbl .wstar{width:34px;height:34px;font-size:24px}
 }
 .pbadge{font-family:var(--mono);font-size:10px;font-weight:700;letter-spacing:.05em;padding:2px 8px;border-radius:5px;border:1px solid transparent}
@@ -840,6 +840,10 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .pm-metarow b{color:var(--text);font-weight:600}
 .pm-metarow .club{display:flex;align-items:center;gap:5px}
 .pm-metarow .crest{width:15px;height:15px;border-radius:4px}
+.pm-identity{flex-wrap:wrap}
+.pm-idl{flex:1 1 260px;min-width:0}
+.pm-idr{display:flex;align-items:flex-start;gap:22px;flex:none}   /* 09.11 (Богдан): голи/асисти/матчі ліги — ліворуч від «Сер. рейтингу» (усе про чемпіонат/SofaScore — зверху) */
+.pm-idr .pm-sbox{padding-top:2px}
 .pm-rating{text-align:right;flex:none;margin-right:28px}   /* 23.10: трохи лівіше — ✕ закриття не налазить на рейтинг */
 .pm-rating strong{display:block;font-family:var(--mono);font-weight:700;font-size:36px;color:var(--up);line-height:.9}
 .pm-rating span{display:block;font-family:var(--mono);font-size:10px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.05em;margin-top:4px}
@@ -857,6 +861,18 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .pm-toprow .pm-value{padding:10px 0 0;gap:10px 22px}   /* 07.11 (Богдан): стат-блок (голи/асисти/матчі) мусить влазити в один рядок у ВСІХ гравців — раніше Barella/Palmer/Kane переносило на 4px */
 .pm-toprow .pm-pts{margin-left:auto;padding-right:6px}   /* 20.10: очки — праворуч, ближче до голів/асистів/матчів */
 .pm-sbox{padding-top:10px}
+.pm-wkpts{padding-top:10px}   /* 09.11 (Богдан): очки по вікендах — на місці колишньої статистики ліги; усе про турнір (вартість, ріст, очки) — одним рядком */
+.pm-wkpts .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px}
+.pm-wkpts .wkp{display:grid;grid-auto-flow:column;grid-template-rows:repeat(3,auto);column-gap:20px;justify-content:start}
+.pm-wkpts .wk{display:block;white-space:nowrap;font-style:normal;font-family:var(--mono);font-size:12px;font-weight:500;line-height:1.45;color:var(--text-dim)}   /* <em>, а не <span>: `.pm-value .metric span` робить будь-який span блоковим капсом */
+.pm-wkpts .wk b{color:var(--text);font-weight:700}
+.pm-wkpts .wk.up b{color:var(--up)} .pm-wkpts .wk.down b{color:var(--down)}
+.pm-wkpts .wkp0{font-family:var(--mono);font-size:12px}
+@media(max-width:720px){   /* телефон: статистика ліги й рейтинг не вміщаються в один рядок — рейтинг переходить нижче, ліворуч */
+  .pm-idr{flex:1 1 100%;flex-wrap:wrap;gap:10px 18px;max-width:100%}
+  .pm-idr .pm-rating{margin-right:0;text-align:left}
+  .pm-wkpts .wkp{grid-template-rows:repeat(3,auto)}
+}
 .pm-sbox .pm-sl{font-family:var(--mono);font-size:9px;text-transform:uppercase;color:var(--text-dim);letter-spacing:.06em;margin-bottom:6px;text-align:center}
 .pm-sbox .pm-seasons{grid-template-columns:repeat(3,66px)}
 .pm-midrow{display:grid;grid-template-columns:2fr 3fr;gap:16px;align-items:start;padding-top:10px}   /* 21.10 (Богдан): статус · роль · історія + дизайн картки — ліворуч, форма 5 матчів — праворуч (краще використано місце: дизайн більше не подовжує колонку картки) */
@@ -1203,7 +1219,7 @@ async function loadRefs(){
   const g=async(q)=>{ try{ return await sbSel(q); }catch(e){ return null; } };
   const roundsP = sbSel(`market_rounds?tournament_id=eq.${T}&select=id,number,title,deadline_at,results_entered_at,opened_at&order=number.asc`).then(r=>{ S.rounds=r; return r; });
   const cfgP = Promise.resolve(sb.rpc('market_cfg', { p_tournament:T })).then(r=>{ S.cfg=r.data||null; return S.cfg; });
-  const playersP = sbSel(`market_players?tournament_id=eq.${T}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,injury,shirt_number,sofascore_player_id,in_pool&order=market_value_current.desc`).then(r=>{ S.players=r; return r; });
+  const playersP = sbSel(`market_players?tournament_id=eq.${T}&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,minutes,contract_rounds_left,injury,shirt_number,sofascore_player_id,in_pool,recent_ratings&order=market_value_current.desc`).then(r=>{ S.players=r; return r; });
   await Promise.all([
     sbSel('market_clubs?select=id,name,league,sofascore_tid').then(cs=>{ S.clubs={}; cs.forEach(c=>S.clubs[c.id]=c); }),
     cfgP, roundsP, playersP,
@@ -1289,9 +1305,11 @@ async function loadRefs(){
       if(adm) S.flags = fl||[];
     })(),
     // форма гравця (рейтинги по вікендах) — для спарклайну плитки й графіка в модалці
-    (async()=>{ S.form = {};
-      try{ const fr = await sbSel(`market_player_round_points?tournament_id=eq.${T}&select=player_id,round_id,avg_rating&order=round_id.asc`);
-           fr.forEach(r=>{ (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating); }); }catch(e){ S.form={}; } })(),
+    (async()=>{ S.form = {}; S.wkPts = {};
+      try{ const fr=[]; for(let off=0;;off+=1000){ const r=await sbSel(`market_player_round_points?tournament_id=eq.${T}&select=player_id,round_id,avg_rating,points&order=round_id.asc,player_id.asc&limit=1000&offset=${off}`); fr.push(...r); if(r.length<1000) break; }   // 09.11: рядків уже >1000 (ліміт PostgREST на відповідь) → сторінками; інакше очки по вікендах у картці розходяться з «Набрав очок»
+
+           fr.forEach(r=>{ (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating);
+                           (S.wkPts[r.player_id]=S.wkPts[r.player_id]||[]).push({rid:r.round_id,pts:r.points}); }); }catch(e){ S.form={}; S.wkPts={}; } })(),
     // статистика гравця в турнірі (434; market_player_stats публічна). Поки 434 не залито → degrade
     (async()=>{ S.stats={}; S.statsReady=false;
       try{ (await sbSel(`market_player_stats?tournament_id=eq.${T}&select=player_id,scored_points,rounds_played,fielded_points,fielded_rounds,value_delta_pct`)).forEach(s=>S.stats[s.player_id]=s);
@@ -2842,14 +2860,33 @@ function buyerNote(t){
 
 // ── плитка гравця (сітка ринку, за макетом) ──
 // ── ★ ВІДСЛІДКОВУЮ (604) ── приватний список гравців турніру; запис — лише через market_watch_set (оптимістично, при відмові — відкат)
-// 07.11 (Богдан): колонки «інфо про гравця» однакові у «Відслідковую» і «Вітрина» (без фото): Вартість зараз · Рейтинг · Форма · Val Δ · Травма.
-// «Форма» = оцінки гравця по ВІКЕНДАХ нашого турніру (S.form: середня за вікенд; останні 5, старіші ліворуч) — не матчі національних змагань (вони — у картці гравця).
+// 07.11 (Богдан): колонки «інфо про гравця» однакові у «Відслідковую» і «Вітрина» (без фото).
+// 09.11 (Богдан): порядок — Вартість зараз · Ріст вартості гравця · турнір (поруч із вартістю) · Рейтинг · Останні 5 матчів (поруч із рейтингом) · Травма.
+// «Останні 5 матчів» = оцінки SofaScore за 5 останніх матчів гравця в УСІХ змаганнях (recent_ratings, як у картці), а не оцінки по вікендах турніру.
 const PL_HEAD_PL='<th>Гравець</th>';
-const PL_FORM_TH='<th class="n">Форма'+tipBtn('Оцінки гравця за вікендами нашого турніру (середня за вікенд): останні 5, старіші ліворуч. Матчі всіх змагань гравця — у його детальній картці.')+'</th>';
-const PL_HEAD_INFO='<th class="n">Вартість зараз</th><th class="n">Рейтинг</th>'+PL_FORM_TH+'<th class="n">Ріст вартості гравця</th><th>Травма / дискваліфікація</th>';
+const PL_FORM_TH='<th class="n">Останні 5 матчів'+tipBtn('Оцінки SofaScore за 5 останніх матчів гравця в усіх змаганнях (ліга, єврокубки, збірна): старіші ліворуч, найсвіжіший праворуч. Деталі кожного матчу — у картці гравця.')+'</th>';
+const PL_GROW_TH='<th class="n">Ріст вартості гравця · турнір'+tipBtn('Сумарний ріст вартості гравця від старту турніру до зараз. По кожному вікенду окремо — у картці гравця.')+'</th>';
+const PL_HEAD_INFO='<th class="n">Вартість зараз</th>'+PL_GROW_TH+'<th class="n">Рейтинг</th>'+PL_FORM_TH+'<th>Травма / дискваліфікація</th>';
 function plRating(p){ return `<span class="rpill">${p.season_avg_rating??'—'}</span>`; }
-function plForm(p){ const a=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5); if(!a.length) return '<span class="dim">—</span>';
+// останні 5 оцінок (старіші ліворуч). Якщо recent_form уже довантажено (plHydrateForm) — той самий дедуп «матч двічі», що й у картці; нема recent_ratings → оцінки по вікендах (як у картці)
+function plLast5(p){
+  const rf=(S.rfm||{})[p.id];
+  let a = rf ? dedupForm({recent_ratings:p.recent_ratings,recent_form:rf}).rr.slice().reverse()
+             : (p.recent_ratings||[]).map(Number).filter(v=>!isNaN(v)).slice(0,5).reverse();
+  if(!a.length) a=(S.form[p.id]||[]).filter(v=>v!=null).slice(-5);
+  return a;
+}
+function plForm(p){ const a=plLast5(p); if(!a.length) return '<span class="dim">—</span>';
   const c=v=>v>=8?'hi':v>=7?'mid':v>=6.5?'lo':'bad'; return `<span class="plfm">${a.map(v=>`<span class="${c(+v)}">${(+v).toFixed(1)}</span>`).join('')}</span>`; }
+// recent_form важкий (≈300 КБ на пул) — вантажимо лише для гравців, що зараз у таблиці (Відслідковую / Вітрина), і оновлюємо комірки на місці
+async function plHydrateForm(){
+  const ids=[...new Set([...document.querySelectorAll('#view td.c-fm')].map(td=>td.closest('tr')).filter(Boolean).map(tr=>tr.dataset.open||tr.dataset.wp).filter(Boolean))].filter(id=>!(S.rfm&&S.rfm[id]));
+  if(!ids.length) return;
+  S.rfm=S.rfm||{};
+  try{ (await sbSel(`market_players?id=in.(${ids.join(',')})&select=id,recent_form`)).forEach(x=>{ S.rfm[x.id]=x.recent_form||[]; }); }catch(e){ return; }
+  ids.forEach(id=>{ const p=S.players.find(x=>x.id===id); if(!p) return;
+    document.querySelectorAll(`#view tr[data-open="${id}"] td.c-fm, #view tr[data-wp="${id}"] td.c-fm`).forEach(td=>{ td.innerHTML=plForm(p); }); });
+}
 function plInj(p){ const j=p.injury; return j? `${j.kind==='suspension'?'🟥 Дискваліфікація':'🤕 Травма'}${(j.note||j.expected_return||j.status)?` <span class="dim">· ${esc(j.note||j.expected_return||j.status)}</span>`:''}` : '<span class="dim">—</span>'; }
 function starBtn(pid){
   if(!S.watchReady) return '';
@@ -3029,14 +3066,15 @@ async function viewMarket(){
       const rows=shopAll.map(l=>({l, p:S.players.find(x=>x.id===l.player_id)})).filter(r=>r.p)
         .sort((a,b)=>((b.l.seller_participant===S.me.id)-(a.l.seller_participant===S.me.id))||(a.l.ask_price-b.l.ask_price));
       body = `<p class="dim">Гравці, яких власники виставили за <b>фіксованою ціною</b> (${winTxt()}, 0% комісії). Викуп — миттєвий, власник отримує суму повністю. Свій лот можна зняти.</p>`
-        + (rows.length ? `<div style="overflow-x:auto"><table class="t wltbl shoptbl"><thead><tr>${PL_HEAD_PL}<th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th class="n">Рейтинг</th>${PL_FORM_TH}<th class="n">Ріст вартості гравця</th><th>Травма / дискваліфікація</th><th>Продавець</th><th></th></tr></thead><tbody>${
+        + (rows.length ? `<div style="overflow-x:auto"><table class="t wltbl shoptbl"><thead><tr>${PL_HEAD_PL}<th class="n">Вартість зараз</th>${PL_GROW_TH}<th class="n">Ціна (ask)</th><th class="n">Рейтинг</th>${PL_FORM_TH}<th>Травма / дискваліфікація</th><th>Продавець</th><th></th></tr></thead><tbody>${
           rows.map(({l,p})=>{
             const mv=p.market_value_current||0, mine=l.seller_participant===S.me.id, pct=mv? Math.round((l.ask_price/mv-1)*100) : 0;
             const stale=(+l.ask_price<Math.ceil(mv*winMinPct()))||(winMaxPct()!=null&&+l.ask_price>winMaxEur(mv));
             const d=vDelta(p);
             return `<tr class="shoprow wlrow ${mine?'mine':''}" data-open="${p.id}" style="cursor:pointer"><td class="c-pl"><b>${esc(p.name)}</b> <span class="dim">${esc(clubPos(p))}</span></td>
-              <td class="n c-pr">${eur(mv)}</td><td class="n c-ask"><b>${eur(l.ask_price)}</b> <span class="dim">${pct>0?'+':''}${pct}%</span>${stale?' <span class="warnc" title="Вартість змінилась — ціна поза вікном, лот застарів">🕓 застарів</span>':''}</td>
-              <td class="n c-rt">${plRating(p)}</td><td class="n c-fm">${plForm(p)}</td><td class="n c-vd"><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></td><td class="c-inj">${plInj(p)}</td>
+              <td class="n c-pr">${eur(mv)}</td><td class="n c-vd"><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></td>
+              <td class="n c-ask"><b>${eur(l.ask_price)}</b> <span class="dim">${pct>0?'+':''}${pct}%</span>${stale?' <span class="warnc" title="Вартість змінилась — ціна поза вікном, лот застарів">🕓 застарів</span>':''}</td>
+              <td class="n c-rt">${plRating(p)}</td><td class="n c-fm">${plForm(p)}</td><td class="c-inj">${plInj(p)}</td>
               <td class="c-sel">${mine?'<b style="color:var(--gold)">ти</b>':esc(S.names[l.seller_participant]||'—')}</td>
               <td class="n c-act">${mine?`<button class="mini ghost" data-unlistp="${p.id}">Зняти</button>`:`<button class="mini" data-open="${p.id}">Відкрити</button>`}</td></tr>`;
           }).join('')}</tbody></table></div>`
@@ -3054,8 +3092,8 @@ async function viewMarket(){
       return `<tr class="shoprow wlrow${mine?' mine':''}${ok?'':' out'}" data-wp="${p.id}"${ok?` data-open="${p.id}" style="cursor:pointer"`:''}>
         <td class="c-pl"><b>${esc(p.name)}</b> <span class="dim">${esc(clubPos(p))}</span></td>
         <td class="c-st">${st}</td><td class="n c-pr"><b>${eur(p.market_value_current)}</b></td>
-        <td class="n c-rt">${plRating(p)}</td><td class="n c-fm">${plForm(p)}</td>
-        <td class="n c-vd"><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></td><td class="c-inj">${plInj(p)}</td>
+        <td class="n c-vd"><span class="vdelta ${d.dir}">${fmtDelta(d)}</span></td>
+        <td class="n c-rt">${plRating(p)}</td><td class="n c-fm">${plForm(p)}</td><td class="c-inj">${plInj(p)}</td>
         <td class="n c-act">${act?`<button type="button" class="mini">${act}</button>`:''}</td><td class="n c-star">${starBtn(p.id)}</td></tr>`; };
     body = `<p class="dim">Твій особистий список гравців — його бачиш лише ти. Статус і ціна оновлюються самі. Щоб купити, поставити чи запропонувати — відкрий гравця (клік по рядку). Додати гравця — ☆ на його плитці в «Вільні» / «Усі гравці» або в картці.</p>`
       + (wl.length ? `<div style="overflow-x:auto"><table class="t wltbl"><thead><tr>${PL_HEAD_PL}<th>Статус</th>${PL_HEAD_INFO}<th></th><th></th></tr></thead><tbody>${wl.map(watchRow).join('')}</tbody></table></div>`
@@ -3111,6 +3149,7 @@ async function viewMarket(){
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
+  if(S.mktSub==='shop'||S.mktSub==='watch') plHydrateForm();   // 09.11: дедуп «останній матч двічі» як у картці — для гравців у таблиці
   if(S.mktSub==='free'||S.mktSub==='all'){ bindFilters(); renderGrid(); }
   if(S.mktSub==='deals'){ bindTransfers(); bindExchanges(); }
   if(S.mktSub==='shop'||S.mktSub==='deals'||S.mktSub==='watch'){
@@ -3980,6 +4019,14 @@ function fxRow(a, meta, W, pad){
   }).join('');
   return `<div class="fxrow">${cells}</div>`;
 }
+// 09.11 (Богдан): «Очки по вікендах» у картці — ті самі очки, що в «Статистика → Найбільше очок (наш турнір)»: market_player_round_points.points
+// (чисті, без ×2); сума вікендів = «Набрав очок (турнір)». Показуємо лише вікенди, де гравець грав.
+function ochW(n){ const a=Math.abs(n), m=a%100, d=a%10; return (m>=11&&m<=14)?'очок':d===1?'очко':(d>=2&&d<=4)?'очка':'очок'; }
+function wkPtsBox(pid){
+  const rows=(S.wkPts&&S.wkPts[pid]||[]).map(x=>({n:(S.rounds.find(r=>r.id===x.rid)||{}).number, v:+x.pts||0})).filter(r=>r.n!=null).sort((a,b)=>a.n-b.n);
+  const list=rows.length? `<div class="wkp">${rows.map(r=>`<em class="wk ${r.v>0?'up':r.v<0?'down':''}">Вікенд ${r.n} · <b>${r.v}</b> ${ochW(r.v)}</em>`).join('')}</div>` : '<div class="dim wkp0">ще не грав у турнірі</div>';
+  return `<div class="pm-wkpts"><div class="pm-sl">Очки по вікендах · турнір</div>${list}</div>`;
+}
 // Val Δ картки (п.2 відгуку 12.10): ГОЛОВНЕ = накопичена від старту турніру; дрібно під нею — останній вікенд (market_price_log через market_player_card)
 function cardDelta(p,card){
   const d=vDelta(p), n=d.pct*100;
@@ -4241,8 +4288,14 @@ async function openPlayerModal(pid){
       </aside>
       <section class="pm-data">
         <div class="pm-identity">
-          <div><h2>${esc(p.name)}${starBtn(p.id)}</h2><div class="pm-metarow">${meta}</div></div>
-          <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${lgEn?' · '+esc(lgEn):''} ${SEASON_LABEL}</span></div>
+          <div class="pm-idl"><h2>${esc(p.name)}${starBtn(p.id)}</h2><div class="pm-metarow">${meta}</div></div>
+          <div class="pm-idr">
+            <div class="pm-sbox" title="Сезонна статистика — лише матчі національної ліги клубу">
+              <div class="pm-sl">${lgEn?esc(lgEn)+' ':''}${SEASON_LABEL}</div>
+              <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
+            </div>
+            <div class="pm-rating"><strong>${p.season_avg_rating??'—'}</strong><span>Сер. рейтинг${lgEn?' · '+esc(lgEn):''} ${SEASON_LABEL}</span></div>
+          </div>
         </div>
         <div class="pm-toprow">
           <div class="pm-value">
@@ -4253,10 +4306,7 @@ async function openPlayerModal(pid){
             <div class="metric"><strong>${ptScored}</strong><span>Набрав очок (турнір)</span></div>
             <div class="metric"><strong>${ptFielded}</strong><span>Приніс у складах</span></div>
           </div>
-          <div class="pm-sbox" title="Сезонна статистика — лише матчі національної ліги клубу">
-            <div class="pm-sl">${lgEn?esc(lgEn)+' ':''}${SEASON_LABEL}</div>
-            <div class="pm-seasons">${seasons.map(([v,l])=>`<div><strong>${v}</strong><span>${l}</span></div>`).join('')}</div>
-          </div>
+          ${wkPtsBox(p.id)}
         </div>
         <div class="pm-midrow">
           <div class="pm-side">
