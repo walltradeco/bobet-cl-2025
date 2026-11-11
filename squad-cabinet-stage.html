@@ -1141,7 +1141,7 @@ function clubWithLeague(cid){ const n=clubName(cid), l=clubLeague(cid); return l
 function clubCol(cid){ return CLUB[clubName(cid)]||'var(--line)'; }
 /* CREST:BEGIN — емблеми клубів і прапори країн (07.11.2026, Богдан). Блок ІДЕНТИЧНИЙ у squad-stage.html і squad-cabinet-stage.html (між CREST:BEGIN/END) — міняти в обох.
    Клуби: media.api-sports.io (як у ЄвроСезоні; ключ не потрібен), ід — за SofaScore-tid клубу (market_clubs.sofascore_tid). Країни: flagcdn.com. Файлів у репо нема; нема емблеми/мережі → колірний квадрат клубу. */
-const CREST_API={7:52,11:1346,14:65,17:50,30:51,32:57,33:47,34:63,35:33,38:49,39:34,40:66,41:746,42:42,43:36,44:40,48:45,50:55,60:35,96:64,1644:85,1649:80,1652:110,1659:95,1661:84,1662:111,1672:1298,2527:163,2534:162,2538:160,2547:182,2556:164,2598:1660,2600:170,2671:192,2672:157,2673:165,2674:169,2681:168,2685:500,2686:499,2687:496,2688:517,2689:867,2690:523,2692:489,2693:502,2695:494,2696:503,2697:505,2699:487,2702:497,2704:895,2713:495,2714:492,2719:490,2793:488,2801:512,2814:540,2816:543,2817:529,2818:728,2819:533,2820:727,2821:538,2824:548,2825:531,2828:532,2829:541,2830:535,2832:544,2833:536,2835:4665,2836:530,2846:797,2849:539,2859:546,2885:542,3305:572,3313:550,3316:3617,36360:173,43336:6486,138564:3630,200773:6501,200776:3627,258536:6496,284427:17161,294048:6489,312677:599,316055:21953,388209:17162};
+const CREST_API={7:52,11:1346,14:65,17:50,30:51,32:57,33:47,34:63,35:33,38:49,39:34,40:66,41:746,42:42,43:36,44:40,48:45,50:55,60:35,96:64,1644:85,1643:79,1649:80,1652:110,1659:95,1661:84,1662:111,1672:1298,2527:163,2534:162,2538:160,2547:182,2556:164,2598:1660,2600:170,2671:192,2672:157,2673:165,2674:169,2681:168,2685:500,2686:499,2687:496,2688:517,2689:867,2690:523,2692:489,2693:502,2695:494,2696:503,2697:505,2699:487,2702:497,2704:895,2713:495,2714:492,2719:490,2793:488,2801:512,2814:540,2816:543,2817:529,2818:728,2819:533,2820:727,2821:538,2824:548,2825:531,2828:532,2829:541,2830:535,2832:544,2833:536,2835:4665,2836:530,2846:797,2849:539,2859:546,2885:542,3305:572,3313:550,3316:3617,36360:173,43336:6486,138564:3630,200773:6501,200776:3627,258536:6496,284427:17161,294048:6489,312677:599,316055:21953,388209:17162};
 function crestSrc(cl){ const id=cl&&CREST_API[cl.sofascore_tid]; return id? 'https://media.api-sports.io/football/teams/'+id+'.png' : ''; }
 function crestFail(i){ const s=document.createElement('span'); s.className=(i.className||'crest').replace(/\bimg\b/,'').trim(); s.style.setProperty('--club',i.getAttribute('data-col')||'#233'); i.replaceWith(s); }
 function crestImg(cid,extra){ const cl=S.clubs[cid]||{}, u=crestSrc(cl), col=clubCol(cid), ex=extra?' '+extra:'';
@@ -2539,10 +2539,11 @@ function roleChipHTML(p,zone){ if(!rolesOn()) return '';
   const tip=mis?(r==='main'?('Роль: Основний, а зараз на лавці — розбіжність з обіцянкою'+(risk?` — на дедлайні це порушення: борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))}${p.marked?' і гравця буде автоматично продано відразу після вікенду (друге порушення)':''}`:'')):'Роль: Лавка, а зараз в основі — після підтвердження складу гравець «заслужить основу»: '+earnedEffect()):('Роль: '+roleLabel(r)+' — обіцянка при підписанні'+(r==='bench'?' (надбавка +'+Math.round(benchPrem()*100)+'% до зарплати; якщо гравець хоч раз стоятиме в основі підтвердженого складу — «заслужить основу»: '+earnedEffect()+')':''));
   const mk=(penOn()&&p.marked)?`<span class="rolechip mk" title="Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після вікенду; продовження +${Math.round(extSurch()*100)}%, «Лавка» недоступна">🚩 порушив</span>`:'';
   return `<span class="rolechip ${r==='bench'?'bn':'mn'}${mis?' mis':''}" title="${tip}">Роль: ${roleLabel(r)}${mis?' ⚠':''}</span>${mk}`; }
-function rolesNoteInner(mine, noEarned){ if(!rolesOn()) return '';
+function rolesNoteInner(mine, noEarned, short){ if(!rolesOn()) return '';
   const mc=(mine||[]).filter(p=>(p.role||'main')==='main').length, bc=(mine||[]).length-mc;
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
   const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
+  if(short) return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}`;   // 10.11: без повтору «роль — обіцянка… борг…» (це в ⓘ)
   const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за вікенд, друге порушення — гравця буде автоматично продано відразу після вікенду.`:'';
   return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}${noEarned?'':` 🪑 ${earnedHint()}`}`; }
 function rolesBanner(mine){ const t=rolesNoteInner(mine); return t?`<div class="mnote" style="margin:8px 0">${t}</div>`:''; }
@@ -3232,24 +3233,34 @@ function bindTransfers(){
     ()=>act('market_cancel_transfer',{p_transfer:b.dataset.trCancel},'Пропозицію відкликано')));
 }
 // 553: «Утримати» гравця, який просить піти: (а) контракт можна подовжити → продовж ≥1 вікенд, надбавка на нові вікенди; (б) контракт до кінця турніру → перепідписати той самий залишок з надбавкою на ВСІ вікенди
+// 10.11 (Богдан: «багато тексту, який ще й повторюється»): довге пояснення ролей/штрафів/надбавки — ОДИН ⓘ-поповер на екрані «Утримати» замість трьох абзаців у модалці
+function holdTipText(canExt){
+  const bp=Math.round(benchPrem()*100), ext=S.cfg?.contract_ext_mult??1;
+  return 'Як це працює'
+    +'\n• Роль — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+'+bp+'% до зарплати). Змінити роль можна лише новим контрактом.'
+    +(penOn()?'\n• «Основний» не в основі на дедлайні = порушення: борг '+Math.round(debtPct()*100)+'% зарплати гравця за вікенд; друге порушення — гравця буде продано одразу після вікенду.':'')
+    +'\n• Гравець з роллю «Лавка», що хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра), «заслужив основу»: при продовженні надбавка +'+bp+'% знімається.'
+    +(canExt
+      ?'\n• Нові вікенди коштують ×'+ext+' (продовження) плюс надбавка з пропозиції; старі лишаються за старою зарплатою. Разом не більше за залишок етапу.'
+      :'\n• Контракт уже до кінця турніру: перепідпис тих самих вікендів із надбавкою на ВСІ; різниця має бути у вільному зарплатному.');
+}
 function openHoldModal(tid,kind){
   const isX=kind==='x';
   const ev=(S.wev||[]).find(e=>isX?e.exchange_id===tid:e.transfer_id===tid); if(!ev) return;
   const p=S.players.find(x=>x.id===ev.player_id)||{}, ci=contractInfo(p), mv=p.market_value_current||0;
   const pct=Math.round((+ev.surcharge_pct||0)*100), left=+ev.contract_rounds_left||0, stage=+ev.stage_left||0, canExt=left<stage;
   const minMain=ev.offered_role==='main';   // 556: пропонують «Основного» — утримати можна лише «Основним»
+  // 10.11: один вступний абзац (хто, скільки, яка роль, що робити) + ⓘ; окремого червоного «лише Основний» і окремого абзацу про продовження більше нема — це вже в чіпі «Лавка» та в рядку нижче
   const head=`<h3>🗣 ${esc(p.name||'?')} хоче піти</h3>
-    <p class="mnote"><b>${esc(ev.offerer_name)}</b> домовляється з гравцем: пропонує ${isX?`обмін на свого <b>${esc(ev.offered_player_name||'гравця')}</b>`:`<b>${eur(ev.amount)}</b>`} і надбавку до зарплати <b>+${pct}%</b>${ev.offered_role?` (обіцяє роль «${roleLabel(ev.offered_role)}»)`:''}. Щоб утримати гравця:</p>
-    ${minMain?`<p class="mnote warn">Пропонують роль «Основний» — утримати гравця можна лише з роллю «Основний» (не нижчою за запропоновану).</p>`:''}`;
+    <p class="mnote"><b>${esc(ev.offerer_name)}</b> пропонує ${isX?`обмін на свого <b>${esc(ev.offered_player_name||'гравця')}</b>`:`<b>${eur(ev.amount)}</b>`} і надбавку до зарплати <b>+${pct}%</b>${ev.offered_role?`, обіцяє роль «${roleLabel(ev.offered_role)}»`:''}. ${canExt?'Щоб утримати — продовж контракт мінімум на 1 вікенд':'Щоб утримати — перепідпиши контракт із цією надбавкою'}${minMain?'; роль — лише «Основний»':''}.${tipBtn(holdTipText(canExt))}</p>`;
   let body;
   if(canExt){
-    body=`<p class="mnote">Контракт можна подовжити — обери, на скільки вікендів (мінімум 1). Надбавка <b>+${pct}%</b> піде на <b>нові</b> вікенди (×${S.cfg?.contract_ext_mult??1} + ${pct}%), старі лишаються по-старому.</p>`
-      + contractPicker(mv,0,p.id,{extend:true,left,oldWage:ci.wage||0,max:Math.max(1,stage-left),minRole:minMain?'main':'',surch:+ev.surcharge_pct||0})
+    body=contractPicker(mv,0,p.id,{extend:true,compact:true,left,oldWage:ci.wage||0,max:Math.max(1,stage-left),minRole:minMain?'main':'',surch:+ev.surcharge_pct||0})
       + `<div class="macts"><button data-do="hold">Утримати</button></div>`;
   } else {
     const nw=ci.wage?Math.ceil(ci.wage*(1+(+ev.surcharge_pct||0))):0;
-    body=`<p class="mnote">Контракт уже до кінця турніру (лишилось <b>${left}</b> ${turW(left)}) — подовжувати нікуди. Щоб утримати, <b>перепідпиши</b> ті самі ${left} ${turW(left)} із зарплатою <b>+${pct}%</b> на <b>всі</b> ці вікенди${ci.wage?`: ${eur(ci.wage)} → <b>${eur(nw)}</b>/вікенд (різниця ${eur((nw-ci.wage)*left)} має бути у вільному зарплатному)`:''}.</p>`
-      + (rolesOn()?`<div class="clen" data-len="1" data-ext="1" data-pid="${p.id}" data-mv="${mv}" data-left="${left}" data-oldwage="${ci.wage||0}"${minMain?' data-minrole="main"':''}>${roleChips()}<div class="clen-info"></div></div>`:'')
+    body=`<p class="mnote">Контракт уже до кінця турніру (лишилось <b>${left}</b> ${turW(left)}) — подовжувати нікуди${ci.wage?`. Зарплата на всі ці вікенди: ${eur(ci.wage)} → <b>${eur(nw)}</b>/вікенд (різниця ${eur((nw-ci.wage)*left)} — з вільного зарплатного)`:''}.</p>`
+      + (rolesOn()?`<div class="clen" data-len="1" data-ext="1" data-compact="1" data-resign="1" data-surch="${+ev.surcharge_pct||0}" data-pid="${p.id}" data-mv="${mv}" data-left="${left}" data-oldwage="${ci.wage||0}"${minMain?' data-minrole="main"':''}>${roleChips(true,true)}<div class="clen-info"></div></div>`:'')
       + `<div class="macts"><button data-do="hold">Перепідписати з +${pct}%</button></div>`;
   }
   modalOpen(head+body);
@@ -3530,11 +3541,12 @@ function wagePctUI(){
   if(!wagePctOn()) return '';
   const step=Math.round((+(S.cfg&&S.cfg.wage_offer_step_pct)||0.05)*100), max=Math.round((+(S.cfg&&S.cfg.wage_offer_max_pct)||0.5)*100);
   const lo=(S.cfg&&S.cfg.wage_event_limit_offerer)||3, lw=(S.cfg&&S.cfg.wage_event_limit_owner)||2;
+  const lr=(S.cfg&&S.cfg.wage_event_limit_owner_round!=null)?+S.cfg.wage_event_limit_owner_round:2;   // 10.11 (SQL 703): всього подій на одного власника за вікно
   let opts=''; for(let v=step; v<=max; v+=step) opts+=`<option value="${v}">+${v}%</option>`;
   return `<div class="wpct" data-mode="member">
     <div class="wmodes"><button type="button" class="wmode on" data-m="member">Домовитись з учасником</button><button type="button" class="wmode" data-m="player">Домовитись з гравцем</button><span class="mnote wm-member">Звичайна пропозиція: власник може прийняти, відхилити або зробити контр. Без надбавки.</span></div>
     <div class="wm-player hide"><label class="dim" style="white-space:nowrap">🤝 Надбавка до зарплати гравця <select id="wagePct">${opts}</select></label>
-      <span class="mnote wm-pnote">Для власника гравець <b>хоче піти</b>: він не може просто відхилити — мусить продати, зробити контр, утримати (з надбавкою) або продати у вільний ринок. Надбавка +X% до зарплати гравця — на весь контракт, <b>заморожується</b> з зарплатного до відповіді. <span class="infoi" title="Ліміти: ${lo} таких пропозиції за вікно вікенду; на одного власника — не більше ${lw} активних; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).">ℹ️ ліміти</span></span></div></div>`;
+      <span class="mnote wm-pnote">Для власника гравець <b>хоче піти</b>: він не може просто відхилити — мусить продати, зробити контр, утримати (з надбавкою) або продати у вільний ринок. Надбавка +X% до зарплати гравця — на весь контракт, <b>заморожується</b> з зарплатного до відповіді. <span class="infoi" title="Ліміти: ${lo} таких пропозиції за вікно вікенду від тебе; на одного власника — не більше ${lr} за вікно вікенду (закриті теж рахуються) і ${lw} відкритих одночасно; на одного гравця — одна за вікно. Не діє, якщо власник уже підтвердив склад. Якщо «Домовитись з гравцем» зараз неможливо — запропонуй звичайну (перемикач вище).">ℹ️ ліміти</span></span></div></div>`;
 }
 // scope — форма (трансфер .mamt / обмін .xbox): у модалці їх дві
 function wageArg(scope){ const box=(scope||$('mhost')).querySelector('.wpct'); if(!box||box.dataset.mode!=='player') return {}; const el=box.querySelector('#wagePct'); const v=el?+el.value:0; return v>0?{p_wage_pct:v/100}:{}; }
@@ -3746,11 +3758,11 @@ function roleArgs(box){ if(!rolesOn()) return {}; const el=box||$('mhost').query
 function needRole(box){ if(!rolesOn()) return false; const el=box||$('mhost').querySelector('.clen'); if(el&&el.dataset.prole) return false;
   alert('Обери роль гравця: «Основний» чи «Лавка» — без неї підписати контракт не можна.'); return true; }
 function roleIntroText(){ return `<b>Роль гравця</b> — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (надбавка +${Math.round(benchPrem()*100)}% до зарплати). ${earnedHint()} Змінити роль потім можна лише новим контрактом (хоч на 1 вікенд).`; }
-function roleChips(inline){ if(!rolesOn()) return '';
+function roleChips(inline,short){ if(!rolesOn()) return '';   // short (10.11): екран «Утримати» — лише лічильник ролей, пояснення в ⓘ
   return `<div class="crole">${inline?'':`<div class="clab">${roleIntroText()}</div>`}
     <div class="crole-row"><button type="button" class="crole-chip" data-r="main">Основний</button><button type="button" class="crole-chip" data-r="bench">Лавка</button></div>
     <div class="crole-need"></div>
-    <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id), true)}</div></div>`; }
+    <div class="crole-note">${rolesNoteInner(S.players.filter(x=>S.me&&x.owner_participant_id===S.me.id), true, short)}</div></div>`; }
 function qWageR(pid,len,mv,role){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes.find(x=>x.len===len);
   const base=e?+e.wage:wageFor(mv,len,defMode(pid));
   if(role!=='bench') return base;
@@ -3764,6 +3776,10 @@ function contractPicker(mv,freeAdd,pid,opts){
   const c=S.cfg||{}, ext=c.contract_ext_mult, si=stageInfo(), o=opts||{};
   if(o.extend){
     const max=o.max||1;
+    if(o.compact) return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="0" data-pid="${pid||''}" data-ext="1" data-compact="1" data-left="${o.left||0}" data-oldwage="${o.oldWage||0}" data-max="${max}"${o.minRole?` data-minrole="${o.minRole}"`:''}${o.surch?` data-surch="${o.surch}"`:''}>
+      ${rolesOn()?`<div class="clab">Роль гравця</div>${roleChips(true,true)}`:''}
+      <div class="clab" style="margin-top:8px">Продовжити на (вікендів) · лишилось <b>${si.left} з ${si.len}</b></div><div class="clen-row">${chipsHTML(max,1)}</div>
+      <div class="clen-info"></div></div>`;   // 10.11: компактний вигляд для екрана «Утримати» (без довгого пояснення ролей — воно в ⓘ)
     return `<div class="clen" data-len="1" data-mv="${mv||0}" data-freeadd="0" data-pid="${pid||''}" data-ext="1" data-left="${o.left||0}" data-oldwage="${o.oldWage||0}" data-max="${max}"${o.minRole?` data-minrole="${o.minRole}"`:''}${o.surch?` data-surch="${o.surch}"`:''}>
       <div class="clab"><b>Продовжити контракт</b> — нові вікенди <b>додаються</b> до тих, що лишились (${o.left||0}); нові коштують <b>×${ext??1}</b>, старі лишаються по-старому; разом не більше за залишок етапу (<b>лишилось ${si.left} з ${si.len} вікендів</b>)${rolesOn()?' · '+roleIntroText():''}</div>
       ${roleChips(true)}<div class="clen-row">${chipsHTML(max,1)}</div>
@@ -3788,7 +3804,8 @@ function updClen(el){
   const w=pctX>0?Math.round(w0*(1+pctX)):(pctS>0?Math.round(w0*(1+pctS)):w0), res=w*len;
   if(rolesOn()){   // ціни ОБОХ ролей поруч; «Лавка» недоступна для зірок; попередження, коли «Основних» більше 5
     let wm=pid?qWageR(pid,len,mv,'main'):wageFor(mv,len,'first'), wb=pid?qWageR(pid,len,mv,'bench'):Math.round(wageFor(mv,len,'first')*(1+benchPrem()));
-    if(pctS>0){ wm=Math.round(wm*(1+pctS)); wb=Math.round(wb*(1+pctS)); }   // чіпи ролей — теж з надбавкою події
+    if(el.dataset.resign==='1'){ const nwR=Math.ceil((+el.dataset.oldwage||0)*(1+pctS)); wm=nwR; wb=Math.round(nwR*(1+benchPrem())); }   // 10.11: перепідпис «до кінця турніру» — ціна ролі від ПОТОЧНОЇ зарплати +X%, а не від котирування продовження
+    else if(pctS>0){ wm=Math.round(wm*(1+pctS)); wb=Math.round(wb*(1+pctS)); }   // чіпи ролей — теж з надбавкою події
     const minMain=el.dataset.minrole==='main';   // 556: утримання події — роль не нижча за запропоновану
     const benchOk=!(q&&q.bench_allowed===false) && (mv||0)<starCap() && !minMain;
     const cm=el.querySelector('.crole-chip[data-r="main"]'), cb=el.querySelector('.crole-chip[data-r="bench"]');
@@ -3811,15 +3828,19 @@ function updClen(el){
     txt+=`<span class="cw-free">зарплатний доступно <b>${eur(wf)}</b> → ${bad?`<b>не вистачає ${eur(res-wf)}</b>`:`лишиться <b>${eur(wf-res)}</b>`}</span>`; }
   if(!isExt) txt+=`<span class="cw-note">Подовжити контракт можна буде пізніше — у картці гравця, коли він уже в тебе.</span>`;
   txt+=`</div>`;
-  if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} (×${S.cfg?.contract_ext_mult??1}${pctS>0?' + '+Math.round(pctS*100)+'%':''})</div>`;
-  if(isExt && pctS>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctS*100)}%</b> (лише на нові вікенди): база ${eur(w0)}/вікенд × ${(1+pctS).toFixed(2)} = <b>${eur(w)}</b>/вікенд.</div>`;
+  const cmp=el.dataset.compact==='1';   // 10.11: екран «Утримати» — один підсумковий рядок замість двох, що повторювали одне й те саме
+  if(isExt) txt+=`<div class="cw-sub">Стане <b>${left+len}</b> ${turW(left+len)}: старі ${left} × ${eur(oldWage)} + нові ${len} × ${eur(w)} ${cmp&&pctS>0?`<span class="dim">(база ${eur(w0)} + надбавка +${Math.round(pctS*100)}%)</span>`:`(×${S.cfg?.contract_ext_mult??1}${pctS>0?' + '+Math.round(pctS*100)+'%':''})`}</div>`;
+  if(isExt && pctS>0 && !cmp) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctS*100)}%</b> (лише на нові вікенди): база ${eur(w0)}/вікенд × ${(1+pctS).toFixed(2)} = <b>${eur(w)}</b>/вікенд.</div>`;
   if(isExt && rolesOn() && pid){ const pr=(S.players||[]).find(x=>x.id===pid), curBench=pr&&(pr.role||'main')==='bench';
     if(q && q.bonus) txt+=`<div class="cw-sub"><b style="color:var(--green)">✅ Заслужив основу:</b> «Лавка» тут без надбавки +${Math.round(benchPrem()*100)}% — ціна як в «Основного».</div>`;
-    else if(curBench && q && !q.marked) txt+=`<div class="cw-sub">🪑 Роль «Лавка» зараз. Щоб при продовженні контракту не платити надбавку +${Math.round(benchPrem()*100)}%, постав гравця в основу підтвердженого складу хоча б раз («заслужив основу»).</div>`; }
+    else if(!cmp && curBench && q && !q.marked) txt+=`<div class="cw-sub">🪑 Роль «Лавка» зараз. Щоб при продовженні контракту не платити надбавку +${Math.round(benchPrem()*100)}%, постав гравця в основу підтвердженого складу хоча б раз («заслужив основу»).</div>`; }
   if(isExt && q && q.marked) txt+=`<div class="cw-sub"><b class="warnc">🚩 Позначка «порушив»: до зарплати нових вікендів +${Math.round((q.surcharge??extSurch())*100)}%, «Лавка» недоступна.</b> Продовження скидає позначку.</div>`;
   else if(tag) txt+=`<div class="cw-sub">${tag}</div>`;
   if(pctX>0) txt+=`<div class="cw-sub">З надбавкою <b>+${Math.round(pctX*100)}%</b> (${xb||pctT>0?'«Домовитись з гравцем» — на весь контракт':'ставка на аукціоні; «Купити зараз» — без надбавки'}): база ${eur(w0)}/вікенд × ${(1+pctX).toFixed(2)} = <b>${eur(w)}</b>/вікенд.</div>`;
   if(pctT>0 && tb && tb.querySelector('[data-do="buylist"]')){ const r0=w0*len; txt+=`<div class="cw-sub">Викуп з вітрини — без надбавки: <b>${eur(w0)}</b>/вікенд × ${len} = резерв <b>${eur(r0)}</b>${(wf!=null&&r0>wf)?` · <b class="warnc">не вистачає ${eur(r0-wf)}</b>`:''}.</div>`; }
+  if(el.dataset.resign==='1'){   // 10.11: перепідпис без продовження — лише перевірка вільного зарплатного (різниця вже в тексті модалки), без «+1 вікенд / стане N»
+    const diffR=(Math.ceil(oldWage*(1+pctS))-oldWage)*left; bad=(S.wageFree!=null && diffR>S.wageFree);
+    txt=(S.wageFree!=null)?`<div class="cw"><span class="cw-free">зарплатний доступно <b>${eur(S.wageFree)}</b> → ${bad?`<b>не вистачає ${eur(diffR-S.wageFree)}</b>`:`лишиться <b>${eur(S.wageFree-diffR)}</b>`}</span></div>`:''; }
   info.className='clen-info'+(bad?' bad':''); info.innerHTML=txt;
   if(pid) document.querySelectorAll('.bench-earned[data-pid="'+pid+'"]').forEach(e=>{ e.innerHTML=(q&&q.bonus)?' <b style="color:var(--green)">✅ Це вже так — продовження буде без надбавки.</b>':''; });   // стан приходить із котирування
   if(typeof sumRefresh==='function') sumRefresh();
