@@ -2027,7 +2027,7 @@ async function viewSquad(){
 
 // ── 🚀 бусти вікенду: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
 const BOOSTS = {
-  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий з усіх 8 гравців, що зіграли за вікенд (запасні теж, навіть якщо не зайшли на заміну). Капітана й віце обирати не треба.' },
+  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий серед гравців, чиї очки йдуть у суму вікенду: основа, що зіграла, і запасний, що зайшов на заміну. Капітана й віце обирати не треба.' },
   squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — основа і лавка. Ідеально 5+3, але можна й менше.' }
 };
 // ── ⚡ позиційні бусти (532): 2x FWD / 2x MID / 2x DEF-GK — одна ціль у основі (не капітан/віце), раз за турнір, до трьох в одному вікенді, не з Автопілотом/All-in ──
@@ -2065,7 +2065,7 @@ function chMetrics(st, bn){
 }
 const CH_RULES = {
   mosaic5:    m=>({ ok:m.nStart===5&&m.lgStart===5, hint:`ліг в основі: ${m.lgStart}/5` }),
-  world6:     m=>({ ok:m.nAll>=6&&m.lgAll>=6, hint:`ліг у складі: ${m.lgAll}/6${m.nAll<6?' · потрібно щонайменше 6 гравців':''}` }),
+  world6:     m=>({ ok:m.nAll>=6&&m.lgAll>=5, hint:`ліг у складі: ${m.lgAll}/5${m.nAll<6?' · потрібно щонайменше 6 гравців':''}` }),   // 707: у пулі 5 ліг (УПЛ прибрано)
   clubs8:     m=>({ ok:m.nAll===8&&m.clAll===8, hint:`різних клубів: ${m.clAll}/8${m.nAll<8?' · потрібно рівно 8 гравців':''}` }),
   mid5:       m=>({ ok:m.nAll===8&&m.m>=5, hint:`MID: ${m.m}/5${m.nAll<8?' · потрібно 8 гравців':''}` }),
   classic332: m=>({ ok:m.nAll===8&&m.dg===3&&m.m===3&&m.f===2, hint:`DEF/GK ${m.dg}/3 · MID ${m.m}/3 · FWD ${m.f}/2${m.nAll<8?' · потрібно 8 гравців':''}` }),
@@ -2606,7 +2606,7 @@ function renderLineup(mine, round){
     </div>`;
   };
 
-  const capNote = `<p class="dim" style="margin:10px 0 0">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого з усіх 8 гравців, що зіграли (запасні теж).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо). Капітан і Віце не поєднуються з позиційними бустами «⚡ 2x …» на одному гравці.'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>`;
+  const capNote = `<p class="dim" style="margin:10px 0 0">${S.boost==='squad_autopilot' ? 'Автопілот Squad: капітана й віце обирати не треба — система подвоїть очки найкращого серед гравців, чиї очки йдуть у суму (основа, що зіграла, і запасний, що зайшов на заміну).' : 'Капітан і Віце — обидва обов\'язкові. ×2 отримує той із них, хто набере більше очок (рівно — капітан); не зіграв один — ×2 має другий; обидва ні — згорає. Поки хтось із двох ще не зіграв, ×2 не нараховується (його видно лише коли стане відомо). Капітан і Віце не поєднуються з позиційними бустами «⚡ 2x …» на одному гравці.'}${S.boost==='squad_all_in' ? ' 🔥 All-in: очки дають усі гравці складу, включно з лавкою.' : ''}</p>`;
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
@@ -3464,7 +3464,7 @@ function aucWeak(au,len,role,pct){
   if(my && my.leader_role && roleRank(role)<roleRank(my.leader_role)) return `роль нижча за лідерову («${roleLabel(my.leader_role)}»)`;
   if(len<L) return `контракт коротший за лідерів (${L} ${turW(L)})`;
   if(pct<P-1e-6) return `надбавка менша за лідерову (+${Math.round(P*100)}%)`;
-  if(!(len>=L+1 || pct>=P+st-1e-6)) return `потрібна краща надбавка (+${Math.round(st*100)} п.п.) або довший контракт (+1 вікенд) — лише роль не рахується`;
+  if(!(len>=L+1 || pct>=P+st-1e-6)) return `потрібна краща надбавка (+${Math.round(st*100)}%) або довший контракт (+1 вікенд) — лише роль не рахується`;
   return null;
 }
 function auctionForm(p,au,mv){
@@ -3499,7 +3499,7 @@ function aucRefresh(){
     if(raw>ceil) pr.push(`не більше стелі ${eurDown(ceil)} (викуп)`);
     else if(raw<minNext){
       if(raw===cur){ const why=aucWeak(au,len,role,pct); if(why) pr.push(`та сама сума ${eurUp(cur)} — лише з сильнішою пропозицією: ${why}`); }
-      else pr.push(`мінімум ${eurUp(minNext)} — або та сама сума ${eurUp(cur)} з не гіршими умовами й кращою надбавкою (+${Math.round(aucStep()*100)} п.п.) чи довшим контрактом (+1 вікенд)`);
+      else pr.push(`мінімум ${eurUp(minNext)} — або та сама сума ${eurUp(cur)} з не гіршими умовами й кращою надбавкою (+${Math.round(aucStep()*100)}%) чи довшим контрактом (+1 вікенд)`);
     }
   }
   if(raw && (S.spendable??0)<raw) pr.push(`доступно ${eur(S.spendable||0)}, а потрібно ${eur(raw)}`);
@@ -3719,10 +3719,13 @@ function stageInfo(){            // дзеркало market_current_stage / mark
 }
 function winMinPct(){ return (S.cfg&&S.cfg.transfer_min_pct!=null)?+S.cfg.transfer_min_pct:0.75; }
 function winMaxPct(){ return (S.cfg&&S.cfg.transfer_max_pct!=null)?+S.cfg.transfer_max_pct:null; }
-// 527: верх вікна = max(вартість·pct ; вартість+add) — «+25% або +8M, що більше»; add береться з market_config.transfer_max_add_eur (немає → 0, як до 527)
+// 527/708: верх вікна = max(вартість·pct ; вартість+add), у «смузі» вартості ще max(.., вартість·band_pct), і не вище «вартість + cap» (стеля надбавки).
+//   Усе з market_config (transfer_max_pct / transfer_max_add_eur / transfer_band_* / transfer_max_cap_eur); немає смуги/стелі → як до 708. Сервер — джерело правди (_market_price_max).
 function winAddEur(){ return (S.cfg&&S.cfg.transfer_max_add_eur!=null)?+S.cfg.transfer_max_add_eur:0; }
-function winTxt(){ const mx=winMaxPct(), ad=winAddEur(); return Math.round(winMinPct()*100)+(mx?'–'+Math.round(mx*100):'+')+'% вартості'+((mx&&ad)?', для дешевих — до +'+(ad/1e6)+'M':''); }
-function winMaxEur(mv){ const mx=winMaxPct(); return mx?Math.max(Math.floor((mv||0)*mx),(mv||0)+winAddEur()):0; }
+function winBand(){ const c=S.cfg||{}; return (c.transfer_band_pct!=null&&c.transfer_band_from_eur!=null&&c.transfer_band_to_eur!=null)?{from:+c.transfer_band_from_eur,to:+c.transfer_band_to_eur,pct:+c.transfer_band_pct}:null; }
+function winCapEur(){ return (S.cfg&&S.cfg.transfer_max_cap_eur!=null)?+S.cfg.transfer_max_cap_eur:null; }
+function winTxt(){ const mx=winMaxPct(), ad=winAddEur(), b=winBand(), cap=winCapEur(); return Math.round(winMinPct()*100)+(mx?'–'+Math.round(mx*100):'+')+'% вартості'+((mx&&ad)?', для дешевих — до +'+(ad/1e6)+'M':'')+((mx&&b)?', для вартості '+(b.from/1e6)+'–'+(b.to/1e6)+'M — до '+Math.round(b.pct*100)+'%':'')+((mx&&cap!=null)?', але не більше +'+(cap/1e6)+'M до вартості':''); }
+function winMaxEur(mv){ const mx=winMaxPct(); if(!mx) return 0; mv=mv||0; let m=Math.max(Math.floor(mv*mx+1e-6),mv+winAddEur()); const b=winBand(); if(b&&mv>=b.from&&mv<=b.to) m=Math.max(m,Math.floor(mv*b.pct+1e-6)); const cap=winCapEur(); if(cap!=null) m=Math.min(m,mv+cap); return m; }
 function defMode(pid){ const p=(S.players||[]).find(x=>x.id===pid); return (p&&S.me&&p.owner_participant_id===S.me.id)?'extend':'first'; }
 function wageFor(mv,len,mode){ const c=S.cfg||{}; let base=0;
   const br=c.wage_brackets;
@@ -3971,7 +3974,7 @@ function actionsHTML(p,ctx){
     if(block) return h+`<p class="mnote warn">⛔ ${block}</p>`;
     h+=dgWarn(p)+contractPicker(mv,0,p.id);   // 508: той самий контракт і роль діють і для ставки, і для викупу
     const aucBody = (!iLead ? auctionForm(p,au,mv)
-      +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)} п.п.) чи контракті (+1 вікенд) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер. ${aucPctNote()}</p>`+aucTimerNote()
+      +`<p class="mnote">Перебити можна <b>або +${Math.round((cfg.bid_step_pct??0.05)*100)}% грошей</b> (будь-які умови), <b>або тією самою сумою з сильнішою пропозицією</b>: не гіршою ні в чому (роль, контракт, надбавка) і кращою хоча б у надбавці (+${Math.round(aucStep()*100)}%) чи контракті (+1 вікенд) — «лише роль» не рахується. Контракт, роль і надбавка вище підпишуться, якщо виграєш; зарплатний резерв під них заморожується, поки ти лідер. ${aucPctNote()}</p>`+aucTimerNote()
       : `<p class="mnote">Ти лідер цього лота — повторно ставити не можна. Якщо тебе перебʼють, зʼявиться банер і група «Мене перебили» у «Мої угоди».</p>`
         + (canCancelBid(au) ? `<div class="macts"><button class="ghost" data-do="bidcancel" data-au="${au.id}">Скасувати свою ставку</button></div><p class="mnote">Передумав? Скасувати можна, доки ніхто інший не поставив: лот зніметься, гроші й зарплатний резерв звільняться.</p>`
                             : `<p class="mnote">Скасувати ставку не можна — на цей лот ставили й інші учасники.</p>`));
