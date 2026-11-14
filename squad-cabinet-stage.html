@@ -162,6 +162,10 @@ table.t{width:100%;border-collapse:collapse}
 .chtn small{display:block;color:var(--text-dim)} .chtn i{color:var(--gold);font-style:normal;font-weight:700} .chtn u{color:var(--accent);text-decoration:none}
 .chtip .chtf{margin:8px 0 0;font-family:var(--mono);color:var(--text)}
 .soon{border:1px dashed var(--line);border-radius:12px;padding:26px;text-align:center;color:var(--text-dim)}
+.przw{overflow-x:auto;-webkit-overflow-scrolling:touch} .prz td small{display:block;color:var(--text-dim);font-size:11px;font-weight:400;white-space:nowrap}   /* 13.11 (714): «💰 Призові» */
+.prz tr.prz-me td{background:rgba(244,196,48,.07)} .prz td.tot{font-weight:700} .prz td.z{color:var(--text-dim)} .prz tfoot td{border-bottom:0;color:var(--text-dim);font-size:12px}
+.prz-mine{display:flex;align-items:baseline;gap:8px 18px;flex-wrap:wrap} .prz-mine .big{font-size:30px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums} .prz-mine .brk{color:var(--text-dim);font-size:13px;line-height:1.5}
+.prz-notes{margin:10px 0 0;padding-left:18px;color:var(--text-dim);font-size:13px;line-height:1.6} .prz-warn{margin-top:12px;padding:10px 12px;border:1px solid rgba(230,193,75,.45);border-radius:10px;color:var(--gold);font-size:13px;line-height:1.5}
 .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--panel2);
   border:1px solid var(--line);color:var(--text-dim)}
 
@@ -432,6 +436,26 @@ table.t{width:100%;border-collapse:collapse}
 @media(max-width:1099px){.newsaside,.na-open{display:none!important}}
 .news-filters{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0}
 .news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
+/* 🎤 Преса (SQL 715/716, 14.11): картки питань від репортерів, варіанти відповіді, стрічка відповідей усіх учасників, лічильник на вкладці й вікно при вході */
+.prdot,.subtabs button i.prdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:var(--accent);color:#04140d;font:700 10px var(--mono);text-align:center;margin-left:6px;padding:0 4px;vertical-align:middle;font-style:normal}
+.prs-wrap{max-width:720px}
+.prs-sec{margin:18px 0 8px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+.prs-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 10px}
+.prs-card.open{border-color:var(--accent-d);box-shadow:0 0 0 1px rgba(24,180,122,.18) inset}
+.prs-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.prs-rep{font:700 14px var(--mono)}
+.prs-q{font-size:14px;line-height:1.45;margin:2px 0 10px}
+.prs-card.busy .btn,.prs-card.busy .prs-link{opacity:.55;cursor:wait}
+.prs-acts{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.prs-own textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:13px var(--body);resize:vertical;margin-bottom:6px}
+.prs-a{font-size:13px;line-height:1.4;padding:7px 10px;border-left:3px solid var(--accent-d);background:rgba(24,180,122,.07);border-radius:0 8px 8px 0}
+.prs-a.skip{border-left-color:var(--line);background:none;color:var(--text-dim);font-style:italic}
+.prs-link{background:none;border:0;color:var(--teal);font:600 12px var(--mono);cursor:pointer;padding:6px 0 0}
+.prs-link:hover{text-decoration:underline}
+.prs-fr{padding:9px 2px;border-bottom:1px solid var(--line)}
+.prs-fh{font-size:12.5px;margin-bottom:2px} .prs-fq{font-size:12.5px;color:var(--text-dim);margin-bottom:4px}
+.prs-pophd{font:700 17px var(--mono);margin:0 26px 10px 0}
+.prs-popft{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .mnote.warn{color:var(--down);font-weight:600}
 
 /* рядки трансферів */
@@ -1372,7 +1396,12 @@ async function act(fn, args, okMsg, opts){
   const { data, error } = await sb.rpc(fn, args);
   if(error){ alert('⛔ ' + (error.message||'').replace(/^.*?(Squad: )/, '$1')); return; }
   if(okMsg) alert('✅ ' + okMsg);
-  await loadRefs(); await go(S.tab, !!(opts&&opts.quiet));   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні
+  // 14.11 (Богдан): чернетка складу/бустів, ще НЕ підтверджена, не має губитись, коли дія з «Мого складу» (суперник Rivals, Legend, продаж…) перезавантажує вкладку — як в ЄвроСезоні.
+  // Підтвердження складу (market_set_lineup) пропускаємо: після нього правда — сервер.
+  S.keepDraft = (S.tab==='my' && fn!=='market_set_lineup' && S.lineup && S.lineupRound)
+    ? { rid:S.lineupRound.id, lineup:JSON.parse(JSON.stringify(S.lineup)), boost:S.boost, pos:{...S.pos} } : null;
+  try{ await loadRefs(); await go(S.tab, !!(opts&&opts.quiet)); }   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні
+  finally{ S.keepDraft=null; }
 }
 // EUR ↔ млн у діалогах (зручніше вводити млн)
 function askM(label, minEur){
@@ -1408,11 +1437,12 @@ async function tok(){ if(__tokC && Date.now()-__tokT<15000) return __tokC; const
 
 // ── ВКЛАДКИ (6, §F) ──
 function renderTabs(){
-  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['stats','📊','Статистика'],['table','🏆','Таблиця & Матчі'],['collection','📇','Колекція'],['news','📰','News & Press']];
+  const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['stats','📊','Статистика'],['table','🏆','Таблиця & Матчі'],['collection','📇','Колекція'],['news','📰','News & Press'],['prizes','💰','Призові']];   // 13.11 (SQL 714): калькулятор призових
   if(S.me && S.me.is_admin) tabs.push(['admin','⚙','Адмінка']);
   $('tabs').innerHTML = tabs.map(([k,ic,t])=>`<button class="tab" data-tab="${k}" aria-selected="${k===S.tab}"><span class="ic">${ic}</span>${t}</button>`).join('');
   [...$('tabs').querySelectorAll('button')].forEach(b=>b.onclick=()=>go(b.dataset.tab));
   paintAdmDot(); admBadgeRefresh(false);   // 23.10: крапка 🔴/🟡 «що горить» на вкладці «Адмінка» (раз на хвилину)
+  paintPressDot();                          // 14.11 (715): лічильник питань преси без відповіді на вкладці «News & Press»
 }
 // 22.10: вікенд, що зараз іде (відкритий складами або минув дедлайн, результатів ще нема) — для «Зміна · Вікенд N» у шапці
 function liveRoundNow(){ const now=Date.now(); return (S.rounds||[]).find(r=>!r.results_entered_at && (r.opened_at || new Date(r.deadline_at).getTime()<=now)) || null; }
@@ -1578,9 +1608,10 @@ async function go(tab, quiet){
   // quiet (21.10, Богдан: вибір суперника Rivals «оновлював сторінку»): старий вміст лишається, доки не готовий новий; прокрутка зберігається
   const y=quiet?window.scrollY:0;
   if(!quiet) $('view').innerHTML='<div class="spin">завантаження…</div>';
-  const fn={my:viewSquad,market:viewMarket,collection:viewCollection,stats:viewStats,table:viewTable,news:viewNews,admin:viewAdmin}[tab];
+  const fn={my:viewSquad,market:viewMarket,collection:viewCollection,stats:viewStats,table:viewTable,news:viewNews,prizes:viewPrizes,admin:viewAdmin}[tab];
   if(!fn) return;
   naSync();   // права панель новин: показати/сховати за вкладкою й освіжити
+  pressBoot();   // 715: питання преси створює база, коли відкриваєш кабінет; тут — оновити лічильник і (раз на ~6 год) показати вікно
   const run=fn();
   if(quiet){ await run; window.scrollTo(0,y); }
   return run;
@@ -1879,7 +1910,7 @@ async function viewRoundView(r, editRound){
   const started=new Date(r.deadline_at)<=new Date();
   if(!started){   // майбутній вікенд, що не найближчий: виставлення ще не відкрито
     const e=editRound;
-    $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>Вікенд ${r.number}</h2><span class="sub">виставлення складу ще не відкрито</span></div>
+    if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>Вікенд ${r.number}</h2><span class="sub">виставлення складу ще не відкрито</span></div>
       <div class="soon">Склад на Вікенд ${r.number} можна буде виставити, коли мине дедлайн ${e?'Вікенду '+e.number+' ('+dlFmt(e.deadline_at)+')':'попереднього вікенду'}. Дедлайн цього вікенду — ${dlFmt(r.deadline_at)}.</div>`;
     bindTourChips(); return;
   }
@@ -1978,7 +2009,7 @@ function viewRoundResult(r){
         <tbody>${tr}<tr class="tot"><td colspan="6">Разом (за гравцями)</td><td class="r tnum">${sum}</td><td class="r" title="Сума % гравців і Ріст складу (€) за вікенд">${grow?`<span class="vdelta ${grow.eur>=0?'up':'down'}">${ppSgn(grow.pct)}</span><small class="vd-eur ${grow.eur>=0?'up':'down'}">${eurSgn(grow.eur)}</small>`:'<span class="dim">—</span>'}</td></tr></tbody></table></div>
       <p class="rr-note">«В сумі очок»: основа — коли зіграв; лавка — коли визначена заміна${(bo&&bo.boost==='squad_all_in')?' (🔥 All-in — очки дають усі 8)':''}; ×2 — капітан/віце (кращий із пари), Автопілот чи позиційний буст. Ціна — зміна вартості гравця за цей вікенд: % і в €. Клік на гравця — детальна картка.</p>`;
   }
-  $('view').innerHTML = tourChipsHtml() + prog +
+  if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + prog +
     `<div class="head2"><h2>Вікенд ${r.number}</h2><span class="sub">${closed?'результат вікенду':'вікенд у грі'} · ${OTHERS_IN_TOUR?'обери учасника, щоб подивитись його склад':'твій склад і очки'}</span></div>` + pick + body + challengesRoundBlock(r) + rivalBox(r);
   bindTourChips();
   $('view').querySelectorAll('.rrt tr[data-p]').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
@@ -2020,6 +2051,9 @@ async function viewSquad(){
   S.lineup = {}; S.lineupRound = round;
   mine.forEach(p => S.lineup[p.id] = { role:'out', cap:false, vice:false, ord:99 });
   lu.forEach(r => { if(S.lineup[r.player_id]) S.lineup[r.player_id] = { role:r.role, cap:r.is_captain, vice:r.is_vice, ord:r.bench_order||99 }; });
+  // 14.11: перезавантаження після дії (Rivals/Legend/продаж) — повертаємо чернетку, яку учасник ще не підтвердив (той самий вікенд; гравці, яких уже нема, відпадають)
+  if(S.keepDraft){ const k=S.keepDraft; S.keepDraft=null;
+    if(round && k.rid===round.id){ mine.forEach(p=>{ if(k.lineup[p.id]) S.lineup[p.id]={...k.lineup[p.id]}; }); S.boost=k.boost; S.pos=k.pos; } }
   // збережений на сервері склад (для стану кнопки): null = ще нічого не підтверджено на цей вікенд
   S.lnSaved = lu.length ? lnSigOf(lu.map(r=>({id:r.player_id, role:r.role, ord:r.bench_order||99, cap:r.is_captain, vice:r.is_vice})), S.boost, S.pos) : null;
   renderLineup(mine, round);
@@ -2439,7 +2473,7 @@ function drawLegend(){
       return `<div class="lgx-card ${me?'lgme':''}"><div class="lgx-ct"><span>${esc(x.display_name)}${me?' <span class="dim" style="font-weight:400;font-size:12.5px">(ти)</span>':''}</span><span class="lgx-cp">${x.raw_points||0}/${n*cap}</span></div>${body}</div>`; }).join('');
     if(cards) more+=`<div class="lgx-box"><div class="lgx-h">👥 Хто що обрав · очки по вікендах</div><div class="lgx-grid">${cards}</div></div>`;
   }
-  $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>🐐 Club Legend</h2><span class="sub">паралельна гра · з ${esc(frGen)}</span></div><div class="rvbox">${h}</div>${(free && !fin)?lgxMatchesBox()+more:more+lgxMatchesBox()}`;
+  if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + `<div class="head2"><h2>🐐 Club Legend</h2><span class="sub">паралельна гра · з ${esc(frGen)}</span></div><div class="rvbox">${h}</div>${(free && !fin)?lgxMatchesBox()+more:more+lgxMatchesBox()}`;
   bindTourChips(); bindLegend();
 }
 function bindLegend(){
@@ -2610,7 +2644,7 @@ function renderLineup(mine, round){
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
-  $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
+  if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
     `<div class="head2x"><h2>Мій склад</h2><div class="subx"><div>основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</div>${rolesNoteInner(mine)?`<div>${rolesNoteInner(mine)}</div>`:''}</div></div>
      ${mine.length?'':'<div class="soon" style="margin-bottom:12px">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>'}
      <div class="squad-wrap">
@@ -3161,7 +3195,7 @@ async function viewMarket(){
          <div class="msec" style="margin-top:16px">Моя вітрина${myShop.length?` · ${myShop.length}`:''}</div>${shopHtml}`;
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+budgetPanel()+bar+((S.mktSub==='free'||S.mktSub==='all')?'':(rolesNoteInner(mineM)?`<div class="subx1">${rolesNoteInner(mineM)}</div>`:''))+body;   // одна інформація на «Мій склад» і «Ринок»; 19.10: текст про ролі — в заголовку списку гравців (2 рядки), на «Вітрина»/«Мої угоди» — один рядок під вкладками
+  if(S.tab!=='market') return; $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+budgetPanel()+bar+((S.mktSub==='free'||S.mktSub==='all')?'':(rolesNoteInner(mineM)?`<div class="subx1">${rolesNoteInner(mineM)}</div>`:''))+body;   // одна інформація на «Мій склад» і «Ринок»; 19.10: текст про ролі — в заголовку списку гравців (2 рядки), на «Вітрина»/«Мої угоди» — один рядок під вкладками
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
@@ -3428,7 +3462,7 @@ function modalOpen(html){
   h.onclick=(e)=>{ if(e.target===h) modalClose(); };
   h.querySelector('.mx').onclick=modalClose;
 }
-function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; }
+function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=''; if(S.press) S.press.popOpen=false; }   // popOpen (715): ✕/Esc/клік повз вікно преси — скинути, щоб пізніша відповідь у вкладці не закрила чуже вікно
 // Esc закриває відкриту модалку — так само, як ✕ і клік повз вікно (на борді вже було; рішення Богдана 11.10)
 document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; const sf=document.querySelector('.sqfull'); if(sf){ sf.remove(); return; } if(!$('mhost').classList.contains('hide')) modalClose(); });
 document.addEventListener('click',e=>{ document.querySelectorAll('.chtipw.open').forEach(w=>{ if(!w.contains(e.target)) w.classList.remove('open'); }); });   // підказка «Челенджі» на Ринку
@@ -4484,7 +4518,7 @@ async function viewCollection(){
     g0('player_card_choice?select=player_id,participant_id,frame,card_item_id&limit=5000'),
     g0('collection_design?select=participant_id,player_id,frame,card_item_id&limit=5000'),      // 565; null = ще не залито
     loadCardMeta() ]);
-  if(items===null){ $('view').innerHTML='<div class="head2"><h2>Колекція</h2></div><div class="soon">Не вдалось завантажити картки. Онови сторінку.</div>'; return; }
+  if(items===null){ if(S.tab!=='collection') return; $('view').innerHTML='<div class="head2"><h2>Колекція</h2></div><div class="soon">Не вдалось завантажити картки. Онови сторінку.</div>'; return; }
   S.myCards=items.filter(c=>c.owner_profile_id===S.myProfile);   // «чим володію» (вибір дизайну в картці гравця) — завжди свіже, бо видача йде повз фронт
   const profOf={}, pidOf={};
   (pp||[]).forEach(r=>{ if(r.profile_id){ profOf[r.id]=r.profile_id; pidOf[r.profile_id]=r.id; } });
@@ -4539,7 +4573,7 @@ async function viewCollection(){
     .map(id=>[id,clubName(id)]).sort((a,b)=>a[1].localeCompare(b[1]));
   const opt=(v,l,sel)=>`<option value="${esc(v)}"${String(sel)===String(v)?' selected':''}>${esc(l)}</option>`;
   const modeBtn=(m,ic,lbl,n,who)=>`<button class="cmode${(f.mode===m && (m!=='user' || f.who===who))?' on':''}" data-m="${m}"${who?` data-who="${who}"`:''}>${ic} ${esc(lbl)}${n!=null?` <b>${n}</b>`:''}</button>`;
-  $('view').innerHTML=`
+  if(S.tab!=='collection') return; $('view').innerHTML=`
     <div class="head2"><h2>Колекція</h2><span class="sub" id="colSum"></span></div>
     <div class="col-modes">
       ${modeBtn('mine','⭐','Мої',mineUnits.length)}${others.map(id=>modeBtn('user','👤',S.names[id],null,id)).join('')}${modeBtn('all','🛒','Усі Rare/Mega',all.length)}
@@ -4763,7 +4797,7 @@ function viewStats(){
     ${(filtered||F.round)?'<button class="mini ghost" id="sf-reset">Скинути</button>':''}
     <span class="dim" style="margin-left:auto;font-size:12px">у вибірці: ${pool.length} з ${all.length}</span>
   </div>`;
-  $('view').innerHTML=`
+  if(S.tab!=='stats') return; $('view').innerHTML=`
     <div class="head2"><h2>Статистика</h2><span class="sub">по пулу турніру · топ-${N} · клік по гравцю — детальна картка</span></div>
     ${fbar}
     <div class="statboards">
@@ -4788,7 +4822,7 @@ function viewStats(){
   $('view').querySelectorAll('.strow').forEach(el=>el.onclick=()=>openPlayerModal(el.dataset.p));
 }
 function viewTable(){
-  $('view').innerHTML = `<div class="head2"><h2>Таблиця &amp; Матчі</h2><span class="sub">борда: залік, вікенди (таблиця й матчі), очки по вікендах, менеджмент · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
+  if(S.tab!=='table') return; $('view').innerHTML = `<div class="head2"><h2>Таблиця &amp; Матчі</h2><span class="sub">борда: залік, вікенди (таблиця й матчі), очки по вікендах, менеджмент · та сама, що публічна · <a href="squad-stage.html" target="_blank" style="color:var(--teal)">відкрити окремо ↗</a></span></div>
     <iframe id="boardFrame" src="squad-stage.html?embed" title="Squad борда" scrolling="no"
       style="width:100%;border:1px solid var(--line);border-radius:12px;background:var(--panel);height:880px;display:block"></iframe>`;
   const fr=$('boardFrame');
@@ -4826,6 +4860,7 @@ function newsLine(n){
   return `<div class="nrow"><span class="ntime">${t}</span><span class="nico">${ico}</span><span class="ntxt">${txt}</span></div>`;
 }
 async function viewNews(){
+  if((S.newsPane||'news')==='press') return viewPress();   // 715: підвкладка «Преса»
   let rows=null;
   try{ rows = await sbSel(`market_news?tournament_id=eq.${S.tour.id}&order=created_at.desc&limit=200&select=id,kind,actor_participant,subject_participant,player_id,meta,created_at`); }
   catch(e){ rows=null; }   // 425 ще не залито → degrade
@@ -4842,7 +4877,7 @@ function newsGrouped(list){
 function renderNews(){
   const rows=S.news;
   if(rows===null){
-    $('view').innerHTML=`<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; бюджети учасників приватні. Email — окремо.</div>`;
+    if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; бюджети учасників приватні. Email — окремо.</div>`;
     return;
   }
   const f=S.newsF||(S.newsF={sub:'all',player:''});
@@ -4852,7 +4887,7 @@ function renderNews(){
   let list=rows.slice();
   if(f.sub==='mine') list=list.filter(n=>n.actor_participant===S.me.id||n.subject_participant===S.me.id);
   if(f.player) list=list.filter(n=>n.player_id===f.player||(n.meta&&n.meta.wanted_player===f.player));
-  $('view').innerHTML=`
+  if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}
     <div class="head2"><h2>News</h2><span class="sub">подієвий лог ринку · ${rows.length} подій · суми угод публічні, бюджети приватні · показано ${list.length}</span></div>
     <div class="news-filters">
       <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
@@ -4861,6 +4896,182 @@ function renderNews(){
     <div class="news-feed">${list.length?newsGrouped(list):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
   $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
   const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
+}
+// ── 🎤 ПРЕСА Squad (SQL 715/716, 14.11; рішення Богдана: 5 гачків, ті самі 7 репортерів, питання не повторюються одному учаснику) ──
+// Питання створює БАЗА, коли учасник відкриває кабінет (RPC market_press_sync; не частіше ніж раз на 5 хв): найцікавіші події Вікенду за сумою,
+// ≤2 питання на Вікенд (≤3 при 6+ учасниках). Відповіді бачать усі учасники турніру; очок за пресу нема; відповісти можна до закриття Вікенду.
+// Відповідь учасник ЗАВЖДИ пише сам (поле до 500 символів) або «Пропустити» — готових варіантів немає (Богдан 14.11).
+// Вікно при вході: ВСІ відкриті питання одразу (Богдан 14.11: «як в ЄвроСезоні» — учасник заходить раз до вікенду й раз після), не частіше ніж раз на 6 год;
+// ✕ лише відкладає (питання лишаються у вкладці з лічильником). Відповів на одне — картка змінюється на місці, решта не чіпається; відповів на всі — вікно закривається саме.
+// Поки 715 не залито — усе мовчки ховається (degrade): ні лічильника, ні вікна, у підвкладці «зʼявиться після заливки».
+const PR_HOOK={big_buy:['💰','Купівля'],auction_win:['🔨','Аукціон'],sold_out:['💸','Продаж'],deal_between:['🤝','Угода'],rival_win:['⚔️','Rivals'],rival_loss:['⚔️','Rivals'],rival_draw:['⚔️','Rivals'],captain_pick:['🎖️','Капітан'],boost_used:['🚀','Буст'],bench_star:['🪑','Лавка'],starter_cheap:['⚽','Основа']};
+let _prMem=null;   // запасний стан у памʼяті, якщо localStorage недоступний
+const prStore={ get(){ try{ const v=localStorage.getItem('sqPressPopAt'); return v!=null?v:_prMem; }catch(e){ return _prMem; } }, set(v){ _prMem=String(v); try{ localStorage.setItem('sqPressPopAt',String(v)); }catch(e){} } };
+const PR=()=>S.press||(S.press={mine:[],feed:[],ready:false,mineAt:0,syncAt:0,syncP:null,popDone:false,popOpen:false,edit:null,busy:false,booting:false});
+const prClosed=id=>{ const r=(S.rounds||[]).find(x=>x.id===id); return !r || !!r.results_entered_at; };   // Вікенд не знайдено → вважаємо закритим (безпечніше)
+const prOpenList=()=> PR().ready ? PR().mine.filter(q=>q.is_open) : [];
+function pressSync(minGap){
+  const P=PR(); if(!S.tour||!S.me) return Promise.resolve();
+  if(P.syncP) return P.syncP;
+  if(P.syncAt && Date.now()-P.syncAt<(minGap||300000)) return Promise.resolve();
+  P.syncAt=Date.now();
+  P.syncP=(async()=>{ try{ await sb.rpc('market_press_sync',{p_tournament:S.tour.id}); }catch(e){ /* 715 ще не залито / база не відповіла → тихо */ } })().finally(()=>{ P.syncP=null; });
+  return P.syncP;
+}
+async function pressLoad(withFeed){
+  const P=PR(), T=S.tour.id;
+  try{ P.mine=await sbSel(`market_my_press?tournament_id=eq.${T}&order=created_at.desc&select=*`); P.ready=true; P.mineAt=Date.now(); }
+  catch(e){ P.mine=[]; P.ready=false; P.feed=[]; return; }   // вьюхи нема (715 не залито) → degrade
+  if(withFeed){ try{ P.feed=await sbSel(`market_press_feed?tournament_id=eq.${T}&order=answered_at.desc&limit=80&select=*`); }catch(e){ P.feed=[]; } }
+}
+// ліпить лічильник на вкладку (викликається з renderTabs, бо вкладки перемальовуються; і після кожного оновлення)
+function paintPressDot(){
+  const b=document.querySelector('#tabs [data-tab="news"]'); if(!b) return;
+  const n=prOpenList().length; let d=b.querySelector('.prdot');
+  if(!n){ if(d) d.remove(); return; }
+  if(!d){ d=document.createElement('i'); b.appendChild(d); }
+  d.className='prdot'; d.textContent=n; d.title=`${n} ${n===1?'питання':'питань'} від преси ${n===1?'чекає':'чекають'} відповіді — «News & Press → Преса»`;
+}
+async function pressBoot(){
+  const P=PR(); if(P.booting||!S.tour||!S.me) return; P.booting=true;
+  try{
+    await pressSync();
+    if(!P.mineAt || Date.now()-P.mineAt>60000) await pressLoad(false);
+    paintPressDot(); pressPopup();
+  }catch(e){ /* преса ніколи не ламає кабінет */ }
+  P.booting=false;
+}
+// підвкладки «Новини | Преса» у вкладці News & Press
+function newsPaneBar(){
+  const p=S.newsPane||'news', n=prOpenList().length;
+  return `<div class="subtabs"><button data-np="news" class="${p==='news'?'on':''}">📰 Новини</button><button data-np="press" class="${p==='press'?'on':''}">🎤 Преса${n?` <i class="prdot">${n}</i>`:''}</button></div>`;
+}
+// картка питання; o.pop — у вікні при вході (без «змінити»)
+function pressCard(q,o){
+  o=o||{}; const P=PR(), h=PR_HOOK[q.hook]||['🎤','Преса'];
+  const closed=prClosed(q.round_id), answered=!!q.answer_kind, editing=P.edit===q.id && !closed;
+  const hd=`<div class="prs-hd"><span class="prs-rep">${esc(q.interviewer_emoji||'🎤')} ${esc(q.interviewer_title||'Репортер')}</span><span class="pill">${h[0]} ${h[1]} · Вікенд ${esc(q.round_number)}</span></div><div class="prs-q">${esc(q.body)}</div>`;
+  let ft='';
+  if(q.is_open || editing){
+    const prev=(editing && q.answer_kind==='text') ? q.answer_body : '';   // відповідь завжди пише учасник (рішення Богдана 14.11): поле, без готових варіантів
+    ft=`<div class="prs-own" id="prOwn-${q.id}"><textarea maxlength="500" rows="3" placeholder="Твоя відповідь (до 500 символів)">${esc(prev)}</textarea>
+      <div class="prs-acts"><button type="button" class="btn sm" data-pr-send="${q.id}">${editing?'Зберегти':'Надіслати'}</button>${answered?'':`<button type="button" class="prs-link" data-pr-skip="${q.id}">Пропустити</button>`}${editing?`<button type="button" class="prs-link" data-pr-cancel="${q.id}">Скасувати</button>`:''}</div></div>`;
+  }else if(answered){
+    ft=q.answer_kind==='skip' ? `<div class="prs-a skip">Пропущено</div>` : `<div class="prs-a">${esc(q.answer_body)}</div>`;
+    if(!closed && !o.pop) ft+=`<button type="button" class="prs-link" data-pr-edit="${q.id}">${q.answer_kind==='skip'?'Відповісти':'Змінити відповідь'}</button>`;
+  }else{
+    ft=`<div class="prs-a skip">Без відповіді — Вікенд закрито</div>`;
+  }
+  return `<div class="prs-card${q.is_open?' open':''}" data-pr-card="${q.id}">${hd}${ft}</div>`;
+}
+async function viewPress(){
+  if(S.tab!=='news') return; $('view').innerHTML='<div class="spin">завантаження…</div>';
+  await pressSync(45000);      // нова угода → питання зʼявиться, щойно відкриєш «Пресу» (не частіше ніж раз на 45 с)
+  await pressLoad(true);
+  paintPressDot(); renderPress();
+}
+function renderPress(){
+  const P=PR();
+  if(!P.ready){
+    if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}<div class="head2"><h2>Преса</h2></div><div class="soon">Преса зʼявиться після заливки <b>715</b> (<code>market_press_*</code>). Репортери ставитимуть питання про твої угоди, дуелі Rivals і склад (капітан, бусти, основа та лавка); відповіді бачитимуть усі учасники, очок за пресу нема.</div>`;
+    return;
+  }
+  const open=P.mine.filter(q=>q.is_open), rest=P.mine.filter(q=>!q.is_open);
+  const fr=f=>`<div class="prs-fr"><div class="prs-fh">${esc(f.interviewer_emoji||'🎤')} <b>${esc(f.interviewer_title||'')}</b> → <b>${esc(f.participant_name||'—')}</b><span class="dim"> · Вікенд ${esc(f.round_number)}</span></div><div class="prs-fq">${esc(f.question)}</div><div class="prs-a">${esc(f.answer)}</div></div>`;
+  if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}
+    <div class="head2"><h2>Преса</h2><span class="sub">питання репортерів про твої угоди, дуелі Rivals і склад · відповіді бачать усі учасники · очок за пресу нема · відповісти можна до закриття Вікенду</span></div>
+    <div class="prs-wrap">
+      ${open.length?`<div class="prs-sec">Чекають відповіді · ${open.length}</div>${open.map(q=>pressCard(q)).join('')}`:''}
+      ${rest.length?`<div class="prs-sec">Мої питання й відповіді</div>${rest.map(q=>pressCard(q)).join('')}`:''}
+      ${!P.mine.length?'<div class="soon">Питань поки немає. Вони зʼявляються після угод на ринку (купівля, аукціон, продаж, обмін), дуелей Rivals і — коли склади Вікенду відкриті (усі підтвердили або минув дедлайн) — про твій склад: капітана й віце, буст, зірку на лавці чи дешевшого в основі.</div>':''}
+      <div class="prs-sec">Стрічка преси · відповіді всіх учасників</div>
+      ${P.feed.length?P.feed.map(fr).join(''):'<div class="soon">Відповідей ще немає.</div>'}
+    </div>`;
+}
+// вікно при вході: усі відкриті питання одразу (їх не більше 2–3 на Вікенд), не частіше ніж раз на 6 год; ✕ відкладає
+function pressPopup(){
+  const P=PR(); if(P.popDone||!P.ready) return;
+  const qs=prOpenList(); if(!qs.length) return;
+  if(!$('mhost').classList.contains('hide')) return;   // не перекриваємо інше вікно
+  P.popDone=true;                                       // ≤1 разу за відкриття кабінету
+  if(Date.now()-(+prStore.get()||0) < 6*3600e3) return;
+  prStore.set(Date.now()); P.popOpen=true;
+  modalOpen(`<div class="prs-pophd">🎤 Преса хоче тебе запитати</div>${qs.map(q=>pressCard(q,{pop:true})).join('')}
+    <div class="prs-popft"><button type="button" class="btn ghost sm" data-pr-all="1">Відкрити «Пресу» →</button></div>`);
+}
+async function pressAnswer(id,kind,text){
+  const P=PR(); if(P.busy) return; P.busy=true;
+  document.querySelectorAll(`[data-pr-card="${id}"]`).forEach(c=>c.classList.add('busy'));
+  try{
+    const {error}=await sb.rpc('market_press_answer',{p_prompt:id,p_kind:kind,p_text:text==null?null:text});
+    if(error){ alert('⛔ '+(error.message||'не вдалося зберегти')); document.querySelectorAll(`[data-pr-card="${id}"]`).forEach(c=>c.classList.remove('busy')); P.busy=false; return; }
+    P.edit=null; await pressLoad(true);
+    if(P.popOpen){
+      if(!prOpenList().length){ P.popOpen=false; modalClose(); }   // відповіли на всі → вікно закривається саме
+      else{                                                          // лишились інші → міняємо лише цю картку на місці (чернетки в інших полях не губимо)
+        const old=document.querySelector(`#mhost [data-pr-card="${id}"]`), nq=P.mine.find(x=>x.id===id);
+        if(old && nq) old.outerHTML=pressCard(nq,{pop:true});
+      }
+    }
+    paintPressDot();
+    if(S.tab==='news' && S.newsPane==='press') renderPress();
+  }catch(e){ alert('⛔ '+String(e&&e.message||e)); }
+  P.busy=false;
+}
+document.addEventListener('click',e=>{
+  const t=e.target.closest&&e.target.closest('[data-pr-skip],[data-pr-send],[data-pr-edit],[data-pr-cancel],[data-pr-all],[data-np]'); if(!t) return;
+  const P=PR(), D=t.dataset;
+  if(D.np){ S.newsPane=D.np; viewNews(); return; }
+  if(D.prAll){ P.popOpen=false; modalClose(); S.newsPane='press'; go('news'); return; }
+  if(D.prSkip){ pressAnswer(D.prSkip,'skip'); return; }
+  if(D.prSend){ const ta=t.closest('.prs-own').querySelector('textarea'), v=ta?ta.value.trim():'';   // поле — відносно натиснутої кнопки (у вікні й у вкладці однакові id картки)
+    if(v.length<2){ alert('Відповідь закоротка — напиши хоча б кілька слів.'); return; } pressAnswer(D.prSend,'text',v); return; }
+  if(D.prEdit){ P.edit=D.prEdit; renderPress(); return; }
+  if(D.prCancel){ P.edit=null; renderPress(); return; }
+});
+// ── 💰 ПРИЗОВІ (SQL 714, 13.11; рішення Богдана: «як в ЄвроСезоні», лише Weekends · General · за очки · Rivals) ──
+// Читає вьюху market_prize_board (лише залогінені; анонім грошей не бачить). Фонд і відсотки задає адмін: Адмінка → Налаштування → «💰 Призові».
+// Фонд не оголошено → вьюха порожня → картка «ще не оголошено». Усе, що тут, — «як вийшло б зараз», а не виплата.
+const uahF=v=>v==null?'—':Math.round(+v).toLocaleString('uk-UA')+' ₴';
+async function viewPrizes(){
+  let rows=null;
+  try{ rows=await sbSel(`market_prize_board?tournament_id=eq.${S.tour.id}&select=*&order=total_amount.desc,display_name`); }
+  catch(e){ rows=null; }   // 714 ще не залито / база не відповіла → degrade
+  S.prizes=rows; renderPrizes();
+}
+function renderPrizes(){
+  const rows=S.prizes, head='<div class="head2"><h2>💰 Призові</h2><span class="sub">скільки вийшло б, якби турнір закінчився зараз</span></div>';
+  if(rows===null){ if(S.tab!=='prizes') return; $('view').innerHTML=head+'<div class="soon">Не вдалося прочитати призові: база не відповіла або SQL <b>714</b> ще не залито. Онови сторінку.</div>'; return; }
+  if(!rows.length){ if(S.tab!=='prizes') return; $('view').innerHTML=head+'<div class="soon">Призовий фонд ще не оголошено. Коли адмін задасть суму, тут зʼявиться таблиця: скільки кому вийшло б за поточного розкладу.</div>'; return; }
+  const r0=rows[0], sp=r0.split||[0,0,0,0], pp=r0.place_pct||[0,0,0], ssum=sp.reduce((a,b)=>a+(+b||0),0)||1, two=(+r0.stage_count||1)>1;
+  const pool=i=>(+r0.fund_uah)*(+sp[i]||0)/ssum;
+  const pc=i=>String(Math.round((+sp[i]||0)/ssum*1000)/10).replace('.',',');   // split у вьюсі — ЧАСТКИ (0,35), показуємо у %
+  const me=rows.find(r=>S.me && r.participant_id===S.me.id);
+  const cell=(amt,sub,tot)=>`<td class="n ${tot?'tot':(+amt===0?'z':'')}">${amt==null?'—':uahF(amt)}${sub?`<small>${sub}</small>`:''}</td>`;
+  const place=r=>r==null?'':`${r} м.`;
+  const rem=r=>(+r.total_amount)-((+r.weekends_amount||0)+(+r.general_amount||0)+(+r.points_amount||0)+(+r.rivals_amount||0));   // залишок від округлення (лише в лідера General)
+  const body=rows.map(r=>{
+    const wk=two?[r.weekends1_rank,r.weekends2_rank].map(place).join(' · '):place(r.weekends1_rank);
+    const sh=r.points_share==null?'':(+r.points_share*100).toFixed(1).replace('.',',')+'%';
+    const rv=(+r.rivals_wins||0)?`${r.rivals_wins} пер.`:'';
+    return `<tr class="${me&&r.participant_id===me.participant_id?'prz-me':''}"><td><b>${esc(r.display_name)}</b></td>${cell(r.weekends_amount,wk)}${cell(r.general_amount,place(r.general_rank))}${cell(r.points_amount,sh)}${cell(r.rivals_amount,rv)}${cell(r.total_amount,rem(r)?`${rem(r)>0?'+':'−'}${Math.abs(rem(r))}\u00a0₴ залишок`:'',true)}</tr>`;
+  }).join('');
+  const sum=k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
+  const und=+r0.undistributed_uah||0;
+  const mine=me?`<div class="card"><div class="prz-mine"><span class="big">${uahF(me.total_amount)}</span><span class="brk"><b>твої гроші, якби турнір закінчився зараз</b><br>Weekends ${uahF(me.weekends_amount)} · General ${uahF(me.general_amount)} · За очки ${uahF(me.points_amount)} · ⚔️ Rivals ${uahF(me.rivals_amount)}</span></div></div>`:'';
+  if(S.tab!=='prizes') return; $('view').innerHTML=`${head}${mine}
+    <div class="card"><div class="przw"><table class="t prz"><thead><tr><th>Учасник</th><th class="n">Weekends</th><th class="n">General</th><th class="n">За очки</th><th class="n">⚔️ Rivals</th><th class="n">Разом ₴</th></tr></thead>
+      <tbody>${body}</tbody>
+      <tfoot><tr><td>Фонд ${uahF(r0.fund_uah)}</td><td class="n">${uahF(sum('weekends_amount'))}</td><td class="n">${uahF(sum('general_amount'))}</td><td class="n">${uahF(sum('points_amount'))}</td><td class="n">${uahF(sum('rivals_amount'))}</td><td class="n">${uahF(sum('total_amount'))}</td></tr></tfoot></table></div>
+      ${und>0?`<p class="prz-notes" style="list-style:none;padding:0">Ще нікому не належить: <b>${uahF(und)}</b> (наприклад, пул ⚔️ Rivals, поки ніхто не виграв дуель). Ці гроші не розподілені.</p>`:''}
+      <ul class="prz-notes">
+        <li>Фонд ${uahF(r0.fund_uah)} ділиться на чотири складові: <b>Weekends</b> ${pc(0)}% (${uahF(pool(0))}) · <b>General</b> ${pc(1)}% (${uahF(pool(1))}) · <b>За очки</b> ${pc(2)}% (${uahF(pool(2))}) · <b>⚔️ Rivals</b> ${pc(3)}% (${uahF(pool(3))}).</li>
+        <li><b>Weekends</b>${two?' (кожен етап окремо, пул ділиться між етапами порівну)':' (етап)'} і <b>General</b>: призові місця 1-ше ${pp[0]}% · 2-ге ${pp[1]}% · 3-тє ${pp[2]}% від пулу складової. Weekends рахується за очками вікендів етапу (матчі + 💎 + 🎯 + ⚔️), General — за всіма очками турніру.</li>
+        <li><b>За очки</b>: пул ділиться між усіма пропорційно очкам General — чим більше очок, тим більша частка, навіть без призового місця.</li>
+        <li><b>⚔️ Rivals</b>: пул забирає той, хто виграв найбільше дуелей (мінімум одну); при рівності ділять порівну.</li>
+        <li>Нічия за місце: суми відсотків зайнятих місць діляться порівну. Суми округлюються до 1 ₴; залишок від округлення йде лідеру General.</li>
+      </ul>
+      <div class="prz-warn">⚠️ Це не вже зароблено, а скільки вийшло б, якби турнір закінчився зараз. Очки, місця й частки «за очки» змінюються з кожним вікендом, тож суми плавають. Остаточні призові — після завершення турніру.</div></div>`;
 }
 // ── ⚙ АДМІНКА (патерн BoBet/PSL; дії — наступний крок) ──
 // ═══ ⚙ АДМІНКА (23.10, рішення Богдана; SQL 566–567…): керувати турніром без Claude. Підвкладки; кожна дія — RPC + запис у журнал.
@@ -5244,7 +5455,7 @@ async function admLog(body){
 // ───────── вкладка «Налаштування» (SQL 570, Фаза 3, 24.10): параметри з каталогу `market_config_catalog` (дані, не зашито — той самий каталог
 // потім читатиме конструктор турнірів) + модулі Rivals/Челенджі + перерахунок менеджменту + ШАБЛОНИ. Зміна = RPC + журнал; ризикові — слово «ЗМІНИТИ».
 const ADM_EFF={now:'діє одразу',new_deals:'для нових угод',new_participants:'для нових учасників',next_rounds:'з наступних вікендів',at_finalize:'при підсумку турніру'};
-const ADM_GRPI={auction:'🔨',roles:'🎭',mgmt:'💼',squad:'👥',prices:'💶',tech:'📡'};
+const ADM_GRPI={auction:'🔨',roles:'🎭',mgmt:'💼',squad:'👥',prices:'💶',tech:'📡',prizes:'💰'};
 const admR=(x,d)=>{ const m=Math.pow(10,d==null?4:d); return Math.round(x*m)/m; };
 const admPct=v=>admR(+v*100,4)+'%';
 const admErr=e=>String((e&&e.message)||e||'').replace(/^.*?(Squad: )/,'$1');
@@ -5910,10 +6121,10 @@ async function admStatsEdit(p){
 }
 
 async function viewAdmin(){
-  if(!(S.me && S.me.is_admin)){ $('view').innerHTML='<div class="soon">Адмінка — лише для адміна турніру.</div>'; return; }
+  if(!(S.me && S.me.is_admin)){ if(S.tab!=='admin') return; $('view').innerHTML='<div class="soon">Адмінка — лише для адміна турніру.</div>'; return; }
   const A=S.adm||(S.adm={sub:'rounds',rid:null});
   const ok=await admProbe();
-  $('view').innerHTML=`<div class="head2"><h2>Адмінка</h2><span class="sub">керування турніром без Claude · кожна дія — у журналі · час — за Києвом</span></div>
+  if(S.tab!=='admin') return; $('view').innerHTML=`<div class="head2"><h2>Адмінка</h2><span class="sub">керування турніром без Claude · кожна дія — у журналі · час — за Києвом</span></div>
     <div class="subtabs adm-subs">${ADM_SUBS.map(([k,ic,l,live])=>`<button data-asub="${k}" class="${A.sub===k?'on':''}${live?'':' soonb'}">${ic} ${l}${live?'':' <i>скоро</i>'}</button>`).join('')}</div><div id="admBody"></div>`;
   $('view').querySelectorAll('[data-asub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.asub; viewAdmin(); });
   const body=$('admBody');
