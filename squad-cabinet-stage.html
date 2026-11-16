@@ -166,6 +166,7 @@ table.t{width:100%;border-collapse:collapse}
 .prz tr.prz-me td{background:rgba(244,196,48,.07)} .prz td.tot{font-weight:700} .prz td.z{color:var(--text-dim)} .prz tfoot td{border-bottom:0;color:var(--text-dim);font-size:12px}
 .prz-mine{display:flex;align-items:baseline;gap:8px 18px;flex-wrap:wrap} .prz-mine .big{font-size:30px;font-weight:700;color:var(--gold);font-variant-numeric:tabular-nums} .prz-mine .brk{color:var(--text-dim);font-size:13px;line-height:1.5}
 .prz-notes{margin:10px 0 0;padding-left:18px;color:var(--text-dim);font-size:13px;line-height:1.6} .prz-warn{margin-top:12px;padding:10px 12px;border:1px solid rgba(230,193,75,.45);border-radius:10px;color:var(--gold);font-size:13px;line-height:1.5}
+.prz-h{margin:0 0 10px;font-size:15px;font-weight:700} .prz-h .dim{font-weight:400;font-size:12px;color:var(--text-dim);margin-left:6px} .prz td.rk{white-space:nowrap;font-weight:700} .prz .medal{margin-left:3px} .prz td.gen{font-size:16px;color:var(--gold)} .prz-hint{margin:10px 0 0;color:var(--text-dim);font-size:13px;line-height:1.55}   /* 15.11: зведена таблиця очок над призовими */
 .pill{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:var(--panel2);
   border:1px solid var(--line);color:var(--text-dim)}
 
@@ -438,22 +439,40 @@ table.t{width:100%;border-collapse:collapse}
 .news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
 /* 🎤 Преса (SQL 715/716, 14.11): картки питань від репортерів, варіанти відповіді, стрічка відповідей усіх учасників, лічильник на вкладці й вікно при вході */
 .prdot,.subtabs button i.prdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:var(--accent);color:#04140d;font:700 10px var(--mono);text-align:center;margin-left:6px;padding:0 4px;vertical-align:middle;font-style:normal}
-.prs-wrap{max-width:720px}
-.prs-sec{margin:18px 0 8px;font:700 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
-.prs-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:0 0 10px}
-.prs-card.open{border-color:var(--accent-d);box-shadow:0 0 0 1px rgba(24,180,122,.18) inset}
-.prs-hd{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px}
-.prs-rep{font:700 14px var(--mono)}
-.prs-q{font-size:14px;line-height:1.45;margin:2px 0 10px}
-.prs-card.busy .btn,.prs-card.busy .prs-link{opacity:.55;cursor:wait}
-.prs-acts{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
-.prs-own textarea{width:100%;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:8px 10px;font:13px var(--body);resize:vertical;margin-bottom:6px}
-.prs-a{font-size:13px;line-height:1.4;padding:7px 10px;border-left:3px solid var(--accent-d);background:rgba(24,180,122,.07);border-radius:0 8px 8px 0}
-.prs-a.skip{border-left-color:var(--line);background:none;color:var(--text-dim);font-style:italic}
-.prs-link{background:none;border:0;color:var(--teal);font:600 12px var(--mono);cursor:pointer;padding:6px 0 0}
-.prs-link:hover{text-decoration:underline}
-.prs-fr{padding:9px 2px;border-bottom:1px solid var(--line)}
-.prs-fh{font-size:12.5px;margin-bottom:2px} .prs-fq{font-size:12.5px;color:var(--text-dim);margin-bottom:4px}
+.news-split{display:grid;grid-template-columns:minmax(0,720px) minmax(340px,760px);gap:28px;align-items:start}   /* 15.11 (Богдан): News зліва, ПРЕСА справа — без перемикача «Новини | Преса» */
+.news-col,.press-col{min-width:0}
+@media(max-width:1099px){.news-split{grid-template-columns:minmax(0,1fr);gap:18px}.press-col{order:-1}}   /* вузький екран: преса над новинами (там дія), стрічка вікендів згорнута */
+.prc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
+.prc h2{margin:0 0 8px;font:700 17px var(--mono);letter-spacing:.02em}
+.pnote{font-size:13.5px;line-height:1.5;color:var(--text-dim);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:0 0 10px}
+.pnote:last-child{margin-bottom:0}
+.prq{border:1px solid var(--line);border-radius:10px;padding:12px 13px;margin:0 0 10px;background:var(--panel2)}
+.prq:not(.done){border-color:rgba(230,193,75,.45)}
+.prq-slot{font:700 11.5px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+.prq-rep,.feed-item .rep{font:700 12px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--purple);background:rgba(169,143,219,.14);padding:2px 9px;border-radius:20px;white-space:nowrap;flex:0 0 auto}
+.prq-rep{display:inline-block;margin-bottom:7px}
+.prq-q{font-size:15px;font-weight:600;line-height:1.4;margin-bottom:9px}
+.prs-own textarea{width:100%;box-sizing:border-box;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:9px;padding:9px 11px;font:14px/1.5 var(--body);resize:vertical}
+.prs-own textarea:focus{outline:none;border-color:var(--gold)}
+.prq-btns{display:flex;gap:8px;margin-top:9px;flex-wrap:wrap}
+.prq-btns button{padding:8px 15px;border-radius:9px;font:700 13.5px var(--mono);letter-spacing:.03em;cursor:pointer;border:1px solid var(--line)}
+.prq-btns .prq-ok{background:rgba(230,193,75,.14);border-color:var(--gold);color:var(--gold)}
+.prq-btns .prq-skip{background:var(--panel);color:var(--text-dim)}
+.prq.busy .prq-btns button{opacity:.55;cursor:wait}
+.prq-a{font-size:14px;line-height:1.45;padding:7px 10px;border-left:3px solid var(--accent-d);background:var(--green-soft);border-radius:0 8px 8px 0}
+.prq-a.skip{border-left-color:var(--line);background:none;color:var(--text-dim);font-style:italic}
+.gw-group h3.gw-head{margin:14px 0 8px;font:700 15px var(--mono);color:var(--gold);cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
+.gw-group h3.gw-head:hover{opacity:.85}
+.gw-caret{display:inline-block;width:.9em;text-align:center;color:var(--text-dim);font-size:.8em}
+.gw-cnt{margin-left:auto;font:700 11px var(--mono);color:var(--text-dim)}
+.gw-group.collapsed .gw-body{display:none}
+.feed-item{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--purple);border-radius:10px;padding:10px 12px;margin:0 0 9px}
+.feed-item.dim{opacity:.6;border-left-color:var(--text-dim)}
+.feed-item .q{font-size:14px;line-height:1.45;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.feed-item .qtext{flex:1 1 200px}
+.feed-item .a{font-size:14px;line-height:1.45;margin-top:7px;padding-top:7px;border-top:1px dashed var(--line);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.feed-item .a .who{font:700 12px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--green);background:var(--green-soft);padding:2px 9px;border-radius:20px;white-space:nowrap;flex:0 0 auto}
+.feed-item .a .qtext{color:var(--text)} .feed-item.dim .a .qtext{color:var(--text-dim);font-style:italic}
 .prs-pophd{font:700 17px var(--mono);margin:0 26px 10px 0}
 .prs-popft{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
 .mnote.warn{color:var(--down);font-weight:600}
@@ -4860,11 +4879,12 @@ function newsLine(n){
   return `<div class="nrow"><span class="ntime">${t}</span><span class="nico">${ico}</span><span class="ntxt">${txt}</span></div>`;
 }
 async function viewNews(){
-  if((S.newsPane||'news')==='press') return viewPress();   // 715: підвкладка «Преса»
+  const pr=pressPrepare();   // 15.11: питання й відповіді вантажаться паралельно з новинами; праву колонку домальовуємо, коли готові
   let rows=null;
   try{ rows = await sbSel(`market_news?tournament_id=eq.${S.tour.id}&order=created_at.desc&limit=200&select=id,kind,actor_participant,subject_participant,player_id,meta,created_at`); }
   catch(e){ rows=null; }   // 425 ще не залито → degrade
   S.news=rows; renderNews();
+  await pr; renderPressCol();
 }
 // групи по днях: «Сьогодні» / «Вчора» / дата
 function newsGrouped(list){
@@ -4874,10 +4894,19 @@ function newsGrouped(list){
   list.forEach(n=>{ const d=day(n.created_at); if(d!==cur){ cur=d; out+=`<div class="nday">${d===today?'Сьогодні · '+d:d===yest?'Вчора · '+d:d}</div>`; } out+=newsLine(n); });
   return out;
 }
+// каркас вкладки: зліва News, справа Преса (колонки перемальовуються окремо: фільтр новин не чіпає набране в пресі)
+function newsShell(){
+  if(S.tab!=='news') return false;
+  const v=$('view'); if(v.querySelector('#newsCol')) return true;
+  v.innerHTML='<div class="news-split"><div class="news-col" id="newsCol"></div><aside class="press-col" id="pressCol"></aside></div>';
+  renderPressCol(); return true;
+}
 function renderNews(){
   const rows=S.news;
+  if(!newsShell()) return;
+  const col=$('newsCol');
   if(rows===null){
-    if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; бюджети учасників приватні. Email — окремо.</div>`;
+    col.innerHTML=`<div class="head2"><h2>News</h2></div><div class="soon">Стрічка ринку зʼявиться після заливки <b>425</b> (<code>market_news</code>). Суми угод публічні; бюджети учасників приватні. Email — окремо.</div>`;
     return;
   }
   const f=S.newsF||(S.newsF={sub:'all',player:''});
@@ -4887,27 +4916,31 @@ function renderNews(){
   let list=rows.slice();
   if(f.sub==='mine') list=list.filter(n=>n.actor_participant===S.me.id||n.subject_participant===S.me.id);
   if(f.player) list=list.filter(n=>n.player_id===f.player||(n.meta&&n.meta.wanted_player===f.player));
-  if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}
+  col.innerHTML=`
     <div class="head2"><h2>News</h2><span class="sub">подієвий лог ринку · ${rows.length} подій · суми угод публічні, бюджети приватні · показано ${list.length}</span></div>
     <div class="news-filters">
       <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
       <select id="newsPl"><option value="">Гравець: усі</option>${plOpts.map(([id,nm])=>`<option value="${id}"${f.player===id?' selected':''}>${esc(nm)}</option>`).join('')}</select>
     </div>
     <div class="news-feed">${list.length?newsGrouped(list):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
-  $('view').querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
+  col.querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
   const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
 }
 // ── 🎤 ПРЕСА Squad (SQL 715/716, 14.11; рішення Богдана: 5 гачків, ті самі 7 репортерів, питання не повторюються одному учаснику) ──
 // Питання створює БАЗА, коли учасник відкриває кабінет (RPC market_press_sync; не частіше ніж раз на 5 хв): найцікавіші події Вікенду за сумою,
-// ≤2 питання на Вікенд (≤3 при 6+ учасниках). Відповіді бачать усі учасники турніру; очок за пресу нема; відповісти можна до закриття Вікенду.
+// до 4 питань на Вікенд (ліміт — market_press_config.cap_small/cap_large; ≤2 / ≤3 було до 15.11). SQL 717 (Хвиля 1, 16.11): 9 нових гачків (зірка складу, зірка Вікенду,
+// резерв, капітан влучив/промахнувся — лише про ЗАКРИТИЙ Вікенд; капітан і найдорожчий гравець іншого учасника — лише коли склади відкриті; прогноз-наповнювач),
+// Rivals — не більше 1 за Вікенд і в кінці черги. Відповіді бачать усі учасники турніру; очок за пресу нема; відповісти можна до закриття Вікенду; відповідь остаточна (і в базі).
 // Відповідь учасник ЗАВЖДИ пише сам (поле до 500 символів) або «Пропустити» — готових варіантів немає (Богдан 14.11).
 // Вікно при вході: ВСІ відкриті питання одразу (Богдан 14.11: «як в ЄвроСезоні» — учасник заходить раз до вікенду й раз після), не частіше ніж раз на 6 год;
 // ✕ лише відкладає (питання лишаються у вкладці з лічильником). Відповів на одне — картка змінюється на місці, решта не чіпається; відповів на всі — вікно закривається саме.
 // Поки 715 не залито — усе мовчки ховається (degrade): ні лічильника, ні вікна, у підвкладці «зʼявиться після заливки».
-const PR_HOOK={big_buy:['💰','Купівля'],auction_win:['🔨','Аукціон'],sold_out:['💸','Продаж'],deal_between:['🤝','Угода'],rival_win:['⚔️','Rivals'],rival_loss:['⚔️','Rivals'],rival_draw:['⚔️','Rivals'],captain_pick:['🎖️','Капітан'],boost_used:['🚀','Буст'],bench_star:['🪑','Лавка'],starter_cheap:['⚽','Основа']};
+const PR_HOOK={big_buy:['💰','Купівля'],auction_win:['🔨','Аукціон'],sold_out:['💸','Продаж'],deal_between:['🤝','Угода'],rival_win:['⚔️','Rivals'],rival_loss:['⚔️','Rivals'],rival_draw:['⚔️','Rivals'],captain_pick:['🎖️','Капітан'],boost_used:['🚀','Буст'],bench_star:['🪑','Лавка'],starter_cheap:['⚽','Основа'],
+  top_own:['⭐','Зірка складу'],top_week_own:['🏆','Зірка Вікенду'],top_week_miss:['👀','Зірка Вікенду'],bench_regret:['🪑','Резерв'],captain_hit:['🎖️','Капітан'],captain_miss:['🎖️','Капітан'],
+  other_captain:['🪞','Склад суперника'],other_star:['🪞','Склад суперника'],outlook:['🔮','Прогноз']};   // SQL 717
 let _prMem=null;   // запасний стан у памʼяті, якщо localStorage недоступний
 const prStore={ get(){ try{ const v=localStorage.getItem('sqPressPopAt'); return v!=null?v:_prMem; }catch(e){ return _prMem; } }, set(v){ _prMem=String(v); try{ localStorage.setItem('sqPressPopAt',String(v)); }catch(e){} } };
-const PR=()=>S.press||(S.press={mine:[],feed:[],ready:false,mineAt:0,syncAt:0,syncP:null,popDone:false,popOpen:false,edit:null,busy:false,booting:false});
+const PR=()=>S.press||(S.press={mine:[],feed:[],ready:false,mineAt:0,syncAt:0,syncP:null,popDone:false,popOpen:false,busy:false,booting:false,loading:false,drafts:{},coll:{},fix:null,fixAt:0});
 const prClosed=id=>{ const r=(S.rounds||[]).find(x=>x.id===id); return !r || !!r.results_entered_at; };   // Вікенд не знайдено → вважаємо закритим (безпечніше)
 const prOpenList=()=> PR().ready ? PR().mine.filter(q=>q.is_open) : [];
 function pressSync(minGap){
@@ -4930,7 +4963,7 @@ function paintPressDot(){
   const n=prOpenList().length; let d=b.querySelector('.prdot');
   if(!n){ if(d) d.remove(); return; }
   if(!d){ d=document.createElement('i'); b.appendChild(d); }
-  d.className='prdot'; d.textContent=n; d.title=`${n} ${n===1?'питання':'питань'} від преси ${n===1?'чекає':'чекають'} відповіді — «News & Press → Преса»`;
+  d.className='prdot'; d.textContent=n; d.title=`${n} ${n===1?'питання':'питань'} від преси ${n===1?'чекає':'чекають'} відповіді — «News & Press»`;
 }
 async function pressBoot(){
   const P=PR(); if(P.booting||!S.tour||!S.me) return; P.booting=true;
@@ -4941,52 +4974,60 @@ async function pressBoot(){
   }catch(e){ /* преса ніколи не ламає кабінет */ }
   P.booting=false;
 }
-// підвкладки «Новини | Преса» у вкладці News & Press
-function newsPaneBar(){
-  const p=S.newsPane||'news', n=prOpenList().length;
-  return `<div class="subtabs"><button data-np="news" class="${p==='news'?'on':''}">📰 Новини</button><button data-np="press" class="${p==='press'?'on':''}">🎤 Преса${n?` <i class="prdot">${n}</i>`:''}</button></div>`;
+// ── 15.11 (Богдан): преса — у ПРАВІЙ колонці вкладки «News & Press» (перемикача «Новини | Преса» нема); картки й стрічка — як в ЄвроСезоні;
+//    стрічка згортається по вікендах (за замовчуванням розгорнуто лише найновіший); «Змінити відповідь» нема — відповідь ОСТАТОЧНА ──
+function prRoundDates(rid){ const r=(S.rounds||[]).find(x=>x.id===rid); if(!r) return ''; const P=PR(); try{ return tourDates(r, P.fix&&P.fix.length?P.fix:null)||''; }catch(e){ return ''; } }
+async function pressPrepare(){
+  const P=PR(); P.loading=true;
+  try{
+    await pressSync(45000);      // нова угода → питання зʼявиться, щойно відкриєш «News & Press» (не частіше ніж раз на 45 с)
+    await pressLoad(true);
+    if(!P.fix || Date.now()-P.fixAt>600000){ try{ P.fix=await sbSel(`market_fixtures?tournament_id=eq.${S.tour.id}&select=round_id,kickoff_at&limit=1000`); P.fixAt=Date.now(); }catch(e){ P.fix=P.fix||[]; } }   // дати вікендів для заголовків стрічки
+    paintPressDot();
+  }catch(e){ /* преса ніколи не ламає кабінет */ }
+  P.loading=false;
 }
-// картка питання; o.pop — у вікні при вході (без «змінити»)
-function pressCard(q,o){
-  o=o||{}; const P=PR(), h=PR_HOOK[q.hook]||['🎤','Преса'];
-  const closed=prClosed(q.round_id), answered=!!q.answer_kind, editing=P.edit===q.id && !closed;
-  const hd=`<div class="prs-hd"><span class="prs-rep">${esc(q.interviewer_emoji||'🎤')} ${esc(q.interviewer_title||'Репортер')}</span><span class="pill">${h[0]} ${h[1]} · Вікенд ${esc(q.round_number)}</span></div><div class="prs-q">${esc(q.body)}</div>`;
-  let ft='';
-  if(q.is_open || editing){
-    const prev=(editing && q.answer_kind==='text') ? q.answer_body : '';   // відповідь завжди пише учасник (рішення Богдана 14.11): поле, без готових варіантів
-    ft=`<div class="prs-own" id="prOwn-${q.id}"><textarea maxlength="500" rows="3" placeholder="Твоя відповідь (до 500 символів)">${esc(prev)}</textarea>
-      <div class="prs-acts"><button type="button" class="btn sm" data-pr-send="${q.id}">${editing?'Зберегти':'Надіслати'}</button>${answered?'':`<button type="button" class="prs-link" data-pr-skip="${q.id}">Пропустити</button>`}${editing?`<button type="button" class="prs-link" data-pr-cancel="${q.id}">Скасувати</button>`:''}</div></div>`;
-  }else if(answered){
-    ft=q.answer_kind==='skip' ? `<div class="prs-a skip">Пропущено</div>` : `<div class="prs-a">${esc(q.answer_body)}</div>`;
-    if(!closed && !o.pop) ft+=`<button type="button" class="prs-link" data-pr-edit="${q.id}">${q.answer_kind==='skip'?'Відповісти':'Змінити відповідь'}</button>`;
+// картка питання: відкрите — форма (поле + «Відповісти» / «Не хочу відповідати»); інше — лише читання, змінити відповідь не можна
+function pressCard(q){
+  const P=PR(), h=PR_HOOK[q.hook]||['🎤','Преса'], dt=prRoundDates(q.round_id);
+  const hd=`<div class="prq-slot">${h[0]} ${esc(h[1])} · Вікенд ${esc(q.round_number)}${dt?' · '+esc(dt):''}</div><div class="prq-rep">${esc(q.interviewer_emoji||'🎤')} ${esc(q.interviewer_title||'Репортер')}</div><div class="prq-q">${esc(q.body)}</div>`;
+  let ft;
+  if(q.is_open){
+    ft=`<div class="prs-own"><textarea data-pr-ta="${q.id}" maxlength="500" rows="2" placeholder="пиши що хочеш…">${esc((P.drafts&&P.drafts[q.id])||'')}</textarea>
+      <div class="prq-btns"><button type="button" class="prq-ok" data-pr-send="${q.id}">Відповісти</button><button type="button" class="prq-skip" data-pr-skip="${q.id}">Не хочу відповідати</button></div></div>`;
+  }else if(q.answer_kind){
+    ft=q.answer_kind==='skip' ? `<div class="prq-a skip">Не хочу відповідати</div>` : `<div class="prq-a">${esc(q.answer_body)}</div>`;
   }else{
-    ft=`<div class="prs-a skip">Без відповіді — Вікенд закрито</div>`;
+    ft=`<div class="prq-a skip">Без відповіді — Вікенд закрито</div>`;
   }
-  return `<div class="prs-card${q.is_open?' open':''}" data-pr-card="${q.id}">${hd}${ft}</div>`;
+  return `<div class="prq${q.is_open?'':' done'}" data-pr-card="${q.id}">${hd}${ft}</div>`;
 }
-async function viewPress(){
-  if(S.tab!=='news') return; $('view').innerHTML='<div class="spin">завантаження…</div>';
-  await pressSync(45000);      // нова угода → питання зʼявиться, щойно відкриєш «Пресу» (не частіше ніж раз на 45 с)
-  await pressLoad(true);
-  paintPressDot(); renderPress();
-}
-function renderPress(){
+function renderPressCol(){
+  if(S.tab!=='news') return; const host=$('pressCol'); if(!host) return;
   const P=PR();
+  host.querySelectorAll('textarea[data-pr-ta]').forEach(t=>{ P.drafts[t.dataset.prTa]=t.value; });   // набране не губимо при перемальовуванні
+  if(P.loading && !P.ready){ host.innerHTML='<div class="prc"><h2>🎤 Преса</h2><div class="spin">завантаження…</div></div>'; return; }
   if(!P.ready){
-    if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}<div class="head2"><h2>Преса</h2></div><div class="soon">Преса зʼявиться після заливки <b>715</b> (<code>market_press_*</code>). Репортери ставитимуть питання про твої угоди, дуелі Rivals і склад (капітан, бусти, основа та лавка); відповіді бачитимуть усі учасники, очок за пресу нема.</div>`;
+    host.innerHTML=`<div class="prc"><h2>🎤 Преса</h2><div class="pnote">Преса зʼявиться після заливки <b>715</b> (<code>market_press_*</code>). Репортери ставитимуть питання про твої угоди, дуелі Rivals і склад (капітан, бусти, основа та лавка); відповіді бачитимуть усі учасники, очок за пресу нема.</div></div>`;
     return;
   }
-  const open=P.mine.filter(q=>q.is_open), rest=P.mine.filter(q=>!q.is_open);
-  const fr=f=>`<div class="prs-fr"><div class="prs-fh">${esc(f.interviewer_emoji||'🎤')} <b>${esc(f.interviewer_title||'')}</b> → <b>${esc(f.participant_name||'—')}</b><span class="dim"> · Вікенд ${esc(f.round_number)}</span></div><div class="prs-fq">${esc(f.question)}</div><div class="prs-a">${esc(f.answer)}</div></div>`;
-  if(S.tab!=='news') return; $('view').innerHTML=`${newsPaneBar()}
-    <div class="head2"><h2>Преса</h2><span class="sub">питання репортерів про твої угоди, дуелі Rivals і склад · відповіді бачать усі учасники · очок за пресу нема · відповісти можна до закриття Вікенду</span></div>
-    <div class="prs-wrap">
-      ${open.length?`<div class="prs-sec">Чекають відповіді · ${open.length}</div>${open.map(q=>pressCard(q)).join('')}`:''}
-      ${rest.length?`<div class="prs-sec">Мої питання й відповіді</div>${rest.map(q=>pressCard(q)).join('')}`:''}
-      ${!P.mine.length?'<div class="soon">Питань поки немає. Вони зʼявляються після угод на ринку (купівля, аукціон, продаж, обмін), дуелей Rivals і — коли склади Вікенду відкриті (усі підтвердили або минув дедлайн) — про твій склад: капітана й віце, буст, зірку на лавці чи дешевшого в основі.</div>':''}
-      <div class="prs-sec">Стрічка преси · відповіді всіх учасників</div>
-      ${P.feed.length?P.feed.map(fr).join(''):'<div class="soon">Відповідей ще немає.</div>'}
-    </div>`;
+  const open=P.mine.filter(q=>q.is_open), me=(S.me&&S.me.display_name)||'Ти';
+  // стрічка: відповіді ВСІХ учасників (текстові) + мої пропущені/без відповіді (тьмяні) — групи по вікендах
+  const groups=new Map();
+  const add=(rid,n,at,html)=>{ if(!groups.has(rid)) groups.set(rid,{rid,n,items:[]}); groups.get(rid).items.push({at:new Date(at||0).getTime(),html}); };
+  const fi=(rep,qt,who,ans,dim)=>`<div class="feed-item${dim?' dim':''}"><div class="q"><span class="rep">🎤 ${esc(rep)}</span><span class="qtext">${esc(qt)}</span></div><div class="a"><span class="who">${esc(who)}:</span><span class="qtext">${esc(ans)}</span></div></div>`;
+  P.feed.forEach(f=>add(f.round_id,f.round_number,f.answered_at,fi(f.interviewer_title||'Репортер',f.question,f.participant_name||'—',f.answer)));
+  P.mine.filter(q=>!q.is_open && q.answer_kind!=='text').forEach(q=>add(q.round_id,q.round_number,q.answered_at||q.created_at,fi(q.interviewer_title||'Репортер',q.body,me,q.answer_kind==='skip'?'Не хочу відповідати':'Без відповіді — Вікенд закрито',true)));
+  const gs=[...groups.values()].sort((a,b)=>b.n-a.n);
+  const feedHtml=gs.length ? gs.map((g,i)=>{
+    const coll=(g.rid in P.coll) ? P.coll[g.rid] : i>0;      // за замовчуванням розгорнуто лише найновіший вікенд
+    const dt=prRoundDates(g.rid);
+    return `<div class="gw-group${coll?' collapsed':''}"><h3 class="gw-head" data-pr-gw="${g.rid}"><span class="gw-caret">${coll?'▸':'▾'}</span><span>Вікенд ${esc(g.n)}${dt?' · '+esc(dt):''}</span><span class="gw-cnt">${g.items.length}</span></h3><div class="gw-body">${g.items.sort((a,b)=>b.at-a.at).map(x=>x.html).join('')}</div></div>`;
+  }).join('') : '<div class="pnote">Відповідей ще немає.</div>';
+  const none=open.length?'':`<div class="pnote">${P.mine.length?'Усі твої питання розібрано. ':'Питань для тебе поки немає. '}Нові зʼявляються після угод на ринку (купівля, аукціон, продаж, обмін), після закритого Вікенду (хто з твого складу був найкращим, чи влучив капітан, чи резерв переграв стартера) і дуелей Rivals; коли склади Вікенду відкриті (усі підтвердили або минув дедлайн) — ще про твій склад і склади суперників: капітана, буст, зірку чи найдорожчого гравця.</div>`;
+  const qs=open.length?`<div class="prc"><h2>Твої питання · ${open.length}</h2><div class="pnote">Пиши що хочеш — вільним текстом. Натиснеш «Відповісти» — відповідь одразу зʼявиться у стрічці нижче, її бачитимуть усі. Відповідь остаточна: змінити її потім не можна. «Не хочу відповідати» — теж остаточно.</div>${open.map(q=>pressCard(q)).join('')}</div>`:'';
+  host.innerHTML=`<div class="prc"><h2>🎤 Преса</h2><div class="pnote">Питання репортерів про твої угоди, результати Вікенду, склад і суперників (та дуелі Rivals) · відповіді бачать усі учасники · очок за пресу нема · відповісти можна до закриття Вікенду.</div>${none}</div>${qs}<div class="prc"><h2>Стрічка</h2>${feedHtml}</div>`;
+  if(S.prScroll){ S.prScroll=false; host.scrollIntoView({behavior:'smooth',block:'start'}); }
 }
 // вікно при вході: усі відкриті питання одразу (їх не більше 2–3 на Вікенд), не частіше ніж раз на 6 год; ✕ відкладає
 function pressPopup(){
@@ -4996,8 +5037,8 @@ function pressPopup(){
   P.popDone=true;                                       // ≤1 разу за відкриття кабінету
   if(Date.now()-(+prStore.get()||0) < 6*3600e3) return;
   prStore.set(Date.now()); P.popOpen=true;
-  modalOpen(`<div class="prs-pophd">🎤 Преса хоче тебе запитати</div>${qs.map(q=>pressCard(q,{pop:true})).join('')}
-    <div class="prs-popft"><button type="button" class="btn ghost sm" data-pr-all="1">Відкрити «Пресу» →</button></div>`);
+  modalOpen(`<div class="prs-pophd">🎤 Преса хоче тебе запитати</div>${qs.map(q=>pressCard(q)).join('')}
+    <div class="prs-popft"><button type="button" class="btn ghost sm" data-pr-all="1">Відкрити «News & Press» →</button></div>`);
 }
 async function pressAnswer(id,kind,text){
   const P=PR(); if(P.busy) return; P.busy=true;
@@ -5005,70 +5046,108 @@ async function pressAnswer(id,kind,text){
   try{
     const {error}=await sb.rpc('market_press_answer',{p_prompt:id,p_kind:kind,p_text:text==null?null:text});
     if(error){ alert('⛔ '+(error.message||'не вдалося зберегти')); document.querySelectorAll(`[data-pr-card="${id}"]`).forEach(c=>c.classList.remove('busy')); P.busy=false; return; }
-    P.edit=null; await pressLoad(true);
+    delete P.drafts[id]; await pressLoad(true);
     if(P.popOpen){
       if(!prOpenList().length){ P.popOpen=false; modalClose(); }   // відповіли на всі → вікно закривається саме
       else{                                                          // лишились інші → міняємо лише цю картку на місці (чернетки в інших полях не губимо)
         const old=document.querySelector(`#mhost [data-pr-card="${id}"]`), nq=P.mine.find(x=>x.id===id);
-        if(old && nq) old.outerHTML=pressCard(nq,{pop:true});
+        if(old && nq) old.outerHTML=pressCard(nq);
       }
     }
     paintPressDot();
-    if(S.tab==='news' && S.newsPane==='press') renderPress();
+    if(S.tab==='news') renderPressCol();
   }catch(e){ alert('⛔ '+String(e&&e.message||e)); }
   P.busy=false;
 }
+document.addEventListener('input',e=>{ const t=e.target; if(t&&t.matches&&t.matches('textarea[data-pr-ta]')) PR().drafts[t.dataset.prTa]=t.value; });   // чернетка живе, поки відкрита сторінка
 document.addEventListener('click',e=>{
-  const t=e.target.closest&&e.target.closest('[data-pr-skip],[data-pr-send],[data-pr-edit],[data-pr-cancel],[data-pr-all],[data-np]'); if(!t) return;
+  const t=e.target.closest&&e.target.closest('[data-pr-skip],[data-pr-send],[data-pr-all],[data-pr-gw]'); if(!t) return;
   const P=PR(), D=t.dataset;
-  if(D.np){ S.newsPane=D.np; viewNews(); return; }
-  if(D.prAll){ P.popOpen=false; modalClose(); S.newsPane='press'; go('news'); return; }
+  if(D.prGw){ const g=t.closest('.gw-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); P.coll[D.prGw]=c; const cr=t.querySelector('.gw-caret'); if(cr) cr.textContent=c?'▸':'▾'; return; }   // згорнути/розгорнути вікенд на місці
+  if(D.prAll){ P.popOpen=false; modalClose(); S.prScroll=true; go('news'); return; }
   if(D.prSkip){ pressAnswer(D.prSkip,'skip'); return; }
-  if(D.prSend){ const ta=t.closest('.prs-own').querySelector('textarea'), v=ta?ta.value.trim():'';   // поле — відносно натиснутої кнопки (у вікні й у вкладці однакові id картки)
+  if(D.prSend){ const ta=t.closest('.prs-own').querySelector('textarea'), v=ta?ta.value.trim():'';   // поле — відносно натиснутої кнопки (у вікні й у колонці однакові id картки)
     if(v.length<2){ alert('Відповідь закоротка — напиши хоча б кілька слів.'); return; } pressAnswer(D.prSend,'text',v); return; }
-  if(D.prEdit){ P.edit=D.prEdit; renderPress(); return; }
-  if(D.prCancel){ P.edit=null; renderPress(); return; }
 });
 // ── 💰 ПРИЗОВІ (SQL 714, 13.11; рішення Богдана: «як в ЄвроСезоні», лише Weekends · General · за очки · Rivals) ──
 // Читає вьюху market_prize_board (лише залогінені; анонім грошей не бачить). Фонд і відсотки задає адмін: Адмінка → Налаштування → «💰 Призові».
 // Фонд не оголошено → вьюха порожня → картка «ще не оголошено». Усе, що тут, — «як вийшло б зараз», а не виплата.
 const uahF=v=>v==null?'—':Math.round(+v).toLocaleString('uk-UA')+' ₴';
 async function viewPrizes(){
-  let rows=null;
-  try{ rows=await sbSel(`market_prize_board?tournament_id=eq.${S.tour.id}&select=*&order=total_amount.desc,display_name`); }
-  catch(e){ rows=null; }   // 714 ще не залито / база не відповіла → degrade
-  S.prizes=rows; renderPrizes();
+  const T=S.tour.id, q=p=>sbSel(p).catch(()=>null);   // кожен запит окремо: нема вьюхи призових (714) → degrade; нема очок → просто без верхньої таблиці
+  const [rows,lb,sc]=await Promise.all([
+    q(`market_prize_board?tournament_id=eq.${T}&select=*&order=total_amount.desc,display_name`),
+    q(`market_leaderboard?tournament_id=eq.${T}&select=participant_id,display_name,place,total_points,mgmt_final_points,legend_points&order=place.asc,display_name`),
+    q(`market_round_scores?tournament_id=eq.${T}&select=participant_id,round_number,points,mgmt_points,challenge_points,rival_points&limit=1000`)]);
+  S.prizes=rows; S.przLb=lb; S.przSc=sc; renderPrizes();
+}
+// 15.11 (Богдан): як в ЄвроСезоні — зверху ЗВЕДЕНА ТАБЛИЦЯ ОЧОК (№ з медалями, Weekends, 🐐 Club Legend, General), знизу призові.
+// Склад очок: Weekends = матчі + 🎯 челенджі + ⚔️ Rivals (+ 💎 менеджмент, лише коли він увімкнений); General = усі Weekends + 🐐 Club Legend (+ 💼, коли увімкнено).
+// Межі етапів — з market_cfg (S.cfg), рівно як у вьюсі призових (714): етап 1 = вікенди ≤ stage1_last_round, етап 2 = (stage1; stage2_last_round].
+const medalOf=(p,gen)=>p===1?(gen?'🥇🏆':'🥇'):p===2?'🥈':p===3?'🥉':'';
+function przInfo(){
+  const c=S.cfg||{}, lb=S.przLb||[], s1=+c.stage1_last_round||5, s2=c.stage2_last_round==null?null:+c.stage2_last_round, two=s2!=null;
+  const any=k=>lb.some(r=>(+r[k]||0)>0), mgOn=mgActive();
+  const hasLg=lgOn()||any('legend_points'), hasFin=mgOn||any('mgmt_final_points');
+  const w1=S.cfg?`Weekends 1-${s1}`:'Weekends', w2=two?`Weekends ${s1+1}-${s2}`:'';
+  return {s1,s2,two,mgOn,hasLg,hasFin,w1,w2,
+    wk:`матчі + 🎯 челенджі + ⚔️ Rivals${mgOn?' + 💎 менеджмент вікенду':''}`,
+    gn:`${w1}${two?' + '+w2:''}${hasLg?' + 🐐 Club Legend':''}${hasFin?' + 💼 Менеджер турніру':''}`};
+}
+function przPoints(){
+  const lb=S.przLb, sc=S.przSc;
+  if(!lb||!lb.length||!sc||!S.cfg) return '';   // нема очок або меж етапів → таблицю не малюємо (краще без неї, ніж з хибними числами)
+  const I=przInfo(), {s1,s2,two,hasLg,hasFin}=I;
+  const A={};   // participant_id → [етап1, етап2] → {m: матчі, g: 💎, c: 🎯, r: ⚔️}
+  sc.forEach(x=>{ const n=+x.round_number, i=n<=s1?0:(two&&n<=s2?1:-1); if(i<0) return;
+    const a=(A[x.participant_id]=A[x.participant_id]||[{m:0,g:0,c:0,r:0},{m:0,g:0,c:0,r:0}])[i];
+    a.m+=+x.points||0; a.g+=+x.mgmt_points||0; a.c+=+x.challenge_points||0; a.r+=+x.rival_points||0; });
+  const Z={m:0,g:0,c:0,r:0}, st=(pid,i)=>(A[pid]||[])[i]||Z, sum=a=>a.m+a.g+a.c+a.r;
+  const rest=r=>(+r.total_points||0)-sum(st(r.participant_id,0))-(two?sum(st(r.participant_id,1)):0)-(+r.legend_points||0)-(+r.mgmt_final_points||0);   // має бути 0; ≠0 → є очки поза межами етапів
+  const hasRest=lb.some(r=>rest(r)!==0);
+  const wkCell=a=>{ const sub=['матчі '+a.m]; if(a.c) sub.push('🎯 '+a.c); if(a.r) sub.push('⚔️ '+a.r); if(a.g) sub.push('💎 '+a.g);   // 💎 — лише якщо очки менеджменту вже нараховано раніше
+    return `<td class="n">${sum(a)}<small>${sub.join(' · ')}</small></td>`; };
+  const meId=S.me&&S.me.id;
+  const body=lb.map(r=>{ const pid=r.participant_id, p=+r.place, has=(+r.total_points||0)>0;
+    return `<tr class="${pid===meId?'prz-me':''}"><td class="rk">${p}${has&&p<=3?`<span class="medal">${medalOf(p,true)}</span>`:''}</td><td><b>${esc(r.display_name)}</b></td>${wkCell(st(pid,0))}${two?wkCell(st(pid,1)):''}${hasLg?`<td class="n">${+r.legend_points||0}</td>`:''}${hasFin?`<td class="n">${+r.mgmt_final_points||0}</td>`:''}${hasRest?`<td class="n z">${rest(r)}</td>`:''}<td class="n tot gen">${+r.total_points||0}</td></tr>`; }).join('');
+  const head=`<tr><th>№</th><th>Учасник</th><th class="n">${I.w1}</th>${two?`<th class="n">${I.w2}</th>`:''}${hasLg?'<th class="n" title="Club Legend">🐐 Legend</th>':''}${hasFin?'<th class="n" title="Менеджер турніру">💼 Менеджер</th>':''}${hasRest?'<th class="n">Інше</th>':''}<th class="n">General</th></tr>`;
+  return `<div class="card"><h3 class="prz-h">📊 Залік очок <span class="dim">з нього рахуються місця й призові</span></h3>
+    <div class="przw"><table class="t prz"><thead>${head}</thead><tbody>${body}</tbody></table></div>
+    <p class="prz-hint"><b>General</b> = ${I.gn}. <b>Weekends</b> = ${I.wk} (розклад — під числом). Рівні очки → спільне місце. 🥇🏆 — перше місце в General.</p></div>`;
 }
 function renderPrizes(){
+  if(S.tab!=='prizes') return;
   const rows=S.prizes, head='<div class="head2"><h2>💰 Призові</h2><span class="sub">скільки вийшло б, якби турнір закінчився зараз</span></div>';
-  if(rows===null){ if(S.tab!=='prizes') return; $('view').innerHTML=head+'<div class="soon">Не вдалося прочитати призові: база не відповіла або SQL <b>714</b> ще не залито. Онови сторінку.</div>'; return; }
-  if(!rows.length){ if(S.tab!=='prizes') return; $('view').innerHTML=head+'<div class="soon">Призовий фонд ще не оголошено. Коли адмін задасть суму, тут зʼявиться таблиця: скільки кому вийшло б за поточного розкладу.</div>'; return; }
-  const r0=rows[0], sp=r0.split||[0,0,0,0], pp=r0.place_pct||[0,0,0], ssum=sp.reduce((a,b)=>a+(+b||0),0)||1, two=(+r0.stage_count||1)>1;
+  if(rows===null){ $('view').innerHTML=head+'<div class="soon">Не вдалося прочитати призові: база не відповіла або SQL <b>714</b> ще не залито. Онови сторінку.</div>'; return; }
+  const pts=przPoints();
+  if(!rows.length){ $('view').innerHTML=head+pts+'<div class="soon">Призовий фонд ще не оголошено. Коли адмін задасть суму, тут зʼявиться таблиця: скільки кому вийшло б за поточного розкладу.</div>'; return; }
+  const I=przInfo(), r0=rows[0], sp=r0.split||[0,0,0,0], pp=r0.place_pct||[0,0,0], ssum=sp.reduce((a,b)=>a+(+b||0),0)||1, two=(+r0.stage_count||1)>1;
   const pool=i=>(+r0.fund_uah)*(+sp[i]||0)/ssum;
   const pc=i=>String(Math.round((+sp[i]||0)/ssum*1000)/10).replace('.',',');   // split у вьюсі — ЧАСТКИ (0,35), показуємо у %
   const me=rows.find(r=>S.me && r.participant_id===S.me.id);
   const cell=(amt,sub,tot)=>`<td class="n ${tot?'tot':(+amt===0?'z':'')}">${amt==null?'—':uahF(amt)}${sub?`<small>${sub}</small>`:''}</td>`;
-  const place=r=>r==null?'':`${r} м.`;
+  const place=(rk,amt,gen)=>rk==null?'':`${rk<=3&&+amt>0?medalOf(rk,gen)+' ':''}${rk} м.`;   // 1-2-3 з медалями (🏆 — лише 1-ше в General), як в ЄвроСезоні
   const rem=r=>(+r.total_amount)-((+r.weekends_amount||0)+(+r.general_amount||0)+(+r.points_amount||0)+(+r.rivals_amount||0));   // залишок від округлення (лише в лідера General)
   const body=rows.map(r=>{
-    const wk=two?[r.weekends1_rank,r.weekends2_rank].map(place).join(' · '):place(r.weekends1_rank);
+    const wk=two?[place(r.weekends1_rank,r.weekends1_amount),place(r.weekends2_rank,r.weekends2_amount)].join(' · '):place(r.weekends1_rank,r.weekends1_amount);
     const sh=r.points_share==null?'':(+r.points_share*100).toFixed(1).replace('.',',')+'%';
-    const rv=(+r.rivals_wins||0)?`${r.rivals_wins} пер.`:'';
-    return `<tr class="${me&&r.participant_id===me.participant_id?'prz-me':''}"><td><b>${esc(r.display_name)}</b></td>${cell(r.weekends_amount,wk)}${cell(r.general_amount,place(r.general_rank))}${cell(r.points_amount,sh)}${cell(r.rivals_amount,rv)}${cell(r.total_amount,rem(r)?`${rem(r)>0?'+':'−'}${Math.abs(rem(r))}\u00a0₴ залишок`:'',true)}</tr>`;
+    const rv=(+r.rivals_wins||0)?`${r.rivals_wins} пер.`:'';
+    return `<tr class="${me&&r.participant_id===me.participant_id?'prz-me':''}"><td><b>${esc(r.display_name)}</b></td>${cell(r.weekends_amount,wk)}${cell(r.general_amount,place(r.general_rank,r.general_amount,true))}${cell(r.points_amount,sh)}${cell(r.rivals_amount,rv)}${cell(r.total_amount,rem(r)?`${rem(r)>0?'+':'−'}${Math.abs(rem(r))} ₴ залишок`:'',true)}</tr>`;
   }).join('');
   const sum=k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
   const und=+r0.undistributed_uah||0;
   const mine=me?`<div class="card"><div class="prz-mine"><span class="big">${uahF(me.total_amount)}</span><span class="brk"><b>твої гроші, якби турнір закінчився зараз</b><br>Weekends ${uahF(me.weekends_amount)} · General ${uahF(me.general_amount)} · За очки ${uahF(me.points_amount)} · ⚔️ Rivals ${uahF(me.rivals_amount)}</span></div></div>`:'';
-  if(S.tab!=='prizes') return; $('view').innerHTML=`${head}${mine}
-    <div class="card"><div class="przw"><table class="t prz"><thead><tr><th>Учасник</th><th class="n">Weekends</th><th class="n">General</th><th class="n">За очки</th><th class="n">⚔️ Rivals</th><th class="n">Разом ₴</th></tr></thead>
+  $('view').innerHTML=`${head}${pts}${mine}
+    <div class="card"><h3 class="prz-h">💰 Розподіл призових <span class="dim">за поточного розкладу</span></h3><div class="przw"><table class="t prz"><thead><tr><th>Учасник</th><th class="n">Weekends</th><th class="n">General</th><th class="n">За очки</th><th class="n">⚔️ Rivals</th><th class="n">Разом ₴</th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td>Фонд ${uahF(r0.fund_uah)}</td><td class="n">${uahF(sum('weekends_amount'))}</td><td class="n">${uahF(sum('general_amount'))}</td><td class="n">${uahF(sum('points_amount'))}</td><td class="n">${uahF(sum('rivals_amount'))}</td><td class="n">${uahF(sum('total_amount'))}</td></tr></tfoot></table></div>
       ${und>0?`<p class="prz-notes" style="list-style:none;padding:0">Ще нікому не належить: <b>${uahF(und)}</b> (наприклад, пул ⚔️ Rivals, поки ніхто не виграв дуель). Ці гроші не розподілені.</p>`:''}
       <ul class="prz-notes">
         <li>Фонд ${uahF(r0.fund_uah)} ділиться на чотири складові: <b>Weekends</b> ${pc(0)}% (${uahF(pool(0))}) · <b>General</b> ${pc(1)}% (${uahF(pool(1))}) · <b>За очки</b> ${pc(2)}% (${uahF(pool(2))}) · <b>⚔️ Rivals</b> ${pc(3)}% (${uahF(pool(3))}).</li>
-        <li><b>Weekends</b>${two?' (кожен етап окремо, пул ділиться між етапами порівну)':' (етап)'} і <b>General</b>: призові місця 1-ше ${pp[0]}% · 2-ге ${pp[1]}% · 3-тє ${pp[2]}% від пулу складової. Weekends рахується за очками вікендів етапу (матчі + 💎 + 🎯 + ⚔️), General — за всіма очками турніру.</li>
+        <li><b>Weekends</b>${two?' (кожен етап окремо, пул ділиться між етапами порівну)':' (етап)'} — за очками вікендів етапу: ${I.wk}. <b>General</b> — за всіма очками турніру: ${I.gn}. Тобто 🎯 челенджі та ⚔️ Rivals рахуються у Weekends, а 🐐 Club Legend — лише в General.</li>
+        <li>Призові місця в Weekends і General: 1-ше ${pp[0]}% · 2-ге ${pp[1]}% · 3-тє ${pp[2]}% від пулу складової.</li>
         <li><b>За очки</b>: пул ділиться між усіма пропорційно очкам General — чим більше очок, тим більша частка, навіть без призового місця.</li>
-        <li><b>⚔️ Rivals</b>: пул забирає той, хто виграв найбільше дуелей (мінімум одну); при рівності ділять порівну.</li>
+        <li><b>⚔️ Rivals</b> (призова номінація): пул забирає той, хто виграв найбільше дуелей (мінімум одну); при рівності ділять порівну. Очки за самі дуелі вже враховані у Weekends — це окрема номінація.</li>
         <li>Нічия за місце: суми відсотків зайнятих місць діляться порівну. Суми округлюються до 1 ₴; залишок від округлення йде лідеру General.</li>
       </ul>
       <div class="prz-warn">⚠️ Це не вже зароблено, а скільки вийшло б, якби турнір закінчився зараз. Очки, місця й частки «за очки» змінюються з кожним вікендом, тож суми плавають. Остаточні призові — після завершення турніру.</div></div>`;
