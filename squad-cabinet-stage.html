@@ -439,7 +439,7 @@ table.t{width:100%;border-collapse:collapse}
 .news-filters select{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:8px 10px;font-size:13px}
 /* 🎤 Преса (SQL 715/716, 14.11): картки питань від репортерів, варіанти відповіді, стрічка відповідей усіх учасників, лічильник на вкладці й вікно при вході */
 .prdot,.subtabs button i.prdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:var(--accent);color:#04140d;font:700 10px var(--mono);text-align:center;margin-left:6px;padding:0 4px;vertical-align:middle;font-style:normal}
-.news-split{display:grid;grid-template-columns:minmax(0,720px) minmax(340px,760px);gap:28px;align-items:start}   /* 15.11 (Богдан): News зліва, ПРЕСА справа — без перемикача «Новини | Преса» */
+.news-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}   /* 15.11 (Богдан): News зліва, ПРЕСА справа — без перемикача «Новини | Преса»; 16.11: 50 на 50 на всю ширину (раніше 720+760 px лишали порожнє місце справа) */
 .news-col,.press-col{min-width:0}
 @media(max-width:1099px){.news-split{grid-template-columns:minmax(0,1fr);gap:18px}.press-col{order:-1}}   /* вузький екран: преса над новинами (там дія), стрічка вікендів згорнута */
 .prc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
@@ -463,7 +463,13 @@ table.t{width:100%;border-collapse:collapse}
 .prq-a.skip{border-left-color:var(--line);background:none;color:var(--text-dim);font-style:italic}
 .gw-group h3.gw-head{margin:14px 0 8px;font:700 15px var(--mono);color:var(--gold);cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px}
 .gw-group h3.gw-head:hover{opacity:.85}
-.gw-caret{display:inline-block;width:.9em;text-align:center;color:var(--text-dim);font-size:.8em}
+/* 16.11 (Богдан): стрілки «згорнути / розгорнути» — трикутник ▶ (згорнуто) і ▼ (розгорнуто) для вікендів у стрічці преси та для дат у News */
+.caret{display:inline-block;flex:0 0 auto;width:0;height:0;border-left:9px solid currentColor;border-top:6px solid transparent;border-bottom:6px solid transparent;margin:0 5px 0 3px;color:var(--text-dim);transition:transform .15s}
+.gw-head:hover .caret,.nday[data-nd]:hover .caret{color:var(--gold)}
+.gw-group:not(.collapsed)>.gw-head .caret,.nd-group:not(.collapsed)>.nday .caret{transform:rotate(90deg)}
+.nday[data-nd]{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
+.nd-group>.nday{margin:12px 0 4px} .nd-group:first-child>.nday{margin-top:2px}
+.nd-group.collapsed>.nd-body{display:none}
 .gw-cnt{margin-left:auto;font:700 11px var(--mono);color:var(--text-dim)}
 .gw-group.collapsed .gw-body{display:none}
 .feed-item{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--purple);border-radius:10px;padding:10px 12px;margin:0 0 9px}
@@ -4887,12 +4893,21 @@ async function viewNews(){
   await pr; renderPressCol();
 }
 // групи по днях: «Сьогодні» / «Вчора» / дата
-function newsGrouped(list){
+// coll=true (вкладка News, 16.11): кожен день — згортана група зі стрілкою ▶/▼ і лічильником; за замовчуванням розгорнуто лише найновіший день
+// (коли увімкнено фільтр «Мої» чи «Гравець» — розгорнуто все); ручний вибір памʼятається в S.ndColl. Бічна стрічка (coll не задано) — як було, пласка.
+function newsGrouped(list,coll){
   const day=d=>new Date(d).toLocaleDateString('uk',{day:'2-digit',month:'2-digit'});
   const today=day(Date.now()), yest=day(Date.now()-864e5);
-  let out='', cur='';
-  list.forEach(n=>{ const d=day(n.created_at); if(d!==cur){ cur=d; out+=`<div class="nday">${d===today?'Сьогодні · '+d:d===yest?'Вчора · '+d:d}</div>`; } out+=newsLine(n); });
-  return out;
+  const lbl=d=>d===today?'Сьогодні · '+d:d===yest?'Вчора · '+d:d;
+  if(!coll){
+    let out='', cur='';
+    list.forEach(n=>{ const d=day(n.created_at); if(d!==cur){ cur=d; out+=`<div class="nday">${lbl(d)}</div>`; } out+=newsLine(n); });
+    return out;
+  }
+  const groups=[]; list.forEach(n=>{ const d=day(n.created_at), g=groups[groups.length-1]; if(g&&g.d===d) g.items.push(n); else groups.push({d,items:[n]}); });
+  const C=S.ndColl||(S.ndColl={}), filt=!!(S.newsF&&(S.newsF.sub==='mine'||S.newsF.player));
+  return groups.map((g,i)=>{ const c=(g.d in C)?C[g.d]:(i>0&&!filt);
+    return `<div class="nd-group${c?' collapsed':''}"><div class="nday" data-nd="${g.d}" title="Згорнути / розгорнути"><span class="caret"></span><span>${lbl(g.d)}</span><span class="gw-cnt">${g.items.length}</span></div><div class="nd-body">${g.items.map(newsLine).join('')}</div></div>`; }).join('');
 }
 // каркас вкладки: зліва News, справа Преса (колонки перемальовуються окремо: фільтр новин не чіпає набране в пресі)
 function newsShell(){
@@ -4922,7 +4937,7 @@ function renderNews(){
       <div class="subtabs"><button data-ns="all" class="${f.sub==='all'?'on':''}">Усі</button><button data-ns="mine" class="${f.sub==='mine'?'on':''}">Мої</button></div>
       <select id="newsPl"><option value="">Гравець: усі</option>${plOpts.map(([id,nm])=>`<option value="${id}"${f.player===id?' selected':''}>${esc(nm)}</option>`).join('')}</select>
     </div>
-    <div class="news-feed">${list.length?newsGrouped(list):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
+    <div class="news-feed">${list.length?newsGrouped(list,true):'<div class="soon">Подій ще немає — вони зʼявляться, щойно на ринку почнуться дії (купівля/аукціон/трансфер/обмін).</div>'}</div>`;
   col.querySelectorAll('[data-ns]').forEach(b=>b.onclick=()=>{ S.newsF.sub=b.dataset.ns; renderNews(); });
   const ps=$('newsPl'); if(ps) ps.onchange=()=>{ S.newsF.player=ps.value; renderNews(); };
 }
@@ -5022,7 +5037,7 @@ function renderPressCol(){
   const feedHtml=gs.length ? gs.map((g,i)=>{
     const coll=(g.rid in P.coll) ? P.coll[g.rid] : i>0;      // за замовчуванням розгорнуто лише найновіший вікенд
     const dt=prRoundDates(g.rid);
-    return `<div class="gw-group${coll?' collapsed':''}"><h3 class="gw-head" data-pr-gw="${g.rid}"><span class="gw-caret">${coll?'▸':'▾'}</span><span>Вікенд ${esc(g.n)}${dt?' · '+esc(dt):''}</span><span class="gw-cnt">${g.items.length}</span></h3><div class="gw-body">${g.items.sort((a,b)=>b.at-a.at).map(x=>x.html).join('')}</div></div>`;
+    return `<div class="gw-group${coll?' collapsed':''}"><h3 class="gw-head" data-pr-gw="${g.rid}" title="Згорнути / розгорнути"><span class="caret"></span><span>Вікенд ${esc(g.n)}${dt?' · '+esc(dt):''}</span><span class="gw-cnt">${g.items.length}</span></h3><div class="gw-body">${g.items.sort((a,b)=>b.at-a.at).map(x=>x.html).join('')}</div></div>`;
   }).join('') : '<div class="pnote">Відповідей ще немає.</div>';
   const none=open.length?'':`<div class="pnote">${P.mine.length?'Усі твої питання розібрано. ':'Питань для тебе поки немає. '}Нові зʼявляються після угод на ринку (купівля, аукціон, продаж, обмін), після закритого Вікенду (хто з твого складу був найкращим, чи влучив капітан, чи резерв переграв стартера) і дуелей Rivals; коли склади Вікенду відкриті (усі підтвердили або минув дедлайн) — ще про твій склад і склади суперників: капітана, буст, зірку чи найдорожчого гравця.</div>`;
   const qs=open.length?`<div class="prc"><h2>Твої питання · ${open.length}</h2><div class="pnote">Пиши що хочеш — вільним текстом. Натиснеш «Відповісти» — відповідь одразу зʼявиться у стрічці нижче, її бачитимуть усі. Відповідь остаточна: змінити її потім не можна. «Не хочу відповідати» — теж остаточно.</div>${open.map(q=>pressCard(q)).join('')}</div>`:'';
@@ -5061,9 +5076,10 @@ async function pressAnswer(id,kind,text){
 }
 document.addEventListener('input',e=>{ const t=e.target; if(t&&t.matches&&t.matches('textarea[data-pr-ta]')) PR().drafts[t.dataset.prTa]=t.value; });   // чернетка живе, поки відкрита сторінка
 document.addEventListener('click',e=>{
-  const t=e.target.closest&&e.target.closest('[data-pr-skip],[data-pr-send],[data-pr-all],[data-pr-gw]'); if(!t) return;
+  const t=e.target.closest&&e.target.closest('[data-pr-skip],[data-pr-send],[data-pr-all],[data-pr-gw],[data-nd]'); if(!t) return;
   const P=PR(), D=t.dataset;
-  if(D.prGw){ const g=t.closest('.gw-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); P.coll[D.prGw]=c; const cr=t.querySelector('.gw-caret'); if(cr) cr.textContent=c?'▸':'▾'; return; }   // згорнути/розгорнути вікенд на місці
+  if(D.prGw){ const g=t.closest('.gw-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); P.coll[D.prGw]=c; return; }   // згорнути/розгорнути вікенд на місці (стрілку малює CSS)
+  if(D.nd){ const g=t.closest('.nd-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); (S.ndColl||(S.ndColl={}))[D.nd]=c; return; }   // 16.11: згорнути/розгорнути день у News
   if(D.prAll){ P.popOpen=false; modalClose(); S.prScroll=true; go('news'); return; }
   if(D.prSkip){ pressAnswer(D.prSkip,'skip'); return; }
   if(D.prSend){ const ta=t.closest('.prs-own').querySelector('textarea'), v=ta?ta.value.trim():'';   // поле — відносно натиснутої кнопки (у вікні й у колонці однакові id картки)
