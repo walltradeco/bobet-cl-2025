@@ -441,7 +441,7 @@ table.t{width:100%;border-collapse:collapse}
 .prdot,.subtabs button i.prdot{display:inline-block;min-width:16px;height:16px;line-height:16px;border-radius:8px;background:var(--accent);color:#04140d;font:700 10px var(--mono);text-align:center;margin-left:6px;padding:0 4px;vertical-align:middle;font-style:normal}
 .news-split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:start}   /* 15.11 (Богдан): News зліва, ПРЕСА справа — без перемикача «Новини | Преса»; 16.11: 50 на 50 на всю ширину (раніше 720+760 px лишали порожнє місце справа) */
 .news-col,.press-col{min-width:0}
-@media(max-width:1099px){.news-split{grid-template-columns:minmax(0,1fr);gap:18px}.press-col{order:-1}}   /* вузький екран: преса над новинами (там дія), стрічка вікендів згорнута */
+@media(max-width:999px){.news-split{grid-template-columns:minmax(0,1fr);gap:18px}.press-col{order:-1}}   /* 16.11 (QA, рішення Богдана): поріг 1000 px — власник дивиться на ~1000 CSS px, на ньому преса й стрічка стоять 50/50 */   /* вузький екран: преса над новинами (там дія), стрічка вікендів згорнута */
 .prc{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin:0 0 14px}
 .prc h2{margin:0 0 8px;font:700 17px var(--mono);letter-spacing:.02em}
 .pnote{font-size:13.5px;line-height:1.5;color:var(--text-dim);background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:0 0 10px}
@@ -696,6 +696,7 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 /* 🎯 челенджі (547) */
 .chl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}   /* 19.10: 2 челенджі в ряд; на вузьких екранах — один */
 @media (max-width:820px){.chl{grid-template-columns:1fr}}
+@media (max-width:600px){ .modal .mx{min-width:40px;min-height:40px;top:6px;right:8px} button.mini{min-height:34px;padding:7px 11px} .nday{padding:8px 0;min-height:34px} }   /* 16.11 (QA): цілі для дотику ≥32px на телефоні (✕ у модалках, малі кнопки, заголовки днів News) */
 .chr{display:flex;gap:9px;align-items:flex-start;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
 .chr .ci{font-size:16px;line-height:1.25;width:20px;text-align:center;flex:none;color:var(--text-dim)}
 .chr .cb{flex:1;min-width:0}.chr .ct{font-weight:700;font-size:14px}.chr .cd{font-size:12.5px;color:var(--text-dim);line-height:1.4;margin-top:2px}
@@ -1171,8 +1172,11 @@ function eur(v){ return v==null?'—':'€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 // межі ПОЛЯ ВВОДУ суми (трансфер/ставка/вітрина/контр): мінімум округлюємо ВГОРУ, максимум ВНИЗ до 0,01M — інакше показана межа («мін 14.9») відхиляється (точний мін 14 904 750)
 const rtM=v=>{ const x=Number(v), t=Math.round(x*10)/10; return Math.abs(x-t)<0.005?t.toFixed(1):x.toFixed(2); };   // 26.10: оцінка за МАТЧ у SofaScore — лише десяті (8.3, а не 8.30); середній рейтинг (сезон / кілька матчів) лишається в сотих (7.58)
 const mCeil=v=>(Math.ceil(v/1e4)/100).toFixed(2), mFloor=v=>(Math.floor(v/1e4)/100).toFixed(2), eurUp=v=>'€'+mCeil(v)+'M', eurDown=v=>'€'+mFloor(v)+'M';
+const plU=(n,a,b,c)=>{ const m=Math.abs(n)%100, d=m%10; return (m>10&&m<15)?c:(d===1?a:(d>1&&d<5?b:c)); };   // 16.11 (QA): українське відмінювання 1 / 2–4 / 5+ (11–14 — як 5+)
+const eurIn=s=>{ const t=String(s==null?'':s).trim().replace(',','.'); if(t==='') return 0; return /^(\d+(\.\d*)?|\.\d+)$/.test(t)? Math.round(Number(t)*1e6) : NaN; };   // 16.11 (QA): сума з поля (€млн) → євро; не число → NaN (раніше parseFloat мовчки давав 0 або обрізав «12abc»)
+const BADNUM='Введи суму числом, наприклад 2 або 1,5 (€ млн).';
 const pOchk=n=>{ const a=Math.abs(n)%100, b=a%10; return (a>10&&a<15)?'очок':(b===1?'очко':(b>1&&b<5?'очки':'очок')); };   // 1 очко · 2–4 очки · 5+ очок
-function lastName(f){ const p=(f||'').trim().split(/\s+/); return p[p.length-1]||f; }
+function lastName(f){ const p=(f||'').trim().split(/\s+/); let i=p.length-1; while(i>0 && /^(van|von|de|der|den|di|da|dos|do|del|della|le|la|el|al|ter|ten|mac|bin|ibn)$/i.test(p[i-1])) i--; return p.slice(i).join(' ')||f; }   // 16.11 (QA): було «Dijk» замість «van Dijk»
 // колір клубу за реальною назвою (market_clubs) — та сама мапа, що на публічній борді
 const CLUB={'Arsenal':'#ef0107','Atletico':'#cb3524','Barcelona':'#a50044','Bayern':'#dc052d',
  'Chelsea':'#034694','Dortmund':'#b8a300','Dynamo Kyiv':'#0d47a1','Inter':'#0068a8',
@@ -1229,7 +1233,7 @@ $('btn-verify').onclick = async () => {
   }
   $('btn-verify').disabled=false;
   if(error){ return msg($('login-msg'),'Не вийшло: '+(error.message||'')); }
-  await boot();
+  await bootOnce();
 };
 $('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); $('login-msg').innerHTML=''; };
 $('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
@@ -1414,6 +1418,7 @@ async function loadRefs(){
   S.pBounds = [0, Math.max(1e6, Math.ceil(Math.max(0,...ps)/1e6)*1e6)];
   if(S.f.rMin==null){ S.f.rMin=S.rBounds[0]; S.f.rMax=S.rBounds[1]; }
   if(S.f.pMin==null){ S.f.pMin=S.pBounds[0]; S.f.pMax=S.pBounds[1]; }
+  S.refsAt=Date.now();   // 16.11: коли дані були свіжі востаннє — softRefresh() не перечитує, поки їм <10 хв
 }
 
 // виклик дії ринку: RPC → показати результат → перезавантажити
@@ -1425,8 +1430,37 @@ async function act(fn, args, okMsg, opts){
   // Підтвердження складу (market_set_lineup) пропускаємо: після нього правда — сервер.
   S.keepDraft = (S.tab==='my' && fn!=='market_set_lineup' && S.lineup && S.lineupRound)
     ? { rid:S.lineupRound.id, lineup:JSON.parse(JSON.stringify(S.lineup)), boost:S.boost, pos:{...S.pos} } : null;
-  try{ await loadRefs(); await go(S.tab, !!(opts&&opts.quiet)); }   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні
+  if(fn==='market_set_lineup') S.draftStore=null;   // 16.11: склад підтверджено — збережена на час переходів чернетка більше не потрібна
+  try{ await loadRefs(); await go(S.tab, !!(opts&&opts.quiet), true); }   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні; true = не знімати чернетку вдруге (її вже збережено вище)
   finally{ S.keepDraft=null; }
+}
+// ── 16.11 (QA кабінету): ЧЕРНЕТКА СКЛАДУ ПЕРЕЖИВАЄ ПЕРЕХОДИ ──
+// Раніше непідтверджені ролі/К-V/лавка/буст губились, варто було зайти в «Ринок» і повернутись, відкрити чіп іншого вікенду або (найгірше) просто перемкнутись на іншу вкладку браузера й назад
+// (supabase-js шле SIGNED_IN щоразу, коли вкладка знову видима, а onAuthStateChange тоді робив повний boot()). Тепер перед виходом з редактора чернетка запамʼятовується (S.draftStore)
+// і повертається, коли редактор того самого вікенду відкривається знову — якщо збережений на сервері склад за цей час не змінився (base). Очищається після підтвердження складу.
+function lnCurSig(mine){ return lnSigOf(mine.filter(p=>S.lineup[p.id] && S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos); }
+function editorOpen(){ return !!(S.tab==='my' && S.me && S.lineup && S.lineupRound && S.ctour===S.lineupRound.id); }   // зараз на екрані саме редактор складу (а не результат вікенду чи Legend)
+function draftDirty(){
+  if(!editorOpen()) return false;
+  const mine=S.players.filter(p=>p.owner_participant_id===S.me.id);
+  return lnCurSig(mine) !== (S.lnSaved!=null ? S.lnSaved : lnSigOf([],null,{}));
+}
+function snapDraft(){
+  if(!editorOpen()) return;
+  S.draftStore = draftDirty() ? { rid:S.lineupRound.id, base:S.lnSaved, lineup:JSON.parse(JSON.stringify(S.lineup)), boost:S.boost, pos:{...S.pos} } : null;
+}
+// вхід: boot() рахуємо один раз (INITIAL_SESSION + явний виклик + verifyOtp раніше запускали по 2–3 паралельні завантаження)
+let bootBusy=null;
+function bootOnce(){ return bootBusy || (bootBusy=boot().finally(()=>{ bootBusy=null; })); }
+// повернення на вкладку браузера / оновлення токена: той самий користувач → НЕ перемальовуємо. Лише «тиха» перезвірка даних, коли вони застарілі (>10 хв) і ніщо не заважає
+let softBusy=false;
+async function softRefresh(){
+  if(softBusy || !S.me || !S.tour || Date.now()-(S.refsAt||0) < 10*60*1000) return;
+  const ae=document.activeElement, typing=!!(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName));
+  if(S.tab==='admin' || typing || draftDirty() || !$('mhost').classList.contains('hide')) return;   // адмінка/поле вводу/чернетка/відкрите вікно — нічого не чіпаємо
+  softBusy=true;
+  try{ await loadRefs(); await go(S.tab, true, true); }catch(e){ /* помилка тихої перезвірки не має ламати екран */ }
+  finally{ softBusy=false; }
 }
 // EUR ↔ млн у діалогах (зручніше вводити млн)
 function askM(label, minEur){
@@ -1449,6 +1483,7 @@ function bindActions(){
   document.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{
     const p=S.players.find(x=>x.id===b.dataset.sell)||{name:'гравця'};
     if(lnBlocked(p.id)) return alert(lnMsg());
+    if(inPlayRound()) return alert('Вікенд '+inPlayRound().number+' почався — продаж закрито до закриття вікенду.');   // 16.11 (QA): сервер відмовив би («ринок зачинено»)
     confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${b.dataset.price}</b> (−5%)?`, 'Продати · '+b.dataset.price,
       ()=>act('market_sell',{p_player:b.dataset.sell},'Продано')); });
 }
@@ -1627,7 +1662,8 @@ async function naSync(force){
 }
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#naOpen'); if(b){ naStore.set('1'); naRender(); } });
 setInterval(()=>{ if(!document.hidden && S && S.tour && naWanted()) naSync(true); },60000);
-async function go(tab, quiet){
+async function go(tab, quiet, noSnap){
+  if(!noSnap) snapDraft();   // 16.11: йдемо з редактора складу (або перемальовуємо його) — чернетка запамʼятовується до повернення
   if(S.tab!==tab){ S.ctour=null; S.rrp=null; }   // 15.10: нова вкладка — чіп вікенду знову за замовчуванням (відкритий вікенд)
   S.tab=tab; if(!quiet) renderTabs(); renderHeader();   // тихе перемальовування (Rivals): вкладки не чіпаємо
   // quiet (21.10, Богдан: вибір суперника Rivals «оновлював сторінку»): старий вміст лишається, доки не готовий новий; прокрутка зберігається
@@ -1648,6 +1684,9 @@ const inPlayRound=()=>{ const n=new Date(); return (S.rounds||[]).find(r=>roundS
 const prevOpenRound=(round)=>round?((S.rounds||[]).filter(r=>r.number<round.number && !r.results_entered_at).sort((a,b)=>a.number-b.number)[0]||null):null;   // 544: склад на вікенд підтверджується лише ПІСЛЯ закриття попереднього
 const myConfirmedUpcoming=()=>!!(S.myConfLn && S.myConfLn.size>0);                                                                                       // 545: після власного підтвердження склад і ролі заморожені
 const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=null && p.contract_rounds_left<=1);
+// 16.11 (QA MKT-04; рішення Богдана): ОСТАННІЙ вікенд усього турніру (у етапі лишився один вікенд, наступного етапу нема) — «продовжувати» нікуди, тож застереження «продовж контракт, інакше автопродаж» там не показуємо
+const finalWkNow=()=>{ const si=stageInfo(); return si.left<=1 && (si.stage===2 || !(S.cfg && S.cfg.stage2_last_round)); };
+const FINAL_WK_TXT='Це останній вікенд турніру — контракт покриває його повністю.';
 // ЄДИНЕ формулювання про автопродаж гравця з останнім вікендом контракту — картка гравця, ринок, модалка підтвердження (pl=true — про кількох гравців)
 function autosaleTxt(pl){ return `після закриття вікенду ${pl?'їх':'гравця'} буде автоматично продано за вартістю, яка буде після зміни ціни за вікенд (у % і в €), комісія продажу −5% не стягується`; }
 const EXPIRING_TXT=`⏳ Контракт добігає (лишився 1 вікенд): ${autosaleTxt(false)}, тож угоду під час вікенду запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.`;
@@ -1672,12 +1711,13 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
             : a.state==='closing' ? 'Усі матчі завершені — чекаємо остаточні оцінки SofaScore (він дооцінює гравців до ≈14 год після матчу); розрахунок вікенду — одразу, як вони усталяться.'
             : `Матчів завершено ${a.played||0} з ${a.fixtures||0} — рейтинги збираються самі, розрахунок після останнього матчу.`));
   let hero;
-  if(firstFut){
+  if(firstFut && !(inplay && inplay.id===firstFut.id)){   // 16.11 (QA): якщо цей же вікенд уже «почався» (усі підтвердили) — лічильник дедлайну не показуємо
     hero=`<div class="stbox"><div><div class="cap">до дедлайну · Вікенд ${firstFut.number}</div><div class="t">${countdownLong(firstFut.deadline_at)}</div>
       <div class="when">склад · бусти · К/V — до ${dlFmt(firstFut.deadline_at)}</div></div>${right}</div>`;
   }else if(inplay){
-    hero=`<div class="stbox closed"><div><div class="cap">вікенд ${inplay.number}</div><div class="t">у грі</div>
-      <div class="when">${why||'матчі тривають — розрахунок після останнього'}</div></div>${right}</div>`;
+    const early=!!(inplay.opened_at && new Date(inplay.deadline_at)>nowD);   // усі підтвердили до дедлайну: склади відкрито, матчі ще не почались
+    hero=`<div class="stbox closed"><div><div class="cap">вікенд ${inplay.number}</div><div class="t">${early?'склади відкрито':'у грі'}</div>
+      <div class="when">${early?'усі підтвердили склад — змінити склад і бусти вже не можна; матчі за розкладом':(why||'матчі тривають — розрахунок після останнього')}</div></div>${right}</div>`;
   }else{
     let t;
     if(!rsAll.length) t='відкриється, коли буде заведено вікенд.';
@@ -1761,7 +1801,7 @@ function outbidList(){ return S.myAucReady ? (S.myAuc||[]).filter(a=>!a.i_am_lea
 function outbidBanners(){
   const o=outbidList(); if(!o.length) return '';
   const nm=a=>esc((S.players.find(x=>x.id===a.player_id)||{}).name||'гравець');
-  return `<div class="stmsg bad"><b>⚔️ Тебе перебили</b> на лотах: ${o.map(a=>`<b>${nm(a)}</b> — ${eur(a.current_bid)}`).join(', ')}. Перебити можна, поки лот відкритий.
+  return `<div class="stmsg bad"><b>⚔️ Тебе перебили</b> на лотах: ${o.map(a=>`<b>${nm(a)}</b> — ${eur(a.current_bid)}`).join(', ')}. ${inPlayRound()?'Ставки зараз закриті — вікенд почався; лот вирішиться після його закриття.':'Перебити можна, поки лот відкритий.'}
     <div style="margin-top:8px"><button data-do="evopen" style="width:auto;padding:9px 20px">Відкрити «Мої угоди»</button></div></div>`;
 }
 function penBanners(){
@@ -1843,8 +1883,11 @@ function pourModal(){
     const dir=h.querySelector('.pd.on').dataset.dir;
     const amt=Math.round((parseFloat((h.querySelector('#pourInp').value||'').replace(',','.'))||0)*1e6);
     if(amt<=0) return;
-    modalClose();
-    await act('market_pour',{p_tournament:S.tour.id,p_amount:amt,p_direction:dir},'Перелито');
+    // 16.11 (QA MKT-10; рішення Богдана): переливання списує комісію безповоротно — окреме підтвердження з підсумком
+    const recv=Math.round(amt*(1-fee)), toW=dir==='to_wage';
+    confirmModal(`Перелити <b>${eur(amt)}</b> з ${toW?'трансферного бюджету в зарплатний':'зарплатного бюджету в трансферний'}?<br>Надійде <b>${eur(recv)}</b>, <b>${eur(amt-recv)}</b> згорить (комісія −${feePct}%). Повернути не можна.`,
+      'Перелити',
+      async()=>{ await act('market_pour',{p_tournament:S.tour.id,p_amount:amt,p_direction:dir},'Перелито'); });
   };
   upd();
 }
@@ -1916,9 +1959,9 @@ function tourChipsHtml(){
   return `<div class="trow">${chips.join('')}</div>`;
 }
 function bindTourChips(){
-  document.querySelectorAll('[data-tchip]').forEach(b=>b.onclick=()=>{ S.ctour=b.dataset.tchip; S.rrp=null; viewSquad(); });
+  document.querySelectorAll('[data-tchip]').forEach(b=>b.onclick=()=>{ snapDraft(); S.ctour=b.dataset.tchip; S.rrp=null; viewSquad(); });   // 16.11: snapDraft ДО зміни S.ctour — чернетка редактора не губиться
   document.querySelectorAll('[data-rrp]').forEach(b=>b.onclick=()=>{ S.rrp=b.dataset.rrp; viewSquad(); });
-  document.querySelectorAll('[data-lgjump]').forEach(b=>b.onclick=()=>{ S.ctour='legend'; S.rrp=null; viewSquad(); });   // 🐐 з попередження «обери Club Legend»
+  document.querySelectorAll('[data-lgjump]').forEach(b=>b.onclick=()=>{ snapDraft(); S.ctour='legend'; S.rrp=null; viewSquad(); });   // 🐐 з попередження «обери Club Legend»
 }
 const eurSgn=d=>(d>0?'+':d<0?'−':'')+'€'+(Math.abs(d)/1e6).toFixed(1)+'M';
 const eurSgn2=d=>(d>0?'+':d<0?'−':'')+'€'+(Math.abs(d)/1e6).toFixed(2)+'M';   // зміна ціни одного гравця — копійки важливі (+€0.26M)
@@ -2023,7 +2066,7 @@ function viewRoundResult(r){
     body=`<div class="rr-sum">
         <div class="rr-m"><div class="k">очки вікенду</div><div class="v" style="color:var(--gold)">${matchPts}${mgPts?` + 💎${mgPts}`:''}${chPts?` + 🎯${chPts}`:''}${rvPts?` + ⚔️${rvPts}`:''}${(mgPts||chPts||rvPts)?` = ${matchPts+mgPts+chPts+rvPts}`:''}</div>
           <div class="s">${(mgPts||chPts||rvPts)?'матчі'+(mgPts?' + менеджмент':'')+(chPts?' + челенджі':'')+(rvPts?' + Rivals':''):'за зіграні матчі'}${closed?'':' · вікенд ще йде'}</div></div>
-        ${place?`<div class="rr-m"><div class="k">місце в вікенді</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі${mgActive()?' + 💎':''}${allRs.some(x=>x.challenge_points)?' + 🎯':''}${allRs.some(x=>x.rival_points)?' + ⚔️':''}</div></div>`:''}
+        ${place?`<div class="rr-m"><div class="k">місце у вікенді</div><div class="v">${place}</div><div class="s">з ${allRs.length} · матчі${mgActive()?' + 💎':''}${allRs.some(x=>x.challenge_points)?' + 🎯':''}${allRs.some(x=>x.rival_points)?' + ⚔️':''}</div></div>`:''}
         ${grow?`<div class="rr-m"><div class="k">Ріст складу · вікенд</div><div class="v ${grow.eur>0?'up':grow.eur<0?'down':''}">${eurSgn(grow.eur)}</div><div class="s">${grow.start?(grow.eur>0?'+':grow.eur<0?'−':'')+Math.abs(grow.eur/grow.start*100).toFixed(1)+'% вартості складу':'вартість 8 гравців за вікенд'}${mg?` · 💎 менеджмент: ${mg.points>0?'+'+mg.points:'0'} (місце ${mg.place})`:''}</div></div>
         <div class="rr-m"><div class="k">Сума % гравців · вікенд</div><div class="v ${grow.pct>0?'up':grow.pct<0?'down':''}">${ppSgn(grow.pct)}</div><div class="s">сума % руху ціни 8 гравців (не % складу)</div></div>`
           : (closed?'':`<div class="rr-m"><div class="k">Ріст складу · вікенд</div><div class="v"><span class="dim">—</span></div><div class="s">зʼявиться після перших зіграних матчів</div></div>
@@ -2076,11 +2119,19 @@ async function viewSquad(){
   S.lineup = {}; S.lineupRound = round;
   mine.forEach(p => S.lineup[p.id] = { role:'out', cap:false, vice:false, ord:99 });
   lu.forEach(r => { if(S.lineup[r.player_id]) S.lineup[r.player_id] = { role:r.role, cap:r.is_captain, vice:r.is_vice, ord:r.bench_order||99 }; });
-  // 14.11: перезавантаження після дії (Rivals/Legend/продаж) — повертаємо чернетку, яку учасник ще не підтвердив (той самий вікенд; гравці, яких уже нема, відпадають)
-  if(S.keepDraft){ const k=S.keepDraft; S.keepDraft=null;
-    if(round && k.rid===round.id){ mine.forEach(p=>{ if(k.lineup[p.id]) S.lineup[p.id]={...k.lineup[p.id]}; }); S.boost=k.boost; S.pos=k.pos; } }
-  // збережений на сервері склад (для стану кнопки): null = ще нічого не підтверджено на цей вікенд
+  // збережений на сервері склад (для стану кнопки і для «чи є чернетка»): null = ще нічого не підтверджено на цей вікенд.
+  // 16.11: рахуємо ДО накладання чернетки — з СЕРВЕРНИМИ бустами (раніше підпис брав буст/позиційні бусти з чернетки й міг «збігтись» із нею, хоч на сервері буст інший)
   S.lnSaved = lu.length ? lnSigOf(lu.map(r=>({id:r.player_id, role:r.role, ord:r.bench_order||99, cap:r.is_captain, vice:r.is_vice})), S.boost, S.pos) : null;
+  // 14.11: перезавантаження після дії (Rivals/Legend/продаж) — повертаємо чернетку, яку учасник ще не підтвердив (той самий вікенд; гравці, яких уже нема, відпадають).
+  // 16.11: те саме після переходу на іншу вкладку/чіп (S.draftStore), якщо збережений на сервері склад за цей час не змінився
+  let dk=S.keepDraft; S.keepDraft=null;
+  if(!dk && S.draftStore && round && S.draftStore.rid===round.id && S.draftStore.base===S.lnSaved) dk=S.draftStore;
+  if(round && S.confOK && S.me && confOf(S.me.id, round.id)){ dk=null; S.draftStore=null; }   // 16.11 (QA): склад на цей вікенд уже підтверджено (напр. з іншого пристрою) — чернетка недійсна, показуємо серверний
+  if(dk && round && dk.rid===round.id){
+    mine.forEach(p=>{ if(dk.lineup[p.id]) S.lineup[p.id]={...dk.lineup[p.id]}; });
+    S.boost=dk.boost; S.pos={...dk.pos};
+    ['fwd','mid','dg'].forEach(k=>{ const id=S.pos[k]; if(id && !(S.lineup[id] && S.lineup[id].role==='start')) S.pos[k]=null; });   // позиційний буст на гравці, якого вже нема в основі (проданий/перенесений) — знімаємо
+  }
   renderLineup(mine, round);
 }
 
@@ -2104,7 +2155,7 @@ function posBlock(mine, round){
   const cards = ['fwd','mid','dg'].map(k=>{
     const b=POSB[k], used=posUsedElsewhere(k, round), pid=S.pos[k], pl=pid && mine.find(p=>p.id===pid), on=!!pl;
     const state = on ? 'on' : (used!=null ? 'used' : '');
-    const st = on ? `Обрано: ${esc(lastName(pl.name))} (клік — зняти)` : (used!=null ? `Використано в Вікенді ${used}` : (S.boost ? 'Недоступний з Автопілотом/All-in' : 'Доступний — натисни «⚡» на гравці основи'));
+    const st = on ? `Обрано: ${esc(lastName(pl.name))} (клік — зняти)` : (used!=null ? `Використано у Вікенді ${used}` : (S.boost ? 'Недоступний з Автопілотом/All-in' : 'Доступний — натисни «⚡» на гравці основи'));
     const inner=`<span class="bh"><span class="bico">⚡</span>${b.name}</span>
       <span class="bds">${b.desc}</span><span class="bst">${st}</span>`;
     if(on) return `<button type="button" class="bcard on" data-posclear="${k}">${inner}</button>`;
@@ -2113,7 +2164,7 @@ function posBlock(mine, round){
   }).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>⚡ Позиційні бусти</span><span>1 раз за турнір кожен · до 3 в одному вікенді</span></div>
     <div class="bgrid">${cards}</div>
-    <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього. Капітан і Віце не поєднуються з позиційними бустами на одному гравці: на капітана чи віце ⚡ поставити не можна. Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до дедлайну можна змінити.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">Кнопка «⚡ 2x …» біля гравця основи ставить буст саме на нього. Капітан і Віце не поєднуються з позиційними бустами на одному гравці: на капітана чи віце ⚡ поставити не можна. Не зіграв — буст згорає. Не поєднується з Автопілотом і All-in. Видно іншим лише після дедлайну; до підтвердження складу можна змінити (після підтвердження — ні).</p></div>`;
 }
 // ── 🎯 Челенджі (547): окремий шлях очок за композицію складу; РАЗ ЗА ТУРНІР кожен; нараховується одразу при відкритті складів ──
 // «основа/лавка» тут = СЛОТИ складу (5 + запасні), а не контрактна роль «Основний/Лавка». Правила — дзеркало _market_challenge_hits (SQL 547).
@@ -2154,7 +2205,7 @@ function challengesBlock(s, round){
   const rows=list.map(({d,aw,r,state})=>`<div class="chr ${state}">
       <span class="ci">${state==='done'?'✓':state==='ok'?'✅':'○'}</span>
       <div class="cb"><div class="ct">${esc(d.title)}</div><div class="cd"><span class="cl">Умова</span>${esc(d.description)}</div>
-        <div class="cs">${aw?`<span class="cl">Статус</span>виконано в Вікенді ${aw.round_number} · +${aw.awarded_points}`:(state==='ok'?'<span class="cl">Твій склад</span>зібрано · очки нарахуються, коли склади відкриються':(act?`<span class="cl" title="поточний стан твого складу">Твій склад</span>${esc(r.hint)}`:'<span class="cl">Статус</span>діє з Вікенду '+((S.chCfg&&S.chCfg.first_round)||1)))}</div></div>
+        <div class="cs">${aw?`<span class="cl">Статус</span>виконано у Вікенді ${aw.round_number} · +${aw.awarded_points}`:(state==='ok'?'<span class="cl">Твій склад</span>зібрано · очки нарахуються, коли склади відкриються':(act?`<span class="cl" title="поточний стан твого складу">Твій склад</span>${esc(r.hint)}`:'<span class="cl">Статус</span>діє з Вікенду '+((S.chCfg&&S.chCfg.first_round)||1)))}</div></div>
       <span class="cp">${aw?'✓':'+'+d.points}</span></div>`).join('');
   return `<div class="boosts" style="margin-top:12px"><div class="slot-h"><span>🎯 Челенджі</span><span>раз за турнір кожен · очки одразу при відкритті складів</span></div>
     <p class="chlegend"><b>Умова</b> — що треба зібрати · <b>Твій склад</b> — поточний стан (змінюється, поки ти збираєш лайнап)</p>
@@ -2372,7 +2423,7 @@ function lgRulesHtml(){
   const roles=(S.lgRoles||[]).map(r=>H(r.icon+' '+r.title)+'\n'+esc(r.examples||r.description||'')).join('\n\n');
   return [
     H('Як це працює'),
-    `• Ти обираєш ${n} вибори «клуб + роль». Очки ролі рахуються з реальних результатів обраного клубу в вікендах від Вікенду ${f} — одразу після матчу.`,
+    `• Ти обираєш ${n} вибори «клуб + роль». Очки ролі рахуються з реальних результатів обраного клубу у вікендах від Вікенду ${f} — одразу після матчу.`,
     `• Один клуб — не більше ${max} ролей із ${n}; однакову пару «клуб + роль» двічі брати не можна.`,
     `• Кожен вибір дає щонайбільше ${cap} очок за турнір; очки Legend — сума ${n} виборів (разом до ${n*cap}).`,
     `• Матч, який перенесено чи скасовано, не рахується й серію не рве.`,
@@ -2554,14 +2605,14 @@ function boostBlock(round){
   const cards = Object.keys(BOOSTS).map(k=>{
     const b=BOOSTS[k], used=boostUsedElsewhere(k, round), on = S.boost===k;
     const state = on ? 'on' : (used!=null ? 'used' : '');
-    const stTxt = on ? 'Увімкнено на цей вікенд' : (used!=null ? `Використано в Вікенді ${used}` : 'Доступний');
+    const stTxt = on ? 'Увімкнено на цей вікенд' : (used!=null ? `Використано у Вікенді ${used}` : 'Доступний');
     return `<button type="button" class="bcard ${state}" data-boost="${k}" ${used!=null&&!on?'disabled':''}>
       <span class="bh"><span class="bico">${b.ico}</span>${b.name}</span>
       <span class="bds">${b.desc}</span><span class="bst">${stTxt}</span></button>`;
   }).join('');
   return `<div class="boosts"><div class="slot-h"><span>Бусти вікенду</span><span>1 раз за турнір · один буст на вікенд</span></div>
     <div class="bgrid">${cards}</div>
-    <p class="dim" style="margin:8px 2px 0">Буст видно іншим лише після дедлайну; до дедлайну його можна вимкнути без наслідків. Автопілот і All-in разом не вмикаються.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">Буст видно іншим лише після дедлайну; до підтвердження складу його можна вимкнути без наслідків (після підтвердження — ні). Автопілот і All-in разом не вмикаються.</p></div>`;
 }
 
 function lnState(mine){
@@ -2659,7 +2710,7 @@ function renderLineup(mine, round){
           <div class="nm">${ordBadge}${esc(p.name)}${capBadge}${posBadge}${roleChipHTML(p,zone)}</div>
           <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось вікендів (продовження — у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
-        <div class="lctrl">${ctrl}<button class="mini ghost sell" ${lnBlocked(p.id)?'disabled title="🔒 У підтвердженому складі — продаж неможливий"':''} data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
+        <div class="lctrl">${ctrl}<button class="mini ghost sell" ${lnBlocked(p.id)?'disabled title="🔒 У підтвердженому складі — продаж неможливий"':(inPlayRound()?'disabled title="⏳ Вікенд почався — продаж закрито до закриття вікенду"':'')} data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
       <div class="rt tap" data-p="${p.id}" title="Детальна картка гравця"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div>${startWas(p,'right')}</div>
     </div>`;
@@ -2776,7 +2827,9 @@ function openLineupReview(mine, round){
   // 22.10 (Богдан): нагадати, що гравці з контрактом «1 вікенд до кінця» після закриття вікенду автоматично продаються — за оновленою ціною, без штрафу
   let expBlk='';
   { const exp=mine.filter(expiringP);
-    if(exp.length){
+    if(exp.length && finalWkNow()){
+      expBlk=`<p class="mnote">${FINAL_WK_TXT}</p>`;
+    } else if(exp.length){
       const inSt=new Set(s.st.map(x=>x.id)), inBn=new Set(s.bn.map(x=>x.id));
       const where=x=>inSt.has(x.id)?'основа':inBn.has(x.id)?'лавка':'не в складі вікенду';
       const left=mine.length-exp.length;
@@ -2793,7 +2846,7 @@ function openLineupReview(mine, round){
     <p class="mnote">Незіграний основний → замінить ПЕРШИЙ зіграний з лавки за цим порядком (без звірки позиції). Перевір порядок!</p>
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
-    ${S.boost?`<div class="msec" style="margin-top:14px">Буст вікенду</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Після дедлайну він спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
+    ${S.boost?`<div class="msec" style="margin-top:14px">Буст вікенду</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Він фіксується разом із підтвердженням складу й спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
     </div><div class="cfcol">
     ${challengesModalHtml(s, round)}
     ${rivalsModalHtml(round)}
@@ -2962,7 +3015,7 @@ async function plHydrateForm(){
   ids.forEach(id=>{ const p=S.players.find(x=>x.id===id); if(!p) return;
     document.querySelectorAll(`#view tr[data-open="${id}"] td.c-fm, #view tr[data-wp="${id}"] td.c-fm`).forEach(td=>{ td.innerHTML=plForm(p); }); });
 }
-function plInj(p){ const j=p.injury; return j? `${j.kind==='suspension'?'🟥 Дискваліфікація':'🤕 Травма'}${(j.note||j.expected_return||j.status)?` <span class="dim">· ${esc(j.note||j.expected_return||j.status)}</span>`:''}` : '<span class="dim">—</span>'; }
+function plInj(p){ const j=p.injury; return j? `${j.kind==='suspension'?'🟥 Дискваліфікація':'🤕 Травма'}${(j.note||j.expected_return||j.status)?` <span class="dim">· ${esc(j.note||j.expected_return||({missing:'не зіграє',out:'не зіграє',doubtful:'під питанням'}[j.status]||j.status))}</span>`:''}` : '<span class="dim">—</span>'; }
 function starBtn(pid){
   if(!S.watchReady) return '';
   const on=S.watch.has(pid);
@@ -3076,7 +3129,7 @@ function filterBar(){
 function renderGrid(){
   const grid=$('mgrid'); if(!grid) return;
   const list=marketList(), cap=80;
-  const cnt=$('mcount'); if(cnt) cnt.textContent=list.length+' гравців';
+  const cnt=$('mcount'); if(cnt) cnt.textContent=list.length+' '+plU(list.length,'гравець','гравці','гравців');
   grid.innerHTML = list.length
     ? list.slice(0,cap).map(mtile).join('') + (list.length>cap?`<p class="dim" style="grid-column:1/-1;margin:6px 0 0">показано ${cap} з ${list.length} — звузь фільтром</p>`:'')
     : '<div class="soon" style="grid-column:1/-1">Немає гравців під фільтри</div>';
@@ -3103,7 +3156,7 @@ function chTipHTML(){
   const done=chDoneMap(), c=S.chCfg, first=(c&&c.first_round)||1, off=!!(c&&c.enabled===false);
   const act=S.chDefs.filter(d=>d.active);
   const rows=act.map(d=>{ const aw=done[d.key];
-    return `<div class="chtr${aw?' done':''}"><span>${aw?'✅':'○'}</span><span class="chtn"><b>${esc(d.title)}</b> <i>+${d.points}</i><small>${esc(d.description)}${aw?` · <u>виконано в Вікенді ${aw.round_number}</u>`:''}</small></span></div>`; }).join('');
+    return `<div class="chtr${aw?' done':''}"><span>${aw?'✅':'○'}</span><span class="chtn"><b>${esc(d.title)}</b> <i>+${d.points}</i><small>${esc(d.description)}${aw?` · <u>виконано у Вікенді ${aw.round_number}</u>`:''}</small></span></div>`; }).join('');
   const left=act.filter(d=>!done[d.key]).reduce((a,d)=>a+(+d.points||0),0);
   return `<span class="chtipw"><button type="button" class="chtipbtn" aria-haspopup="true">🎯 Челенджі</button><div class="chtip" role="tooltip">
     <div class="chth">🎯 Челенджі — додаткові очки за склад${off?' <span class="warnc">(вимкнено)</span>':''}</div>
@@ -3199,7 +3252,7 @@ async function viewMarket(){
       ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Поточна</th><th class="n">Умови лідера</th><th class="n">До</th><th></th></tr></thead><tbody>${
         outbid.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
           return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubPos(p))}</span></td>
-            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">Перебити</button></td></tr>`;
+            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">${inPlayRound()?'Відкрити':'Перебити'}</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const shopHtml = !S.listingsReady ? '<div class="dim" style="padding:6px 2px">Вітрина зʼявиться після заливки 421.</div>'
       : myShop.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th></th></tr></thead><tbody>${
@@ -3356,7 +3409,7 @@ function openCounterModal(tid,min0){
   modalOpen(`<h3>Контрпропозиція</h3>${body}`);
   const box=$('mhost').querySelector('[data-ref="'+tid+'"]');
   $('mhost').querySelector('[data-do="counter"]').onclick=async()=>{
-    const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
+    const eurv=eurIn(box.querySelector('#amtInp').value); if(Number.isNaN(eurv)){ alert(BADNUM); return; }
     if(!eurv||eurv<min){ alert('Замало — мінімум '+eurUp(min)); return; }
     if(max && eurv>max){ alert('Забагато — максимум '+eurDown(max)+' ('+winTxt()+')'); return; }
     modalClose();
@@ -3470,7 +3523,7 @@ function openExchangeCounterModal(xid, iAmFrom){
   const h=$('mhost'); wireClen(h);
   h.querySelector('[data-do="xcounter"]').onclick=async()=>{
     const iPay=h.querySelector('#xcDir').value==='pay';
-    const raw=Math.round((parseFloat((h.querySelector('#amtInp').value||'0').replace(',','.'))||0)*1e6);
+    const raw=eurIn(h.querySelector('#amtInp').value); if(Number.isNaN(raw)){ alert(BADNUM); return; }   // 16.11: «abc» раніше тихо ставало 0 (втрата запропонованої доплати)
     const cash=(iPay?1:-1)*(iAmFrom?1:-1)*Math.abs(raw);   // >0 from доплачує, <0 to доплачує
     if(needRole()) return; const ra=roleArgs();
     const len=selectedLen();
@@ -3501,6 +3554,7 @@ function confirmModal(msg, okLabel, onOk, onCancel){
 }
 
 // ── 556 АУКЦІОН = ЄДИНА ПРОПОЗИЦІЯ: сума · довжина · роль · надбавка. Недозволені комбінації блокуємо інлайн (сервер перевіряє те саме) ──
+function aucSnap(raw,ceil){ return (raw>ceil && raw-ceil<1e4 && (raw/1e6).toFixed(2)===mCeil(ceil)) ? ceil : raw; }   // 16.11 (QA): на кнопці «викуп €53.00M» (округлено вгору), а стеля €52.997175M — введене «53» тепер читається як викуп
 function aucCeil(mv){ return Math.round((mv||0)*(1+((S.cfg&&S.cfg.buynow_pct!=null)?+S.cfg.buynow_pct:0.15))); }              // стеля = викуп
 function aucFloor(mv){ return Math.ceil((mv||0)*((S.cfg&&S.cfg.auction_start_min_pct!=null)?+S.cfg.auction_start_min_pct:0.95)); }   // мін. старт (95% вартості)
 function aucStep(){ return (S.cfg&&S.cfg.wage_offer_step_pct!=null)?+S.cfg.wage_offer_step_pct:0.05; }
@@ -3534,7 +3588,7 @@ function auctionForm(p,au,mv){
     : `<button type="button" class="mini ghost" data-aamt="${floor}">мін. · ${eurUp(floor)}</button><button type="button" class="mini ghost" data-aamt="${ceil}">викуп · ${eurUp(ceil)}</button>`;
   return `<div class="aucf" data-pid="${p.id}" data-au="${au?au.id:''}" data-mv="${mv}">
     <div class="arow">${aucPctUI()}<span class="dim">${au?'Перебити':'Стартова ставка'} · €млн (від ${mCeil(minNext)} до ${mFloor(ceil)})</span>
-      <input id="aucAmt" inputmode="decimal" value="${(minNext/1e6).toString()}">
+      <input id="aucAmt" inputmode="decimal" value="${minNext>=ceil?(minNext/1e6).toString():mCeil(minNext)}">
       <div class="aquick">${quick}</div>
       <button data-do="aucgo" disabled>Поставити</button></div>
     <div class="aucmsg mnote"></div></div>`;   // 21.10: надбавка, ставка, швидкі суми й кнопка — один рядок; повідомлення про ставку — окремий рядок під ним
@@ -3544,8 +3598,7 @@ function aucRefresh(){
   const mv=+f.dataset.mv, pid=f.dataset.pid, au=f.dataset.au?(S.auctions||[]).find(a=>a.id===f.dataset.au):null;
   const clen=h.querySelector('.clen'), len=clen?(+clen.dataset.len||1):1, role=rolesOn()?((clen&&clen.dataset.prole)||''):'main';
   const pctEl=f.querySelector('#aucPct');
-  const raw=Math.round((parseFloat((f.querySelector('#aucAmt').value||'0').replace(',','.'))||0)*1e6);
-  const ceil=aucCeil(mv), floor=aucFloor(mv), atCeil=raw>0&&raw===ceil;
+  const ceil=aucCeil(mv), floor=aucFloor(mv), raw=aucSnap(Math.round((parseFloat((f.querySelector('#aucAmt').value||'0').replace(',','.'))||0)*1e6), ceil), atCeil=raw>0&&raw===ceil;
   if(pctEl){ pctEl.disabled=atCeil; if(atCeil && pctEl.value!=='0') pctEl.value='0'; }   // на ставці-викупі надбавка не діє
   const pct=pctEl?(+pctEl.value||0)/100:0, pr=[];
   if(rolesOn() && !role) pr.push('обери роль гравця');
@@ -3576,12 +3629,12 @@ function aucRefresh(){
     btn.disabled=false; btn.textContent=atCeil?'Викупити':(au?'Перебити':'Поставити');
   }
 }
-function amountUI(label,minEur,kind,ref,maxEur,extra){
+function amountUI(label,minEur,kind,ref,maxEur,extra,btn){
   return `<div class="mamt" data-kind="${kind}" data-ref="${ref}" data-min="${minEur}" data-max="${maxEur||0}">
     <span class="dim">${label} · €млн (мін ${mCeil(minEur)}${maxEur?` · макс ${mFloor(maxEur)}`:''})</span>
     <input id="amtInp" inputmode="decimal" value="${mCeil(minEur)}">
     ${extra||''}
-    <button data-do="amt">OK</button></div>`;
+    <button data-do="amt">${btn||'OK'}</button></div>`;
 }
 // 22.10 (Богдан): підказка (БЕЗ заборони) у пропозиції на чужого гравця, коли ВЛАСНИК УЖЕ ПІДТВЕРДИВ склад на найближчий вікенд. Чи гравець у його складі, інші не бачать (склади приховано
 // до відкриття) — тому сервер звичайну пропозицію не блокує; «Домовитись з гравцем» (з надбавкою) для такого власника недоступне (_market_propose_transfer 556).
@@ -3735,17 +3788,18 @@ function xRefresh(){
   const off=S.players.find(p=>p.id===$('mhost').querySelector('#xOff').value);
   const dir=$('mhost').querySelector('#xDir').value, amtInp=$('mhost').querySelector('#xAmt');
   amtInp.disabled=(dir==='none'); if(dir==='none') amtInp.value='0';
-  const raw=Math.round((parseFloat((amtInp.value||'0').replace(',','.'))||0)*1e6);
+  const raw0=eurIn(amtInp.value), badAmt=Number.isNaN(raw0), raw=badAmt?0:raw0;   // 16.11: нечислове значення — окрема помилка, а не мовчазний «0»
   const cash = dir==='pay'?raw : dir==='ask'?-raw : 0;   // >0 я(from) доплачую, <0 власник(to) доплачує
   const offV=off?off.market_value_current||0:0, wantV=want.market_value_current||0;
   const cmpL=$('mhost').querySelector('#xCmpL'); if(cmpL) cmpL.innerHTML=xcmpRows(off,true);   // 20.10: порівняння гравців поруч
   const dEl=$('mhost').querySelector('#xDelta');
   if(dEl) dEl.innerHTML = off ? (()=>{ const dv=wantV-offV; return `Різниця вартості: <b>${dv>0?'+':''}${(dv/1e6).toFixed(1)}M</b> — ${dv>0?'ти отримуєш дорожчого':dv<0?'ти віддаєш дорожчого':'вартість однакова'}`; })() : '';
   const pr=[];
+  if(badAmt) pr.push('введи суму доплати числом (наприклад 2 або 1,5)');
   if(!off) pr.push('обери свого гравця');
   else{
     // 506: СИМЕТРИЧНО — «отримане» включає доплату; верх випливає з мінімуму
-    if(offV+Math.max(cash,0) < Math.ceil((wantV+Math.max(-cash,0))*pct)) pr.push(`ти віддаєш <${Math.round(pct*100)}% отриманого (${esc(want.name)}${cash<0?' + доплата':''}) — додай доплату`);
+    if(offV+Math.max(cash,0) < Math.ceil((wantV+Math.max(-cash,0))*pct)) pr.push(`ти віддаєш <${Math.round(pct*100)}% отриманого (${esc(want.name)}${cash<0?' + доплата':''}) — ${cash<0?'зменш суму, яку просиш':'додай доплату'}`);
     if(wantV+Math.max(-cash,0) < Math.ceil((offV+Math.max(cash,0))*pct)) pr.push('доплата завелика (власник віддав би замало)');
     const bMe=exchangeBlock(S.me.id,off,want); if(bMe) pr.push('у тебе: '+bMe);
     const bOw=exchangeBlock(owner,want,off); if(bOw) pr.push('у власника: '+bOw);
@@ -3832,7 +3886,7 @@ function qWageR(pid,len,mv,role){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes
 function qWage(pid,len,mv){ const q=S.quotes[pid], e=q&&q.quotes&&q.quotes.find(x=>x.len===len); return e?+e.wage:wageFor(mv,len,defMode(pid)); }
 function maxLen(){ const c=S.cfg||{}; return Math.max(1,Math.min(c.max_contract_len??5, stageInfo().left)); }
 function chipsHTML(max,sel){ let h=''; for(let L=1;L<=max;L++) h+=`<button type="button" class="clen-chip${L===sel?' on':''}" data-l="${L}">${L}</button>`; return h; }
-function turW(n){ return n===1?'вікенд':(n<5?'вікенди':'вікендів'); }
+function turW(n){ return plU(n,'вікенд','вікенди','вікендів'); }   // 16.11: було «0 вікенди», «21 вікендів»
 // opts.extend — ПРОДОВЖЕННЯ власного контракту (ДОДАЄ вікенди; opts: left = скільки лишилось, oldWage, max = макс. додати)
 function contractPicker(mv,freeAdd,pid,opts){
   const c=S.cfg||{}, ext=c.contract_ext_mult, si=stageInfo(), o=opts||{};
@@ -3953,7 +4007,7 @@ function actionsHTML(p,ctx){
     const proceeds=Math.round(mv*(1-(cfg.sell_pct??0.05)));
     const ci=contractInfo(p), rl=ci.rl||0, si=stageInfo(), extMax=Math.min(cfg.max_contract_len??3, si.left-rl);
     // КОНТРАКТ + ПРОДОВЖЕННЯ (509): нові вікенди ДОДАЮТЬСЯ до тих, що лишились; межа — залишок етапу
-    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось вікендів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/вікенд`:''}${ci.low?` · <b class="warnc">добігає — ${inPlayRound()?'':'продовж контракт, інакше '}${autosaleTxt(false)}</b>`:''}${(ci.low && !inPlayRound() && rolesOn() && penOn() && (p.role||'main')==='main' && (+p.wage_per_round||0)>0)?` <b class="warnc">⚠️ Штраф за роль лишається: якщо «Основний» не в основі на дедлайні — борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))} навіть для останнього вікенду контракту (вердикт — до автопродажу).</b>`:''}</p>`
+    let cinfo=agPingNote(p)+`<p class="mnote" style="margin:0 0 6px">📄 Контракт: лишилось вікендів <b>${ci.rl!=null?ci.rl:'—'}</b>${ci.wage?` · ${eur(ci.wage)}/вікенд`:''}${ci.low?(finalWkNow()?` · <b>${FINAL_WK_TXT}</b>`:` · <b class="warnc">добігає — ${inPlayRound()?'':'продовж контракт, інакше '}${autosaleTxt(false)}</b>`):''}${(ci.low && !inPlayRound() && rolesOn() && penOn() && (p.role||'main')==='main' && (+p.wage_per_round||0)>0)?` <b class="warnc">⚠️ Штраф за роль лишається: якщо «Основний» не в основі на дедлайні — борг ≈ ${eur(Math.round(p.wage_per_round*debtPct()))} навіть для останнього вікенду контракту (вердикт — до автопродажу).</b>`:''}</p>`
       + ((penOn()&&p.marked)?`<p class="mnote warn" style="margin:0 0 6px">🚩 Позначка «порушив» до кінця контракту: друге порушення — гравця буде автоматично продано відразу після вікенду; продовження дорожче на ${Math.round(extSurch()*100)}%, «Лавка» недоступна.</p>`:'');
     cinfo += benchCardNote(p);
     const extBlock = extMax>=1
@@ -3978,7 +4032,7 @@ function actionsHTML(p,ctx){
       } else {
         const minAsk=Math.ceil(mv*winMinPct()), maxAsk=winMaxEur(mv);
         right+=`<p class="mnote">Вітрина: фіксована ціна ${winTxt()} (зміниться вартість — лот застаріє); інший викупить миттєво, ти отримаєш суму повністю (0% комісії).</p>
-          ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk)}`;
+          ${amountUI('Виставити за ask',minAsk,'list',p.id,maxAsk,'','Виставити на вітрину')}`;
       }
     }
     // 21.10 (Богдан): окремої кнопки «Перевести на Лавку» НЕМАЄ — роль це обіцянка при підписанні, змінити її можна лише новим контрактом (продовженням, хоч на 1 вікенд); SQL 557
@@ -3989,7 +4043,7 @@ function actionsHTML(p,ctx){
     const ownerNm=esc(S.names[p.owner_participant_id]||'—');
     let h='';   // 20.10: «Власник…» і «Агент» винесено в картку (pm-xinfo, під таблицею форми)
     // 535: у вікенді пропозиції на гравця з останнім вікендом контракту заборонені (автопродаж при закритті раніше за будь-яку угоду)
-    if(inPlayRound() && expiringP(p)) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
+    if(inPlayRound() && expiringP(p) && !finalWkNow()) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
     if(inPlayRound()) return h+`<p class="mnote warn">⏳ Вікенд ${inPlayRound().number} почався: угоди закриті — нові пропозиції, лоти й обміни створити не можна до закриття вікенду.</p>`;
     const blockA=acquireBlock(p), lst=(S.listingsReady&&S.listings[p.id])||null;
     // ── 🛒 КУПИТИ: викуп з вітрини (миттєво) або пропозиція власнику (трансфер) ──
@@ -4011,7 +4065,7 @@ function actionsHTML(p,ctx){
       if(S.transfersReady){
         const minT=Math.ceil(mv*winMinPct()), maxT=winMaxEur(mv);
         buy+=`<div class="vcard"><div class="vhead"><span class="msec">🤝 Запропонувати власнику (трансфер)</span><span class="mnote">Сума <b>заморозиться</b> (доступно ${eur(S.spendable)}); спишеться при прийнятті. Власник може прийняти, відхилити чи зробити контр. Вікно ціни: ${winTxt()}.</span></div>
-          ${amountUI('Сума',minT,'propose',p.id,maxT,wagePctUI()+'<div class="fbreak"></div><div class="psum" data-kind="propose"></div>')}</div>`;
+          ${amountUI('Сума',minT,'propose',p.id,maxT,wagePctUI()+'<div class="fbreak"></div><div class="psum" data-kind="propose"></div>','Запропонувати')}</div>`;
       }
       if(!lst && !S.transfersReady) buy+=`<p class="mnote">Купівля в учасника зʼявиться після заливки <b>405</b>.</p>`;
     }
@@ -4119,7 +4173,7 @@ function fxRow(a, meta, W, pad){
 }
 // 09.11 (Богдан): «Очки по вікендах» у картці — ті самі очки, що в «Статистика → Найбільше очок (наш турнір)»: market_player_round_points.points
 // (чисті, без ×2); сума вікендів = «Набрав очок (турнір)». Показуємо лише вікенди, де гравець грав.
-function ochW(n){ const a=Math.abs(n), m=a%100, d=a%10; return (m>=11&&m<=14)?'очок':d===1?'очко':(d>=2&&d<=4)?'очка':'очок'; }
+function ochW(n){ return pOchk(n); }   // 16.11: було «2 очка» (форма не українська) → «2 очки»
 function wkPtsBox(pid){
   const byN=new Map(); (S.wkPts&&S.wkPts[pid]||[]).forEach(x=>{ const n=(S.rounds.find(r=>r.id===x.rid)||{}).number; if(n!=null) byN.set(n,+x.pts||0); });   // Map за номером вікенду — дублів не буває
   const rows=[...byN].map(([n,v])=>({n,v})).sort((a,b)=>a.n-b.n);
@@ -4482,11 +4536,11 @@ function bindModalActions(p){
       const off=S.players.find(x=>x.id===box.dataset.off)||{}, cash=+box.dataset.cash||0, len=selectedLenIn(box);
       const cl=box.querySelector('.clen'); if(needRole(cl)) return; const fr=rolesOn()?{p_from_role:(cl&&cl.dataset.prole)||null}:{};   // 539: роль для гравця, якого отримуєш; 558: надбавки в обміні нема
       const cxTid=box.dataset.cx||null, xargs={p_offered:box.dataset.off,p_wanted:box.dataset.want,p_cash_delta:cash,p_from_length:len,...fr};
-      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} вікенд</b>?${cxTid?'<br><b>Попередню пропозицію буде відхилено.</b>':''}`, 'Запропонувати',
+      confirmModal(`Запропонувати обмін: твій <b>${esc(off.name)}</b> ↔ <b>${esc(p.name)}</b>${cash===0?'':(cash>0?' · ти доплачуєш '+eur(cash):' · тобі доплачують '+eur(-cash))} · контракт на <b>${esc(p.name)}</b> — <b>${len} ${turW(len)}</b>?${cxTid?'<br><b>Попередню пропозицію буде відхилено.</b>':''}`, 'Запропонувати',
         ()=>cxTid ? actCounterExchange(cxTid,xargs) : act('market_propose_exchange',xargs,'Обмін запропоновано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='aucgo'){   // 556: ставка/старт аукціону з довжиною, роллю й надбавкою (інлайн-валідація вже пройшла; сервер перевіряє те саме)
       const f=b.closest('.aucf'); aucRefresh(); if(b.disabled) return;
-      const raw=Math.round((parseFloat((f.querySelector('#aucAmt').value||'0').replace(',','.'))||0)*1e6);
+      const raw=aucSnap(Math.round((parseFloat((f.querySelector('#aucAmt').value||'0').replace(',','.'))||0)*1e6), aucCeil(+f.dataset.mv));
       const len=selectedLen(); if(needRole()) return; const ra=roleArgs();
       const pe=f.querySelector('#aucPct'), pc=pe?(+pe.value||0)/100:0, wg=pc>0?{p_wage_pct:pc}:{};
       const auId=f.dataset.au, atCeil=raw===aucCeil(+f.dataset.mv);
@@ -4498,7 +4552,7 @@ function bindModalActions(p){
       return; }
     if(kind==='amt'){
       const box=b.closest('.mamt'), min=+box.dataset.min;
-      const eurv=Math.round(parseFloat((box.querySelector('#amtInp').value||'').replace(',','.'))*1e6);
+      const eurv=eurIn(box.querySelector('#amtInp').value); if(Number.isNaN(eurv)){ alert(BADNUM); return; }
       if(!eurv || eurv<min){ alert('Замало — мінімум '+eurUp(min)); return; }
       const mxv=+box.dataset.max||0; if(mxv && eurv>mxv){ alert('Забагато — максимум '+eurDown(mxv)+' ('+winTxt()+')'); return; }
       const len=selectedLen();   // 508: довжина контракту з пікера модалки (ставка/старт аукціону)
@@ -4551,6 +4605,7 @@ async function viewCollection(){
   const others=Object.keys(S.names||{}).filter(id=>id!==S.me.id && profOf[id]).sort((a,b)=>String(S.names[a]).localeCompare(String(S.names[b])));
   const f=S.colF;
   if(f.mode==='user' && !others.includes(f.who)) { f.mode='mine'; f.who=''; }
+  if(f.mode==='all' && f.rarity && f.rarity!=='mega_rare' && f.rarity!=='rare') f.rarity='';   // 16.11: у каталозі лише Mega/Rare — інші значення дали б порожній екран
   const bySofa={}, byId={}; S.players.forEach(p=>{ byId[p.id]=p; if(p.sofascore_player_id!=null) bySofa[p.sofascore_player_id]=p; });
   const prettyKey=k=>String(k||'').replace(/_/g,' ');
   const collT=k=>((S.collReg||[]).find(x=>x.key===k)||{}).title||k;
@@ -4608,7 +4663,7 @@ async function viewCollection(){
       <select id="colPos"><option value="">Позиція: усі</option>${['G','D','M','F'].map(x=>opt(x,posCat(x),f.pos)).join('')}</select>
       <select id="colClub"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(([id,nm])=>opt(id,nm,f.club)).join('')}</select>
       <select id="colColl"><option value="">Колекція: усі</option>${(S.collReg||[]).map(c=>opt(c.key,c.title,f.coll)).join('')}</select>
-      <select id="colRarity"><option value="">Рідкість: усі</option>${[['mega_rare','Mega Rare'],['rare','Rare'],['emerald','Emerald'],['gold','Gold'],['silver','Silver']].map(([v,l])=>opt(v,l,f.rarity)).join('')}</select>
+      <select id="colRarity"><option value="">Рідкість: усі</option>${[['mega_rare','Mega Rare'],['rare','Rare'],['emerald','Emerald'],['gold','Gold'],['silver','Silver']].filter(([v])=>f.mode!=='all'||v==='mega_rare'||v==='rare').map(([v,l])=>opt(v,l,f.rarity)).join('')}</select>
       <select id="colOwner"${f.mode==='all'?'':' hidden'}>${[['','Власник: усі'],['shop','У крамниці'],['taken','В учасників']].map(([v,l])=>opt(v,l,f.owner)).join('')}</select>
       <select id="colSort">${[['rarity','За рідкістю'],['rating','За рейтингом'],['price','За ціною'],['name','За іменем']].map(([v,l])=>opt(v,l,f.sort)).join('')}</select>
     </div>
@@ -4670,7 +4725,7 @@ async function viewCollection(){
         return d || a.title.localeCompare(b.title); });
       g.innerHTML = vis.length ? vis.map(cardHTML).join('') : '<div class="soon" style="grid-column:1/-1">Нічого не знайдено — зміни або скинь фільтри.</div>';
       const mega=all.filter(c=>c.tier==='mega_rare').length;
-      const sum=$('colSum'); if(sum) sum.innerHTML=`каталог крамниці · <b>${all.length}</b> карток (${mega} Mega · ${all.length-mega} Rare) · у крамниці ${all.filter(c=>!c.owner_profile_id).length} · в учасників ${all.filter(c=>c.owner_profile_id).length} · показано ${vis.length} · натисни картку для деталей`;
+      const sum=$('colSum'); if(sum) sum.innerHTML=`каталог крамниці · <b>${all.length}</b> ${plU(all.length,'картка','картки','карток')} (${mega} Mega · ${all.length-mega} Rare) · у крамниці ${all.filter(c=>!c.owner_profile_id).length} · в учасників ${all.filter(c=>c.owner_profile_id).length} · показано ${vis.length} · натисни картку для деталей`;
       return;
     }
     const pid = f.mode==='mine' ? S.me.id : f.who, mine = pid===S.me.id;
@@ -4698,7 +4753,7 @@ async function viewCollection(){
     g.innerHTML=html;
     const goAll=$('colGoAll'); if(goAll) goAll.onclick=()=>setMode('all');
     const nCards=units.reduce((a,u)=>a+u.cards.length,0), cur=units.filter(u=>u.cur).length;
-    const sum=$('colSum'); if(sum) sum.innerHTML=`${mine?'твоя колекція':`колекція «${esc(S.names[pid]||'—')}»`} · <b>${units.length}</b> гравців (${cur} у складі зараз) · ${nCards} Rare/Mega-карток · показано ${vis.length}${mine?' · обирай дизайн під іменем':''}`;
+    const sum=$('colSum'); if(sum) sum.innerHTML=`${mine?'твоя колекція':`колекція «${esc(S.names[pid]||'—')}»`} · <b>${units.length}</b> ${plU(units.length,'гравець','гравці','гравців')} (${cur} у складі зараз) · ${nCards} ${plU(nCards,'картка','картки','карток')} Rare/Mega · показано ${vis.length}${mine?' · обирай дизайн під іменем':''}`;
   };
   const setMode=(m,who)=>{
     S.colF.mode=m; S.colF.who=who||'';
@@ -4720,7 +4775,7 @@ async function viewCollection(){
   const setDesign=async(pl,key)=>{
     const y=window.scrollY, args = key.startsWith('f:') ? {p_player:pl, p_frame:key.slice(2)} : {p_player:pl, p_card_item:key.slice(2)};
     let res=await sb.rpc('set_collection_design', args);
-    if(res.error && /function|schema cache|could not find/i.test(res.error.message||'')){
+    if(res.error && (res.error.code==='PGRST202' || res.error.code==='42883' || /could not find the function|schema cache/i.test(res.error.message||''))){   // 16.11: слово «function» ловило й «permission denied for function …»
       const cur=S.players.find(x=>x.id===pl && x.owner_participant_id===S.me.id);
       if(!cur) return alert('Для колишніх гравців потрібне оновлення бази (SQL 565) — воно ще не залито.');
       res=await sb.rpc('set_card_design', args);
@@ -4805,8 +4860,8 @@ function viewStats(){
     up  =pool.filter(p=>vDelta(p).pct> 0.0005).sort((a,b)=>vDelta(b).pct-vDelta(a).pct).slice(0,N);
     down=pool.filter(p=>vDelta(p).pct<-0.0005).sort((a,b)=>vDelta(a).pct-vDelta(b).pct).slice(0,N);
   }
-  const tn=rnd? 'Вікенд '+rnd.number : '';
-  const empty=`<div class="dim" style="padding:12px 14px">${tourLoading?'Завантаження…':tourErr?'Не вдалося завантажити дані вікенду':rnd?(filtered?'За цим фільтром у '+tn+' нікого немає':tn+': даних ще немає (матчі не зіграні)'):filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних вікендів)'}</div>`;
+  const tn=rnd? 'Вікенд '+rnd.number : '', tnL=rnd? 'Вікенді '+rnd.number : '';   // tnL — місцевий відмінок: «у Вікенді 3»
+  const empty=`<div class="dim" style="padding:12px 14px">${tourLoading?'Завантаження…':tourErr?'Не вдалося завантажити дані вікенду':rnd?(filtered?'За цим фільтром у '+tnL+' нікого немає':tn+': даних ще немає (матчі не зіграні)'):filtered?'За цим фільтром нікого немає':'Даних ще немає (зʼявляться після зіграних вікендів)'}</div>`;
   const board=(title,sub,rows)=>`<div class="statcard"><div class="sthead"><b>${title}</b><span>${sub}</span></div>${rows||empty}</div>`;
   const opt=(v,tx,cur)=>`<option value="${esc(v)}" ${String(cur)===String(v)?'selected':''}>${esc(tx)}</option>`;
   const leagues=[...new Set(Object.values(S.clubs).filter(c=>all.some(p=>p.club_id===c.id)).map(c=>c.league).filter(Boolean))].sort((a,b)=>leagueEn(a).localeCompare(leagueEn(b)));
@@ -4853,8 +4908,11 @@ function viewTable(){
   const fr=$('boardFrame');
   const fit=()=>{ try{ const b=fr.contentDocument&&fr.contentDocument.body; const h=b?b.scrollHeight:0;
     if(h>200) fr.style.height=(h+28)+'px'; }catch(e){/* крос-походження (file://) → лишається запасна висота */} };
+  if(S._tblFit) window.removeEventListener('resize', S._tblFit);   // 16.11 (QA): обробники не множаться при кожному відкритті вкладки
+  if(S._tblRO){ try{ S._tblRO.disconnect(); }catch(e){} S._tblRO=null; }
+  S._tblFit=fit;
   fr.addEventListener('load',()=>{ fit(); setTimeout(fit,400);
-    try{ new ResizeObserver(fit).observe(fr.contentDocument.body); }catch(e){} });
+    try{ S._tblRO=new ResizeObserver(fit); S._tblRO.observe(fr.contentDocument.body); }catch(e){} });
   window.addEventListener('resize', fit, {passive:true});
 }
 
@@ -4978,7 +5036,7 @@ function paintPressDot(){
   const n=prOpenList().length; let d=b.querySelector('.prdot');
   if(!n){ if(d) d.remove(); return; }
   if(!d){ d=document.createElement('i'); b.appendChild(d); }
-  d.className='prdot'; d.textContent=n; d.title=`${n} ${n===1?'питання':'питань'} від преси ${n===1?'чекає':'чекають'} відповіді — «News & Press»`;
+  d.className='prdot'; d.textContent=n; d.title=`${n} ${plU(n,'питання','питання','питань')} від преси ${n===1?'чекає':'чекають'} відповіді — «News & Press»`;
 }
 async function pressBoot(){
   const P=PR(); if(P.booting||!S.tour||!S.me) return; P.booting=true;
@@ -5081,7 +5139,7 @@ document.addEventListener('click',e=>{
   if(D.prGw){ const g=t.closest('.gw-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); P.coll[D.prGw]=c; return; }   // згорнути/розгорнути вікенд на місці (стрілку малює CSS)
   if(D.nd){ const g=t.closest('.nd-group'); if(!g) return; const c=!g.classList.contains('collapsed'); g.classList.toggle('collapsed',c); (S.ndColl||(S.ndColl={}))[D.nd]=c; return; }   // 16.11: згорнути/розгорнути день у News
   if(D.prAll){ P.popOpen=false; modalClose(); S.prScroll=true; go('news'); return; }
-  if(D.prSkip){ pressAnswer(D.prSkip,'skip'); return; }
+  if(D.prSkip){ const ta0=t.closest('.prs-own')&&t.closest('.prs-own').querySelector('textarea'); if(ta0 && ta0.value.trim() && !confirm('Не відповідати? Набраний текст не збережеться, а відповідь змінити не можна.')) return; pressAnswer(D.prSkip,'skip'); return; }   // 16.11 (QA): skip був незворотний з одного дотику навіть при набраному тексті
   if(D.prSend){ const ta=t.closest('.prs-own').querySelector('textarea'), v=ta?ta.value.trim():'';   // поле — відносно натиснутої кнопки (у вікні й у колонці однакові id картки)
     if(v.length<2){ alert('Відповідь закоротка — напиши хоча б кілька слів.'); return; } pressAnswer(D.prSend,'text',v); return; }
 });
@@ -5107,7 +5165,7 @@ function przInfo(){
   const hasLg=lgOn()||any('legend_points'), hasFin=mgOn||any('mgmt_final_points');
   const w1=S.cfg?`Weekends 1-${s1}`:'Weekends', w2=two?`Weekends ${s1+1}-${s2}`:'';
   return {s1,s2,two,mgOn,hasLg,hasFin,w1,w2,
-    wk:`матчі + 🎯 челенджі + ⚔️ Rivals${mgOn?' + 💎 менеджмент вікенду':''}`,
+    wk:`матчі + 🎯 челенджі + ⚔️ Rivals${(mgOn||(Array.isArray(S.przSc)&&S.przSc.some(r=>(+r.mgmt_points||0)>0)))?' + 💎 менеджмент вікенду':''}`,   // 16.11 (QA): 💎 уже в числах, навіть коли модуль вимкнено — підказка має це казати
     gn:`${w1}${two?' + '+w2:''}${hasLg?' + 🐐 Club Legend':''}${hasFin?' + 💼 Менеджер турніру':''}`};
 }
 function przPoints(){
@@ -6238,8 +6296,14 @@ async function viewAdmin(){
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('[data-do="paydebt"]'); if(!b) return;
   const sum=debtSum(); confirmModal(`Сплатити борг <b>${eur(sum)}</b> із зарплатного бюджету? Він спишеться одразу; склад, який не зарахували, повернеться (якщо вікенд ще не закрито).`, 'Сплатити · '+eur(sum),
     ()=>act('market_pay_debt',{p_tournament:S.tour.id},'Борг сплачено')); });
-sb.auth.onAuthStateChange((_e, session)=>{ if(session) boot(); });
-boot();
+// 16.11 (QA): supabase-js шле SIGNED_IN не лише при вході, а й щоразу, коли вкладка браузера знову стає видимою (і TOKEN_REFRESHED ~раз на годину). Повний boot() після цього
+// перечитував усе й перемальовував вкладку — чернетка складу/бустів зникала «сама». Тепер: той самий користувач, дані вже завантажено → не перемальовуємо (лише тиха перезвірка застарілих даних).
+sb.auth.onAuthStateChange((_e, session)=>{
+  if(!session) return;
+  if(S.me && S.myProfile===(session.user && session.user.id)){ softRefresh(); return; }
+  bootOnce();
+});
+bootOnce();
 </script>
 <!-- Профіль/Спільноти/Крамниця → вікном на борді (test.html хостить цей
      кабінет), а не новою вкладкою. Класичний скрипт, делегує `.win-open`. -->
