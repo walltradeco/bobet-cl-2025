@@ -603,6 +603,8 @@ body:has(#screen-login:not(.hide)) .stage-badge{display:none;}
 .stbox .when{font-size:13px;color:var(--text-dim);margin-top:3px;max-width:760px}
 .stbox .rt{text-align:right}.stbox .rt .t{font-size:22px}
 .stmsg{padding:10px 14px;border-radius:10px;font-size:13px;line-height:1.45;margin-bottom:12px;border:1px solid}
+.finbar{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;padding:12px 16px;border:1px solid rgba(244,196,48,.45);background:linear-gradient(90deg,rgba(244,196,48,.14),rgba(244,196,48,.03));border-radius:12px;font-size:13.5px;line-height:1.45}   /* 🏁 719: турнір завершено — режим перегляду */
+.finbar b{color:var(--gold)} .finbar .fs{color:var(--text-dim);font-size:12.5px}
 .stmsg.ok{background:var(--green-soft);border-color:rgba(24,180,122,.35);color:var(--up);font-weight:600}
 .stmsg.warn{background:rgba(244,196,48,.08);border-color:rgba(244,196,48,.35);color:var(--text)}.stmsg.warn b{color:var(--gold)}
 .stmsg.bad{background:rgba(235,87,87,.08);border-color:rgba(235,87,87,.4);color:var(--text)}.stmsg.bad b{color:var(--down)}   /* 542: борг / склад не зараховано */
@@ -1145,6 +1147,7 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
         <button id="btn-logout" class="btn ghost sm" style="margin-left:4px">Вийти</button></div>
     </div>
   </header>
+  <div class="wrap hide" id="finalBar" style="padding-top:12px;padding-bottom:0"></div>
   <div class="wrap shell"><div id="view"><div class="spin">завантаження…</div></div><aside id="newsAside" class="newsaside hide" aria-label="Стрічка новин"></aside></div>
 <button id="naOpen" class="na-open hide" title="Показати стрічку новин">📰</button>
 </div>
@@ -1248,6 +1251,11 @@ async function boot(){
   const { data:tt } = await sb.from('tournaments')
     .select('id,title,key,mode,status').eq('mode','squad').eq('status','active').order('starts_at',{ascending:false});
   S.tour = (tt&&tt[0])||null;
+  S.ro = false; S.final = null;
+  if(!S.tour){   // 719: активного нема → останній ЗАВЕРШЕНИЙ Squad-турнір у режимі перегляду (архів); раніше тут було «турніру ще не відкрито»
+    const { data:ft } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('status','finished').order('starts_at',{ascending:false}).limit(1);
+    S.tour = (ft&&ft[0])||null; S.ro = !!S.tour;
+  }
   if(!S.tour){
     $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
     $('tabs').innerHTML=''; $('view').innerHTML=`<div class="card"><h2>Squad-турнір ще не відкрито</h2><p class="dim">Активного Squad-турніру немає.</p></div>`;
@@ -1262,6 +1270,7 @@ async function boot(){
   S.me = me[0];
   S.me.id = S.me.participant_id;   // ⚠️ me() віддає колонку participant_id; увесь код кабінету чекає .id
   S.myProfile = session.user.id;   // = profiles.id (auth.uid) — для карток/рамок (акаунт-рівень, крос-ліга)
+  if(S.ro){ try{ S.final=(await sbSel(`market_final_pub?tournament_id=eq.${S.tour.id}&select=finished_at,winner_names,snapshot`))[0]||null; }catch(e){ S.final=null; } }   // 719: знімок підсумків (нема вьюхи → банер без переможця)
 
   $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
   $('my-name').textContent = S.me.display_name;
@@ -1423,6 +1432,7 @@ async function loadRefs(){
 
 // виклик дії ринку: RPC → показати результат → перезавантажити
 async function act(fn, args, okMsg, opts){
+  if(S.ro){ alert('🏁 Турнір завершено — кабінет у режимі перегляду, змінити нічого не можна.'); return; }   // 719 (адмін-дії йдуть через admCall, не тут)
   const { data, error } = await sb.rpc(fn, args);
   if(error){ alert('⛔ ' + (error.message||'').replace(/^.*?(Squad: )/, '$1')); return; }
   if(okMsg) alert('✅ ' + okMsg);
@@ -1496,6 +1506,14 @@ let __tokC=null, __tokT=0;   // 22.10: кеш токена на 15 с (лише 
 async function tok(){ if(__tokC && Date.now()-__tokT<15000) return __tokC; const {data}=await sb.auth.getSession(); if(data.session){ __tokC=data.session.access_token; __tokT=Date.now(); return __tokC; } return SUPABASE_ANON; }
 
 // ── ВКЛАДКИ (6, §F) ──
+// 🏁 719: банер над вкладками — турнір завершено (режим перегляду). Дані — знімок підсумків market_final_pub (S.final).
+function renderFinalBar(){
+  const el=$('finalBar'); if(!el) return;
+  if(!S.ro || !S.tour){ el.classList.add('hide'); el.innerHTML=''; return; }
+  const f=S.final, d=f&&f.finished_at?new Date(f.finished_at).toLocaleDateString('uk',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  el.classList.remove('hide');
+  el.innerHTML=`<div class="finbar"><b>🏁 Турнір завершено${d?' · '+d:''}</b>${f&&f.winner_names?`<span>Переможець: <b>${esc(f.winner_names)}</b></span>`:''}<span class="fs">Кабінет у режимі перегляду: ринок, склад і ставки закриті. Підсумки — у «Таблиця &amp; Матчі», гроші — у «💰 Призові».</span></div>`;
+}
 function renderTabs(){
   const tabs=[['my','🏟','Мій склад'],['market','💱','Ринок'],['stats','📊','Статистика'],['table','🏆','Таблиця & Матчі'],['collection','📇','Колекція'],['news','📰','News & Press'],['prizes','💰','Призові']];   // 13.11 (SQL 714): калькулятор призових
   if(S.me && S.me.is_admin) tabs.push(['admin','⚙','Адмінка']);
@@ -1665,14 +1683,14 @@ setInterval(()=>{ if(!document.hidden && S && S.tour && naWanted()) naSync(true)
 async function go(tab, quiet, noSnap){
   if(!noSnap) snapDraft();   // 16.11: йдемо з редактора складу (або перемальовуємо його) — чернетка запамʼятовується до повернення
   if(S.tab!==tab){ S.ctour=null; S.rrp=null; }   // 15.10: нова вкладка — чіп вікенду знову за замовчуванням (відкритий вікенд)
-  S.tab=tab; if(!quiet) renderTabs(); renderHeader();   // тихе перемальовування (Rivals): вкладки не чіпаємо
+  S.tab=tab; if(!quiet) renderTabs(); renderHeader(); renderFinalBar();   // тихе перемальовування (Rivals): вкладки не чіпаємо
   // quiet (21.10, Богдан: вибір суперника Rivals «оновлював сторінку»): старий вміст лишається, доки не готовий новий; прокрутка зберігається
   const y=quiet?window.scrollY:0;
   if(!quiet) $('view').innerHTML='<div class="spin">завантаження…</div>';
   const fn={my:viewSquad,market:viewMarket,collection:viewCollection,stats:viewStats,table:viewTable,news:viewNews,prizes:viewPrizes,admin:viewAdmin}[tab];
   if(!fn) return;
   naSync();   // права панель новин: показати/сховати за вкладкою й освіжити
-  pressBoot();   // 715: питання преси створює база, коли відкриваєш кабінет; тут — оновити лічильник і (раз на ~6 год) показати вікно
+  if(!S.ro) pressBoot();   // 715: питання преси створює база, коли відкриваєш кабінет; тут — оновити лічильник і (раз на ~6 год) показати вікно. 719: у завершеному турнірі нових питань нема
   const run=fn();
   if(quiet){ await run; window.scrollTo(0,y); }
   return run;
@@ -1724,7 +1742,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
     else{ const si=stageInfo();
       t = si.left>0 ? 'усі створені вікенди зіграні — ринок відкриється, коли буде заведено наступний вікенд.'
         : ((si.stage===1 && S.cfg && S.cfg.stage2_last_round) ? `етап 1 завершено. Пре-маркет етапу 2 (з нуля) відкриється, коли адмін заведе вікенд ${si.last+1} і запустить старт етапу.`
-                                                              : 'усі вікенди турніру зіграні — турнір завершено.'); }   // формат «1 етап» (stage2_last_round не задано): другого етапу нема
+                                                              : (S.ro ? 'турнір завершено — підсумки у «Таблиця & Матчі», призові — у «💰 Призові».' : 'усі вікенди турніру зіграні — турнір завершено.')); }   // формат «1 етап» (stage2_last_round не задано): другого етапу нема
     hero=`<div class="stbox off"><div><div class="cap">ринок зачинено</div><div class="t">${rsAll.length?'вікенд не очікується':'вікендів нема'}</div><div class="when">${t}</div></div>${right}</div>`;
   }
   // вікенд у грі: що закрито/відкрито на ринку (текст як був у банері)
@@ -5191,10 +5209,10 @@ function przPoints(){
 }
 function renderPrizes(){
   if(S.tab!=='prizes') return;
-  const rows=S.prizes, head='<div class="head2"><h2>💰 Призові</h2><span class="sub">скільки вийшло б, якби турнір закінчився зараз</span></div>';
+  const rows=S.prizes, head=`<div class="head2"><h2>💰 Призові</h2><span class="sub">${S.ro?'підсумкові суми за фінальною таблицею (🏁 турнір завершено)':'скільки вийшло б, якби турнір закінчився зараз'}</span></div>`;
   if(rows===null){ $('view').innerHTML=head+'<div class="soon">Не вдалося прочитати призові: база не відповіла або SQL <b>714</b> ще не залито. Онови сторінку.</div>'; return; }
   const pts=przPoints();
-  if(!rows.length){ $('view').innerHTML=head+pts+'<div class="soon">Призовий фонд ще не оголошено. Коли адмін задасть суму, тут зʼявиться таблиця: скільки кому вийшло б за поточного розкладу.</div>'; return; }
+  if(!rows.length){ $('view').innerHTML=head+pts+(S.ro?'<div class="soon">Призовий фонд для цього турніру не було оголошено — призових сум нема.</div>':'<div class="soon">Призовий фонд ще не оголошено. Коли адмін задасть суму, тут зʼявиться таблиця: скільки кому вийшло б за поточного розкладу.</div>'); return; }
   const I=przInfo(), r0=rows[0], sp=r0.split||[0,0,0,0], pp=r0.place_pct||[0,0,0], ssum=sp.reduce((a,b)=>a+(+b||0),0)||1, two=(+r0.stage_count||1)>1;
   const pool=i=>(+r0.fund_uah)*(+sp[i]||0)/ssum;
   const pc=i=>String(Math.round((+sp[i]||0)/ssum*1000)/10).replace('.',',');   // split у вьюсі — ЧАСТКИ (0,35), показуємо у %
@@ -5210,9 +5228,9 @@ function renderPrizes(){
   }).join('');
   const sum=k=>rows.reduce((a,r)=>a+(+r[k]||0),0);
   const und=+r0.undistributed_uah||0;
-  const mine=me?`<div class="card"><div class="prz-mine"><span class="big">${uahF(me.total_amount)}</span><span class="brk"><b>твої гроші, якби турнір закінчився зараз</b><br>Weekends ${uahF(me.weekends_amount)} · General ${uahF(me.general_amount)} · За очки ${uahF(me.points_amount)} · ⚔️ Rivals ${uahF(me.rivals_amount)}</span></div></div>`:'';
+  const mine=me?`<div class="card"><div class="prz-mine"><span class="big">${uahF(me.total_amount)}</span><span class="brk"><b>${S.ro?'твої гроші за підсумками турніру':'твої гроші, якби турнір закінчився зараз'}</b><br>Weekends ${uahF(me.weekends_amount)} · General ${uahF(me.general_amount)} · За очки ${uahF(me.points_amount)} · ⚔️ Rivals ${uahF(me.rivals_amount)}</span></div></div>`:'';
   $('view').innerHTML=`${head}${pts}${mine}
-    <div class="card"><h3 class="prz-h">💰 Розподіл призових <span class="dim">за поточного розкладу</span></h3><div class="przw"><table class="t prz"><thead><tr><th>Учасник</th><th class="n">Weekends</th><th class="n">General</th><th class="n">За очки</th><th class="n">⚔️ Rivals</th><th class="n">Разом ₴</th></tr></thead>
+    <div class="card"><h3 class="prz-h">💰 Розподіл призових <span class="dim">${S.ro?'за фінальною таблицею':'за поточного розкладу'}</span></h3><div class="przw"><table class="t prz"><thead><tr><th>Учасник</th><th class="n">Weekends</th><th class="n">General</th><th class="n">За очки</th><th class="n">⚔️ Rivals</th><th class="n">Разом ₴</th></tr></thead>
       <tbody>${body}</tbody>
       <tfoot><tr><td>Фонд ${uahF(r0.fund_uah)}</td><td class="n">${uahF(sum('weekends_amount'))}</td><td class="n">${uahF(sum('general_amount'))}</td><td class="n">${uahF(sum('points_amount'))}</td><td class="n">${uahF(sum('rivals_amount'))}</td><td class="n">${uahF(sum('total_amount'))}</td></tr></tfoot></table></div>
       ${und>0?`<p class="prz-notes" style="list-style:none;padding:0">Ще нікому не належить: <b>${uahF(und)}</b> (наприклад, пул ⚔️ Rivals, поки ніхто не виграв дуель). Ці гроші не розподілені.</p>`:''}
@@ -5224,7 +5242,7 @@ function renderPrizes(){
         <li><b>⚔️ Rivals</b> (призова номінація): пул забирає той, хто виграв найбільше дуелей (мінімум одну); при рівності ділять порівну. Очки за самі дуелі вже враховані у Weekends — це окрема номінація.</li>
         <li>Нічия за місце: суми відсотків зайнятих місць діляться порівну. Суми округлюються до 1 ₴; залишок від округлення йде лідеру General.</li>
       </ul>
-      <div class="prz-warn">⚠️ Це не вже зароблено, а скільки вийшло б, якби турнір закінчився зараз. Очки, місця й частки «за очки» змінюються з кожним вікендом, тож суми плавають. Остаточні призові — після завершення турніру.</div></div>`;
+      <div class="prz-warn">${S.ro?'🏁 Турнір завершено: це суми за фінальною таблицею. Система гроші не переказує — розрахунки між учасниками відбуваються поза кабінетом.':'⚠️ Це не вже зароблено, а скільки вийшло б, якби турнір закінчився зараз. Очки, місця й частки «за очки» змінюються з кожним вікендом, тож суми плавають. Остаточні призові — після завершення турніру.'}</div></div>`;
 }
 // ── ⚙ АДМІНКА (патерн BoBet/PSL; дії — наступний крок) ──
 // ═══ ⚙ АДМІНКА (23.10, рішення Богдана; SQL 566–567…): керувати турніром без Claude. Підвкладки; кожна дія — RPC + запис у журнал.
@@ -5242,7 +5260,7 @@ const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\
 
 const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Вікенди',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',true],['log','📜','Журнал',true]];
 const ADM_SOON={};
-const ADM_ACT={round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
+const ADM_ACT={tournament_finish:'Турнір завершено',tournament_reopen:'Турнір відкрито знову',round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
   config_set:'Налаштування: параметр',module_set:'Модуль вікенду',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
   auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',fixture_ratings:'Ручні оцінки матчу',player_stats_set:'Статистика гравця (вручну)',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
@@ -5364,11 +5382,41 @@ function admBadgeRefresh(force){
   S.admBT=Date.now();
   sb.rpc('admin_squad_overview',{p_tournament:S.tour.id}).then(({data,error})=>{ if(error||!data) return; S.admLevel=data.level; S.admCnt=[data.red,data.yellow]; paintAdmDot(); }).catch(()=>{});
 }
+// 🏁 719: «Завершення турніру» (Адмінка → Огляд): Перевірити → слово ЗАВЕРШИТИ + причина → знімок підсумків + статус «завершено»; «Відкрити знову» — страховка.
+function admFinHTML(){
+  if(S.ro){ const f=S.final;
+    return `<div class="admc"><h3>🏁 Завершення турніру</h3><p class="mnote" style="margin:0 0 10px">Турнір <b>завершено</b>${f&&f.finished_at?' '+kyFmt(f.finished_at):''}${f&&f.winner_names?` · переможець <b>${esc(f.winner_names)}</b>`:''}. Вікенди, матчі й результати захищені від змін. Помилилися — можна відкрити знову (знімок підсумків видаляється, потім завершити ще раз).</p><button class="mini" id="finReopen">↩ Відкрити знову…</button></div>`; }
+  return `<div class="admc"><h3>🏁 Завершення турніру</h3><p class="mnote" style="margin:0 0 10px">Коли всі вікенди закрито: зафіксувати фінальну таблицю й позначити турнір завершеним. Учасники далі бачать архів (підсумки, призові), але нічого не можуть змінити. Спершу «Перевірити» — система скаже, що ще заважає.</p><button class="mini" id="finCheck">✔ Перевірити готовність</button><div id="finOut" style="margin-top:10px"></div></div>`;
+}
+function finItemTxt(c){   // items з передперевірки: масив вікендів або лічильники ринку
+  const it=c.items; if(!it) return [];
+  if(Array.isArray(it)) return it.map(x=>typeof x==='string'?x:(x&&x.round!=null?`Вікенд ${x.round}${x.title&&String(x.title).trim()!=='Вікенд '+x.round?' · '+x.title:''}`:JSON.stringify(x)));
+  if(typeof it==='object') return [[it.auctions,'аукціонів'],[it.listings,'оголошень'],[it.transfers,'пропозицій'],[it.exchanges,'обмінів']].filter(([n])=>+n>0).map(([n,l])=>`${n} ${l}`);
+  return [];
+}
+function admFinBind(body){
+  const rb=body.querySelector('#finReopen');
+  if(rb) rb.onclick=()=>admDanger({title:'Відкрити турнір знову',body:'Статус повернеться на «активний», знімок підсумків видалиться. Вікенди, матчі й результати знову можна змінювати. Потім турнір можна завершити ще раз.',word:'ВІДКРИТИ',label:'Відкрити знову',
+    onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_tournament_reopen',{p_tournament:S.tour.id,p_confirm:c,p_reason:why},'Турнір знову відкрито'); if(!error){ S.admOK=undefined; await bootOnce(); } }});
+  const cb=body.querySelector('#finCheck');
+  if(cb) cb.onclick=async()=>{
+    const out=body.querySelector('#finOut'); out.innerHTML='<div class="spin">перевіряю…</div>';
+    const {data,error}=await sb.rpc('admin_squad_tournament_finish_check',{p_tournament:S.tour.id});
+    if(error){ out.innerHTML=admRpcMissing(error)?'<div class="soon">Завершення запрацює після заливки SQL <b>719</b>.</div>':`<span class="down">${esc(String(error.message||error).replace(/^.*?(Squad: )/,'$1'))}</span>`; return; }
+    const ic={ok:'✓',warn:'⚠',error:'✗',info:'ℹ'}, cl={ok:'up',warn:'gold',error:'down',info:'dim'};
+    out.innerHTML=`<div class="pflevel ${cl[data.level]||''}">${data.can_finish?(data.level==='ok'?'✅ Можна завершувати':'⚠ Можна завершувати, але є попередження'):'✗ Завершити поки не можна'}</div>`
+      +data.checks.map(c=>{ const its=finItemTxt(c); return `<div class="pf ${cl[c.level]||''}"><span class="pfi">${ic[c.level]||'•'}</span><div>${esc(c.text)}${its.length?`<div class="pfit">${its.map(esc).join('<br>')}</div>`:''}</div></div>`; }).join('')
+      +(data.can_finish?'<div style="margin-top:10px"><button class="mini" id="finGo">🏁 Завершити турнір…</button></div>':'');
+    const g=out.querySelector('#finGo');
+    if(g) g.onclick=()=>admDanger({title:'Завершити турнір',body:'Фіксується фінальна таблиця (місця й очки), турнір отримує статус «завершено», вікенди, матчі й результати стають захищеними від змін. Учасники бачать підсумки й призові в режимі перегляду. Скасувати можна лише кнопкою «Відкрити знову».',word:'ЗАВЕРШИТИ',label:'Завершити турнір',
+      onOk:async(c,why)=>{ const {error}=await admCall('admin_squad_tournament_finish',{p_tournament:S.tour.id,p_confirm:c,p_reason:why},'Турнір завершено'); if(!error){ S.admOK=undefined; await bootOnce(); } }});
+  };
+}
 async function admOverview(body){
   const A=S.adm; body.innerHTML='<div class="spin">завантаження…</div>';
   let ov=null, err=null; try{ const r=await sb.rpc('admin_squad_overview',{p_tournament:S.tour.id}); ov=r.data; err=r.error; }catch(e){ err=e; }
-  const blocks=`<div class="admc admgo"><h3>🔓 Ручні дії</h3><p class="mnote" style="margin:0">Розблокувати склад, пробачити борги, скасувати угоди, виправити баланс, продати чи передати гравця, скинути етап — у вкладці <button class="mini" data-gosub="disputes">⚖ Спірне →</button> (слово + причина + журнал).</p></div>`;
-  const bindBlocks=()=>body.querySelectorAll('.admgo [data-gosub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.gosub; viewAdmin(); });
+  const blocks=`${admFinHTML()}<div class="admc admgo"><h3>🔓 Ручні дії</h3><p class="mnote" style="margin:0">Розблокувати склад, пробачити борги, скасувати угоди, виправити баланс, продати чи передати гравця, скинути етап — у вкладці <button class="mini" data-gosub="disputes">⚖ Спірне →</button> (слово + причина + журнал).</p></div>`;
+  const bindBlocks=()=>{ body.querySelectorAll('.admgo [data-gosub]').forEach(b=>b.onclick=()=>{ A.sub=b.dataset.gosub; viewAdmin(); }); admFinBind(body); };
   if(err||!ov){
     const rs=(S.rounds||[]).map(r=>{ const st=admState(r), a=(S.attn||{})[r.number]; const [t,cl]=ADM_STL[st];
       return `<tr><td>Вікенд ${r.number}</td><td>${kyFmt(r.deadline_at)}</td><td class="${cl}">${t}</td><td>${a&&a.reason?`<span class="down">${esc(a.reason)}</span>`:'—'}</td></tr>`; }).join('');

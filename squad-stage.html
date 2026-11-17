@@ -329,6 +329,12 @@ table.bb .bp i{width:10px;height:10px;border-radius:3px;background:var(--club,#2
 table.bb .bp small{color:var(--muted);font-weight:400;font-size:12px}
 .sp{font-family:var(--mono);font-weight:600;font-size:14px}
 .hint{color:var(--dim);font-size:11.5px;font-family:var(--mono);letter-spacing:.03em;margin:14px 2px 0}
+/* 🏁 719: турнір завершено — банер і підсумки (знімок market_final_pub; грошей тут нема) */
+.finbanner{display:flex;gap:6px 14px;flex-wrap:wrap;align-items:baseline;margin:0 0 14px;padding:12px 16px;border:1px solid rgba(244,196,48,.45);background:linear-gradient(90deg,rgba(244,196,48,.14),rgba(244,196,48,.03));border-radius:12px}
+.finbanner b{color:var(--gold);font-family:var(--mono)} .finbanner .fs{color:var(--dim);font-size:12.5px}
+.fincard{margin:0 0 16px;padding:16px 18px;border:1px solid var(--line);border-radius:14px;background:var(--panel)} .fincard h3{font-size:15px;margin:0 0 10px}
+.fintab{width:100%;border-collapse:collapse;font-size:13px} .fintab th{color:var(--dim);font-weight:500;font-size:11.5px;text-align:right;padding:6px 8px;border-bottom:1px solid var(--line)} .fintab th:nth-child(-n+2){text-align:left}
+.fintab td{padding:8px;border-bottom:1px solid var(--line);text-align:right;font-variant-numeric:tabular-nums} .fintab td:nth-child(-n+2){text-align:left} .fintab td.rk{white-space:nowrap;font-weight:700;width:64px} .fintab td.tot{font-weight:700;color:var(--gold)} .fintab tr.w td{background:rgba(244,196,48,.06)}
 #tblHint[data-mg="0"] .hMg,#tblHint[data-mg="1"] .hNoMg{display:none}   /* B-07: текст про 💎 «Менеджер вікенду» — лише коли менеджмент увімкнено */
 
 /* модалка */
@@ -628,6 +634,7 @@ table.grid{min-width:0}
 </header>
 
 <div class="wrap">
+  <div id="finBanner"></div>
   <div class="nav-lbl" id="navLbl">Етапи</div>
   <nav class="etabs etabs-wait" id="etabs">
     <button class="stg-lb active" data-stage="lb">Leaderboard</button>
@@ -1593,6 +1600,21 @@ function lbCard(cls, title, metric, isGen, delta){
     </div>`; }).join('');
   return `<div class="lbcard ${cls}"><div class="bh">${title}</div>${rows}</div>`;
 }
+// 🏁 719: банер «турнір завершено» (над вкладками) + картка «Підсумки» (фінальна таблиця зі знімка market_final_pub)
+function paintFinal(){
+  const el=$('finBanner'); if(!el) return;
+  if(!S.tourRow || S.tourRow.status!=='finished'){ el.innerHTML=''; return; }
+  const f=S.final, d=f&&f.finished_at?new Date(f.finished_at).toLocaleDateString('uk',{day:'2-digit',month:'2-digit',year:'numeric'}):'';
+  el.innerHTML=`<div class="finbanner"><b>🏁 Турнір завершено${d?' · '+d:''}</b>${f&&f.winner_names?`<span>Переможець: <b>${esc(f.winner_names)}</b></span>`:''}<span class="fs">Це архів: ринок і результати закриті, лише перегляд.</span></div>`;
+}
+function finCard(){
+  const f=S.final; if(!f || !f.snapshot || !Array.isArray(f.snapshot.table) || !f.snapshot.table.length) return '';
+  const t=f.snapshot.table, any=k=>t.some(r=>(+r[k]||0)!==0);
+  const cols=[['match','матчі'],['challenges','🎯'],['rivals','⚔️'],['legend','🐐'],['mgmt','💎/💼']].filter(([k])=>any(k));
+  const rows=t.map(r=>{ const p=+r.place; return `<tr class="${p===1?'w':''}"><td class="rk">${p<=3&&(+r.total||0)>0?medal[p-1]+' ':''}${p}</td><td><b>${esc(r.name)}</b></td><td class="tot">${+r.total||0}</td>${cols.map(([k])=>`<td>${+r[k]||0}</td>`).join('')}</tr>`; }).join('');
+  return `<div class="fincard"><h3>🏁 Підсумки турніру</h3><table class="fintab"><thead><tr><th>№</th><th>Учасник</th><th>General</th>${cols.map(([,l])=>`<th>${l}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
+    <div class="hint" style="margin-top:10px">Фінальна таблиця зафіксована в момент завершення турніру. Рівні очки → спільне місце. Розклад по вікендах — у «Points by weekend».</div></div>`;
+}
 function renderLB(){
   const host=$('secLB'); if(!host) return;
   if(!S.lb.length){ host.innerHTML='<div class="hint" style="padding:16px 2px">Ще немає учасників.</div>'; return; }
@@ -1600,7 +1622,7 @@ function renderLB(){
   // General = total_points з market_leaderboard: очки матчів + 💎 бонуси вікендів + 💼 наскрізна (528); без нього — сума етапів
   S.lb.forEach(p=>tot[p.participant_id]= p.total_points!=null? p.total_points : (s1[p.participant_id]||0)+(s2[p.participant_id]||0));
   const one=oneStage(), fin=(S.mgCfg&&S.mgCfg.fin||[]).join('/');
-  host.innerHTML=`<div class="lbboards">
+  host.innerHTML=`${finCard()}<div class="lbboards">
       ${lbCard('tealh', one?'Weekends':'Weekends 1-'+stage1Max(), s1, false, lbDeltas(s1, lbBack('s1')))}
       ${one? '' : lbCard('blueh','Weekends '+(stage1Max()+1)+'-'+stage2End(), s2, false, lbDeltas(s2, lbBack('s2')))}
       ${lbCard('goldh','General', tot, true, lbDeltas(tot, lbBack(null)))}
@@ -1901,10 +1923,20 @@ function curRound(rs){
   return started.length? Math.max(...started) : rs[0].number;
 }
 // усе, що змінюється по ходу вікенду (очки, оцінки, ціни, склади, стан «наживо») — окремо від довідників, щоб оновлювати без перезавантаження
+// 🏁 719: який Squad-турнір показує борда — АКТИВНИЙ; коли активного нема — останній ЗАВЕРШЕНИЙ (архів, лише читання).
+// Раніше борда брала перший рядок market_rounds узагалі (вибирати турнір не вміла) — зламалось би, щойно зʼявиться другий Squad-турнір.
+async function pickTournament(){
+  let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
+  return ts.find(t=>t.status==='active')||ts[0]||null;
+}
 async function loadDynamic(){
-  S.rounds=await sbGet('market_rounds?select=id,tournament_id,number,title,deadline_at,results_entered_at,week_start,week_end,opened_at&order=number.asc');
+  const tr=await pickTournament(); S.tourRow=tr;
+  S.rounds=await sbGet('market_rounds?'+(tr?`tournament_id=eq.${tr.id}&`:'')+'select=id,tournament_id,number,title,deadline_at,results_entered_at,week_start,week_end,opened_at&order=number.asc');
   if(!S.rounds.length) return false;
-  S.tournament=S.rounds[0].tournament_id;
+  S.tournament=tr?tr.id:S.rounds[0].tournament_id;
+  S.final=null;   // знімок підсумків (719): лише для завершеного турніру; нема вьюхи/знімка → банер без переможця
+  if(tr && tr.status==='finished'){ try{ S.final=(await sbGet(`market_final_pub?tournament_id=eq.${S.tournament}&select=finished_at,winner_names,snapshot`))[0]||null; }catch(e){ S.final=null; } }
+  paintFinal();
   const rids=S.rounds.map(r=>r.id);
 
   S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
