@@ -468,9 +468,9 @@ table.grid{min-width:0}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg);--k:1}50%{transform:rotateX(3deg) rotateY(-2deg);--k:.17}}
 .sqfull .podium-card img.rarepng{width:auto;display:block}
 /* «товсті» картки (20.11): лице + бокова стінка ДВОМА шарами. Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача.
-   --k 0…1 (анімація sqsway і курсор), --sw = товщина стінки в % ширини картки (CARD_THICK). Без _face/_side (або без @property) — картка пласка, як раніше. */
+   --k 0…1 (анімація sqsway і курсор), --sw/--sh = зсув стінки в % ширини/висоти картки (CARD_THICK=[sw,sh], дає tools/card_split_side.py). Без _face/_side (або без @property) — картка пласка, як раніше. */
 @property --k{syntax:'<number>';inherits:true;initial-value:1}
-.sqfull .tilt img.sidelayer{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;transform:translateX(calc(var(--sw,0%) * (var(--k) - 1)))}
+.sqfull .tilt img.sidelayer{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;transform:translate(calc(var(--sw,0%) * (var(--k) - 1)),calc(var(--sh,0%) * (var(--k) - 1)))}
 .sqfull .tilt img.rarepng{position:relative;z-index:1}
 .sqfull .podium-card.mega{bottom:19%}   /* mega росте вниз (знизу є місце) — 04.10: rare 72% / mega 75% */
 /* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
@@ -1359,14 +1359,14 @@ const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
 // «ТОВСТІ» картки (20.11): арт має бокову стінку (правий край) → лице й стінка окремими шарами (`_face.webp` + `_side.webp`, tools/card_split_side.py).
 // Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача (як у Sorare). Значення = товщина стінки в % ширини картки.
 // Немає запису в CARD_THICK → картка пласка, як раніше. Нова товста картка: розрізати арт інструментом → дописати рядок сюди (у всіх 4 файлах з showFullCard).
-const CARD_THICK={'players/Michael_Olise_Mega_Rare_Eclipse.png':7.2,'players/Desire_Doue_Mega_Rare_Champions_Rhythm.png':3.6};
+const CARD_THICK={'players/Michael_Olise_Mega_Rare_Eclipse.png':[5.57,0],'players/Desire_Doue_Mega_Rare_Champions_Rhythm.png':[3.6,0]};
 const thickOf=p=>CARD_THICK[String(p||'')]||0;
 const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
 const artHTML=(p,alt)=>thickOf(p)?`<img class="sidelayer" alt="" aria-hidden="true"><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
 const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
-async function applySide(tilt,full,T){ const sd=tilt.querySelector('img.sidelayer'); tilt.style.setProperty('--sw',T+'%'); if(!sd) return; const u=thickLayer(full,'side'); if(await loadImg(u)) sd.src=u; }
+async function applySide(tilt,full,T){ const sd=tilt.querySelector('img.sidelayer'); tilt.style.setProperty('--sw',T[0]+'%'); tilt.style.setProperty('--sh',T[1]+'%'); if(!sd) return; const u=thickLayer(full,'side'); if(await loadImg(u)) sd.src=u; }
 const poolThumb=u=>{ const s=String(u||''); return /^players\/pool\/\d+\.webp$/.test(s)?s.replace(/\.webp$/,'_sm.webp'):s; };   // фото пулу в сітках/міні-картках — мініатюра `_sm` (≈35 КБ замість ≈312 КБ); майстер лише на подіумі
 const imgFallback=full=>` onerror="this.onerror=null;this.src='${esc(full)}'"`;                                                   // немає `_sm` на сайті → тихо підміняємо на майстер
 const _warmRefs=[], _warmSet=new Set();
