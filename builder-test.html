@@ -1,0 +1,920 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>BoBet · Конструктор турнірів (STAGE)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=Onest:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/common/tokens.css">
+<style>
+  .wrap{max-width:1080px;margin:0 auto;padding:16px}
+  header.top{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+  header.top h1{font-size:20px;margin:0}
+  .stage-badge{font-family:var(--mono);font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--red);border:1px solid var(--red);
+    border-radius:5px;padding:2px 7px;vertical-align:middle;margin-left:6px}
+  .nav{display:flex;gap:8px;flex-wrap:wrap}
+  .btn{border:1px solid var(--line);background:var(--panel-2);color:var(--text);border-radius:var(--radius-sm);padding:9px 14px;cursor:pointer;font-weight:600;font-size:15px}
+  .btn:hover{border-color:var(--text-dim)}
+  .btn.primary{background:var(--green);border-color:var(--green)}
+  .btn.danger{background:transparent;border-color:var(--red);color:var(--red)}
+  .btn.ghost{background:transparent}
+  .btn.sm{padding:5px 10px;font-size:13px}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;margin-bottom:14px}
+  .card.warnbox{border-color:var(--gold)} .card.errbox{border-color:var(--down)}
+  h2{font-size:17px;margin:0 0 10px} h3{font-size:15px;margin:16px 0 6px}
+  p{margin:6px 0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+  .grid.g3{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  label.f{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--text-dim)}
+  input,select,textarea{background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:var(--radius-sm);padding:9px 10px;font:inherit;font-size:16px;width:100%}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--teal)}
+  textarea{font-family:var(--mono);font-size:14px;min-height:150px;resize:vertical}
+  input[type=checkbox],input[type=radio]{width:auto;margin:0}
+  .chk{display:flex;gap:8px;align-items:flex-start;font-size:15px;color:var(--text);margin:6px 0;cursor:pointer}
+  .hint{font-size:12.5px;color:var(--text-dim);margin-top:3px}
+  .badge{display:inline-block;font-size:12px;font-weight:700;border-radius:999px;padding:2px 9px;border:1px solid var(--line);color:var(--text-dim);white-space:nowrap}
+  .badge.hidden{color:var(--gold);border-color:var(--gold)} .badge.open{color:var(--up);border-color:var(--up)} .badge.finished{color:var(--blue);border-color:var(--blue)}
+  .badge.test{color:var(--purple);border-color:var(--purple)} .badge.ok{color:var(--up);border-color:var(--up)} .badge.warn{color:var(--gold);border-color:var(--gold)}
+  .tabs,.steps,.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+  .tab,.step,.chip{border:1px solid var(--line);background:transparent;color:var(--text-dim);border-radius:999px;padding:6px 13px;cursor:pointer;font-size:14px;font-weight:600}
+  .tab.on,.step.on,.chip.on{background:var(--panel-3);color:var(--text);border-color:var(--teal)}
+  .step{cursor:default}
+  .tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{border-collapse:collapse;width:100%;font-size:14px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 8px;text-align:left;white-space:nowrap;vertical-align:top}
+  th{color:var(--text-dim);font-weight:600;font-size:12.5px}
+  td.nw{white-space:normal;min-width:180px}
+  .msg{margin-top:8px;font-size:14px;white-space:pre-wrap;word-break:break-word}
+  .msg.err{color:var(--down)} .msg.ok{color:var(--up)} .msg.warn{color:var(--gold)}
+  ul.l{margin:6px 0;padding-left:20px} ul.l li{margin:3px 0}
+  .mono{font-family:var(--mono);font-size:13px}
+  .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+  .spread{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:flex-start}
+  .tcard{display:block;width:100%;text-align:left;cursor:pointer}
+  .tcard:hover{border-color:var(--teal)}
+  .tcard.sel{border-color:var(--teal);background:var(--panel-2)}
+  .login{max-width:360px;margin:60px auto;padding:20px;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius)}
+  .login h1{font-size:20px;margin:0 0 10px} .login .lbl{display:block;margin:12px 0 4px;font-size:13px;color:var(--text-dim)}
+  .login .btn{margin-top:12px;width:100%} .lg-msg{margin-top:10px;font-size:14px;color:var(--down)}
+  @media (max-width:560px){ .wrap{padding:12px} .btn{padding:9px 11px} }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+// =====================================================================
+//  BoBet · Конструктор турнірів — STAGE (крок A6a). Лише адмін платформи (profiles.is_platform_admin).
+//  Усе, що тут робить кнопка, — це виклик RPC Конструктора (SQL 618–659). Логіки турніру на сторінці нема.
+//  Спільна база з основним сайтом: anon-ключ публічний, захист — гард _cnstr_guard() на сервері.
+// =====================================================================
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+import { getSession, bindMe, renderLogin } from './assets/common/auth.js';
+const SUPABASE_URL  = 'https://wsdamzcezumjmgxmvakw.supabase.co';
+const SUPABASE_ANON = 'sb_publishable_bkXuSYswtmg4xCtecLb9cw_No0oCuSo';
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+
+// <PURE>
+// ---- Чисті функції (без DOM і мережі): перевіряються tools/check_builder_render.py ----
+const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const p2 = (n) => String(n).padStart(2, '0');
+
+let _kfmt = null;
+function kyivFmt() {
+  if (_kfmt) return _kfmt;
+  const opt = { hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' };
+  try { _kfmt = new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: 'Europe/Kyiv' }, opt)); }
+  catch (e) { _kfmt = new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: 'Europe/Kiev' }, opt)); }
+  return _kfmt;
+}
+function kyivParts(ms) {
+  const o = {};
+  kyivFmt().formatToParts(new Date(ms)).forEach((x) => { o[x.type] = x.value; });
+  return { y: +o.year, mo: +o.month, d: +o.day, h: (+o.hour) % 24, mi: +o.minute };
+}
+// зсув Києва відносно UTC у хвилинах на момент ms (120 взимку, 180 влітку)
+function kyivOffsetMin(ms) {
+  const m0 = Math.floor(ms / 60000) * 60000;
+  const k = kyivParts(m0);
+  return Math.round((Date.UTC(k.y, k.mo - 1, k.d, k.h, k.mi) - m0) / 60000);
+}
+// «16.02.2027 22:00» за Києвом → ISO з поясом. Неіснуючий час (перехід на літній) і неоднозначний (на зимовий) — помилка.
+function kyivToIso(y, mo, d, h, mi) {
+  if (!(mo >= 1 && mo <= 12 && d >= 1 && d <= 31 && h >= 0 && h <= 23 && mi >= 0 && mi <= 59)) return { error: 'Неправильна дата або час' };
+  const probe = new Date(Date.UTC(y, mo - 1, d));
+  if (probe.getUTCMonth() !== mo - 1 || probe.getUTCDate() !== d) return { error: 'Такої дати нема в календарі' };
+  const t0 = Date.UTC(y, mo - 1, d, h, mi);
+  const ok = [];
+  [120, 180].forEach((off) => { if (kyivOffsetMin(t0 - off * 60000) === off) ok.push(off); });
+  if (ok.length === 0) return { error: 'Цього часу не існує в Києві (перехід на літній час) — вкажи інший' };
+  if (ok.length === 2) return { error: 'Цей час трапляється двічі (перехід на зимовий час) — вкажи інший' };
+  return { iso: y + '-' + p2(mo) + '-' + p2(d) + 'T' + p2(h) + ':' + p2(mi) + ':00' + (ok[0] === 120 ? '+02:00' : '+03:00') };
+}
+function parseKyivText(s) {
+  const t = String(s == null ? '' : s).trim();
+  let m = t.match(/^(\d{1,2})[./](\d{1,2})[./](\d{4})[ T,]+(\d{1,2})[:.](\d{2})$/);
+  if (m) return kyivToIso(+m[3], +m[2], +m[1], +m[4], +m[5]);
+  m = t.match(/^(\d{4})-(\d{2})-(\d{2})[ T]+(\d{1,2}):(\d{2})$/);
+  if (m) return kyivToIso(+m[1], +m[2], +m[3], +m[4], +m[5]);
+  return { error: 'Не розумію «' + t + '». Формат: 16.02.2027 22:00 (за Києвом)' };
+}
+function fmtKyiv(v) {
+  if (v == null || v === '') return '—';
+  const ms = typeof v === 'number' ? v : Date.parse(v);
+  if (isNaN(ms)) return String(v);
+  const k = kyivParts(ms);
+  return p2(k.d) + '.' + p2(k.mo) + '.' + k.y + ' ' + p2(k.h) + ':' + p2(k.mi);
+}
+// Один рядок списку матчів: «Команда А — Команда Б; 16.02.2027 22:00; день=2; ET; фінал; ліга=ucl»
+function parseMatchLine(line) {
+  const raw = String(line == null ? '' : line).trim();
+  if (!raw || raw.charAt(0) === '#') return null;
+  const segs = raw.split(';').map((x) => x.trim());
+  const teams = segs[0].split(/\s+(?:—|–|-|vs\.?|VS)\s+/);
+  if (teams.length !== 2 || !teams[0].trim() || !teams[1].trim()) return { error: 'Очікую «Команда А — Команда Б»' };
+  const out = { home: teams[0].trim(), away: teams[1].trim() };
+  let kick = null;
+  for (let i = 1; i < segs.length; i++) {
+    const s = segs[i];
+    if (!s) continue;
+    const low = s.toLowerCase();
+    let m;
+    if ((m = low.match(/^(?:день|day|d)\s*=\s*(\d+)$/))) out.day = +m[1];
+    else if (/^(?:et|ет|екстра|екстратайм)$/.test(low)) out.et_possible = true;
+    else if (/^(?:фінал|final|finale)$/.test(low)) out.is_final = true;
+    else if ((m = low.match(/^(?:ліга|змагання|comp|competition)\s*=\s*([a-z_]+)$/))) out.competition = m[1];
+    else if (!kick) kick = s;
+    else return { error: 'Зайвий фрагмент «' + s + '»' };
+  }
+  if (!kick) return { error: 'Не вказано дату й час (напр. 16.02.2027 22:00)' };
+  const k = parseKyivText(kick);
+  if (k.error) return { error: k.error };
+  out.kickoff = k.iso;
+  return out;
+}
+// Весь текст → { rows (для RPC), errors [{line, text, error}] }
+function buildImport(text) {
+  const rows = [];
+  const errors = [];
+  String(text == null ? '' : text).split(/\r?\n/).forEach((ln, i) => {
+    const r = parseMatchLine(ln);
+    if (r == null) return;
+    if (r.error) { errors.push({ line: i + 1, text: ln.trim(), error: r.error }); return; }
+    rows.push(r);
+  });
+  return { rows, errors };
+}
+function validRoot(s) { return /^[a-z][a-z0-9_]{1,24}$/.test(String(s == null ? '' : s)); }
+function suggestRoot(code, taken) {
+  const base = String(code || 'turnir').toLowerCase().replace(/[^a-z0-9_]/g, '_').replace(/^[^a-z]+/, 't').slice(0, 20) || 'turnir';
+  if (!taken || taken.indexOf(base) < 0) return base;
+  for (let i = 2; i < 100; i++) { if (taken.indexOf(base + '_' + i) < 0) return base + '_' + i; }
+  return base;
+}
+// «Імʼя; email; адмін» по рядку → [{name,email,is_admin}]
+function parseRoster(text) {
+  const people = [];
+  const errors = [];
+  const seen = {};
+  String(text == null ? '' : text).split(/\r?\n/).forEach((ln, i) => {
+    const t = ln.trim();
+    if (!t || t.charAt(0) === '#') return;
+    const parts = t.split(';').map((x) => x.trim());
+    if (!parts[0]) { errors.push('Рядок ' + (i + 1) + ': порожнє імʼя'); return; }
+    const key = parts[0].toLowerCase();
+    if (seen[key]) { errors.push('Рядок ' + (i + 1) + ': «' + parts[0] + '» вже є'); return; }
+    seen[key] = 1;
+    const email = parts[1] && parts[1].indexOf('@') > 0 ? parts[1] : null;
+    if (parts[1] && !email) errors.push('Рядок ' + (i + 1) + ': пошта «' + parts[1] + '» без @');
+    const adm = parts.slice(1).some((x) => /^(?:адмін|admin|a)$/i.test(x));
+    people.push({ name: parts[0], email: email, is_admin: adm });
+  });
+  return { people, errors };
+}
+function parsePlaces(text) {
+  const arr = String(text == null ? '' : text).split(/[,\s]+/).filter((x) => x !== '').map(Number);
+  if (!arr.length || arr.some((n) => !isFinite(n) || n < 0)) return null;
+  return arr;
+}
+const sumOf = (arr) => arr.reduce((a, b) => a + (+b || 0), 0);
+const near = (a, b) => Math.abs(a - b) < 1e-6;
+// різниця призових: лише змінені листки відносно шаблону (params.prizes глибоко зливається на сервері)
+function diffPrizes(base, cur) {
+  const out = {};
+  const same = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+  if (cur.fund_uah != null && !same(cur.fund_uah, base.fund_uah)) out.fund_uah = cur.fund_uah;
+  ['pools', 'stage_weights'].forEach((g) => {
+    Object.keys(cur[g] || {}).forEach((k) => {
+      if (!same(cur[g][k], (base[g] || {})[k])) { out[g] = out[g] || {}; out[g][k] = cur[g][k]; }
+    });
+  });
+  Object.keys(cur.places || {}).forEach((k) => {
+    if (!same(cur.places[k], (base.places || {})[k])) { out.places = out.places || {}; out.places[k] = cur.places[k]; }
+  });
+  return out;
+}
+function prizeChecks(pz) {
+  const out = [];
+  if (!pz) return out;
+  const pools = pz.pools || {};
+  const ps = sumOf(Object.values(pools));
+  out.push([near(ps, 100), 'Складові призових: ' + ps + ' % ' + (near(ps, 100) ? '' : '(має бути 100)')]);
+  const ws = sumOf(Object.values(pz.stage_weights || {}));
+  out.push([near(ws, 1), 'Ваги етапів: ' + Math.round(ws * 1000) / 1000 + (near(ws, 1) ? '' : ' (має бути 1)')]);
+  Object.keys(pz.places || {}).forEach((k) => {
+    const s = sumOf(pz.places[k]);
+    out.push([near(s, 100), 'Місця «' + k + '»: ' + s + ' %' + (near(s, 100) ? '' : ' (має бути 100)')]);
+  });
+  return out;
+}
+// </PURE>
+
+// ---------------------------------------------------------------------
+//  Стан і допоміжне
+// ---------------------------------------------------------------------
+const PHASE = { hidden: 'Чернетка', open: 'Відкрито', finished: 'Завершено' };
+const $app = document.getElementById('app');
+const S = { me: null, list: null, tpls: null, W: null, T: null, flash: '' };
+
+async function rpc(fn, args) {
+  const { data, error } = await sb.rpc(fn, args || {});
+  if (error) throw new Error(error.message || String(error));
+  return data;
+}
+const errText = (e) => (e && e.message) ? e.message : String(e);
+const phaseBadge = (ph) => '<span class="badge ' + esc(ph) + '">' + esc(PHASE[ph] || ph) + '</span>';
+const fmtAny = (v) => (v == null ? '—' : (typeof v === 'object' ? JSON.stringify(v) : String(v)));
+const listHtml = (arr, cls, max) => {
+  if (!arr || !arr.length) return '';
+  const lim = max || 12;
+  const shown = arr.slice(0, lim).map((x) => '<li>' + esc(x) + '</li>').join('');
+  const more = arr.length > lim ? '<li class="dim">… і ще ' + (arr.length - lim) + '</li>' : '';
+  return '<ul class="l ' + (cls || '') + '">' + shown + more + '</ul>';
+};
+const msgBox = (id) => '<div class="msg" id="' + id + '"></div>';
+function say(id, text, kind) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.className = 'msg' + (kind ? ' ' + kind : '');
+  el.textContent = text || '';
+}
+function boostsLine(b) {
+  const ks = Object.keys(b || {});
+  if (!ks.length) return '—';
+  return ks.map((k) => k + ' ' + (b[k].price != null ? b[k].price : '?') + (b[k].max_units ? ' (макс ' + b[k].max_units + ')' : '')).join(' · ');
+}
+function shell(inner) {
+  $app.innerHTML =
+    '<div class="wrap"><header class="top"><h1>🏗 Конструктор турнірів <span class="stage-badge">STAGE</span></h1>' +
+    '<div class="nav"><button class="btn sm ghost" data-act="home">Усі Турніри</button>' +
+    '<a class="btn sm ghost" href="app-test.html">← Кабінет</a>' +
+    '<a class="btn sm ghost" href="psl/builder-stage.html">PSL-конструктор</a>' +
+    '<button class="btn sm ghost" data-act="logout">Вийти</button></div></header>' +
+    '<div id="main">' + inner + '</div></div>';
+}
+function go(hash) { if (location.hash === hash) route(); else location.hash = hash; }
+
+// ---------------------------------------------------------------------
+//  Старт
+// ---------------------------------------------------------------------
+async function boot() {
+  const ses = await getSession(sb);
+  if (!ses) {
+    $app.innerHTML = '';
+    renderLogin($app, sb, { title: 'Конструктор турнірів', lead: 'Лише для адміна платформи.', onDone: boot });
+    return;
+  }
+  await bindMe(sb);
+  let ok = false;
+  try { ok = (await rpc('is_platform_admin')) === true; } catch (e) { ok = false; }
+  if (!ok) {
+    shell('<div class="card errbox"><h2>Лише адмін платформи</h2><p class="dim">Конструктор турнірів доступний лише суперадмінам. Поточний акаунт не має цього доступу.</p></div>');
+    return;
+  }
+  S.me = ses.user;
+  route();
+}
+window.addEventListener('hashchange', () => { if (S.me) route(); });
+
+function route() {
+  const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+  if (parts[0] === 'new') return openWizard();
+  if (parts[0] === 't' && parts[1]) return openTournament(decodeURIComponent(parts[1]), parts[2] || 'overview');
+  return viewList();
+}
+
+// ---------------------------------------------------------------------
+//  Список Турнірів
+// ---------------------------------------------------------------------
+async function viewList() {
+  shell('<p class="dim">Завантажую…</p>');
+  try { S.list = await rpc('admin_tournament_list'); }
+  catch (e) { shell('<div class="card errbox"><h2>Не вдалося завантажити</h2><div class="msg err">' + esc(errText(e)) + '</div></div>'); return; }
+  const cards = S.list.map((t) =>
+    '<div class="card"><div class="spread"><div><h2 style="margin:0">' + esc(t.title) + ' ' + phaseBadge(t.phase) +
+    (t.is_test ? ' <span class="badge test">тест</span>' : '') + '</h2>' +
+    '<div class="mono dim">' + esc(t.root_key) + (t.template_code ? ' · шаблон ' + esc(t.template_code) + ' v' + esc(t.template_version) : '') + '</div></div>' +
+    '<button class="btn primary" data-act="openT" data-root="' + esc(t.root_key) + '">Керувати</button></div>' +
+    '<p>Етапів <b>' + t.stages + '</b> · днів <b>' + t.days + '</b> · матчів <b>' + t.matches + '</b> · учасників <b>' + t.participants + '</b> · ' +
+    (t.numbers_confirmed ? '<span class="badge ok">числа затверджено</span>' : '<span class="badge warn">числа — приклад</span>') + '</p></div>').join('');
+  shell('<div class="spread" style="margin-bottom:12px"><h2 style="margin:0">Турніри Конструктора</h2>' +
+    '<button class="btn primary" data-act="newT">＋ Новий Турнір</button></div>' +
+    (cards || '<div class="card"><p>Турнірів ще нема. Натисни «＋ Новий Турнір» — майстер проведе від шаблону до чернетки.</p></div>') +
+    '<p class="hint">ЄвроСезон і Squad у цьому списку не показуються — вони створені до Конструктора.</p>');
+}
+
+// ---------------------------------------------------------------------
+//  Майстер створення
+// ---------------------------------------------------------------------
+function newW() {
+  return { step: 1, mode: 'tpl', tpl: null, tplSpec: null, cloneFrom: null, root: '', title: '', shift: 0, isTest: false, freeze: true,
+           modules: { rivals: false, mvp: false, press: false, emails: true }, fund: '', pools: {}, weights: {}, places: {},
+           rosterMode: 'copy', rosterFrom: 'euroseason2026', rosterText: '', preview: null, info: null, result: null };
+}
+async function openWizard() {
+  S.W = newW();
+  shell('<p class="dim">Завантажую шаблони…</p>');
+  try {
+    S.tpls = await rpc('admin_template_list');
+    S.list = await rpc('admin_tournament_list');
+  } catch (e) { shell('<div class="card errbox"><div class="msg err">' + esc(errText(e)) + '</div></div>'); return; }
+  renderWizard();
+}
+function stepsBar(n) {
+  return '<div class="steps">' + ['1 Шаблон', '2 Параметри', '3 Передпоказ', '4 Готово'].map((t, i) =>
+    '<span class="step ' + (i + 1 === n ? 'on' : '') + '">' + t + '</span>').join('') + '</div>';
+}
+function renderWizard() {
+  const W = S.W;
+  let h = stepsBar(W.step);
+  if (W.step === 1) h += wizStep1();
+  else if (W.step === 2) h += wizStep2();
+  else if (W.step === 3) h += wizStep3();
+  else h += wizStep4();
+  shell(h);
+}
+function wizStep1() {
+  const W = S.W;
+  const tp = (S.tpls || []).map((t) =>
+    '<button class="card tcard ' + (W.mode === 'tpl' && W.tpl === t.code ? 'sel' : '') + '" data-act="pickTpl" data-code="' + esc(t.code) + '">' +
+    '<b>' + esc(t.title) + '</b> ' + (t.builtin ? '<span class="badge">системний</span>' : '<span class="badge">власний</span>') +
+    '<div class="dim">' + esc(t.description || '') + '</div><div class="mono dim">' + esc(t.code) + ' v' + esc(t.version) + ' · етапів ' + t.stages + ' · днів ' + t.days + '</div></button>').join('');
+  const cl = (S.list || []).map((t) =>
+    '<option value="' + esc(t.root_key) + '"' + (W.cloneFrom === t.root_key ? ' selected' : '') + '>' + esc(t.title) + ' (' + esc(t.root_key) + ')</option>').join('');
+  return '<div class="card"><h2>Обери шаблон</h2>' + (tp || '<p class="dim">Шаблонів нема.</p>') + '</div>' +
+    '<div class="card"><h2>…або клонуй наявний Турнір</h2><p class="hint">Копія налаштувань (етапи, дні, бусти, призові, модулі) без матчів і прогнозів.</p>' +
+    '<div class="row"><select id="cloneSel" style="max-width:420px"><option value="">— обери Турнір —</option>' + cl + '</select>' +
+    '<button class="btn" data-act="pickClone">Клонувати цей</button></div></div>';
+}
+async function pickTemplate(code) {
+  const W = S.W;
+  try {
+    const t = await rpc('admin_template_get', { p_code: code });
+    const sp = t.spec || {};
+    W.mode = 'tpl'; W.tpl = code; W.tplSpec = sp; W.cloneFrom = null;
+    W.title = sp.title || t.title || '';
+    W.root = suggestRoot(code, (S.list || []).map((x) => x.root_key));
+    W.modules = Object.assign({ rivals: false, mvp: false, press: false, emails: true }, sp.modules || {});
+    W.freeze = sp.freeze_after_deadline !== false;
+    const pr = sp.prizes || {};
+    W.fund = pr.fund_uah != null ? pr.fund_uah : '';
+    W.pools = Object.assign({}, pr.pools || {});
+    W.weights = Object.assign({}, pr.stage_weights || {});
+    W.places = {};
+    Object.keys(pr.places || {}).forEach((k) => { W.places[k] = pr.places[k].join(', '); });
+    W.rosterFrom = (sp.roster && sp.roster.from) || 'euroseason2026';
+    W.step = 2;
+    renderWizard();
+  } catch (e) { alert(errText(e)); }
+}
+async function pickClone() {
+  const W = S.W;
+  const v = document.getElementById('cloneSel').value;
+  if (!v) { alert('Обери Турнір для клону'); return; }
+  try {
+    W.info = await rpc('admin_tournament_info', { p_root: v });
+    W.mode = 'clone'; W.cloneFrom = v; W.tpl = null; W.tplSpec = null;
+    W.title = (W.info.title || v) + ' (копія)';
+    W.root = suggestRoot(v, (S.list || []).map((x) => x.root_key));
+    W.modules = Object.assign({ rivals: false, mvp: false, press: false, emails: true }, W.info.modules || {});
+    W.freeze = !(W.info.meta && W.info.meta.freeze_after_deadline === false);
+    W.step = 2;
+    renderWizard();
+  } catch (e) { alert(errText(e)); }
+}
+const inp = (path, val, extra) => '<input data-w="' + path + '" value="' + esc(val) + '" ' + (extra || '') + '>';
+function wizStep2() {
+  const W = S.W;
+  let h = '<div class="card"><h2>Параметри: ' + esc(W.mode === 'clone' ? 'клон «' + W.cloneFrom + '»' : W.tpl) + '</h2><div class="grid">' +
+    '<label class="f">Ключ Турніру' + inp('root', W.root, 'autocapitalize="off" spellcheck="false"') + '<span class="hint">латиниця, цифри, _ ; починається з літери; 2–25 символів. Не зміниш після створення.</span></label>' +
+    '<label class="f">Назва' + inp('title', W.title) + '</label>' +
+    '<label class="f">Зсув дат, днів' + inp('shift', W.shift, 'type="number" data-num="1"') + '<span class="hint">усі дати шаблону зсуваються на N днів (для репетиції — велике число, напр. 3650)</span></label></div>' +
+    '<label class="chk"><input type="checkbox" data-w="isTest"' + (W.isTest ? ' checked' : '') + '><span>Тестовий Турнір <span class="hint">(ніколи не публічний; можна скинути одним кліком)</span></span></label>' +
+    '<label class="chk"><input type="checkbox" data-w="freeze"' + (W.freeze ? ' checked' : '') + '><span>Заморожувати очки/бусти/питання після першого дедлайну</span></label></div>';
+  h += '<div class="card"><h2>Модулі</h2><div class="row">' + ['rivals', 'mvp', 'press', 'emails'].map((k) =>
+    '<label class="chk" style="margin-right:14px"><input type="checkbox" data-w="modules.' + k + '"' + (W.modules[k] ? ' checked' : '') + '>' +
+    esc({ rivals: 'Rivals', mvp: 'MVP', press: 'Преса', emails: 'Листи' }[k]) + '</label>').join('') + '</div></div>';
+  if (W.mode === 'tpl' && W.tplSpec && W.tplSpec.prizes) {
+    h += '<div class="card"><h2>Призові</h2><div class="grid g3"><label class="f">Фонд, грн' + inp('fund', W.fund, 'type="number" data-num="1"') + '</label></div>' +
+      '<h3>Складові, % (разом має бути 100)</h3><div class="grid g3">' + Object.keys(W.pools).map((k) =>
+      '<label class="f">' + esc(k) + inp('pools.' + k, W.pools[k], 'type="number" data-num="1"') + '</label>').join('') + '</div>' +
+      '<h3>Ваги етапів (разом 1)</h3><div class="grid g3">' + Object.keys(W.weights).map((k) =>
+      '<label class="f">' + esc(k) + inp('weights.' + k, W.weights[k], 'type="number" step="0.05" data-num="1"') + '</label>').join('') + '</div>' +
+      '<h3>Місця в етапі, % (через кому, разом 100)</h3><div class="grid g3">' + Object.keys(W.places).map((k) =>
+      '<label class="f">' + esc(k) + inp('places.' + k, W.places[k]) + '</label>').join('') + '</div></div>';
+  }
+  if (W.mode === 'tpl') {
+    const roots = [{ root_key: 'euroseason2026', title: 'ЄвроСезон 2026' }].concat((S.list || []));
+    h += '<div class="card"><h2>Склад</h2>' +
+      '<label class="chk"><input type="radio" name="rm" data-w="rosterMode" value="copy"' + (W.rosterMode === 'copy' ? ' checked' : '') + '>Скопіювати склад Турніру ' +
+      '<select data-w="rosterFrom" style="max-width:260px;margin-left:6px">' + roots.map((r) =>
+        '<option value="' + esc(r.root_key) + '"' + (W.rosterFrom === r.root_key ? ' selected' : '') + '>' + esc(r.title) + '</option>').join('') + '</select></label>' +
+      '<label class="chk"><input type="radio" name="rm" data-w="rosterMode" value="list"' + (W.rosterMode === 'list' ? ' checked' : '') + '>Свій список</label>' +
+      (W.rosterMode === 'list' ? '<textarea data-w="rosterText" placeholder="Імʼя; email; адмін&#10;Бо; bo@example.com; адмін&#10;Саня; sanya@example.com">' + esc(W.rosterText) + '</textarea>' +
+        '<p class="hint">По одному в рядку: «Імʼя; пошта; адмін». Тебе як творця буде додано адміном автоматично.</p>' : '') + '</div>';
+  }
+  h += '<div class="row"><button class="btn ghost" data-act="wizBack">← Шаблон</button><button class="btn primary" data-act="wizPreview">' +
+    (W.mode === 'clone' ? 'Далі →' : 'Передпоказ →') + '</button></div>' + msgBox('wmsg');
+  return h;
+}
+function readRoster(W) {
+  if (W.rosterMode === 'list') {
+    const r = parseRoster(W.rosterText);
+    if (r.errors.length) return { error: r.errors.join('; ') };
+    if (!r.people.length) return { error: 'Склад порожній' };
+    return { roster: { mode: 'list', people: r.people } };
+  }
+  return { roster: { mode: 'copy', from: W.rosterFrom } };
+}
+function buildParams(W) {
+  const par = {};
+  const base = W.tplSpec || {};
+  if (W.title && W.title !== (base.title || '')) par.title = W.title;
+  if (+W.shift) par.date_shift_days = +W.shift;
+  par.modules = Object.assign({}, W.modules);
+  if (W.isTest) par.is_test = true;
+  par.freeze_after_deadline = !!W.freeze;
+  if (W.mode === 'tpl' && base.prizes) {
+    const cur = { fund_uah: W.fund === '' ? null : +W.fund, pools: {}, stage_weights: {}, places: {} };
+    Object.keys(W.pools).forEach((k) => { cur.pools[k] = +W.pools[k]; });
+    Object.keys(W.weights).forEach((k) => { cur.stage_weights[k] = +W.weights[k]; });
+    Object.keys(W.places).forEach((k) => { const a = parsePlaces(W.places[k]); cur.places[k] = a || W.places[k]; });
+    const d = diffPrizes(base.prizes, cur);
+    if (Object.keys(d).length) par.prizes = d;
+  }
+  if (W.mode === 'tpl') { const r = readRoster(W); if (r.error) return { error: r.error }; par.roster = r.roster; }
+  return { params: par };
+}
+async function wizPreview() {
+  const W = S.W;
+  if (!validRoot(W.root)) return say('wmsg', 'Ключ Турніру: латиниця/цифри/_, з літери, 2–25 символів', 'err');
+  if ((S.list || []).some((t) => t.root_key === W.root)) return say('wmsg', 'Турнір з ключем «' + W.root + '» уже є', 'err');
+  const b = buildParams(W);
+  if (b.error) return say('wmsg', b.error, 'err');
+  W.params = b.params;
+  say('wmsg', 'Рахую…');
+  try {
+    if (W.mode === 'tpl') W.preview = await rpc('admin_tournament_preview', { p_template: W.tpl, p_root: W.root, p_params: W.params });
+    W.step = 3;
+    renderWizard();
+  } catch (e) { say('wmsg', errText(e), 'err'); }
+}
+function wizStep3() {
+  const W = S.W;
+  if (W.mode === 'clone') {
+    const i = W.info || {};
+    return '<div class="card"><h2>Клон: «' + esc(W.cloneFrom) + '» → «' + esc(W.root) + '»</h2>' +
+      '<p>Буде скопійовано ' + (i.stages || []).length + ' етапи, модулі та призові. Матчі, прогнози й бали не копіюються. Склад — як у джерела.</p>' +
+      '<div class="tbl-wrap"><table><tr><th>Етап</th><th>Днів</th><th>Бюджет</th><th>Перший дедлайн</th></tr>' + (i.stages || []).map((s) =>
+        '<tr><td>' + esc(s.title) + '</td><td>' + s.days + '</td><td>' + s.budget + '</td><td>' + esc(fmtKyiv(s.first_deadline)) + '</td></tr>').join('') + '</table></div>' +
+      '<p class="hint">Дати беруться з джерела' + (+W.shift ? ' + зсув ' + (+W.shift) + ' дн.' : '') + '; змінити окремий день можна після створення (вкладка «Дні»).</p></div>' +
+      '<div class="row"><button class="btn ghost" data-act="wizToParams">← Параметри</button><button class="btn primary" data-act="wizCreate">Створити чернетку</button></div>' + msgBox('wmsg');
+  }
+  const p = W.preview || {};
+  const errs = p.errors || [];
+  const checks = prizeChecks(p.prizes);
+  if (errs.length && !(p.stages || []).length) {
+    return '<div class="card errbox"><h2>Створити не можна — виправ</h2>' + listHtml(errs, 'err') +
+      '<p class="hint">Повернись на крок «Параметри», виправ поля й натисни «Передпоказ» ще раз.</p></div>' +
+      '<div class="row"><button class="btn ghost" data-act="wizToParams">← Параметри</button></div>';
+  }
+  let h = '<div class="card ' + (errs.length ? 'errbox' : '') + '"><h2>' + esc(p.title) + ' <span class="mono dim">' + esc(p.root_key) + '</span></h2>' +
+    (errs.length ? '<div class="msg err">Створити не можна — виправ:</div>' + listHtml(errs, 'err') : '<div class="msg ok">Помилок нема.</div>') +
+    ((p.warnings || []).length ? '<div class="msg warn">Попередження:</div>' + listHtml(p.warnings) : '') +
+    '<p>Змагання: <b>' + esc(p.competition || '—') + '</b> · Модулі: ' + Object.keys(p.modules || {}).map((k) => k + '=' + (p.modules[k] ? 'так' : 'ні')).join(', ') +
+    ' · Заморозка: ' + (p.freeze_after_deadline ? 'так' : 'ні') + (p.is_test ? ' · <span class="badge test">тест</span>' : '') + '</p></div>';
+  if ((p.placeholders || []).length) {
+    h += '<div class="card warnbox"><h2>Числа-«приклад» (' + p.placeholders.length + ')</h2><p class="dim">Ці параметри взято як приклад. Турнір не відкриється, поки ти їх не затвердиш («Затвердити числа» на сторінці Турніру); тестовий — відкривається без цього.</p>' +
+      '<p class="mono">' + p.placeholders.map(esc).join('<br>') + '</p></div>';
+  }
+  (p.stages || []).forEach((s) => {
+    h += '<div class="card"><h2>' + esc(s.title) + (s.is_general ? ' <span class="badge">General</span>' : '') + ' <span class="mono dim">' + esc(s.key) + '</span></h2>' +
+      '<p>Бюджет <b>' + s.budget + '</b> · різниця голів ' + (s.goal_diff_absolute ? 'за модулем' : 'зі знаком') + ' · бусти на фінал: ' + (s.boosts_on_final ? 'так' : 'ні') +
+      (s.ties ? ' · пари «хто пройде»: ' + esc(s.ties.mode) + ' (' + s.ties.points + ')' : '') + '</p>' +
+      '<p class="dim">Бусти: ' + esc(boostsLine(s.boosts)) + '</p>' +
+      ((s.days || []).length ? '<div class="tbl-wrap"><table><tr><th>День</th><th>Назва</th><th>Дата</th><th>Дедлайн (Київ)</th></tr>' + s.days.map((d) =>
+        '<tr><td>' + d.n + '</td><td class="nw">' + esc(d.title) + '</td><td>' + esc(d.date) + '</td><td>' + esc(fmtKyiv(d.deadline_at)) + '</td></tr>').join('') + '</table></div>'
+        : '<p class="dim">Ігрових днів нема (лише бонусні питання).</p>') + '</div>';
+  });
+  if (p.prizes) {
+    h += '<div class="card"><h2>Призові</h2><p>Фонд: <b>' + esc(p.prizes.fund_uah) + '</b> грн</p>' +
+      checks.map((c) => '<div class="msg ' + (c[0] ? 'ok' : 'err') + '">' + (c[0] ? '✓ ' : '✗ ') + esc(c[1]) + '</div>').join('') +
+      '<p class="mono dim">складові: ' + esc(JSON.stringify(p.prizes.pools)) + '<br>ваги: ' + esc(JSON.stringify(p.prizes.stage_weights)) + '<br>місця: ' + esc(JSON.stringify(p.prizes.places)) + '</p></div>';
+  }
+  h += '<div class="card"><h2>Склад (' + (p.people || []).length + ')</h2><div class="tbl-wrap"><table><tr><th>Імʼя</th><th>Пошта</th><th>Адмін</th></tr>' + (p.people || []).map((x) =>
+    '<tr><td>' + esc(x.name) + '</td><td>' + esc(x.email || '—') + '</td><td>' + (x.is_admin ? '✓' : '') + '</td></tr>').join('') + '</table></div>' +
+    '<p class="hint">Не той склад? «← Параметри» → «Свій список».</p></div>';
+  h += '<div class="row"><button class="btn ghost" data-act="wizToParams">← Параметри</button>' +
+    '<button class="btn primary" data-act="wizCreate"' + (errs.length ? ' disabled' : '') + '>Створити чернетку</button></div>' + msgBox('wmsg');
+  return h;
+}
+async function wizCreate() {
+  const W = S.W;
+  say('wmsg', 'Створюю…');
+  try {
+    W.result = W.mode === 'clone'
+      ? await rpc('admin_tournament_clone', { p_root_from: W.cloneFrom, p_root_new: W.root, p_params: W.params })
+      : await rpc('admin_tournament_create', { p_template: W.tpl, p_root: W.root, p_params: W.params });
+    W.step = 4;
+    renderWizard();
+  } catch (e) { say('wmsg', errText(e), 'err'); }
+}
+function wizStep4() {
+  const r = S.W.result || {};
+  return '<div class="card"><h2>✅ Чернетку створено: ' + esc(r.root_key) + '</h2>' +
+    '<p>Етапи: ' + (r.stages || []).map((s) => '<span class="mono">' + esc(s.key) + '</span>').join(', ') + '</p>' +
+    (r.people != null ? '<p>У складі: ' + esc(r.people) + '</p>' : '') +
+    (r.is_test ? '<p><span class="badge test">тестовий</span></p>' : '') +
+    ((r.warnings || []).length ? '<div class="msg warn">Попередження:</div>' + listHtml(r.warnings) : '') +
+    '<p class="dim">Турнір схований від учасників. Далі: додай команди й матчі, затверди числа, відкрий.</p>' +
+    '<button class="btn primary" data-act="openT" data-root="' + esc(r.root_key) + '">Керувати Турніром →</button></div>';
+}
+// поля майстра: оновлення стану без перемальовування (щоб не губити фокус)
+function setPath(obj, path, val) {
+  const ks = path.split('.');
+  let o = obj;
+  for (let i = 0; i < ks.length - 1; i++) o = o[ks[i]];
+  o[ks[ks.length - 1]] = val;
+}
+function onWizField(el) {
+  const W = S.W;
+  if (!W || !el.dataset.w) return false;
+  let v;
+  if (el.type === 'checkbox') v = el.checked;
+  else if (el.type === 'radio') { if (!el.checked) return true; v = el.value; }
+  else v = el.dataset.num ? (el.value === '' ? '' : +el.value) : el.value;
+  setPath(W, el.dataset.w, v);
+  if (el.dataset.w === 'rosterMode') renderWizard();
+  return true;
+}
+
+// ---------------------------------------------------------------------
+//  Сторінка Турніру
+// ---------------------------------------------------------------------
+const TTABS = [['overview', 'Огляд'], ['teams', 'Команди'], ['matches', 'Матчі'], ['days', 'Дні'], ['cycle', 'Життєвий цикл'], ['journal', 'Журнал']];
+async function openTournament(root, tab) {
+  if (!S.T || S.T.root !== root) S.T = { root, tab, info: null, chk: null, fz: null, entry: null, days: null, ms: null, stage: null, teams: null, journal: null, mv: null, imp: null, impText: '', impOpts: { ties: 'spec', comp: '', et: false } };
+  S.T.tab = tab;
+  shell('<p class="dim">Завантажую Турнір…</p>');
+  try { await loadTourney(); }
+  catch (e) { shell('<div class="card errbox"><h2>Не вдалося завантажити «' + esc(root) + '»</h2><div class="msg err">' + esc(errText(e)) + '</div></div>'); return; }
+  await renderTourney();
+}
+async function loadTourney() {
+  const T = S.T;
+  const [info, chk, fz, list] = await Promise.all([
+    rpc('admin_tournament_info', { p_root: T.root }), rpc('admin_tournament_open_check', { p_root: T.root }),
+    rpc('admin_tournament_freeze_state', { p_root: T.root }), rpc('admin_tournament_list')]);
+  T.info = info; T.chk = chk; T.fz = fz; T.entry = (list || []).find((x) => x.root_key === T.root) || {};
+  const play = (info.stages || []).filter((s) => !s.is_general);
+  if (!T.stage || !play.some((s) => s.key === T.stage)) T.stage = play.length ? play[0].key : null;
+}
+async function renderTourney() {
+  const T = S.T;
+  const e = T.entry || {};
+  let body = '';
+  try {
+    if (T.tab === 'teams') body = await tabTeams();
+    else if (T.tab === 'matches') body = await tabMatches();
+    else if (T.tab === 'days') body = await tabDays();
+    else if (T.tab === 'cycle') body = tabCycle();
+    else if (T.tab === 'journal') body = await tabJournal();
+    else body = tabOverview();
+  } catch (er) { body = '<div class="card errbox"><div class="msg err">' + esc(errText(er)) + '</div></div>'; }
+  shell('<div class="spread"><div><h2 style="margin:0 0 4px">' + esc(T.info.title) + ' ' + phaseBadge(e.phase || T.chk.phase) +
+    (T.chk.is_test ? ' <span class="badge test">тест</span>' : '') + '</h2><div class="mono dim">' + esc(T.root) + '</div></div></div>' +
+    (S.flash ? '<div class="msg ok">' + esc(S.flash) + '</div>' : '') +
+    '<div class="tabs" style="margin-top:12px">' + TTABS.map((t) => '<button class="tab ' + (T.tab === t[0] ? 'on' : '') + '" data-act="tab" data-tab="' + t[0] + '">' + t[1] + '</button>').join('') + '</div>' + body);
+  S.flash = '';
+}
+const reasonField = (id, ph) => '<label class="f">Причина (≥ 5 символів)<input id="' + id + '" placeholder="' + esc(ph || 'для журналу') + '"></label>';
+
+function prizeOverview(pz) {
+  if (!pz) return '<p class="dim">Призових не налаштовано.</p>';
+  const pc = (k) => (pz[k] != null ? pz[k] + '%' : '—');
+  return '<p>Фонд: <b>' + esc(pz.fund_uah) + '</b> грн · очки ' + pc('pct_points') + ' · точні рахунки ' + pc('pct_exact') + ' · місця ' + pc('pct_places') +
+    ' · Rivals ' + pc('pct_rivals') + ' · MVP ' + pc('pct_mvp') + ' · 1/2/3 місце: ' + esc(pz.place1_pct) + '/' + esc(pz.place2_pct) + '/' + esc(pz.place3_pct) + '%</p>';
+}
+function tabOverview() {
+  const T = S.T;
+  const i = T.info;
+  const ph = (i.meta && i.meta.placeholders) || [];
+  let h = '';
+  if (ph.length) {
+    h += '<div class="card warnbox"><h2>Числа ще «приклад» (' + ph.length + ')</h2><p class="mono">' + ph.map(esc).join('<br>') + '</p>' +
+      '<div class="grid">' + reasonField('r_conf', 'числа звірено з Богданом') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="confirmNums">Затвердити числа</button></div>' + msgBox('m_conf') + '</div>';
+  } else {
+    h += '<div class="card"><span class="badge ok">числа затверджено</span></div>';
+  }
+  h += '<div class="card"><h2>Етапи</h2><div class="tbl-wrap"><table><tr><th>Етап</th><th>Статус</th><th>Днів</th><th>Бюджет</th><th>Бусти</th><th>Питань</th><th>Учасн.</th><th>Перший дедлайн (Київ)</th></tr>' +
+    (i.stages || []).map((s) => '<tr><td class="nw"><b>' + esc(s.title) + '</b><div class="mono dim">' + esc(s.key) + '</div></td><td>' + esc(s.status) + (s.is_general ? ' · General' : '') + '</td><td>' + s.days +
+      '</td><td>' + s.budget + '</td><td>' + s.boosts + '</td><td>' + s.bonus + '</td><td>' + s.participants + '</td><td>' + esc(fmtKyiv(s.first_deadline)) + '</td></tr>').join('') +
+    '</table></div></div>';
+  h += '<div class="card"><h2>Модулі та призові</h2><p>' + Object.keys(i.modules || {}).map((k) => k + ' = <b>' + (i.modules[k] ? 'так' : 'ні') + '</b>').join(' · ') + '</p>' +
+    prizeOverview(i.prizes) + '</div>';
+  const fz = T.fz || {};
+  h += '<div class="card"><h2>Заморозка</h2><p>Після першого дедлайну очки/бусти/питання ' + (fz.freeze_after_deadline ? '<b>заморожуються</b>' : '<b>не</b> заморожуються') +
+    (fz.window_open ? ' · <span class="badge warn">вікно розморозки відкрито до ' + esc(fmtKyiv(fz.unfrozen_until)) + '</span>' : '') + '</p>' +
+    '<div class="tbl-wrap"><table><tr><th>Етап</th><th>Перший дедлайн</th><th>Заморожено?</th></tr>' + (fz.stages || []).map((s) =>
+      '<tr><td class="mono">' + esc(s.key) + '</td><td>' + esc(fmtKyiv(s.first_deadline)) + '</td><td>' + (s.is_general ? 'n/a' : (s.frozen ? '❄ так' : 'ні')) + '</td></tr>').join('') + '</table></div>' +
+    '<div class="grid" style="margin-top:10px"><label class="f">Слово «РОЗМОРОЗИТИ»<input id="w_unfz" autocomplete="off"></label>' + reasonField('r_unfz') +
+    '<label class="f">Годин<input id="h_unfz" type="number" value="2" min="1" max="24"></label></div>' +
+    '<div class="row" style="margin-top:8px"><button class="btn danger" data-act="unfreeze">Розморозити</button><button class="btn ghost" data-act="refreeze">Заморозити знову</button></div>' + msgBox('m_fz') + '</div>';
+  return h;
+}
+
+async function tabTeams() {
+  const T = S.T;
+  if (!T.teams) {
+    const { data, error } = await sb.from('teams').select('name,short_name,league').order('name');
+    if (error) throw new Error(error.message);
+    T.teams = data || [];
+  }
+  const q = (T.teamQ || '').toLowerCase();
+  const rows = T.teams.filter((x) => !q || (x.name || '').toLowerCase().indexOf(q) >= 0 || (x.short_name || '').toLowerCase().indexOf(q) >= 0).slice(0, 300);
+  return '<div class="card"><h2>Додати команди</h2><p class="hint">По одній у рядку: «Назва» або «Назва; Скорочення». Існуючі пропускаються. До 200 за раз.</p>' +
+    '<textarea id="teamsText" placeholder="Real Madrid; RMA&#10;Manchester City; MCI&#10;Inter">' + esc(T.teamsText || '') + '</textarea>' +
+    '<div class="row" style="margin-top:8px"><button class="btn primary" data-act="addTeams">Додати</button></div>' + msgBox('m_teams') + '</div>' +
+    '<div class="card"><h2>Команди в базі (' + T.teams.length + ')</h2><input id="teamQ" placeholder="пошук…" value="' + esc(T.teamQ || '') + '" style="max-width:300px;margin-bottom:8px">' +
+    '<div class="tbl-wrap"><table><tr><th>Назва</th><th>Скорочення</th><th>Ліга</th></tr>' + rows.map((x) =>
+      '<tr><td>' + esc(x.name) + '</td><td class="mono">' + esc(x.short_name || '') + '</td><td>' + esc(x.league || '') + '</td></tr>').join('') + '</table></div>' +
+    (T.teams.length > rows.length ? '<p class="hint">Показано ' + rows.length + ' — уточни пошук.</p>' : '') + '</div>';
+}
+
+async function tabMatches() {
+  const T = S.T;
+  if (!T.stage) return '<div class="card"><p>У Турніру нема етапів з матчами.</p></div>';
+  const [days, ms] = await Promise.all([rpc('admin_tournament_days', { p_root: T.root }), rpc('admin_tournament_matches', { p_stage: T.stage })]);
+  T.days = days; T.ms = ms;
+  const stages = (T.info.stages || []).filter((s) => !s.is_general);
+  const sd = days.filter((d) => d.stage_key === T.stage);
+  const exDay = sd[0];
+  const ex = exDay && exDay.deadline_at ? fmtKyiv(Date.parse(exDay.deadline_at) + 86400000).replace(/ \d\d:\d\d$/, ' 22:00') : '16.02.2027 22:00';
+  const o = T.impOpts;
+  let h = '<div class="chips">' + stages.map((s) => '<button class="chip ' + (s.key === T.stage ? 'on' : '') + '" data-act="pickStage" data-stage="' + esc(s.key) + '">' + esc(s.title) + '</button>').join('') + '</div>';
+  h += '<div class="card"><h2>Вставити список матчів</h2>' +
+    '<p class="hint">По одному в рядку: <span class="mono">Команда А — Команда Б; ' + esc(ex) + '</span>. Час — за Києвом. Додатково через «;»: <span class="mono">день=2</span>, <span class="mono">ET</span> (можливий екстратайм), <span class="mono">фінал</span>, <span class="mono">ліга=ucl</span>. Назви команд — як у вкладці «Команди».</p>' +
+    '<textarea id="impText" placeholder="Real Madrid — Inter; ' + esc(ex) + '">' + esc(T.impText) + '</textarea>' +
+    '<div class="grid g3" style="margin-top:10px"><label class="f">Пари «хто пройде далі»<select id="impTies">' +
+    [['spec', 'За шаблоном етапу'], ['two_leg', 'Двоматчеві'], ['single', 'Одноматчеві'], ['none', 'Без пар']].map((x) =>
+      '<option value="' + x[0] + '"' + (o.ties === x[0] ? ' selected' : '') + '>' + x[1] + '</option>').join('') + '</select></label>' +
+    '<label class="f">Змагання (код)<input id="impComp" placeholder="з шаблону" value="' + esc(o.comp) + '"></label>' +
+    '<label class="chk" style="align-self:end"><input type="checkbox" id="impEt"' + (o.et ? ' checked' : '') + '>ET можливий за замовчуванням</label></div>' +
+    '<div class="row" style="margin-top:10px"><button class="btn" data-act="impCheck">Перевірити</button><button class="btn primary" data-act="impGo">Внести</button></div>' +
+    msgBox('m_imp') + '<div id="impRes">' + impResultHtml() + '</div></div>';
+  // таблиця днів і матчів
+  h += '<div class="card"><h2>Дні й матчі етапу</h2>';
+  if (!sd.length) h += '<p class="dim">У етапу нема ігрових днів.</p>';
+  sd.forEach((d) => {
+    const dm = ms.filter((m) => m.day === d.day);
+    h += '<h3>День ' + d.day + ': ' + esc(d.title) + ' <span class="dim">· дедлайн ' + esc(fmtKyiv(d.deadline_at)) + ' · матчів ' + d.matches + '</span></h3>';
+    if (!dm.length) { h += '<p class="msg warn">Матчі ще не внесено</p>'; return; }
+    h += '<div class="tbl-wrap"><table><tr><th>#</th><th>Матч</th><th>Початок (Київ)</th><th>Прапори</th><th>Статус</th></tr>' + dm.map((m) =>
+      '<tr><td>' + m.position + '</td><td class="nw">' + esc(m.home) + ' — ' + esc(m.away) + '</td><td>' + esc(fmtKyiv(m.kickoff_at)) + '</td><td>' +
+      (m.et_possible ? 'ET ' : '') + (m.is_final ? 'фінал ' : '') + '</td><td>' + esc(m.status) + (m.home_score != null ? ' ' + m.home_score + ':' + m.away_score : '') + '</td></tr>').join('') + '</table></div>';
+  });
+  return h + '</div>';
+}
+function impResultHtml() {
+  const r = S.T.imp;
+  if (!r) return '';
+  if (r.fatal) return '<div class="msg err">' + esc(r.fatal) + '</div>';
+  let h = '';
+  if (r.parseErrors && r.parseErrors.length) h += '<div class="msg err">Рядки з помилками (не відправлено):</div>' + listHtml(r.parseErrors.map((x) => 'Рядок ' + x.line + ': ' + x.error + ' — «' + x.text + '»'));
+  const d = r.data;
+  if (d) {
+    h += '<div class="msg ' + (d.ok === false || (d.errors || []).length ? 'err' : 'ok') + '">' +
+      (d.dry_run ? 'Перевірка (нічого не записано): ' : 'Внесено: ') + (d.ok === false || (d.errors || []).length ? 'є помилки' : 'без помилок') +
+      (d.rows != null ? ' · рядків ' + d.rows : '') + (d.imported != null ? ' · внесено ' + d.imported : '') + '</div>';
+    if ((d.errors || []).length) h += '<div class="msg err">Помилки:</div>' + listHtml(d.errors);
+    if ((d.warnings || []).length) h += '<div class="msg warn">Попередження:</div>' + listHtml(d.warnings);
+    if ((d.notes || []).length) h += listHtml(d.notes);
+    if (d.per_day) h += '<p class="mono dim">по днях: ' + esc(fmtAny(d.per_day)) + '</p>';
+    if (d.ties_plan) h += '<p class="mono dim">пари (план): ' + esc(fmtAny(d.ties_plan)) + '</p>';
+    if (d.ties) h += '<p class="mono dim">пари: ' + esc(fmtAny(d.ties)) + '</p>';
+  }
+  return h;
+}
+
+async function tabDays() {
+  const T = S.T;
+  T.days = await rpc('admin_tournament_days', { p_root: T.root });
+  const mv = T.mv;
+  let h = '<div class="card"><h2>Ігрові дні</h2>' + (T.days.length ? '<div class="tbl-wrap"><table><tr><th>Етап</th><th>День</th><th>Назва</th><th>Дедлайн (Київ)</th><th>Матчів</th><th>Вікно матчів</th><th>Питань</th><th>Нотатка</th><th></th></tr>' +
+    T.days.map((d, i) => '<tr><td class="mono">' + esc(d.stage_key) + '</td><td>' + d.day + '</td><td class="nw">' + esc(d.title) + '</td><td>' + esc(fmtKyiv(d.deadline_at)) + '</td><td>' + d.matches +
+      '</td><td>' + (d.matches ? esc(fmtKyiv(d.first_kickoff)) + ' – ' + esc(fmtKyiv(d.last_kickoff)) : '<span class="badge warn">порожній</span>') + '</td><td>' + d.bonus + '</td><td class="nw">' + esc(d.deadline_note || '') +
+      '</td><td><button class="btn sm" data-act="mvPick" data-i="' + i + '">Перенести</button></td></tr>').join('') + '</table></div>' : '<p class="dim">Днів нема.</p>') + '</div>';
+  if (mv) {
+    const d = T.days[mv.i];
+    h += '<div class="card"><h2>Перенести день ' + d.day + ' · ' + esc(d.stage_key) + '</h2>' +
+      '<p>Тепер: дедлайн <b>' + esc(fmtKyiv(d.deadline_at)) + '</b>. Сервер сам вирівняє нотатку дня, питання з цим дедлайном, а для першого дня — старт/дедлайн етапу.</p>' +
+      '<div class="grid"><label class="f">Новий дедлайн (Київ)<input id="mvDl" placeholder="17.02.2027 21:59"></label>' + reasonField('mvReason', 'UEFA перенесла матч') + '</div>' +
+      '<label class="chk"><input type="checkbox" id="mvShift">Зсунути матчі дня на ту саму різницю (інакше всі матчі мають бути пізніше нового дедлайну)</label>' +
+      '<div class="row"><button class="btn primary" data-act="mvGo">Перенести</button><button class="btn ghost" data-act="mvCancel">Скасувати</button></div>' + msgBox('m_mv') + '</div>';
+  }
+  return h;
+}
+
+function tabCycle() {
+  const T = S.T;
+  const c = T.chk;
+  const ph = c.phase;
+  let h = '<div class="card"><h2>Стан: ' + phaseBadge(ph) + (c.is_test ? ' <span class="badge test">тест</span>' : '') + '</h2>' +
+    '<p>Відкрито: ' + esc(fmtKyiv(c.opened_at)) + ' · завершено: ' + esc(fmtKyiv(c.finished_at)) + ' · публічний: ' + (c.is_public ? 'так' : 'ні') + ' · даних гри: ' + (T.entry.play_data || 0) + '</p>' +
+    '<div class="tbl-wrap"><table><tr><th>Етап</th><th>Статус</th><th>Публічний</th></tr>' + (c.stages || []).map((s) =>
+      '<tr><td class="mono">' + esc(s.key) + '</td><td>' + esc(s.status) + '</td><td>' + (s.is_public ? 'так' : 'ні') + '</td></tr>').join('') + '</table></div></div>';
+  if (ph === 'hidden') {
+    h += '<div class="card ' + (c.can_open ? '' : 'warnbox') + '"><h2>Відкрити Турнір</h2>' +
+      ((c.open_blockers || []).length ? '<div class="msg err">Заважає відкрити:</div>' + listHtml(c.open_blockers) : '<div class="msg ok">Блокерів нема.</div>') +
+      ((c.open_warnings || []).length ? '<div class="msg warn">Попередження:</div>' + listHtml(c.open_warnings) : '') +
+      '<p class="hint">«Відкрити» робить усі етапи активними разом (порожні теж)' + (c.is_test ? '; тестовий Турнір публічним не стає.' : ' і показує Турнір усім.') + '</p>' +
+      '<div class="grid">' + reasonField('r_open') + '</div><div class="row" style="margin-top:8px"><button class="btn primary" data-act="cyc" data-op="open"' + (c.can_open ? '' : ' disabled') + '>Відкрити</button></div>' + msgBox('m_open') + '</div>';
+    h += '<div class="card"><h2>Тест-режим</h2><p class="hint">Тестовий Турнір ніколи не публічний і його можна скинути. Міняти можна лише поки Турнір не відкривався.</p>' +
+      '<div class="row"><button class="btn" data-act="cyc" data-op="test">' + (c.is_test ? 'Вимкнути тест-режим' : 'Позначити тестовим') + '</button></div>' + msgBox('m_test') + '</div>';
+  }
+  if (ph === 'open') {
+    h += '<div class="card"><h2>Сховати назад</h2><p class="hint">Можливо лише поки нема даних гри (прогнозів, балів).</p><div class="grid">' + reasonField('r_hide') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn" data-act="cyc" data-op="hide">Сховати</button></div>' + msgBox('m_hide') + '</div>';
+    h += '<div class="card"><h2>Завершити Турнір</h2>' + ((c.finish_blockers || []).length ? '<div class="msg err">Заважає завершити:</div>' + listHtml(c.finish_blockers) : '<div class="msg ok">Можна завершувати.</div>') +
+      '<div class="grid"><label class="f">Слово «ЗАВЕРШИТИ»<input id="w_fin" autocomplete="off"></label>' + reasonField('r_fin') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn danger" data-act="cyc" data-op="finish"' + (c.can_finish ? '' : ' disabled') + '>Завершити</button></div>' + msgBox('m_fin') + '</div>';
+  }
+  if (ph === 'finished') h += '<div class="card"><p>Турнір завершено. Підсумкову таблицю збережено.</p></div>';
+  if (c.is_test) {
+    h += '<div class="card errbox"><h2>Скинути тест</h2><p class="hint">Видаляє ігрові дані Турніру (прогнози, бали, бусти, відповіді), налаштування лишаються; Турнір повертається в чернетку.</p>' +
+      '<div class="grid"><label class="f">Слово «СКИНУТИ»<input id="w_rst" autocomplete="off"></label>' + reasonField('r_rst') + '</div>' +
+      '<div class="row" style="margin-top:8px"><button class="btn danger" data-act="cyc" data-op="reset">Скинути</button></div>' + msgBox('m_rst') + '</div>';
+  }
+  return h;
+}
+
+async function tabJournal() {
+  const T = S.T;
+  T.journal = await rpc('admin_tournament_journal', { p_root: T.root, p_limit: 100 });
+  const names = {};
+  try {
+    const { data } = await sb.from('profiles').select('id,display_name');
+    (data || []).forEach((x) => { names[x.id] = x.display_name; });
+  } catch (e) { /* імен не видно — покажемо короткий id */ }
+  const who = (id) => (id ? (names[id] || String(id).slice(0, 8)) : '—');
+  const j = (v) => {
+    if (v == null) return '';
+    const t = JSON.stringify(v);
+    return t.length > 170 ? '<span title="' + esc(t) + '">' + esc(t.slice(0, 170)) + '…</span>' : esc(t);
+  };
+  return '<div class="card"><h2>Журнал змін (останні 100)</h2>' + (T.journal.length ? '<div class="tbl-wrap"><table><tr><th>Час (Київ)</th><th>Дія</th><th>Етап</th><th>Обʼєкт</th><th>Хто</th><th>Причина</th><th>Було → стало</th></tr>' +
+    T.journal.map((r) => '<tr><td>' + esc(fmtKyiv(r.created_at)) + '</td><td>' + esc(r.action) + '</td><td class="mono">' + esc(r.stage_key || '') + '</td><td>' + esc((r.entity || '') + (r.ref ? ' ' + r.ref : '')) +
+      '</td><td>' + esc(who(r.actor)) + '</td><td class="nw">' + esc(r.reason || '') + '</td><td class="nw mono">' + j(r.before) + (r.after != null ? ' → ' + j(r.after) : '') + '</td></tr>').join('') + '</table></div>' : '<p class="dim">Записів нема.</p>') + '</div>';
+}
+
+// ---------------------------------------------------------------------
+//  Дії сторінки Турніру
+// ---------------------------------------------------------------------
+const val = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+async function afterAction(text) { S.flash = text; await loadTourney(); await renderTourney(); }
+async function cycleOp(op, btn) {
+  const T = S.T;
+  const box = { open: 'm_open', hide: 'm_hide', finish: 'm_fin', reset: 'm_rst', test: 'm_test' }[op];
+  const reason = { open: 'r_open', hide: 'r_hide', finish: 'r_fin', reset: 'r_rst' }[op];
+  btn.disabled = true;
+  try {
+    if (op === 'open') await rpc('admin_tournament_open', { p_root: T.root, p_reason: val(reason) });
+    else if (op === 'hide') await rpc('admin_tournament_hide', { p_root: T.root, p_reason: val(reason) });
+    else if (op === 'finish') await rpc('admin_tournament_finish', { p_root: T.root, p_confirm: val('w_fin'), p_reason: val(reason) });
+    else if (op === 'reset') await rpc('admin_tournament_test_reset', { p_root: T.root, p_confirm: val('w_rst'), p_reason: val(reason) });
+    else if (op === 'test') await rpc('admin_tournament_set_test', { p_root: T.root, p_test: !T.chk.is_test });
+    await afterAction({ open: 'Турнір відкрито.', hide: 'Турнір схований.', finish: 'Турнір завершено.', reset: 'Тест скинуто.', test: 'Тест-режим змінено.' }[op]);
+  } catch (e) { btn.disabled = false; say(box, errText(e), 'err'); }
+}
+async function importRun(dry) {
+  const T = S.T;
+  T.impText = document.getElementById('impText').value;
+  const tiesSel = val('impTies');
+  T.impOpts = { ties: tiesSel, comp: val('impComp'), et: document.getElementById('impEt').checked };
+  const b = buildImport(T.impText);
+  if (b.errors.length) { T.imp = { parseErrors: b.errors }; document.getElementById('impRes').innerHTML = impResultHtml(); return; }
+  if (!b.rows.length) { T.imp = { fatal: 'Список порожній' }; document.getElementById('impRes').innerHTML = impResultHtml(); return; }
+  const opts = { dry_run: !!dry };
+  if (tiesSel === 'none') opts.ties = false;
+  else if (tiesSel === 'two_leg') opts.ties = { mode: 'two_leg' };
+  else if (tiesSel === 'single') opts.ties = { mode: 'single' };
+  if (T.impOpts.comp) opts.competition = T.impOpts.comp;
+  if (T.impOpts.et) opts.default_et_possible = true;
+  say('m_imp', dry ? 'Перевіряю…' : 'Вношу…');
+  try {
+    const d = await rpc('admin_matches_import', { p_stage: T.stage, p_matches: b.rows, p_options: opts });
+    T.imp = { data: d };
+    say('m_imp', '');
+    if (!dry) { T.impText = ''; S.flash = 'Матчі внесено: ' + (d.imported != null ? d.imported : b.rows.length) + '.'; await loadTourney(); await renderTourney(); return; }
+    document.getElementById('impRes').innerHTML = impResultHtml();
+  } catch (e) {
+    T.imp = { fatal: errText(e) };
+    say('m_imp', '');
+    document.getElementById('impRes').innerHTML = impResultHtml();
+  }
+}
+
+// ---------------------------------------------------------------------
+//  Події (делегування)
+// ---------------------------------------------------------------------
+document.addEventListener('click', async (ev) => {
+  const el = ev.target.closest('[data-act]');
+  if (!el || !S.me && el.dataset.act !== 'logout') return;
+  const a = el.dataset.act;
+  const T = S.T;
+  try {
+    if (a === 'home') return go('#/');
+    if (a === 'logout') { await sb.auth.signOut(); S.me = null; S.T = null; return boot(); }
+    if (a === 'newT') return go('#/new');
+    if (a === 'openT') return go('#/t/' + encodeURIComponent(el.dataset.root));
+    if (a === 'tab') return go('#/t/' + encodeURIComponent(T.root) + '/' + el.dataset.tab);
+    if (a === 'pickTpl') return pickTemplate(el.dataset.code);
+    if (a === 'pickClone') return pickClone();
+    if (a === 'wizBack') { S.W.step = 1; return renderWizard(); }
+    if (a === 'wizToParams') { S.W.step = 2; return renderWizard(); }
+    if (a === 'wizPreview') return wizPreview();
+    if (a === 'wizCreate') return wizCreate();
+    if (a === 'confirmNums') {
+      el.disabled = true;
+      try { await rpc('admin_tournament_confirm_numbers', { p_root: T.root, p_reason: val('r_conf') }); await afterAction('Числа затверджено.'); }
+      catch (e) { el.disabled = false; say('m_conf', errText(e), 'err'); }
+      return;
+    }
+    if (a === 'unfreeze' || a === 'refreeze') {
+      el.disabled = true;
+      try {
+        if (a === 'unfreeze') await rpc('admin_tournament_unfreeze', { p_root: T.root, p_confirm: val('w_unfz'), p_reason: val('r_unfz'), p_hours: +val('h_unfz') || 2 });
+        else await rpc('admin_tournament_refreeze', { p_root: T.root, p_reason: val('r_unfz') || null });
+        await afterAction(a === 'unfreeze' ? 'Розморожено.' : 'Заморожено знову.');
+      } catch (e) { el.disabled = false; say('m_fz', errText(e), 'err'); }
+      return;
+    }
+    if (a === 'addTeams') {
+      const lines = document.getElementById('teamsText').value.split(/\r?\n/).map((x) => x.trim()).filter((x) => x && x.charAt(0) !== '#');
+      const arr = lines.map((ln) => { const p = ln.split(';').map((x) => x.trim()); return p[1] ? { name: p[0], short: p[1] } : p[0]; });
+      if (!arr.length) return say('m_teams', 'Список порожній', 'err');
+      el.disabled = true;
+      try {
+        const r = await rpc('admin_teams_add', { p_teams: arr });
+        T.teams = null; T.teamsText = '';
+        S.flash = 'Додано: ' + ((r.added || []).length) + (r.skipped && r.skipped.length ? ' · пропущено (вже є): ' + r.skipped.length : '') + '.';
+        await renderTourney();
+      } catch (e) { el.disabled = false; say('m_teams', errText(e), 'err'); }
+      return;
+    }
+    if (a === 'pickStage') { T.stage = el.dataset.stage; T.imp = null; return renderTourney(); }
+    if (a === 'impCheck') return importRun(true);
+    if (a === 'impGo') return importRun(false);
+    if (a === 'cyc') return cycleOp(el.dataset.op, el);
+    if (a === 'mvPick') { T.mv = { i: +el.dataset.i }; return renderTourney(); }
+    if (a === 'mvCancel') { T.mv = null; return renderTourney(); }
+    if (a === 'mvGo') {
+      const d = T.days[T.mv.i];
+      const k = parseKyivText(val('mvDl'));
+      if (k.error) return say('m_mv', k.error, 'err');
+      el.disabled = true;
+      try {
+        const r = await rpc('admin_stage_day_move', { p_stage: d.stage_key, p_day: d.day, p_new_deadline: k.iso, p_reason: val('mvReason'), p_shift_matches: document.getElementById('mvShift').checked });
+        T.mv = null;
+        await afterAction('День перенесено: матчів зсунуто ' + r.matches_shifted + ', питань вирівняно ' + r.special_bets_aligned + '.');
+      } catch (e) { el.disabled = false; say('m_mv', errText(e), 'err'); }
+      return;
+    }
+  } catch (e) { alert(errText(e)); }
+});
+document.addEventListener('input', (ev) => {
+  const el = ev.target;
+  if (el.dataset && el.dataset.w) onWizField(el);
+  if (el.id === 'teamQ') { S.T.teamQ = el.value; const pos = el.selectionStart; renderTourney().then(() => { const n = document.getElementById('teamQ'); if (n) { n.focus(); n.setSelectionRange(pos, pos); } }); }
+  if (el.id === 'teamsText') S.T.teamsText = el.value;
+});
+document.addEventListener('change', (ev) => { const el = ev.target; if (el.dataset && el.dataset.w && el.type !== 'text') onWizField(el); });
+
+boot();
+</script>
+</body>
+</html>

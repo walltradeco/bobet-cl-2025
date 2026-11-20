@@ -4839,6 +4839,25 @@ async function viewAdmin(){
       <div id="backup-result"></div>
     </div>`;
 
+  /*BUILDER-CARD*/
+  // 12.11: вхід у Конструктор турнірів — лише для адмінів платформи (profiles.is_platform_admin). Не-суперадмін картки не бачить.
+  // STAGE-only: promote.py знімає цей блок з app.html (FORBID_IN_PROD: builder-test).
+  try {
+    const { data: isSuper } = await sb.rpc('is_platform_admin');
+    const hostView = $('view');
+    if (isSuper === true && hostView && hostView.querySelector('#btn-backup') && !hostView.querySelector('#builder-card')) {
+      const bc = document.createElement('div');
+      bc.className = 'card';
+      bc.id = 'builder-card';
+      bc.innerHTML = '<h2>🏗 Конструктор турнірів</h2>'
+        + '<p class="dim" style="margin-bottom:10px">Створення нового Турніру з шаблону (Ліга чемпіонів, Євро, чемпіонат світу…), '
+        + 'команди, матчі списком, перенос дня, відкриття й завершення. Бачать лише адміни платформи.</p>'
+        + '<a href="builder-test.html" style="display:block;text-align:center;padding:12px;border:1px solid var(--line);'
+        + 'border-radius:9px;color:var(--text);text-decoration:none;font-weight:600">Відкрити Конструктор →</a>';
+      hostView.firstElementChild.after(bc);
+    }
+  } catch (e) { /* без картки — не критично */ }
+  /*/BUILDER-CARD*/
   await renderAdminExtras();
   await renderAdminMatches();
   await renderAdminWeeks();
