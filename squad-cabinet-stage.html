@@ -5028,7 +5028,8 @@ function renderNews(){
 // Поки 715 не залито — усе мовчки ховається (degrade): ні лічильника, ні вікна, у підвкладці «зʼявиться після заливки».
 const PR_HOOK={big_buy:['💰','Купівля'],auction_win:['🔨','Аукціон'],sold_out:['💸','Продаж'],deal_between:['🤝','Угода'],rival_win:['⚔️','Rivals'],rival_loss:['⚔️','Rivals'],rival_draw:['⚔️','Rivals'],captain_pick:['🎖️','Капітан'],boost_used:['🚀','Буст'],bench_star:['🪑','Лавка'],starter_cheap:['⚽','Основа'],
   top_own:['⭐','Зірка складу'],top_week_own:['🏆','Зірка Вікенду'],top_week_miss:['👀','Зірка Вікенду'],bench_regret:['🪑','Резерв'],captain_hit:['🎖️','Капітан'],captain_miss:['🎖️','Капітан'],
-  other_captain:['🪞','Склад суперника'],other_star:['🪞','Склад суперника'],outlook:['🔮','Прогноз']};   // SQL 717
+  other_captain:['🪞','Склад суперника'],other_star:['🪞','Склад суперника'],outlook:['🔮','Прогноз'],   // SQL 717
+  leader_own:['👑','Лідер таблиці'],leader_lost:['👑','Лідер таблиці'],leader_other:['👑','Лідер таблиці'],rise_own:['📈','Зліт у таблиці'],rise_other:['📈','Зліт у таблиці'],fall_own:['📉','Падіння в таблиці'],fall_other:['📉','Падіння в таблиці'],winner_other:['🥇','Переможець Вікенду']};   // SQL 723/724 «Хвиля 2» (🚀 зайнято бустом → зліт 📈)
 let _prMem=null;   // запасний стан у памʼяті, якщо localStorage недоступний
 const prStore={ get(){ try{ const v=localStorage.getItem('sqPressPopAt'); return v!=null?v:_prMem; }catch(e){ return _prMem; } }, set(v){ _prMem=String(v); try{ localStorage.setItem('sqPressPopAt',String(v)); }catch(e){} } };
 const PR=()=>S.press||(S.press={mine:[],feed:[],ready:false,mineAt:0,syncAt:0,syncP:null,popDone:false,popOpen:false,busy:false,booting:false,loading:false,drafts:{},coll:{},fix:null,fixAt:0});
