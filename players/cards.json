@@ -1,0 +1,527 @@
+{
+  "Jude_Bellingham.png": {
+    "players": {
+      "names": [
+        "Jude Bellingham"
+      ],
+      "squad_player": "Jude Bellingham"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Jude Bellingham",
+        "club": "Real Madrid",
+        "country": "England",
+        "position": "MID"
+      }
+    ],
+    "collection": []
+  },
+  "Bruno_Fernandes.png": {
+    "players": {
+      "names": [
+        "Bruno Fernandes"
+      ],
+      "squad_player": "Bruno Fernandes"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Bruno Fernandes",
+        "club": "Manchester United",
+        "country": "Portugal",
+        "position": "MID"
+      }
+    ],
+    "collection": []
+  },
+  "Chelsea_Cold_Front.png": {
+    "players": {
+      "names": [
+        "Joao Pedro",
+        "Reece James",
+        "Cole Palmer"
+      ],
+      "squad_player": null
+    },
+    "type": "rare",
+    "kind": "team",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Joao Pedro",
+        "club": "Chelsea",
+        "country": "Brazil",
+        "position": "FWD"
+      },
+      {
+        "player": "Reece James",
+        "club": "Chelsea",
+        "country": "England",
+        "position": "DEF"
+      },
+      {
+        "player": "Cole Palmer",
+        "club": "Chelsea",
+        "country": "England",
+        "position": "MID"
+      }
+    ],
+    "collection": [
+      "team"
+    ]
+  },
+  "Erling_Haaland_Mega_Rare.png": {
+    "players": {
+      "names": [
+        "Erling Haaland"
+      ],
+      "squad_player": "Erling Haaland"
+    },
+    "type": "mega_rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Erling Haaland",
+        "club": "Manchester City",
+        "country": "Norway",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Harry_Kane.png": {
+    "players": {
+      "names": [
+        "Harry Kane"
+      ],
+      "squad_player": "Harry Kane"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Harry Kane",
+        "club": "Bayern Munich",
+        "country": "England",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Kylian_Mbappe_1.png": {
+    "players": {
+      "names": [
+        "Kylian Mbappe"
+      ],
+      "squad_player": "Kylian Mbappe"
+    },
+    "type": "mega_rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Kylian Mbappe",
+        "club": "Real Madrid",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Kylian_Mbappe_2.png": {
+    "players": {
+      "names": [
+        "Kylian Mbappe"
+      ],
+      "squad_player": "Kylian Mbappe"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Kylian Mbappe",
+        "club": "Real Madrid",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Michael_Olise.png": {
+    "players": {
+      "names": [
+        "Michael Olise"
+      ],
+      "squad_player": "Michael Olise"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Michael Olise",
+        "club": "Bayern Munich",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Cole_Palmer.png": {
+    "players": {
+      "names": [
+        "Cole Palmer"
+      ],
+      "squad_player": "Cole Palmer"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Cole Palmer",
+        "club": "Chelsea",
+        "country": "England",
+        "position": "MID"
+      }
+    ],
+    "collection": []
+  },
+  "Raphinha.png": {
+    "players": {
+      "names": [
+        "Raphinha"
+      ],
+      "squad_player": "Raphinha"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Raphinha",
+        "club": "FC Barcelona",
+        "country": "Brazil",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "champion_rhythm"
+    ]
+  },
+  "Saliba_Gabriel.png": {
+    "players": {
+      "names": [
+        "William Saliba",
+        "Gabriel Magalhaes"
+      ],
+      "squad_player": null
+    },
+    "type": "rare",
+    "kind": "team",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "William Saliba",
+        "club": "Arsenal",
+        "country": "France",
+        "position": "DEF"
+      },
+      {
+        "player": "Gabriel Magalhaes",
+        "club": "Arsenal",
+        "country": "Brazil",
+        "position": "DEF"
+      }
+    ],
+    "collection": [
+      "duo",
+      "champion_rhythm"
+    ]
+  },
+  "Virgil_Van_Dijk.png": {
+    "players": {
+      "names": [
+        "Virgil van Dijk"
+      ],
+      "squad_player": "Virgil van Dijk"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Virgil van Dijk",
+        "club": "Liverpool",
+        "country": "Netherlands",
+        "position": "DEF"
+      }
+    ],
+    "collection": []
+  },
+  "Lamine_Yamal.png": {
+    "players": {
+      "names": [
+        "Lamine Yamal"
+      ],
+      "squad_player": "Lamine Yamal"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Lamine Yamal",
+        "club": "FC Barcelona",
+        "country": "Spain",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "champion_rhythm"
+    ]
+  },
+  "Michael_Olise_Mega_Rare_Eclipse.png": {
+    "players": {
+      "names": [
+        "Michael Olise"
+      ],
+      "squad_player": "Michael Olise"
+    },
+    "type": "mega_rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Michael Olise",
+        "club": "Bayern Munich",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "champion_rhythm"
+    ]
+  },
+  "Erling_Haaland_Rare_Alter_Ego.png": {
+    "players": {
+      "names": [
+        "Erling Haaland"
+      ],
+      "squad_player": "Erling Haaland"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Erling Haaland",
+        "club": "Manchester City",
+        "country": "Norway",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "alter_ego"
+    ]
+  },
+  "Ruben_Dias_Josko_Gvardiol_Rare_Duo.png": {
+    "players": {
+      "names": [
+        "Rúben Dias",
+        "Joško Gvardiol"
+      ],
+      "squad_player": null
+    },
+    "type": "rare",
+    "kind": "team",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Rúben Dias",
+        "club": "Manchester City",
+        "country": "Portugal",
+        "position": "DEF"
+      },
+      {
+        "player": "Joško Gvardiol",
+        "club": "Manchester City",
+        "country": "Croatia",
+        "position": "DEF"
+      }
+    ],
+    "collection": [
+      "duo"
+    ]
+  },
+  "Khvicha_Kvaratskhelia_Mega_Rare_Paris_Star_Arch.png": {
+    "players": {
+      "names": [
+        "Khvicha Kvaratskhelia"
+      ],
+      "squad_player": "Khvicha Kvaratskhelia"
+    },
+    "type": "mega_rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Khvicha Kvaratskhelia",
+        "club": "Paris Saint-Germain",
+        "country": "Georgia",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "champion_rhythm"
+    ]
+  },
+  "Kylian_Mbappe_Rare_Galacticos.png": {
+    "players": {
+      "names": [
+        "Kylian Mbappe"
+      ],
+      "squad_player": "Kylian Mbappe"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Kylian Mbappe",
+        "club": "Real Madrid",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": []
+  },
+  "Illia_Zabarnyi_Rare_The_Sentinel_v2.png": {
+    "players": {
+      "names": [
+        "Illia Zabarnyi"
+      ],
+      "squad_player": "Illia Zabarnyi"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Illia Zabarnyi",
+        "club": "Paris Saint-Germain",
+        "country": "Ukraine",
+        "position": "DEF"
+      }
+    ],
+    "collection": []
+  },
+  "Declan_Rice_Rare.png": {
+    "players": {
+      "names": [
+        "Declan Rice"
+      ],
+      "squad_player": "Declan Rice"
+    },
+    "type": "rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Declan Rice",
+        "club": "Arsenal",
+        "country": "England",
+        "position": "MID"
+      }
+    ],
+    "collection": []
+  },
+  "Lamine_Yamal_Raphinha_Mega_Rare_Duo_v6_Iconic_Ribbon_Sides.png": {
+    "players": {
+      "names": [
+        "Lamine Yamal",
+        "Raphinha"
+      ],
+      "squad_player": null
+    },
+    "type": "mega_rare",
+    "kind": "team",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Lamine Yamal",
+        "club": "FC Barcelona",
+        "country": "Spain",
+        "position": "FWD"
+      },
+      {
+        "player": "Raphinha",
+        "club": "FC Barcelona",
+        "country": "Brazil",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "duo"
+    ]
+  },
+  "Nicolo_Barella_Lautaro_Martinez_Rare_Nerazzurri_Final_v9.png": {
+    "players": {
+      "names": [
+        "Nicolò Barella",
+        "Lautaro Martínez"
+      ],
+      "squad_player": null
+    },
+    "type": "rare",
+    "kind": "team",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Nicolò Barella",
+        "club": "Inter",
+        "country": "Italy",
+        "position": "MID"
+      },
+      {
+        "player": "Lautaro Martínez",
+        "club": "Inter",
+        "country": "Argentina",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "duo"
+    ]
+  },
+  "Desire_Doue_Mega_Rare_Champions_Rhythm.png": {
+    "players": {
+      "names": [
+        "Désiré Doué"
+      ],
+      "squad_player": "Désiré Doué"
+    },
+    "type": "mega_rare",
+    "kind": "solo",
+    "silhouette": "framed",
+    "club_country_position": [
+      {
+        "player": "Désiré Doué",
+        "club": "Paris Saint-Germain",
+        "country": "France",
+        "position": "FWD"
+      }
+    ],
+    "collection": [
+      "champion_rhythm"
+    ]
+  }
+}
