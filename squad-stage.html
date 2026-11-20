@@ -468,9 +468,9 @@ table.grid{min-width:0}
 @keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg);--k:1}50%{transform:rotateX(3deg) rotateY(-2deg);--k:.17}}
 .sqfull .podium-card img.rarepng{width:auto;display:block}
 /* «товсті» картки (20.11): лице + бокова стінка ДВОМА шарами. Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача.
-   --k 0…1 (анімація sqsway і курсор), --sw/--sh = зсув стінки в % ширини/висоти картки (CARD_THICK=[sw,sh], дає tools/card_split_side.py). Без _face/_side (або без @property) — картка пласка, як раніше. */
+   --k 0…1 (анімація sqsway і курсор) → стінка (canvas) СТИСКАЄТЬСЯ по рядках навколо краю лиця (CARD_THICK={h,x0[]}, дає tools/card_split_side.py): тоншає пропорційно, як при справжньому повороті; у «фас» її нема. Без _face/_side — картка пласка, як раніше. */
 @property --k{syntax:'<number>';inherits:true;initial-value:1}
-.sqfull .tilt img.sidelayer{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;transform:translate(calc(var(--sw,0%) * (var(--k) - 1)),calc(var(--sh,0%) * (var(--k) - 1)))}
+.sqfull .tilt canvas.sidelayer{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;}
 .sqfull .tilt img.rarepng{position:relative;z-index:1}
 .sqfull .podium-card.mega{bottom:19%}   /* mega росте вниз (знизу є місце) — 04.10: rare 72% / mega 75% */
 /* ① glint обмежений ФОРМОЮ картки (маска card-PNG), не прямокутником */
@@ -483,7 +483,7 @@ table.grid{min-width:0}
 .sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
 .sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
-.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega img.sidelayer{animation:sqcolorpulse 2.5s ease-in-out infinite}
+.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega canvas.sidelayer{animation:sqcolorpulse 2.5s ease-in-out infinite}
 @keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
 /* відкриття: спочатку сцена (малий файл), потім карта одразу в повній якості; поки вантажиться — спінер (23.10) */
 .sqfull .stage{opacity:0;transition:opacity .35s ease} .sqfull.sc .stage{opacity:1}
@@ -491,7 +491,7 @@ table.grid{min-width:0}
 .sqfull .sqload{position:absolute;left:50%;top:46%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid rgba(255,255,255,.16);border-top-color:#26c281;animation:sqspin .8s linear infinite;z-index:5;pointer-events:none}
 .sqfull.cd .sqload{display:none}
 @keyframes sqspin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega img.sidelayer{animation:none}}
+@media(prefers-reduced-motion:reduce){.sqfull .tilt{animation:none}.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega canvas.sidelayer{animation:none}}
 
 /* ── ДЕТАЛЬНА КАРТКА ГРАВЦЯ (порт із кабінету — тримати в синхроні) ── */
 .modal-host{position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.62);
@@ -1357,16 +1357,36 @@ function fitPodium(stage){
 // Б) прогрів: сцена (+ повний арт) вантажаться, поки користувач лише наводить/торкається «Показати картку».
 const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
 // «ТОВСТІ» картки (20.11): арт має бокову стінку (правий край) → лице й стінка окремими шарами (`_face.webp` + `_side.webp`, tools/card_split_side.py).
-// Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача (як у Sorare). Значення = товщина стінки в % ширини картки.
+// Стінка тоншає й зникає, коли карта повертається «у фас», і розгортається, коли правий край іде до глядача (як у Sorare). Значення = дані смуг {h,x0[]} (tools/card_split_side.py).
 // Немає запису в CARD_THICK → картка пласка, як раніше. Нова товста картка: розрізати арт інструментом → дописати рядок сюди (у всіх 4 файлах з showFullCard).
-const CARD_THICK={'players/Michael_Olise_Mega_Rare_Eclipse.png':[5.57,0],'players/Desire_Doue_Mega_Rare_Champions_Rhythm.png':[3.6,0]};
+const CARD_THICK={'players/Michael_Olise_Mega_Rare_Eclipse.png':{h:6,cap:46,x0:[1024,470,525,550,555,561,570,577,587,594,601,613,632,722,765,793,812,820,830,837,846,853,863,868,874,881,888,892,898,900,905,907,910,914,917,920,924,926,928,931,934,934,938,940,942,942,944,946,946,946,947,947,947,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,947,947,947,947,947,947,947,947,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,948,949,949,949,950,950,950,951,951,950,949,947,946,945,942,942,941,940,939,938,937,937,936,936,936,936,936,936,937,937,937,937,938,939,939,939,939,940,940,942,943,943,943,945,946,947,949,952,952,953,953,958,958,958,958,956,956,955,955,955,954,954,954,954,954,954,954,954,954,954,954,954,954,952,950,950,947,947,947,946,946,946,946,946,947,947,947,947,947,947,947,948,949,949,950,951,952,953,956,956,956,953,953,952,952,951,950,949,948,948,946,944,944,942,939,934,931,928,924,920,917,916,913,909,906,898,891,884,875,869,860,851,841,830,813,801,788,767,747,714,659,601,569,541,529,512,503,496,491,488,480,1024],w:[0,57,29,19,25,30,30,31,30,32,37,44,97,60,54,51,50,57,60,64,64,65,63,64,65,63,62,63,62,64,63,64,65,64,64,64,62,63,63,62,60,62,60,59,59,60,59,58,59,60,60,60,60,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,59,60,60,59,57,53,49,47,46,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,45,44,44,44,43,44,44,43,43,44,45,47,46,45,46,44,43,42,41,41,41,40,40,40,40,39,39,39,39,39,39,39,38,37,37,38,38,38,39,38,38,40,42,42,44,45,45,45,48,49,52,49,49,49,49,51,51,52,52,52,53,53,53,53,53,53,53,53,53,53,53,53,53,55,54,50,50,48,47,47,46,46,46,46,45,45,45,46,46,46,46,45,45,45,44,44,43,42,40,40,40,43,43,44,44,45,45,46,46,45,46,47,45,45,46,48,48,48,49,49,48,46,45,45,44,47,50,51,55,55,57,59,61,64,71,71,71,75,71,72,90,104,78,65,49,46,39,33,28,22,21,0]},'players/Desire_Doue_Mega_Rare_Champions_Rhythm.png':{h:6,x0:[1024,598,604,666,682,696,703,709,715,721,875,891,905,913,919,924,929,934,939,944,949,955,960,963,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,964,962,959,957,955,955,955,955,955,955,955,955,955,955,955,955,955,955,956,958,962,965,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,966,965,965,965,965,966,966,966,965,966,966,966,965,965,966,966,965,965,965,965,965,965,965,965,965,965,965,964,961,958,956,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,955,956,956,957,960,962,965,967,968,969,969,969,969,969,969,969,969,968,969,969,969,969,968,968,968,968,968,968,968,968,968,968,968,968,968,968,968,968,968,968,968,969,969,970,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,971,970,970,970,970,970,969,969,969,969,968,964,960,957,955,953,948,942,937,932,927,921,916,910,905,900,894,889,883,878,873,867,848,824,820,1024]}};
 const thickOf=p=>CARD_THICK[String(p||'')]||0;
 const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
-const artHTML=(p,alt)=>thickOf(p)?`<img class="sidelayer" alt="" aria-hidden="true"><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
+const artHTML=(p,alt)=>thickOf(p)?`<canvas class="sidelayer" aria-hidden="true"></canvas><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
 const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
-async function applySide(tilt,full,T){ const sd=tilt.querySelector('img.sidelayer'); tilt.style.setProperty('--sw',T[0]+'%'); tilt.style.setProperty('--sh',T[1]+'%'); if(!sd) return; const u=thickLayer(full,'side'); if(await loadImg(u)) sd.src=u; }
+// Стінка — canvas: смуги по T.h рядків стискаються по горизонталі навколо краю лиця (T.x0[i]) → товщина стінки пропорційна f, як при справжньому повороті
+// (а не «виїжджає з-під лиця»). f=(k−WALL_K0)/(1−WALL_K0): у крайньому положенні гойдання (k=.17) і «у фас» стінки нема. T.cap (Оліс) вирівнює товщину стінки: широкі смуги
+// (плечі) стискаються до cap px, як у Дуе (без cap і k=1 → рівно оригінальний арт).
+const WALL_K0=.17;
+function wallDraw(ctx,im,T,f){
+  const W=im.naturalWidth, H=im.naturalHeight; ctx.clearRect(0,0,W,H);
+  if(f<=.004) return;
+  if(f>=.996&&!T.cap){ ctx.drawImage(im,0,0); return; }
+  for(let i=0,h=T.h;i<T.x0.length;i++){ const x=T.x0[i]; if(x>=W-1) continue; const s=f*(T.cap?Math.min(1,T.cap/T.w[i]):1), y=i*h, hh=Math.min(h,H-y); ctx.drawImage(im,x,y,W-x,hh,x,y,(W-x)*s,hh); }
+}
+async function applySide(tilt,full,T){
+  const cv=tilt.querySelector('canvas.sidelayer'); if(!cv) return;
+  const im=await loadImg(thickLayer(full,'side')); if(!im) return;
+  let ctx; try{ cv.width=im.naturalWidth; cv.height=im.naturalHeight; ctx=cv.getContext('2d'); ctx.imageSmoothingQuality='high'; }catch(e){ return; }   // не вийшло → картка пласка (лице без стінки)
+  let last=-1;
+  const tick=()=>{ if(!cv.isConnected) return;   // вітрину закрито / профіль перемалював картку → цикл зупиняється
+    const k=parseFloat(getComputedStyle(tilt).getPropertyValue('--k')), f=Math.max(0,Math.min(1,((isNaN(k)?1:k)-WALL_K0)/(1-WALL_K0)));
+    if(Math.abs(f-last)>.002){ last=f; wallDraw(ctx,im,T,f); }
+    requestAnimationFrame(tick); };
+  tick();
+}
 const poolThumb=u=>{ const s=String(u||''); return /^players\/pool\/\d+\.webp$/.test(s)?s.replace(/\.webp$/,'_sm.webp'):s; };   // фото пулу в сітках/міні-картках — мініатюра `_sm` (≈35 КБ замість ≈312 КБ); майстер лише на подіумі
 const imgFallback=full=>` onerror="this.onerror=null;this.src='${esc(full)}'"`;                                                   // немає `_sm` на сайті → тихо підміняємо на майстер
 const _warmRefs=[], _warmSet=new Set();
