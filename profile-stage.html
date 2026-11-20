@@ -339,8 +339,13 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
   background:radial-gradient(ellipse at center,rgba(0,0,0,.4),transparent 72%);filter:blur(9px);z-index:1}
 .sqfull .podium-card{position:absolute;left:50%;bottom:24%;transform:translateX(-50%);z-index:3;filter:drop-shadow(0 26px 30px rgba(0,0,0,.5))}
 .sqfull .tilt{position:relative;transform-origin:bottom center;transform:rotateX(3deg) rotateY(-10deg);transform-style:preserve-3d;animation:sqsway 6s ease-in-out infinite}
-@keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg)}50%{transform:rotateX(3deg) rotateY(-2deg)}}
+@keyframes sqsway{0%,100%{transform:rotateX(3deg) rotateY(-14deg);--k:1}50%{transform:rotateX(3deg) rotateY(-2deg);--k:.17}}
 .sqfull .podium-card img.rarepng{width:auto;height:min(72vh,140vw);display:block}
+/* «товсті» картки (20.11): лице + бокова стінка ДВОМА шарами. Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача.
+   --k 0…1 (анімація sqsway і курсор), --sw = товщина стінки в % ширини картки (CARD_THICK). Без _face/_side (або без @property) — картка пласка, як раніше. */
+@property --k{syntax:'<number>';inherits:true;initial-value:1}
+.sqfull .tilt img.sidelayer{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none;z-index:0;transform:translateX(calc(var(--sw,0%) * (var(--k) - 1)))}
+.sqfull .tilt img.rarepng{position:relative;z-index:1}
 .sqfull .podium-card.mega{bottom:19%}   /* mega росте вниз (знизу є місце) — 04.10: rare 72% / mega 75% */
 .sqfull .podium-card.mega img.rarepng{height:min(75vh,140vw)}
 .sqfull .tilt.fx{-webkit-mask:var(--m) center/100% 100% no-repeat;mask:var(--m) center/100% 100% no-repeat}
@@ -351,7 +356,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .sqfull .stage.mega .glow{background:radial-gradient(ellipse at center,rgba(230,193,75,.16),transparent 66%)}
 .sqfull .podium-card.mega{animation:sqmegafloat 4.6s ease-in-out infinite}
 @keyframes sqmegafloat{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-2.4%)}}
-.sqfull .podium-card.mega img.rarepng{animation:sqcolorpulse 2.5s ease-in-out infinite}
+.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega img.sidelayer{animation:sqcolorpulse 2.5s ease-in-out infinite}
 @keyframes sqcolorpulse{0%,100%{filter:saturate(1) brightness(1)}50%{filter:saturate(1.42) brightness(1.15)}}
 /* відкриття: спочатку сцена (малий файл), потім карта одразу в повній якості; поки вантажиться — спінер (23.10) */
 .sqfull .stage{opacity:0;transition:opacity .35s ease} .sqfull.sc .stage{opacity:1}
@@ -359,7 +364,7 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .sqfull .sqload{position:absolute;left:50%;top:46%;width:36px;height:36px;margin:-18px 0 0 -18px;border-radius:50%;border:3px solid rgba(255,255,255,.16);border-top-color:#26c281;animation:sqspin .8s linear infinite;z-index:5;pointer-events:none}
 .sqfull.cd .sqload{display:none}
 @keyframes sqspin{to{transform:rotate(360deg)}}
-@media(prefers-reduced-motion:reduce){.frame.champ.glow,.sqfull .tilt,.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng{animation:none}}
+@media(prefers-reduced-motion:reduce){.frame.champ.glow,.sqfull .tilt,.sqfull .glow,.sqfull .tilt.fx::before,.sqfull .podium-card.mega,.sqfull .podium-card.mega img.rarepng,.sqfull .podium-card.mega img.sidelayer{animation:none}}
 
 /* екран входу = BoBet/ЄвроСезон (спільна брама) */
 .login{max-width:380px;margin:9vh auto 0;text-align:center;font-family:'Onest',system-ui,sans-serif}
@@ -1286,16 +1291,16 @@ function showFullUnit(u,start){
   const vars=el.querySelector('.sqvars'), nm=el.querySelector('.sqinfo strong'), sub=el.querySelector('.sqinfo span');
   stage.addEventListener('pointermove',e=>{
     const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
-    tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*14+3).toFixed(1)}deg) rotateY(${(dx*20).toFixed(1)}deg)`;
+    tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*14+3).toFixed(1)}deg) rotateY(${(dx*20).toFixed(1)}deg)`; tilt.style.setProperty('--k',thickK(dx*20));
   });
-  stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; });
+  stage.addEventListener('pointerleave',()=>{ tilt.style.animation=''; tilt.style.transform=''; tilt.style.removeProperty('--k'); });
   const paint=()=>{
     const my=++tok, v=views[vi], isArt=!!v.art, tier=isArt?v.art.tier:(v.frame||'silver'), mega=isArt&&v.art.tier==='mega_rare';
     el.classList.remove('cd','sc'); stage.style.backgroundImage='';
     stage.className='stage'+(mega?' mega':''); stage.dataset.base=String(!isArt);
-    pc.className='podium-card'+(mega?' mega':''); tilt.className='tilt'+(isArt?' fx':''); tilt.style.removeProperty('--m');
+    pc.className='podium-card'+(mega?' mega':''); tilt.className='tilt'+(isArt?' fx':''); tilt.style.removeProperty('--m'); tilt.style.removeProperty('--sw');
     glow.style.display=isArt?'':'none';
-    tilt.innerHTML=isArt?`<img class="rarepng" alt="${esc(u.name)}">`:sqCardHTML(u,v,true);
+    tilt.innerHTML=isArt?artHTML(v.art.png_path,esc(u.name)):sqCardHTML(u,v,true);
     nm.textContent=u.name; sub.textContent=(isArt?(RAR[v.art.tier]||v.art.tier):(FRAME_LABEL[v.frame]||'SILVER'))+' · '+collStatusLabel(u);
     if(vars) vars.innerHTML=views.map((x,i)=>`<button type="button" class="${i===vi?'on':''}" data-i="${i}">${esc(vlabel(x,i))}</button>`).join('');
     const sceneUrl='scenes/'+(SCENE_FILE[tier]||'steel')+'.webp';
@@ -1305,13 +1310,13 @@ function showFullUnit(u,start){
       if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
       el.classList.add('sc');
       if(isArt){
-        const im=tilt.querySelector('img.rarepng'), full=v.art.png_path;
-        return loadImg(full).then(async big=>{
+        const im=tilt.querySelector('img.rarepng'), full=v.art.png_path, T=thickOf(full), art=T?thickLayer(full,'face'):full;
+        return loadImg(art).then(async big=>{
           if(my!==tok||!el.isConnected) return;
-          let src=big?full:'';
+          let src=big?art:'';
           if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
           if(my!==tok||!el.isConnected) return;
-          if(src){ im.src=src; tilt.style.setProperty('--m',"url('"+src+"')"); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); }
+          if(src){ const thick=T&&src===art; im.src=src; tilt.style.setProperty('--m',"url('"+(thick?showThumb(full):src)+"')"); if(thick) await applySide(tilt,full,T); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); }
           showCard(); });
       }
       // база: чекаємо фото/герб, але не довше 2,5 с
@@ -1491,10 +1496,21 @@ function wireGo(root){ root.querySelectorAll('[data-go]').forEach(b=>b.onclick=(
 // А) прогресивний показ: миттєво мініатюра _sm.webp (малий файл), далі підміна на ПОВНИЙ арт, щойно він завантажений і декодований.
 // Б) прогрів: сцена (+ повний арт) вантажаться, поки користувач лише наводить/торкається «Показати картку».
 const showThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
+// «ТОВСТІ» картки (20.11): арт має бокову стінку (правий край) → лице й стінка окремими шарами (`_face.webp` + `_side.webp`, tools/card_split_side.py).
+// Стінка ховається ЗА лице, коли карта повертається «у фас», і виїжджає, коли правий край іде до глядача (як у Sorare). Значення = товщина стінки в % ширини картки.
+// Немає запису в CARD_THICK → картка пласка, як раніше. Нова товста картка: розрізати арт інструментом → дописати рядок сюди (у всіх 4 файлах з showFullCard).
+const CARD_THICK={'players/Michael_Olise_Mega_Rare_Eclipse.png':7.2,'players/Desire_Doue_Mega_Rare_Champions_Rhythm.png':3.6};
+const thickOf=p=>CARD_THICK[String(p||'')]||0;
+const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
+const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
+const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
+const artHTML=(p,alt)=>thickOf(p)?`<img class="sidelayer" alt="" aria-hidden="true"><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
+const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
+async function applySide(tilt,full,T){ const sd=tilt.querySelector('img.sidelayer'); tilt.style.setProperty('--sw',T+'%'); if(!sd) return; const u=thickLayer(full,'side'); if(await loadImg(u)) sd.src=u; }
 const _warmRefs=[], _warmSet=new Set();
 function warmUrl(u){ if(!u||_warmSet.has(u)) return; _warmSet.add(u); const im=new Image(); im.decoding='async'; im.src=u; _warmRefs.push(im); }
 function warmScene(scene){ if(scene) warmUrl('scenes/'+scene+'.webp'); }
-function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmUrl(png); };
+function hookWarm(btn,png,scene){ if(!btn) return; const go=()=>{ warmScene(scene); warmCard(png); };
   ['pointerenter','focus','touchstart'].forEach(ev=>btn.addEventListener(ev,go,{once:true,passive:true})); }
 // Відкриття сцени (23.10): СПОЧАТКУ сцена (≈0,2 МБ), ПОТІМ повний арт — карта з'являється одразу в повній якості (без «мильної» мініатюри, що потім підмінялась); поки вантажиться — спінер.
 function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im=new Image(); im.decoding='async'; let done=false;
