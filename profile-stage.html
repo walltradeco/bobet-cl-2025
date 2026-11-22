@@ -432,6 +432,12 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .cmeta strong{display:block;font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cmeta span{display:block;margin-top:2px;color:var(--text-dim);font-size:10px;font-family:var(--mono);letter-spacing:.04em}
 .cmeta span.cur{color:#7bd8a2}
+/* перемикач дизайну (22.11): бачить і міняє лише власник профілю */
+.cds{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.cds .dchip{padding:3px 9px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap}
+.cds .dchip:hover{border-color:var(--blue);color:var(--text)}
+.cds .dchip.on{border-color:#2f8f69;background:rgba(38,194,129,.14);color:var(--text);cursor:default}
+.cds .dchip.lock{opacity:.55}
 .cfilter{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 16px}
 .cfilter button{padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:var(--panel2);color:var(--copy);font-size:12px;font-weight:600;cursor:pointer}
 .cfilter button b{font-family:var(--mono);font-weight:700;margin-left:5px;color:var(--text-dim)}
@@ -675,7 +681,8 @@ function fetchProfileData(id){
       return (r&&r.data)||null;
     })(),
     R('profile_tournaments',{ p_profile:id }),
-    sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id,eligible_sofa_ids').eq('owner_profile_id',id).order('tier').order('card_key').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
+    // 22.11: card_items замість card_shop — потрібен id картки для перемикача дизайну власника (читається всім, як card_shop)
+    sb.from('card_items').select('id,card_key,tier,kind,png_path,owner_profile_id,eligible_sofa_ids').eq('owner_profile_id',id).order('tier').order('card_key').then(r=>r.error?[]:(r.data||[])).catch(()=>[]),
     R('profile_communities',{ p_profile:id }),
     R('profile_trophies',{ p_profile:id }),
     R('profile_records',{ p_profile:id }),
@@ -708,6 +715,9 @@ async function loadProfile(pre){
   S.records=rec[0]||null; S.portrait=por[0]||null;
   // запрошення/заявки — лише на СВОЄМУ профілі (blocks у вкладці «Спільноти»)
   S.pending = S.isOwn ? await sb.rpc('my_community_pending',{}).then(r=>r.error?[]:(r.data||[])).catch(()=>[]) : [];
+  // 22.11: чи відкрита Emerald для власника (SQL 731 → true всім; до 731 — лише з грантом) — лише для чіпа 🔒 у перемикачі дизайну; сервер усе одно перевіряє сам
+  S.emOk=undefined;
+  if(S.isOwn) sb.rpc('profile_has_frame',{ p_profile:S.me, p_frame:'emerald' }).then(r=>{ if(r.error||typeof r.data!=='boolean') return; S.emOk=r.data; if(S.emOk===false&&S.tab==='collection') renderTab(); }).catch(()=>{});
   // розкладка вітрини «Огляд» (конструктор, 465); немає → дефолт
   S.layout = lay ? { order:(lay.module_order||OV_ORDER_DEF.slice()),
                      on:(lay.module_on||{}), feat:(lay.featured||{}), cols:(lay.module_col||{}) } : null;
@@ -1144,7 +1154,8 @@ function trophyPlaceLabel(t){
 // (дизайн і дані — з найновішого турніру) + Rare/Mega-картки профілю. Rare/Mega, що відповідає гравцю колекції (eligible_sofa_ids), але не обрана його дизайном,
 // не дублює плитку, а лежить у «варіантах» гравця (+N, перемикач у великому перегляді). Картка без гравця в Squad — окрема плитка.
 function collDesignLabel(u){ return u.art?(RAR[u.art.tier]||u.art.tier):(FRAME_LABEL[u.frame]||'SILVER'); }
-function collStatusLabel(u){ return u.kind==='card'?'Лише картка':(u.current?'У складі':'Був у складі'); }
+// 22.11 (Богдан): у ПРОФІЛІ немає «У складі / Був у складі» — профіль поза турніром, колекція лишається назавжди; цей статус — лише в розділі «Колекція» кабінету Squad.
+function collStatusLabel(u){ return u.kind==='card'?'Лише картка':''; }
 function collRank(u){ return u.art?(u.art.tier==='mega_rare'?5:4):({emerald:3,gold:2,silver:1}[u.frame]||1); }
 function buildCollection(){
   const rows=(S.sq||[]).filter(r=>!(HIDE_TEST_TOURS&&TEST_SQUAD_KEYS.includes(r.tournament_key)));
@@ -1154,7 +1165,7 @@ function buildCollection(){
     if(byId.has(id)) return;
     const cid=r.club_tid!=null?'c'+r.club_tid:'';
     if(cid) S.clubs[cid]={ name:r.club_name, league:r.club_league, sofascore_tid:r.club_tid };
-    const u={ id, kind:'squad', sofa:r.sofascore_player_id, name:r.name, pos:r.pos, shirt:r.shirt_number, photo:r.photo_url, country:r.country,
+    const u={ id, kind:'squad', pid:r.player_id, sofa:r.sofascore_player_id, name:r.name, pos:r.pos, shirt:r.shirt_number, photo:r.photo_url, country:r.country,
       cid, clubName:r.club_name, current:!!r.is_current && r.tournament_status!=='finished', frame:r.sel_frame||'silver',
       art:r.sel_card_key?{ card_key:r.sel_card_key, tier:r.sel_card_tier, png_path:r.sel_card_png }:null, variants:[] };
     byId.set(id,u); units.push(u);
@@ -1222,8 +1233,37 @@ function collTileHTML(u,opts){
   const view=u.art?{art:u.art}:{frame:u.frame}, st=collStarred(u);
   return `<div class="ctile" data-cid="${esc(u.id)}">
     <div class="sqwrap" role="button" tabindex="0" aria-label="${esc(u.name)} — відкрити">${sqCardHTML(u,view,false)}</div>
-    <div class="cmeta"><div class="cm-t"><strong>${esc(u.name)}</strong><span>${collDesignLabel(u)}</span><span${u.current?' class="cur"':''}>${collStatusLabel(u)}</span></div>
-      <div class="cm-a">${u.variants.length?`<span class="cvar" title="Інші картки цього гравця: ${u.variants.length} — у великому перегляді">+${u.variants.length}</span>`:''}${opts.star?`<button class="cstar${st?' on':''}" type="button" data-star="${esc(u.id)}" aria-pressed="${st}" title="${st?'Прибрати з вітрини':'Виставити у вітрину'}">${st?'★':'☆'}</button>`:''}</div></div></div>`;
+    <div class="cmeta"><div class="cm-t"><strong>${esc(u.name)}</strong><span>${collDesignLabel(u)}</span>${collStatusLabel(u)?`<span>${collStatusLabel(u)}</span>`:''}</div>
+      <div class="cm-a">${u.variants.length?`<span class="cvar" title="Інші картки цього гравця: ${u.variants.length} — у великому перегляді">+${u.variants.length}</span>`:''}${opts.star?`<button class="cstar${st?' on':''}" type="button" data-star="${esc(u.id)}" aria-pressed="${st}" title="${st?'Прибрати з вітрини':'Виставити у вітрину'}">${st?'★':'☆'}</button>`:''}</div></div>${opts.design?collDesignHTML(u):''}</div>`;
+}
+// ── перемикач дизайну (22.11, Богдан): ЛИШЕ власник бачить і міняє — Silver / Gold / Emerald + Rare/Mega-картки цього гравця. Те саме, що в кабінеті Squad (RPC set_collection_design) ──
+function collCardsFor(u){   // Rare/Mega цього гравця, якими володіє профіль (з id для RPC): обрана + варіанти
+  const keys=[]; if(u.art) keys.push(u.art.card_key); (u.variants||[]).forEach(c=>keys.push(c.card_key));
+  const out=[]; keys.forEach(k=>{ const c=(S.cards||[]).find(x=>x.card_key===k); if(c&&c.id&&!out.includes(c)) out.push(c); });
+  return out;
+}
+function collDesignHTML(u){
+  if(u.kind!=='squad'||!u.pid) return '';
+  const cards=collCardsFor(u), cur=u.art?'c:'+u.art.card_key:'f:'+u.frame, lock=S.emOk===false&&u.frame!=='emerald';
+  const chips=[['f:silver','Silver'],['f:gold','Gold'],['f:emerald',lock?'🔒 Emerald':'Emerald']]
+    .concat(cards.map(c=>['c:'+c.card_key,(RAR[c.tier]||c.tier).replace('MEGA RARE','Mega').replace('RARE','Rare')+(cards.length>1?' · '+c.card_key.replace(/_/g,' '):'')]));
+  return `<div class="cds" role="group" aria-label="Дизайн картки: ${esc(u.name)}">${chips.map(([k,l])=>
+    `<button type="button" class="dchip${cur===k?' on':''}${lock&&k==='f:emerald'?' lock':''}" data-design="${esc(k)}"${cur===k?' aria-pressed="true"':''}>${esc(l)}</button>`).join('')}</div>`;
+}
+async function collSetDesign(u,key){
+  if(S.collBusy||!u||!u.pid) return;
+  if(key==='f:emerald'&&S.emOk===false&&u.frame!=='emerald'){ alert('Смарагдова рамка ще не розблокована.'); return; }
+  const args=key.startsWith('f:')?{p_player:u.pid,p_frame:key.slice(2)}:{p_player:u.pid,p_card_item:(S.cards||[]).find(c=>c.card_key===key.slice(2)).id};
+  S.collBusy=true;
+  const y=window.scrollY;
+  try{
+    const {error}=await sb.rpc('set_collection_design',args);
+    if(error) throw error;
+    const r=await sb.rpc('profile_squad_collection',{ p_profile:S.view });   // перечитуємо: правило «який дизайн показати» живе в БД, не дублюємо його тут
+    if(!r.error){ S.sq=r.data||[]; S.coll=buildCollection(); }
+  }catch(e){ alert('Дизайн: '+(((e&&e.message)||e)+'').replace(/^.*?(Card: )/,'$1')); }
+  S.collBusy=false;
+  renderTab(); window.scrollTo(0,y);
 }
 function wireColl(root){
   fitSq(root);
@@ -1234,6 +1274,7 @@ function wireColl(root){
     w.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); showFullUnit(u); } };
     hookWarm(w,u.art?u.art.png_path:null,SCENE_FILE[u.art?u.art.tier:u.frame]||'steel');   // прогрів сцени/арту при наведенні
     const s=el.querySelector('.cstar'); if(s) s.onclick=e=>{ e.stopPropagation(); collStar(u); };
+    el.querySelectorAll('.cds .dchip').forEach(b=>b.onclick=e=>{ e.stopPropagation(); if(b.getAttribute('aria-pressed')==='true') return; collSetDesign(u,b.dataset.design); });
   });
 }
 // ☆ у «Колекції» (лише власник): зберігає вітрину одразу, без «Керувати вітриною»
@@ -1261,7 +1302,7 @@ function renderCollection(box){
     <p>Усі гравці Squad, що були у складі, та картки Rare / Mega. Гравців: ${nSq} · У вітрині: ${nFeat}${S.isOwn?' з '+COLL_CAP:''}.${S.isOwn?' Познач ☆ — і картка зʼявиться у «Вітрині колекції» на «Огляді».':''}</p></div>
     <span class="champ-season">${U.length} ${plural(U.length,'КАРТКА','КАРТКИ','КАРТОК')}</span></div>
     <div class="cfilter">${chip('all','Усі',U.length)}${chip('frame','Рамки',nFrame)}${chip('art','Rare / Mega',nArt)}</div>
-    ${list.length?`<div class="cgrid">${list.map(u=>collTileHTML(u,{star:S.isOwn})).join('')}</div>`:'<div class="empty">У цій категорії порожньо.</div>'}</section>`;
+    ${list.length?`<div class="cgrid">${list.map(u=>collTileHTML(u,{star:S.isOwn,design:S.isOwn})).join('')}</div>`:'<div class="empty">У цій категорії порожньо.</div>'}</section>`;
   box.querySelectorAll('.cfilter button[data-f]').forEach(b=>b.onclick=()=>{ S.collFilter=b.dataset.f; renderCollection(box); });
   wireColl(box);
 }
@@ -1301,7 +1342,7 @@ function showFullUnit(u,start){
     pc.className='podium-card'+(mega?' mega':''); tilt.className='tilt'+(isArt?' fx':''); tilt.style.removeProperty('--m'); 
     glow.style.display=isArt?'':'none';
     tilt.innerHTML=isArt?artHTML(v.art.png_path,esc(u.name)):sqCardHTML(u,v,true);
-    nm.textContent=u.name; sub.textContent=(isArt?(RAR[v.art.tier]||v.art.tier):(FRAME_LABEL[v.frame]||'SILVER'))+' · '+collStatusLabel(u);
+    nm.textContent=u.name; sub.textContent=(isArt?(RAR[v.art.tier]||v.art.tier):(FRAME_LABEL[v.frame]||'SILVER'))+(collStatusLabel(u)?' · '+collStatusLabel(u):'');
     if(vars) vars.innerHTML=views.map((x,i)=>`<button type="button" class="${i===vi?'on':''}" data-i="${i}">${esc(vlabel(x,i))}</button>`).join('');
     const sceneUrl='scenes/'+(SCENE_FILE[tier]||'steel')+'.webp';
     const showCard=()=>{ if(my!==tok||!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
