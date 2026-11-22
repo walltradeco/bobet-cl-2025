@@ -1329,9 +1329,12 @@ async function loadRefs(){
     (async()=>{
       S.myEmerald=false; S.myCards=[];
       try{
-        const [fe, cards] = await Promise.all([ sbSel(`frame_entitlements?profile_id=eq.${S.myProfile}&frame=eq.emerald&select=frame`),
+        // 22.11 (SQL 731, Богдан: «Emerald — усім»): питаємо саму функцію profile_has_frame — сервер єдине джерело правди (до 731 вона дає true лише з грантом,
+        // після — усім). Якщо функція недоступна — запасний шлях: пряме читання frame_entitlements, як було.
+        const [em, cards] = await Promise.all([ sb.rpc('profile_has_frame',{ p_profile:S.myProfile, p_frame:'emerald' }).then(r=>r.error?null:r.data===true).catch(()=>null),
                                                 sbSel(`card_items?owner_profile_id=eq.${S.myProfile}&select=id,card_key,tier,kind,png_path,eligible_sofa_ids`) ]);
-        S.myEmerald = fe.length>0; S.myCards = cards;
+        S.myEmerald = em!==null ? em : (await sbSel(`frame_entitlements?profile_id=eq.${S.myProfile}&frame=eq.emerald&select=frame`)).length>0;
+        S.myCards = cards;
       }catch(e){ S.myEmerald=false; S.myCards=[]; }
     })(),
     // активні аукціони (публічні) + 561: хто ще ставив на активні лоти (market_bids публічні) → «Скасувати ставку» лише коли інших ставок нема (сервер перевіряє те саме)
