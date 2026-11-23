@@ -1104,7 +1104,7 @@ function renderLg(){
     <div class="mgintro" style="border-left-color:var(--up)"><b>Club Legend</b> — паралельна гра поруч з очками за матчі. Кожен учасник обрав <b>${n} вибори «клуб + роль»</b>${roleList?` (${roleList})`:''}; очки ролі рахуються з реальних результатів обраного клубу${first?` у вікендах від <b>Вікенду ${first}</b>`:''} — <b>одразу після матчу</b>. Кожен вибір — не більше <b>${cap}</b> очок за турнір.
       <ul>${lgSum()?`<li>Очки Legend — це <b>сума очок ${n} виборів</b> (кожен — до ${cap}); вони додаються до General <b>одразу після матчу</b>, без шкали місць. Рівні очки лише ділять місце в таблиці.</li>`:`<li>Коли закрито всі вікенди, місце в Legend → очки в General${fp.length?`: ${fp.map((v,i)=>`${i+1}-ше <b>${v}</b>`).join(' · ')} (шкала тестова)`:''}. Рівні очки ділять місце, а очки за ці місця усереднюються.</li>
       <li>До підсумку очки Legend у General ще не входять; «≈» показує, скільки вийшло б за поточним місцем.</li>`}
-      <li>Після підтвердження складу можна зробити <b>одну заміну одного вибору</b> за турнір — попередній вибір лишається в списку («↪ раніше») разом з тим, що встиг заробити.</li></ul>
+      <li>${lgMaxRep()<1?'Після підтвердження складу вибір фіксується до кінця турніру — замін нема.':`Після підтвердження складу можна зробити <b>${lgMaxRep()===1?'одну заміну одного вибору':'до '+lgMaxRep()+' замін вибору'}</b> за турнір${lgMaxRep()>1?' (той самий слот можна міняти повторно)':''} — попередній вибір лишається в списку («↪ раніше») разом з тим, що встиг заробити.`}</li></ul>
       <p class="mglink">Усі правила, ролі й приклади — нижче та у вкладці <a onclick="goStage('rules');return false">Rules</a>.</p></div>
     ${sec('🏆 Загальна таблиця · Club Legend')}
     <div class="lbboards one">${table}</div>
@@ -1166,6 +1166,8 @@ function flagImg(country,w){ const c=FLAG_ISO[country]; if(!c) return ''; w=w||2
 /* CREST:END */
 // ── унікальна картка гравця (портовано з кабінету — тримати в синхроні) ──
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+// 732: скільки замін вибору Club Legend дозволено на турнір (market_legend_settings.max_replaces; колонки нема → 1, як було до 732)
+function lgMaxRep(){ const v=S.lgCfg&&S.lgCfg.max_replaces; return (typeof v==='number'&&v>=0)?v:1; }
 // ── ⓘ-ПІДКАЗКИ (06.11, Богдан) ── будь-який елемент із data-tip: наведення (миша) / фокус (клавіатура) / тап (телефон) показують текст одразу; повторний клік або клік деінде закриває.
 // Один спільний поповер (position:fixed), не виходить за межі екрана; той самий код у кабінеті (squad-cabinet-stage.html). Кнопку ⓘ будує tipBtn().
 function tipBtn(t){ return '<button type="button" class="tipi" data-tip="'+esc(t)+'" aria-label="Пояснення">i</button>'; }
@@ -1772,7 +1774,7 @@ function renderRules(){
       <li><b>Капітан і віце: ×2 отримує найкращий із пари</b> (хто набрав більше очок). Рівні очки — ×2 капітану. Не зіграв один — ×2 має другий; не зіграли обоє — ×2 згорає. Віце необов’язковий (без віце — ×2 капітану). Капітан і віце не поєднуються з позиційними бустами на одному гравці.</li>
       <li><b>Бусти</b> (безкоштовні для всіх):
         <ul>
-          <li>🤖 <b>Автопілот</b> — ×2 отримує найкращий серед гравців, чиї очки йдуть у суму вікенду (основа, що зіграла, і запасний, що зайшов на заміну); замінює капітана й віце.</li>
+          <li>🤖 <b>Автопілот</b> — ×2 отримує найкращий серед усіх гравців складу, що зіграли (основа й уся лавка); замінює капітана й віце і завжди не гірший за них — вони подвоюють лише одного з пари.</li>
           <li>🔥 <b>All-in</b> — усі гравці складу (основа й лавка), що зіграли, дають очки одразу; капітан і віце діють як звичайно.</li>
           <li>Автопілот і All-in — не більше одного буста на вікенд, кожен — <b>${one?'раз за турнір':'раз на етап'}</b>.</li>
           <li>⚡ <b>2x FWD</b>, <b>2x MID</b>, <b>2x DEF/GK</b> — подвоює очки одного гравця основи цієї позиції; на капітана чи віце позиційний буст поставити не можна. Кожен — <b>раз за турнір</b>; усі три можна в одному вікенді (різні гравці). Не поєднуються з Автопілотом і All-in. Ціль не зіграла — буст згорає.</li>
@@ -1853,7 +1855,7 @@ function renderRules(){
       <li>Свій вибір бачиш завжди; вибори інших, журнал матчів і таблиця з’являються, коли відкрито склади${lgFirst?` Вікенду ${lgFirst}`:''}.</li></ul>
       ${sub('Вибір і заміна')}<ul>
       <li>Вибір <b>обов’язковий</b> для підтвердження складу${lgFirst?` Вікенду ${lgFirst}`:''}. До підтвердження міняти можна скільки завгодно.</li>
-      <li>Далі — <b>одна заміна одного вибору</b> за турнір: вона діє на матчі, що ще не почались; зароблене старим вибором лишається, серія нового клубу рахується з нуля.</li></ul>
+      <li>${lgMaxRep()<1?'Далі вибір не змінюється — замін у цьому турнірі нема.':`Далі — <b>${lgMaxRep()===1?'одна заміна одного вибору':'до '+lgMaxRep()+' замін вибору'}</b> за турнір${lgMaxRep()>1?' (той самий слот можна міняти повторно)':''}: ${lgMaxRep()>1?'кожна діє':'вона діє'} на матчі, що ще не почались; зароблене старим вибором лишається, серія нового клубу рахується з нуля.`}</li></ul>
       ${lgSum()?`${sub('Нарахування')}<ul>
       <li>Очки Legend = сума очок твоїх ${lgN} виборів (кожен — до <b>${lgCap}</b>); вони додаються до General <b>одразу після матчу</b>, без шкали місць.</li>
       <li>Місце в таблиці Legend — за сумою очок; однакова сума — однакове місце (на очки це не впливає).</li></ul>`:`${sub('Підсумок')}<ul>
@@ -1998,7 +2000,8 @@ async function loadDynamic(){
     S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
   // 🐐 Club Legend (586/587): очки Legend уже всередині total_points (General) — тут лише прапорець для підпису; нема таблиці/рядка налаштувань → підпис ховається
   S.lgReady=false; S.lgCfg=null; S.lgRoles=[];
-  try{ const lc=(await sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode`).catch(()=>sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points`)))[0]; S.lgCfg=lc||null; S.lgReady=!!(lc && lc.enabled!==false);
+  try{ const lgSel=cols=>sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=${cols}`);   // 732: max_replaces (колонки нема → попередній набір)
+    const lc=(await lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode,max_replaces').catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode')).catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points')))[0]; S.lgCfg=lc||null; S.lgReady=!!(lc && lc.enabled!==false);
     if(S.lgReady){ try{ S.lgRoles=await sbGet('market_legend_roles?select=code,icon,title,description,examples,sort_order&order=sort_order.asc'); }catch(e2){ S.lgRoles=[]; } } }catch(e){ S.lgReady=false; }
   S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgCat=[];   // вьюхи самі віддають порожньо до відкриття складів Вікенду first_round
   if(S.lgReady){ const T=S.tournament;

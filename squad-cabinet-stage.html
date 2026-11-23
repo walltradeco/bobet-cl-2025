@@ -1713,6 +1713,11 @@ const expiringP=p=>!!(p && p.owner_participant_id && p.contract_rounds_left!=nul
 // 16.11 (QA MKT-04; рішення Богдана): ОСТАННІЙ вікенд усього турніру (у етапі лишився один вікенд, наступного етапу нема) — «продовжувати» нікуди, тож застереження «продовж контракт, інакше автопродаж» там не показуємо
 const finalWkNow=()=>{ const si=stageInfo(); return si.left<=1 && (si.stage===2 || !(S.cfg && S.cfg.stage2_last_round)); };
 const FINAL_WK_TXT='Це останній вікенд турніру — контракт покриває його повністю.';
+// 22.11 (рішення Богдана): борг за порушення ролі в ОСТАННЬОМУ вікенді турніру нічого не блокує й не карає — наступного вікенду (складу, який можна підтвердити чи «не зарахувати») немає. Лише текст банера; сервер не міняли (SQL 542–544: борг ніде не списується сам). Останній = нема вікенду з більшим номером І це останній вікенд етапу/турніру за конфігом (як finalWkNow).
+const debtIsFinal=d=>{ const n=+(d&&d.round_number); return !!n && finalWkNow() && !(S.rounds||[]).some(r=>r.number>n) && n>=stageInfo().last; };
+const DEBT_FINAL_TXT='Це останній вікенд турніру — наступного складу немає, тож борг на очки й призи не впливає і сплачувати його не потрібно.';
+const DEBT_FINAL_PRE_TXT='Це останній вікенд турніру — наступного складу немає, тож такий борг на очки й призи не вплине, і сплачувати його не доведеться.';   // модалка «Підтвердити склад» (борг ще не виник, лише попередження)
+const DEBT_FINAL_RULE_TXT=' На останньому вікенді турніру борг ні на що не впливає — сплачувати його не потрібно.';                                                 // у рядки з правилами
 // ЄДИНЕ формулювання про автопродаж гравця з останнім вікендом контракту — картка гравця, ринок, модалка підтвердження (pl=true — про кількох гравців)
 function autosaleTxt(pl){ return `після закриття вікенду ${pl?'їх':'гравця'} буде автоматично продано за вартістю, яка буде після зміни ціни за вікенд (у % і в €), комісія продажу −5% не стягується`; }
 const EXPIRING_TXT=`⏳ Контракт добігає (лишився 1 вікенд): ${autosaleTxt(false)}, тож угоду під час вікенду запропонувати не можна. Хочеш його продати чи обміняти — <b>продовж контракт до дедлайну</b>.`;
@@ -1837,8 +1842,13 @@ function penBanners(){
   if(sum>0){
     const wf=S.wageFree, lack=(wf!=null && wf<sum)?sum-wf:0;
     const list=(S.debts||[]).map(d=>`${esc(d.player_name||'гравець')} — ${eur(d.amount_eur)} (Вікенд ${d.round_number})`).join(', ');
+    const finN=(S.debts||[]).filter(debtIsFinal).length;
+    if(finN===(S.debts||[]).length){
+      // 22.11: усі борги — з останнього вікенду турніру → без червоного, без кнопки «Сплатити»
+      h+=`<div class="stmsg warn"><b>💸 Борг за порушення ролі: ${eur(sum)}</b> <span class="dim">${list}</span><br>${DEBT_FINAL_TXT}</div>`;
+    } else
     h+=`<div class="stmsg bad"><b>💸 Борг за порушення ролі: ${eur(sum)}</b> <span class="dim">${list}</span><br>
-      Борг блокує підтвердження складу на наступний вікенд, а не сплачений до його дедлайну — склад <b>не зарахується</b> (0 очок, бусти повернуться).
+      Борг блокує підтвердження складу на наступний вікенд, а не сплачений до його дедлайну — склад <b>не зарахується</b> (0 очок, бусти повернуться).${finN?' У суму входить і борг за останній вікенд турніру — сам по собі він нічого не блокує, але сплачується разом з рештою.':''}
       ${lack>0?`<b>Не вистачає ${eur(lack)}</b> у зарплатному бюджеті — перелий з трансферного («↔ Переливання») або продай гравця.`:''}
       <div style="margin-top:8px"><button data-do="paydebt" style="width:auto;padding:9px 20px">Сплатити борг · ${eur(sum)}</button></div></div>`;
   }
@@ -2163,7 +2173,7 @@ async function viewSquad(){
 
 // ── 🚀 бусти вікенду: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
 const BOOSTS = {
-  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий серед гравців, чиї очки йдуть у суму вікенду: основа, що зіграла, і запасний, що зайшов на заміну. Капітана й віце обирати не треба.' },
+  squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий серед усіх гравців складу, що зіграли (основа й уся лавка). Це завжди не гірше за капітана й віце: вони подвоюють лише одного з пари, а Автопілот — найкращого з усіх. Капітана й віце обирати не треба.' },
   squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — основа і лавка. Ідеально 5+3, але можна й менше.' }
 };
 // ── ⚡ позиційні бусти (532): 2x FWD / 2x MID / 2x DEF-GK — одна ціль у основі (не капітан/віце), раз за турнір, до трьох в одному вікенді, не з Автопілотом/All-in ──
@@ -2374,14 +2384,15 @@ function rivalsModalHtml(round){
   return `<div class="msec" style="margin-top:14px">⚔️ Rivals</div><p class="mnote">${my?`Суперник на цей вікенд: <b>${my.is_nobody?'Нікого':esc(my.opponent_name)}</b>. Після підтвердження зафіксований; коли склади відкриються — одна зміна.`:'<b class="warnc">Суперника не обрано</b> — склад підтвердити не можна.'}</p>`;
 }
 // ── 🐐 CLUB LEGEND (586/587; рішення Богдана 31.10): паралельна гра — 3 вибори «клуб + роль», очки з реальних матчів клубу, наприкінці місця → очки в General ──
-// Вибір вільний, доки не підтверджено склад Вікенду first_round (потім — ОДНА заміна одного вибору за турнір); без 3 виборів склад підтвердити не можна (сервер теж відмовить).
+// Вибір вільний, доки не підтверджено склад Вікенду first_round (потім — заміни вибору: market_legend_settings.max_replaces, 732; дефолт 1); без 3 виборів склад підтвердити не можна (сервер теж відмовить).
 // Немає таблиць/рядка налаштувань (586/587 не залито або Legend вимкнено) → чіп і блоки ховаються, підтвердження не блокується.
 async function loadLegend(){
   S.lgOK=true; S.lgCfg=null; S.lgRoles=[]; S.lgCat=[]; S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgFix=[];
   try{
     const T=S.tour.id, q='tournament_id=eq.'+T;
     S.lgFix=await sbSel(`market_fixtures?${q}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc&limit=1000`).catch(()=>[]);   // 09.11: розклад і рахунки — для блоку «Матчі вікендів» на вкладці Legend
-    S.lgCfg=(await sbSel(`market_legend_settings?${q}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode`).catch(()=>sbSel(`market_legend_settings?${q}&select=enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round`)))[0]||null;
+    const lgSel=cols=>sbSel(`market_legend_settings?${q}&select=${cols}`);   // 732: max_replaces (колонки нема → попередній набір); 597: score_mode
+    S.lgCfg=(await lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode,max_replaces').catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode')).catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round')))[0]||null;
     if(S.lgCfg && S.lgCfg.enabled!==false){
       const r=await Promise.all([
         sbSel('market_legend_roles?select=code,icon,title,sort_order,description,examples&order=sort_order.asc'),
@@ -2404,6 +2415,30 @@ function lgRound(){ return (S.rounds||[]).find(r=>r.number===lgFirst())||null; }
 function lgGateOn(round){ return !!(round && lgOn() && round.number>=lgFirst()); }
 function lgNeedPicks(){ return Math.max(1,(S.lgCfg&&S.lgCfg.picks)||3); }
 function lgCap(){ return (S.lgCfg&&S.lgCfg.cap_per_slot)||12; }
+// 732: скільки замін вибору дозволено на турнір (колонки нема, бо SQL ще не залито → 1, як було до 732); лічильник = мої рядки-заміни
+function lgMaxRep(){ const v=S.lgCfg&&S.lgCfg.max_replaces; return (typeof v==='number'&&v>=0)?v:1; }
+function lgRepLeft(){ return Math.max(0, lgMaxRep()-lgMine().filter(x=>x.is_replacement).length); }
+function lgZam(n){ const a=Math.abs(n)%100, b=a%10; return (a>10&&a<20)?'замін':(b===1?'заміна':(b>=2&&b<=4?'заміни':'замін')); }
+function lgWinsTxt(n){ const a=n%100, b=n%10; return (a>10&&a<20)?'перемог':(b===1?'перемога':(b>=2&&b<=4?'перемоги':'перемог')); }
+function lgRepShort(){ const m=lgMaxRep(); return m<1?'змін уже не буде':(m===1?'одна заміна за турнір':m+' '+lgZam(m)+' за турнір'); }
+function lgRepPhrase(){ const m=lgMaxRep(); return m<1?'замін нема':(m===1?'одна заміна одного вибору за турнір':'до '+m+' замін вибору за турнір'); }
+function lgRepRule(){ const m=lgMaxRep(); return m<1?'Далі вибір не змінюється — замін у цьому турнірі нема.'
+  :(m===1?'Далі — ОДНА заміна одного вибору за турнір: діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.'
+  :`Далі — до ${m} замін вибору за турнір (той самий слот можна міняти повторно): кожна діє на матчі, що ще не почались; зароблене старим лишається; серія й камбек нового клубу рахуються з нуля.`); }
+// 732: підказка перед заміною — що втрачається. Стрік (серія перемог поспіль) і Камбек (ланцюжок «результат → результат») накопичують прогрес, а в нового клубу
+// починаються З НУЛЯ; Сухар і Канонада рахуються за кожен матч окремо — прогресу не втрачають (підказка не потрібна)
+function lgLossHint(cur){
+  const rows=(S.lgLog||[]).filter(l=>S.me && l.participant_id===S.me.id && l.choice_id===cur.choice_id).sort((a,b)=>a.round_number-b.round_number);
+  if(cur.role_code==='streak'){
+    let w=0; rows.forEach(l=>{ w=(l.result==='W')?w+1:0; });
+    return w>0 ? `⚠️ Зараз у тебе <b>серія з ${w} ${lgWinsTxt(w)} поспіль</b> — після заміни вона <b>обнулиться</b>: у нового клубу серія почнеться з нуля (перша перемога очок не дасть).` : '';
+  }
+  if(cur.role_code==='comeback' && rows.length){
+    const nm={W:'перемога',D:'нічия',L:'поразка'}[rows[rows.length-1].result]||'';
+    return `⚠️ Камбек рахує зміну результату між двома матчами поспіль (зараз останній — ${nm}). Після заміни цей ланцюжок <b>обнулиться</b>: перший матч нового клубу очок за Камбек не дасть.`;
+  }
+  return '';
+}
 function lgMine(){ return (S.lgPicks||[]).filter(x=>x.is_mine); }
 function lgActive(){ return lgMine().filter(x=>x.is_active).sort((a,b)=>a.slot-b.slot); }
 // дзеркало _market_legend_free: вікенд first_round не закрито, його дедлайн попереду, мій склад на нього не підтверджено (вікенда ще нема → вільно)
@@ -2456,7 +2491,7 @@ function lgRulesHtml(){
     '',
     H('Вибір і заміна'),
     `• Вибір вільний, доки не підтвердив склад Вікенду ${f}: міняй скільки завгодно. Без вибору склад підтвердити не можна.`,
-    `• Далі — ОДНА заміна одного вибору за турнір: діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.`,
+    '• '+lgRepRule(),
     '',
     H(lgSum()?'Нарахування':'Підсумок'),
     ...(lgSum()?[
@@ -2527,7 +2562,7 @@ function lgxMatchesBox(){
     <div class="lgx-wkrow">${chips}</div><div id="lgx-mt">${lgxMatchesHtml()}</div>
     <p class="rv-hint" style="margin-bottom:0">Показано матчі ${nCl?nCl+' клубів Club Legend':'клубів пулу'} — другу команду в матчі приглушено. Очки Legend рахуються з вікендів від Вікенду ${lgFirst()}: обирай клуб, дивлячись на розклад.</p></div>`; }
 function drawLegend(){
-  const n=lgNeedPicks(), fr=lgRound(), free=lgFree(), mineAll=lgMine(), act=lgActive(), used=mineAll.some(x=>x.is_replacement), fin=lgFinished(), vis=lgVisible();
+  const n=lgNeedPicks(), fr=lgRound(), free=lgFree(), mineAll=lgMine(), act=lgActive(), left=lgRepLeft(), used=left<1, fin=lgFinished(), vis=lgVisible();
   const myRow=(S.lgStand||[]).find(x=>x.participant_id===S.me.id), tot=lgTotal(), cap=lgCap();
   const frTxt=fr?`Вікенд ${fr.number}`:'першого вікенду', frGen=fr?`Вікенду ${fr.number}`:'першого вікенду';   // frTxt — «на Вікенд N», frGen — «від/з/склади Вікенду N»
   let h=`<div class="rv-h"><b>🐐 Твої вибори</b><span class="rv-pts ${tot?'up':''}" title="твої очки Legend: сума ${n} виборів, кожен зі стелею ${cap}">${tot}/${n*cap}</span></div>
@@ -2538,13 +2573,16 @@ function drawLegend(){
     const d=S.lgDraft||[], ck=lgCheck(d), saved=act.length===n && act.every((p,i)=>d[i] && d[i].club===p.club_id && d[i].role===p.role_code);
     const cn=cid=>((S.lgCat||[]).find(x=>x.club_id===cid)||{}).club_name||clubName(cid);
     const pickBadge=(club,role)=>{ const col=lgCol(club,cn(club)); return `<span class="lgx-chip" style="--lgc:${col};--lgb:${col}22">${crestImg(club)}${esc(cn(club))}${role?` — ${lgRole(role).icon} <b>${esc(lgNameOf(club,role)||lgRole(role).title)}</b>`:''}</span>`; };   // клуб (і роль, коли вже обрано) — кольоровим чіпом з емблемою
-    h+=`<p class="rv-hint">Обери ${n} вибори — <b>без них склад на ${esc(frTxt)} підтвердити не можна</b>. До підтвердження складу міняй скільки завгодно, потім — одна заміна за турнір. Розклад матчів усіх вікендів — нижче, на цій же вкладці.</p>`
+    h+=`<p class="rv-hint">Обери ${n} вибори — <b>без них склад на ${esc(frTxt)} підтвердити не можна</b>. До підтвердження складу міняй скільки завгодно, потім — ${lgRepShort()}. Розклад матчів усіх вікендів — нижче, на цій же вкладці.</p>`
       + d.map((v,i)=>`<div class="lg-slot"><div class="lg-n">Вибір ${i+1}</div>${lgClubSelect('data-lgc="'+i+'"', v.club)}${v.club?`<div style="margin-top:7px">${pickBadge(v.club,v.role)}</div>`:''}${lgRoleChips('data-lgr', v.role, v.club).replace(/data-lgr="/g,'data-lgr="'+i+':')}</div>`).join('')
       + (!ck.ok&&d.some(x=>x.club||x.role)?`<div class="lg-err">${esc(ck.errs.join(' · '))}</div>`:'')
       + `<button class="btn" id="lg-save" style="width:100%;margin-top:10px" ${(!ck.ok||saved)?'disabled':''}>${saved?'✓ Вибір збережено':'Зберегти вибір'}</button>`;
   }else{
-    const why = used ? 'Заміну одного вибору вже використано — далі без змін до кінця турніру.'
-      : (act.length ? 'Вибір зафіксовано. Доступна <b>одна заміна одного вибору</b> за турнір: діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.' : 'Вибір не зроблено, а вільне вікно закрите.');
+    const why = !act.length ? 'Вибір не зроблено, а вільне вікно закрите.'
+      : lgMaxRep()<1 ? 'Вибір зафіксовано до кінця турніру — замін у цьому турнірі нема.'
+      : used ? `Заміни вибору використано (${lgMaxRep()} з ${lgMaxRep()}) — далі без змін до кінця турніру.`
+      : (lgMaxRep()===1 ? 'Вибір зафіксовано. Доступна <b>одна заміна одного вибору</b> за турнір: діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.'
+        : `Вибір зафіксовано. Заміни вибору: <b>залишилось ${left} з ${lgMaxRep()}</b> — кожна діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.`);
     h+=`<p class="rv-hint">${why}</p>`;
   }
   if(!free || fin){
@@ -2596,7 +2634,8 @@ function lgReplaceModal(slot){
   const draw=()=>{
     const ck=lgCheck(others.concat([v])), same=(v.club===cur.club_id && v.role===cur.role_code), nm=(v.club&&v.role)?lgNameOf(v.club,v.role):'';
     modalOpen(`<h3>🐐 Замінити вибір ${slot}</h3>
-      <p class="mnote">Зараз: ${lgRole(cur.role_code).icon} <b>${esc(cur.legend_name||cur.club_name)}</b> (${esc(cur.club_name)}). Це <b>єдина заміна</b> за турнір: нова пара діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.</p>
+      <p class="mnote">Зараз: ${lgRole(cur.role_code).icon} <b>${esc(cur.legend_name||cur.club_name)}</b> (${esc(cur.club_name)}). ${lgMaxRep()===1?'Це <b>єдина заміна</b> за турнір':`Це <b>заміна ${lgMaxRep()-lgRepLeft()+1} з ${lgMaxRep()}</b>`}: нова пара діє на матчі, що ще не почались; зароблене старим лишається; серія нового клубу рахується з нуля.</p>
+      ${lgLossHint(cur)?`<p class="mnote warn">${lgLossHint(cur)}</p>`:''}
       ${lgClubSelect('class="lg-sel" id="lgm-c"', v.club)}${lgRoleChips('data-lgmr', v.role, v.club)}
       ${(!ck.ok||same)?`<div class="lg-err">${esc(same?'це той самий вибір — нічого міняти':ck.errs.join(' · '))}</div>`:''}
       <div class="macts"><button data-do="lgmyes" ${(!ck.ok||same)?'disabled':''}>Замінити</button><button class="ghost" data-do="lgmno">Скасувати</button></div>`);
@@ -2606,7 +2645,7 @@ function lgReplaceModal(slot){
     h.querySelector('[data-do="lgmno"]').onclick=modalClose;
     h.querySelector('[data-do="lgmyes"]').onclick=()=>{
       if(!lgCheck(others.concat([v])).ok) return;
-      confirmModal(`Замінити на <b>${esc(lgNameOf(v.club,v.role)||'?')}</b> (${esc(((S.lgCat||[]).find(x=>x.club_id===v.club)||{}).club_name||'')} · ${esc(lgRole(v.role).title)})?<br>Це остання заміна за турнір — другої не буде.`, 'Так, замінити',
+      confirmModal(`Замінити на <b>${esc(lgNameOf(v.club,v.role)||'?')}</b> (${esc(((S.lgCat||[]).find(x=>x.club_id===v.club)||{}).club_name||'')} · ${esc(lgRole(v.role).title)})?${lgLossHint(cur)?'<br>'+lgLossHint(cur):''}<br>${lgRepLeft()-1<1?(lgMaxRep()===1?'Це остання заміна за турнір — другої не буде.':'Це остання заміна за турнір — більше замін не буде.'):`Після цього залишиться ще ${lgRepLeft()-1} ${lgZam(lgRepLeft()-1)}.`}`, 'Так, замінити',
         ()=>act('market_legend_replace',{p_tournament:S.tour.id,p_participant:S.me.id,p_slot:slot,p_club:v.club,p_role:v.role},'Вибір замінено',{quiet:true})); };
   };
   draw();
@@ -2614,7 +2653,7 @@ function lgReplaceModal(slot){
 function legendModalHtml(round){
   if(!lgGateOn(round)) return '';
   const a=lgActive();
-  return `<div class="msec" style="margin-top:14px">🐐 Club Legend</div><p class="mnote">${a.length?a.map(x=>`${lgRole(x.role_code).icon} <b>${esc(x.legend_name||x.club_name)}</b> (${esc(x.club_name)})`).join(' · ')+'. Після підтвердження складу вибір фіксується — далі одна заміна одного вибору за турнір.':'<b>Вибору Club Legend ще нема.</b>'}</p>`;
+  return `<div class="msec" style="margin-top:14px">🐐 Club Legend</div><p class="mnote">${a.length?a.map(x=>`${lgRole(x.role_code).icon} <b>${esc(x.legend_name||x.club_name)}</b> (${esc(x.club_name)})`).join(' · ')+'. Після підтвердження складу вибір фіксується — далі '+lgRepPhrase()+'.':'<b>Вибору Club Legend ще нема.</b>'}</p>`;
 }
 const stageOfNum = n => n <= ((S.cfg && S.cfg.stage1_last_round) || 5) ? 1 : 2;
 function boostUsedElsewhere(key, round){   // уже використано/заплановано в ІНШОМУ вікенді цього ж етапу?
@@ -2638,10 +2677,79 @@ function boostBlock(round){
   }).join('');
   return `<div class="boosts"><div class="slot-h"><span>Бусти вікенду</span><span>1 раз за турнір · один буст на вікенд</span></div>
     <div class="bgrid">${cards}</div>
-    <p class="dim" style="margin:8px 2px 0">Буст видно іншим лише після дедлайну; до підтвердження складу його можна вимкнути без наслідків (після підтвердження — ні). Автопілот і All-in разом не вмикаються.</p></div>`;
+    <p class="dim" style="margin:8px 2px 0">Буст видно іншим лише після дедлайну; до підтвердження складу його можна вимкнути без наслідків (після підтвердження — ні). Автопілот і All-in разом не вмикаються.</p>${boostPlanHint(round)}</div>`;
 }
+// 22.11 (Богдан): «підказки походу вікендів» + ГЕЙТ-ПЛАНУВАЛЬНИК для бустів. Автопілот і All-in (по 1 на ЕТАП) та позиційні (раз за ТУРНІР) діляться вікендами —
+// у ОДНОМУ вікенді може бути лише ОДНА група (Автопілот АБО All-in АБО позиційні), тож усе використати вдається, лише вмикаючи буст майже щовікенду.
+// Групи: Автопілот, All-in і «позиційні» (ОДНА група, поки лишився хоч один вид; позиційні — лише в останньому етапі, бо вони раз за турнір). Вид, якого нема в складі, ТЕЖ вимагається — треба купити гравця (рішення Богдана).
+// need = груп, ще не використаних в ІНШИХ вікендах етапу; L = вікендів до кінця етапу з цим; free = L − need. Підказка: free ≥ 2 — мовчимо; 1 — 💡; 0 — 📅 впритул (з прикладом плану); <0 — ⚠️; останній вікенд — 🏁.
+// ГЕЙТ (лише фронт, як у ЄвроСезоні; сервер не міняли): free ≤ 0 → склад без бусту НЕ підтвердити; якщо обрано позиційні — поставити ВСІ, що лишились. Помилка даних бустів → гейту нема.
+// ВИХІД (лише коли інакше глухий кут): лишились ТІЛЬКИ позиційні, а гравця потрібної позиції нема й купити не вдалося → галочка «підтверджую без цього бусту» (S.gateWaive[round.id]); інакше людина лишилась би без складу.
+const stageLastNum = st => { const c=S.cfg||{}, s1=c.stage1_last_round||5; return st===1 ? s1 : (c.stage2_last_round||2*s1); };
+const wkWord = n => `${n} ${n===1?'вікенд':(n>=2&&n<=4?'вікенди':'вікендів')}`;
+function boostPlanInfo(round){
+  if(!round || !S.boostsOK) return null;
+  const st=stageOfNum(round.number), R=stageLastNum(st)-round.number;
+  if(R<0) return null;
+  const lastStage = st===2 || !(S.cfg && S.cfg.stage2_last_round);
+  const posNow=Object.values(S.pos||{}).some(Boolean);
+  const posKinds=(S.posOK && lastStage) ? ['fwd','mid','dg'].filter(k=>posUsedElsewhere(k,round)==null) : [];     // позиційні види, ще не використані в інших вікендах
+  const have=new Set(S.players.filter(p=>p.owner_participant_id===S.me.id).map(posKindOf).filter(Boolean));
+  const posNoPlayer=posKinds.filter(k=>!have.has(k));                                                           // видів, для яких у моєму складі нема гравця — треба купити
+  const groups=[];   // групи, ще не використані в ІНШИХ вікендах етапу (разом із вибраним на цей вікенд); у списку першими — позиційні
+  if(posKinds.length) groups.push({key:'pos', short:'позиційні', name:'позиційні (усі, що лишились, одним вікендом: '+posKinds.map(k=>POSB[k].name).join(' · ')
+    +(posNoPlayer.length?`; у складі нема гравця для ${posNoPlayer.map(k=>POSB[k].name).join(' · ')} — купи його на Ринку`:'')+')'});
+  if(boostUsedElsewhere('squad_all_in',round)==null)    groups.push({key:'squad_all_in',    short:'All-in',    name:'All-in'});
+  if(boostUsedElsewhere('squad_autopilot',round)==null) groups.push({key:'squad_autopilot', short:'Автопілот', name:'Автопілот'});
+  if(!groups.length) return null;
+  const coveredNow=!!S.boost||posNow, L=R+1, need=groups.length, free=L-need;
+  const todo=groups.filter(g=> g.key==='pos' ? !posNow : S.boost!==g.key);          // що ще НЕ вибрано на цей вікенд
+  const items=todo.map(g=>g.name).join(', '), firstN=round.number+(coveredNow?1:0);
+  const plan=()=>'Наприклад: '+todo.map((g,i)=>`Вікенд ${firstN+i} — ${g.short}`).join(', ')+'.';
+  // гейт
+  const gate = free<=0;
+  const altOther = groups.some(g=>g.key!=='pos');                                   // є інша група (All-in/Автопілот) — можна обрати її замість позиційних
+  const stuck = gate && !altOther && posNoPlayer.length>0;                          // лишились тільки позиційні, а гравця нема → купити, інакше — вихід-галочка
+  const waived = !!(S.gateWaive && S.gateWaive[round.id]);
+  let gateErr=null;
+  if(gate && !(stuck && waived)){
+    if(!coveredNow){
+      gateErr = stuck ? `купи гравця для ${posNoPlayer.map(k=>POSB[k].name).join(' · ')} (Ринок) — або підтверди без позиційних (галочка)` : 'обери буст вікенду (запасу вікендів нема)';
+    } else if(posNow){
+      const miss=posKinds.filter(k=>!S.pos[k]);
+      if(miss.length) gateErr='постав усі позиційні, що лишились: '+miss.map(k=>POSB[k].name).join(' · ')+(miss.some(k=>!have.has(k))?' (купи гравця потрібної позиції)':'');
+    }
+  }
+  const gateNote = (gate && !coveredNow) ? ' <b>Без бусту склад не підтвердиться.</b>' : '';
+  let kind=null, html='';
+  if(R===0 && todo.length){
+    kind='last';
+    html = (!coveredNow && todo.length===1)
+      ? `🏁 Це останній вікенд — після нього невикористане згорить: <b>${items}</b>. Увімкни зараз.${gateNote}`
+      : `🏁 Це останній вікенд. Автопілот, All-in і позиційні бусти в одному вікенді не вмикаються — використаєш лише одне з них, решта згорить: <b>${items}</b>.${gateNote}`;
+  } else if(free<0 && todo.length){
+    kind='burn';
+    html = `⚠️ Усе не вмістиш: бустів на ${wkWord(need)}, а лишилось ${wkWord(L)} (з цим) — невикористане: <b>${items}</b>. Вони не вмикаються в одному вікенді, тож частина згорить — обери, що цінніше.${gateNote}`;
+  } else if(free===0 && R>0){
+    kind='tight';
+    html = coveredNow
+      ? `✅ На цей вікенд буст вибрано. Далі ${wkWord(R)} і невикористаних бустів рівно на стільки: <b>${items}</b> — вмикай по одному на кожному вікенді. ${plan()}`
+      : `📅 Вікендів лишилось ${L} (з цим), і невикористаних бустів рівно на стільки: <b>${items}</b>. Вони не вмикаються в одному вікенді — щоб нічого не згоріло, вмикай буст на КОЖНОМУ вікенді, що лишився, зокрема на цьому.${gateNote} ${plan()}`;
+  } else if(free===1 && !coveredNow){
+    kind='soft';
+    html = `💡 Бусти ще не використано: <b>${items}</b>. Автопілот, All-in і позиційні не вмикаються в одному вікенді, а вікендів лишилось ${L} — запасу лише на 1 вікенд без бусту. Краще вмикати вже зараз.`;
+  }
+  return {kind, html, coveredNow, gate, gateErr, stuck, waived, noPlayer:posNoPlayer};
+}
+function boostPlanHint(round){
+  const i=boostPlanInfo(round); if(!i || (!i.kind && !i.stuck)) return '';   // тупик (stuck) показуємо й без підказки — інакше галочка-вихід зникає, коли частину позиційних уже поставлено
+  const waive = i.stuck ? `<label style="display:block;margin-top:8px;cursor:pointer"><input type="checkbox" data-gatewaive ${i.waived?'checked':''}> Не можу купити гравця для ${i.noPlayer.map(k=>POSB[k].name).join(' · ')} — підтверджую вікенд без цього бусту (він згорить)</label>` : '';
+  return `<div class="stmsg ${i.kind==='tight'&&i.coveredNow?'ok':'warn'}" style="margin:10px 0 0">${i.html}${waive}</div>`;
+}
+// у модалці «Підтвердити склад»: нагадування лише коли вікенд підтверджується БЕЗ бусту (там, де гейт ще не блокує)
+function boostPlanModal(round){ const i=boostPlanInfo(round); return (i && i.kind && !i.coveredNow) ? `<div class="msec" style="margin-top:14px">⚡ Бусти</div><p class="mnote warn">Цей вікенд — без бусту. ${i.html}</p>` : ''; }
 
-function lnState(mine){
+function lnState(mine, round){
   const st = mine.filter(p=>S.lineup[p.id].role==='start');
   const bn = mine.filter(p=>S.lineup[p.id].role==='bench').sort((a,b)=>S.lineup[a.id].ord-S.lineup[b.id].ord);
   const out= mine.filter(p=>S.lineup[p.id].role==='out');
@@ -2655,6 +2763,7 @@ function lnState(mine){
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK в основі`);
   if(!auto && !cap) errs.push('обери капітана');
+  if(round && new Date(round.deadline_at) > new Date()){ const g=boostPlanInfo(round); if(g && g.gateErr) errs.push(g.gateErr); }   // 22.11: гейт-планувальник бустів
   if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 в основі)
   return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
 }
@@ -2680,11 +2789,11 @@ function rolesNoteInner(mine, noEarned, short){ if(!rolesOn()) return '';
   const over = mc>5 ? ` · <b class="warnc">«Основних» більше 5</b> — частину доведеться садити на лавку` : '';
   const mkn=penOn()?(mine||[]).filter(p=>p.marked).length:0, mkTxt=mkn?` · 🚩 з позначкою «порушив»: <b>${mkn}</b>`:'';
   if(short) return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}`;   // 10.11: без повтору «роль — обіцянка… борг…» (це в ⓘ)
-  const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за вікенд, друге порушення — гравця буде автоматично продано відразу після вікенду.`:'';
+  const pen=penOn()?` Основний не в основі на дедлайні = порушення: борг ${Math.round(debtPct()*100)}% зарплати гравця за вікенд, друге порушення — гравця буде автоматично продано відразу після вікенду.${finalWkNow()?DEBT_FINAL_RULE_TXT:''}`:'';
   return `🎭 Ролі контрактів: Основних <b>${mc}</b> · Лавка <b>${bc}</b>${over}${mkTxt}. Роль — обіцянка при підписанні, бачиш лише ти.${pen}${noEarned?'':` 🪑 ${earnedHint()}`}`; }
 function rolesBanner(mine){ const t=rolesNoteInner(mine); return t?`<div class="mnote" style="margin:8px 0">${t}</div>`:''; }
 function renderLineup(mine, round){
-  const s = lnState(mine);
+  const s = lnState(mine, round);
   const locked = !!(round && S.confOK && confOf(S.me.id, round.id));   // 533: підтверджено → фінально, лише перегляд
   const chip=(ok,txt)=>`<span class="chk ${ok?'ok':'no'}">${ok?'✓':'✕'} ${txt}</span>`;
   const val = `<div class="valid">
@@ -2810,6 +2919,7 @@ function renderLineup(mine, round){
     if(S.boost) S.pos={ fwd:null, mid:null, dg:null };                                                         // 532: позиційні бусти не поєднуються з Автопілотом/All-in
     renderLineup(mine, round);
   });
+  document.querySelectorAll('[data-gatewaive]').forEach(b=>b.onchange=()=>{ S.gateWaive=S.gateWaive||{}; S.gateWaive[round.id]=b.checked; renderLineup(mine, round); });   // 22.11: вихід із гейту, коли купити гравця не вдалося
   document.querySelectorAll('[data-pos]').forEach(b=>b.onclick=()=>{ const pid=b.dataset.pos, p=mine.find(x=>x.id===pid), k=p&&posKindOf(p); if(!k) return; S.pos[k]=(S.pos[k]===pid)?null:pid; renderLineup(mine, round); });
   document.querySelectorAll('[data-posclear]').forEach(b=>b.onclick=()=>{ S.pos[b.dataset.posclear]=null; renderLineup(mine, round); });
   document.querySelectorAll('[data-benchup]').forEach(b=>b.onclick=()=>{ moveBench(mine,b.dataset.benchup,-1); renderLineup(mine,round); });
@@ -2819,7 +2929,7 @@ function renderLineup(mine, round){
   bindTourChips();   // чіпи вікендів (15.10)
   const pb=$('view').querySelector('[data-do="pour"]'); if(pb) pb.onclick=pourModal;   // переливання бюджетів
   const save=$('ln-save');
-  if(save) save.onclick=()=>{ const s2=lnState(mine); if(s2.ok) openLineupReview(mine, round); };
+  if(save) save.onclick=()=>{ const s2=lnState(mine, round); if(s2.ok) openLineupReview(mine, round); };
 }
 
 // модалка-огляд складу перед підтвердженням (капітан/віце + порядок лавки)
@@ -2841,9 +2951,10 @@ function openLineupReview(mine, round){
     const viol=offMain.filter(x=>!x.injury), exempt=offMain.filter(x=>x.injury);
     if(viol.length){
       penBlk+=`<div class="msec" style="margin-top:14px">⚠️ Порушення ролі</div>`
+        + (finalWkNow()?`<p class="mnote">🏁 ${DEBT_FINAL_PRE_TXT}</p>`:'')   // 22.11: останній вікенд — борг ні на що не впливає
         + viol.map(x=>{
             const bi=s.bn.findIndex(b2=>b2.id===x.id), where=bi>=0?`на лавці (${bi+1}-й на заміну)`:'не в основі';
-            return `<p class="mnote warn">• <b>${esc(x.name)}</b> має роль <b>«Основний»</b>, але стоїть ${where} — це <b>порушення</b>: борг ≈ <b>${eur(Math.round(x.wage_per_round*debtPct()))}</b> (${Math.round(debtPct()*100)}% його зарплати за вікенд).${x.marked?' <b class="warnc">🚩 Він уже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після вікенду.</b>':(expiringP(x)?'':' Друге порушення цим гравцем — його буде автоматично продано відразу після вікенду.')}${expiringP(x)?' <b>Хоч у нього лишився 1 вікенд і після вікенду його однаково продадуть, штраф за роль доведеться заплатити: «не виставив в основу, бо 1 вікенд» не спрацює.</b>':''}</p>`; }).join('')
+            return `<p class="mnote warn">• <b>${esc(x.name)}</b> має роль <b>«Основний»</b>, але стоїть ${where} — це <b>порушення</b>: борг ≈ <b>${eur(Math.round(x.wage_per_round*debtPct()))}</b> (${Math.round(debtPct()*100)}% його зарплати за вікенд).${x.marked?' <b class="warnc">🚩 Він уже порушував — гравця буде АВТОМАТИЧНО ПРОДАНО відразу після вікенду.</b>':(expiringP(x)?'':' Друге порушення цим гравцем — його буде автоматично продано відразу після вікенду.')}${expiringP(x)&&!finalWkNow()?' <b>Хоч у нього лишився 1 вікенд і після вікенду його однаково продадуть, штраф за роль доведеться заплатити: «не виставив в основу, бо 1 вікенд» не спрацює.</b>':''}</p>`; }).join('')
         + `<p class="mnote">Не рахується: травма чи дискваліфікація (навіть «під питанням») або перенесений/скасований матч клубу.</p>
         <p class="mnote">Як уникнути: постав «Основного» в основу. Або зміни роль новим контрактом (продовження хоч на 1 вікенд, якщо контракт ще можна продовжити): роль «Лавка» — це надбавка +${Math.round(benchPrem()*100)}% до зарплати.</p>`;
     }
@@ -2873,6 +2984,7 @@ function openLineupReview(mine, round){
     ${bench}
     ${posPayload()?`<div class="msec" style="margin-top:14px">⚡ Позиційні бусти</div>${Object.entries(posPayload()).map(([k,id])=>{ const pl=s.st.find(p=>p.id===id); return `<p class="mnote">⚡ <b>${POSB[k].name}</b> → ${pl?esc(pl.name):'—'} · ×2, якщо зіграє (інакше згорає). Кожен буст — раз за турнір.</p>`; }).join('')}`:''}
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст вікенду</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Він фіксується разом із підтвердженням складу й спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
+    ${boostPlanModal(round)}
     </div><div class="cfcol">
     ${challengesModalHtml(s, round)}
     ${rivalsModalHtml(round)}
@@ -3376,7 +3488,7 @@ function holdTipText(canExt){
   const bp=Math.round(benchPrem()*100), ext=S.cfg?.contract_ext_mult??1;
   return 'Як це працює'
     +'\n• Роль — обіцянка при підписанні: «Основний» стоїть в основі, «Лавка» — на лавці (+'+bp+'% до зарплати). Змінити роль можна лише новим контрактом.'
-    +(penOn()?'\n• «Основний» не в основі на дедлайні = порушення: борг '+Math.round(debtPct()*100)+'% зарплати гравця за вікенд; друге порушення — гравця буде продано одразу після вікенду.':'')
+    +(penOn()?'\n• «Основний» не в основі на дедлайні = порушення: борг '+Math.round(debtPct()*100)+'% зарплати гравця за вікенд; друге порушення — гравця буде продано одразу після вікенду.'+(finalWkNow()?'\n•'+DEBT_FINAL_RULE_TXT:''):'')
     +'\n• Гравець з роллю «Лавка», що хоч раз стоїть в основі підтвердженого складу (рахується твій вибір складу, не гра), «заслужив основу»: при продовженні надбавка +'+bp+'% знімається.'
     +(canExt
       ?'\n• Нові вікенди коштують ×'+ext+' (продовження) плюс надбавка з пропозиції; старі лишаються за старою зарплатою. Разом не більше за залишок етапу.'
