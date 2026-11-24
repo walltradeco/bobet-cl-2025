@@ -1111,7 +1111,7 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 </style>
 </head>
 <body>
-<div class="stage-badge">STAGE · спільна база з PROD (Squad Mode 2026)</div>
+<div class="stage-badge">STAGE · тестовий турнір (дані не справжні) · спільна база з PROD</div>
 <!-- ЛОГІН = спільний вхід BoBet/ЄвроСезон (не дизайн турніру) -->
 <div id="screen-login" class="wrap">
     <div class="login">
@@ -1247,23 +1247,24 @@ $('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email'
 $('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
 // ── СТАРТ ──
+const SQUAD_KEY='squad_stage';   // 24.11: STAGE читає ТЕСТОВИЙ турнір; на PROD promote.py підміняє на 'squad2026'
 async function boot(){
   const { data:{ session } } = await sb.auth.getSession();
   if(!session){ $('screen-login').classList.remove('hide'); $('screen-app').classList.add('hide'); return; }
   try{ await sb.rpc('bind_me'); }catch(e){ /* самолікування, ковтаємо */ }
 
-  // squad-турнір (mode='squad', активний). Стейдж = squad_test єдиний.
-  const { data:tt } = await sb.from('tournaments')
-    .select('id,title,key,mode,status').eq('mode','squad').eq('status','active').order('starts_at',{ascending:false});
-  S.tour = (tt&&tt[0])||null;
-  S.ro = false; S.final = null;
-  if(!S.tour){   // 719: активного нема → останній ЗАВЕРШЕНИЙ Squad-турнір у режимі перегляду (архів); раніше тут було «турніру ще не відкрито»
-    const { data:ft } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('status','finished').order('starts_at',{ascending:false}).limit(1);
-    S.tour = (ft&&ft[0])||null; S.ro = !!S.tour;
-  }
+  // 24.11 (737/738): кабінет читає свій Squad-турнір ТІЛЬКИ ЗА КЛЮЧЕМ SQUAD_KEY — STAGE: тестовий 'squad_stage', PROD: справжній 'squad2026'
+  // (promote.py підміняє константу). Запасного «будь-який активний» ТУТ НЕМАЄ свідомо: база спільна, і без тестового турніру STAGE-кабінет
+  // тихо працював би на справжньому (купівля/склад/заміни = дії в реальному турнірі). Нема ключа → «турніру ще не відкрито».
+  // Завершений турнір за ключем — архів, лише перегляд (719).
+  S.tour = null; S.ro = false; S.final = null;
+  try{
+    const { data:kt } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('key',SQUAD_KEY).in('status',['active','finished']).limit(1);
+    if(kt&&kt[0]){ S.tour=kt[0]; S.ro=(kt[0].status==='finished'); }
+  }catch(e){ S.tour=null; }
   if(!S.tour){
     $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
-    $('tabs').innerHTML=''; $('view').innerHTML=`<div class="card"><h2>Squad-турнір ще не відкрито</h2><p class="dim">Активного Squad-турніру немає.</p></div>`;
+    $('tabs').innerHTML=''; $('view').innerHTML=`<div class="card"><h2>Squad-турнір ще не відкрито</h2><p class="dim">Турніру «${esc(SQUAD_KEY)}» немає або він ще не відкритий.</p></div>`;
     return;
   }
   // я в цьому турнірі?
@@ -5413,7 +5414,7 @@ const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\
 
 const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Вікенди',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',true],['log','📜','Журнал',true]];
 const ADM_SOON={};
-const ADM_ACT={tournament_finish:'Турнір завершено',tournament_reopen:'Турнір відкрито знову',round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
+const ADM_ACT={tournament_finish:'Турнір завершено',tournament_reopen:'Турнір відкрито знову',tournament_create:'Тестовий турнір створено',tournament_restart:'Тестовий турнір перезапущено',round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
   config_set:'Налаштування: параметр',module_set:'Модуль вікенду',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
   auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',fixture_ratings:'Ручні оцінки матчу',player_stats_set:'Статистика гравця (вручну)',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
@@ -6071,8 +6072,12 @@ async function admDisputes(body){
       <div class="when">Адмін бачить лише факт (без ролей і сум). «Пробачити» скасовує борги, виходи й позначки учасника та повертає його склад, якщо вікенд ще не закрито.</div></div>`;
   // 4. небезпечна зона
   const stRows=(d.stages||[]).map(s=>`<tr><td>Етап ${s.stage}</td><td>${s.closed}</td><td>${s.total}</td><td class="admbtns"><button class="mini ghost" data-dreset="${s.stage}" ${s.closed>0?'disabled title="В етапі є закриті вікенди — скинути не можна"':''}>⚠ Скинути етап</button></td></tr>`).join('');
+  // 24.11 (737): «Перезапустити тестовий турнір» — ЛИШЕ в тестовому squad_stage (на справжньому турнірі блока нема; сервер теж приймає тільки squad_stage)
+  const stageRestart=(S.tour&&S.tour.key==='squad_stage')?`<div class="stconf" style="margin:12px 0 0"><div class="cap">🧪 Тестовий турнір</div>
+    <p class="mnote warn" style="margin:0 0 8px">Це ТЕСТОВИЙ турнір (дані не справжні; справжній турнір цим не чіпається). «Перезапустити» стирає всі дані тесту — склади, ставки, угоди, рейтинги, журнал — і будує його заново: ті самі учасники, пул зі стартовими цінами, календар = копія справжнього (його поточні дедлайни й матчі). Вікенди тесту не закриваються самі — оцінки й закриття вручну.</p>
+    <button class="mini ghost" data-drestart="1">⚠ Перезапустити тестовий турнір</button></div>`:'';
   const danger=`<p class="mnote warn" style="margin:0 0 8px">Скидання етапу: усі активні лоти/пропозиції/обміни/вітрина скасовуються; усі гравці стають вільними й повертаються до стартової вартості; баланси — до стартових; склади, бусти й підтвердження незіграних вікендів етапу видаляються; борги/виходи/ролі етапу очищуються. Можливе <b>лише коли в етапі нема закритих вікендів</b>. «Знімок до» (баланси й імена гравців) піде в журнал.</p>
-    <div class="dsptw"><table class="admt"><thead><tr><th>Етап</th><th>Закритих вікендів</th><th>Усього вікендів</th><th></th></tr></thead><tbody>${stRows}</tbody></table></div>`;
+    <div class="dsptw"><table class="admt"><thead><tr><th>Етап</th><th>Закритих вікендів</th><th>Усього вікендів</th><th></th></tr></thead><tbody>${stRows}</tbody></table></div>${stageRestart}`;
   body.innerHTML=`${sec('deals','💱 Угоди зараз',nDeals,deals)}${sec('money','💶 Гроші й гравці',(d.people||[]).length,money)}${sec('lineups','🔓 Склади й ролі',null,lineups)}${sec('danger','⚠ Небезпечна зона',null,danger)}`;
   body.querySelectorAll('details.dspsec').forEach(x=>x.addEventListener('toggle',()=>{ A.dispOpen[x.dataset.g]=x.open; }));
   // ── скасування угод ──
@@ -6119,6 +6124,13 @@ async function admDisputes(body){
   body.querySelectorAll('[data-dforgive]').forEach(b=>b.onclick=()=>{ const id=b.dataset.dforgive;
     admDanger({title:'Пробачити порушення',body:`Скасувати борги, виходи й позначки «порушив» учасника «${esc(nm(id))}»? Склад на поточний вікенд (якщо його не зараховано) повернеться. Дію не можна скасувати.`,
       word:'СКАСУВАТИ',label:'Пробачити',onOk:(cf,why)=>admDispAct('admin_squad_forgive_violations',{p_participant:id,p_confirm:cf,p_reason:why},'Порушення пробачено')}); });
+  // ── перезапуск тестового турніру (737; лише squad_stage) ──
+  body.querySelectorAll('[data-drestart]').forEach(b=>b.onclick=()=>{
+    admDanger({title:'⚠ Перезапустити тестовий турнір',body:`<p style="margin:0 0 6px">Усі дані ТЕСТОВОГО турніру будуть стерті й створені заново: ті самі учасники, пул зі стартовими цінами, вікенди й матчі — копія календаря справжнього турніру. Справжній турнір не змінюється. Дію не можна скасувати.</p>`,
+      word:'ПЕРЕЗАПУСТИТИ',label:'Перезапустити',
+      onOk:async(cf,why)=>{ const {error}=await sb.rpc('admin_squad_stage_restart',{p_confirm:cf,p_reason:why});   // id турніру після цього НОВИЙ → не admCall (loadRefs зі старим id), а перезавантаження сторінки
+        if(error){ alert('⛔ '+String(error.message||error).replace(/^.*?(Squad: )/,'$1')); return; }
+        alert('✅ Тестовий турнір перезапущено'); location.reload(); }}); });
   // ── скидання етапу ──
   body.querySelectorAll('[data-dreset]').forEach(b=>b.onclick=()=>{ const st=+b.dataset.dreset, cfg=S.cfg||{};
     admDanger({title:`⚠ Скинути етап ${st}`,body:`<p style="margin:0 0 6px">Буде скасовано всі активні угоди, <b>усі гравці стануть вільними</b>, баланси повернуться до стартових (трансферний ${eur(+cfg.budget_eur||0)}, зарплатний ${eur(+cfg.wage_budget_eur||0)}), склади й бусти незіграних вікендів етапу видаляться. Закритих вікендів у етапі нема — реальні результати не постраждають. Дію не можна скасувати (знімок «до» піде в журнал).</p>`,

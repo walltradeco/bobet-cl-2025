@@ -628,7 +628,7 @@ table.grid{min-width:0}
 </style>
 </head>
 <body>
-<div class="stage-badge">STAGE · спільна база з PROD (Squad Mode 2026)</div>
+<div class="stage-badge">STAGE · тестовий турнір (дані не справжні) · спільна база з PROD</div>
 
 <header>
   <div class="hbar">
@@ -1964,9 +1964,12 @@ function curRound(rs){
 // усе, що змінюється по ходу вікенду (очки, оцінки, ціни, склади, стан «наживо») — окремо від довідників, щоб оновлювати без перезавантаження
 // 🏁 719: який Squad-турнір показує борда — АКТИВНИЙ; коли активного нема — останній ЗАВЕРШЕНИЙ (архів, лише читання).
 // Раніше борда брала перший рядок market_rounds узагалі (вибирати турнір не вміла) — зламалось би, щойно зʼявиться другий Squad-турнір.
+// 24.11 (737/738): борда читає свій турнір ЗА КЛЮЧЕМ SQUAD_KEY — STAGE: тестовий 'squad_stage', PROD: справжній 'squad2026' (promote.py підміняє константу);
+// нема такого ключа (стара база/мок) → стара логіка: активний за starts_at desc, інакше останній завершений.
+const SQUAD_KEY='squad_stage';
 async function pickTournament(){
-  let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
-  return ts.find(t=>t.status==='active')||ts[0]||null;
+  let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,key,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
+  return ts.find(t=>t.key===SQUAD_KEY)||ts.find(t=>t.status==='active')||ts[0]||null;
 }
 async function loadDynamic(){
   const tr=await pickTournament(); S.tourRow=tr;
