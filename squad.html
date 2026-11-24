@@ -935,10 +935,11 @@ function weekendDates(rid){   // «23–25 жовт.» / «30 жовт.–2 ли
 function rvxBtn(pid){ return (S.rvReady && rvRowsOf(pid).length)? `<button type="button" class="tipi hx" data-rvx="${pid}" aria-label="Звідки ця цифра">i</button>` : ''; }
 function rvxHtml(pid){
   const rows=rvRowsOf(pid), name=S.names[pid]||((S.lb.find(p=>p.participant_id===pid)||{}).display_name)||'—';
-  const opps={}; let W=0,D=0,L=0,P=0,V=0,pts=0;
+  const opps={}; let W=0,D=0,L=0,P=0,V=0,pts=0,NB=0;
   rows.forEach(x=>{
-    const nob=!!x.is_nobody, key=nob?'__nobody':(x.opponent_participant||x.opponent_name||'?');
-    const o=opps[key]||(opps[key]={name:nob?'Нікого':(x.opponent_name||'—'),nob,W:0,D:0,L:0,P:0,V:0,rows:[]});
+    if(x.is_nobody){ NB++; return; }   // 740: «Нікого» більше не вибір; старі рядки (до 740) — не «суперник» і не ⛔, лише підсумок «без дуелі»
+    const nob=false, key=(x.opponent_participant||x.opponent_name||'?');
+    const o=opps[key]||(opps[key]={name:(x.opponent_name||'—'),nob,W:0,D:0,L:0,P:0,V:0,rows:[]});
     let st=x.scored?x.status:'pending';
     if(st==='win'){ o.W++; W++; } else if(st==='draw'){ o.D++; D++; } else if(st==='loss'){ o.L++; L++; } else if(st==='pending'){ o.P++; P++; } else { o.V++; V++; st='void'; }
     if(x.scored) pts+=(x.points||0);
@@ -955,7 +956,7 @@ function rvxHtml(pid){
       const dt=weekendDates(r.rid), mark=r.st==='win'?`<span class="hx-win">✅ +${r.points}</span>`:r.st==='draw'?`<span class="hx-draw">🤝 +${r.points}</span>`:r.st==='loss'?'<span class="hx-loss">❌ 0</span>':r.st==='pending'?'<span class="hx-pending">⏳ очікує</span>':'<span class="hx-pending">⛔ не зараховано</span>';
       return `<div class="hx-w"><span>Вікенд ${r.n}${dt?' · '+dt:''}</span>${mark}</div>`; }).join('');
     return `<div class="hx-opp"><div class="hx-opp-h" data-hx-toggle="1"><span class="hx-caret">▸</span> <b>${o.nob?'<i>Нікого</i>':esc(o.name)}</b> — ${parts.join(' · ')}</div><div class="hx-opp-rows">${rr}</div></div>`; }).join('');
-  return h+`<div class="hx-foot">Усього: ${W} ✅ · ${D} 🤝 · ${L} ❌${P?' · '+P+' ⏳':''}${V?' · '+V+' ⛔':''} · очки Rivals ${pts}</div>`;
+  return h+`<div class="hx-foot">Усього: ${W} ✅ · ${D} 🤝 · ${L} ❌${P?' · '+P+' ⏳':''}${V?' · '+V+' ⛔':''}${NB?' · без дуелі '+NB:''} · очки Rivals ${pts}</div>`;
 }
 function rvxOpen(a){ if(!RVX.pop) return; RVX.pop.innerHTML=rvxHtml(a.getAttribute('data-rvx')); RVX.pop.style.display='block'; RVX.anchor=a; rvxPlace(); }
 function rvxClose(){ if(RVX.pop) RVX.pop.style.display='none'; RVX.anchor=null; }
@@ -1751,6 +1752,7 @@ function renderRules(){
   const {cfg,hy,k,pr,f1,pcs,fin5,tour3}=mgCtx();
   const total=cfg.total, one=oneStage();
   const chFirst=(S.chCfg&&S.chCfg.first_round)||null, rvFirst=(S.rvCfg&&S.rvCfg.first_round)||null;
+  const rvR=S.rounds.filter(r=>r.number>=(rvFirst||1)).length, rvN=Math.max(0,(S.lb||[]).length-1), rvD=Math.max(0,rvR-rvN), rvMaxPer=rvN>0?Math.max(1,Math.ceil(rvR/rvN)):1;   // 740: бюджет повторів суперника, як на сервері
   const band=(lbl,v)=>`<tr><td>${lbl}</td><td class="n">${v}</td></tr>`;
   const exOk = cfg.pw===0.5 && cfg.w===0.25;   // приклад підібрано під ваги 0,5 і 0,25
   const mg2 = mgShown();
@@ -1832,11 +1834,11 @@ function renderRules(){
   // 7. ⚔️
   if(S.rvReady){
     secs.push(['rv','⚔️ Rivals',`<ul>
-      <li>${rvFirst?`З <b>Вікенду ${rvFirst}</b> `:''}у кожному вікенді ти обираєш суперника — іншого учасника. Порівнюються <b>очки матчів</b> за вікенд (основа, заміни, капітан/віце, бусти); 💎, 🎯 і 💼 не рахуються.</li>
+      <li>${rvFirst?`З <b>Вікенду ${rvFirst}</b> `:''}у кожному вікенді ти обираєш суперника — іншого учасника. Порівнюються <b>очки матчів</b> за вікенд (основа, заміни, капітан/віце, бусти); ${mg2?'💎, 🎯 і 💼':'🎯 челенджі'} не рахуються.</li>
       <li>Перемога — <b>+2</b>, нічия — <b>+1</b>, поразка — <b>0</b>. Очки отримує той, хто обирав; суперник нічого не втрачає (того самого можуть обрати кілька учасників).</li>
       <li>Вибір <b>обов’язковий</b> для підтвердження складу.</li>
       <li>Суперник обирається наосліп: до підтвердження вибір вільний; після підтвердження він зафіксований до відкриття складів; після відкриття складів є <b>одна зміна</b> (до 2 годин після дедлайну).</li>
-      <li>Кожного суперника можна обрати <b>не більше одного разу за турнір</b>. «Нікого» доступний лише тоді, коли невикористаних суперників не лишилось.</li>
+      <li>${rvD<=0?'Кожного суперника можна обрати <b>не більше одного разу за турнір</b>.':(rvD===1?`Кожного суперника можна обрати по одному разу, а оскільки вікендів (${rvR}) більше, ніж суперників (${rvN}), <b>одного</b> суперника за турнір можна обрати <b>двічі</b> — максимум ${rvR*2} очок Rivals за турнір.`:`Вікендів (${rvR}) більше, ніж суперників (${rvN}), тому суперників можна повторювати: до <b>${rvD}</b> повторів за турнір, але одного — не більше ${rvMaxPer} разів.`)} У кабінеті біля імені суперника видно, скільки разів ти його вже обирав; повтор доступний і для єдиної зміни після відкриття складів.</li>
       <li>Якщо в суперника немає зарахованого складу — нічия (+1). Якщо немає в тебе (не підтвердив) — 0.</li>
       <li>Окрема номінація «⚔️ Rivals — найбільше перемог за турнір» — лише титул, без додаткових очок.</li></ul>`]);
   }
@@ -1961,9 +1963,12 @@ function curRound(rs){
 // усе, що змінюється по ходу вікенду (очки, оцінки, ціни, склади, стан «наживо») — окремо від довідників, щоб оновлювати без перезавантаження
 // 🏁 719: який Squad-турнір показує борда — АКТИВНИЙ; коли активного нема — останній ЗАВЕРШЕНИЙ (архів, лише читання).
 // Раніше борда брала перший рядок market_rounds узагалі (вибирати турнір не вміла) — зламалось би, щойно зʼявиться другий Squad-турнір.
+// 24.11 (737/738): борда читає свій турнір ЗА КЛЮЧЕМ SQUAD_KEY — STAGE: тестовий 'squad_stage', PROD: справжній 'squad2026' (promote.py підміняє константу);
+// нема такого ключа (стара база/мок) → стара логіка: активний за starts_at desc, інакше останній завершений.
+const SQUAD_KEY='squad2026';
 async function pickTournament(){
-  let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
-  return ts.find(t=>t.status==='active')||ts[0]||null;
+  let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,key,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
+  return ts.find(t=>t.key===SQUAD_KEY)||ts.find(t=>t.status==='active')||ts[0]||null;
 }
 async function loadDynamic(){
   const tr=await pickTournament(); S.tourRow=tr;
@@ -1971,17 +1976,26 @@ async function loadDynamic(){
   if(!S.rounds.length) return false;
   S.tournament=tr?tr.id:S.rounds[0].tournament_id;
   S.final=null;   // знімок підсумків (719): лише для завершеного турніру; нема вьюхи/знімка → банер без переможця
+  const rids=S.rounds.map(r=>r.id);
+  // 25.11 (перформанс, пакет 1; діагностика 24.11): раніше ~30 запитів ішли СТРОГО один за одним (борда 3–8 с, а ті самі запити паралельно ≈0,7 с).
+  // Тепер усі блоки, що залежать лише від турніру/вікендів, стартують разом; кожен зберігає СВІЙ try/catch-degrade (порядок присвоєння S.* не важливий — рендер після Promise.all).
+  const jobs=[];
+  jobs.push((async()=>{
   if(tr && tr.status==='finished'){ try{ S.final=(await sbGet(`market_final_pub?tournament_id=eq.${S.tournament}&select=finished_at,winner_names,snapshot`))[0]||null; }catch(e){ S.final=null; } }
   paintFinal();
-  const rids=S.rounds.map(r=>r.id);
-
+  })());
+  jobs.push((async()=>{
   S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
   S.names={}; S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
+  })());
+  jobs.push((async()=>{
   // mgmt_points (528) — бонус «Менеджер вікенду»; нема колонки (528 не залито) → без нього
   try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points,rival_points`); }   // rival_points — з SQL 552
   catch(eR){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points`); }   // challenge_points — з SQL 547
   catch(e0){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points`); }
   catch(e){ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`); } } }
+  })());
+  jobs.push((async()=>{
   // 🎯 челенджі (547): довідник + хто виконав; нема вьюх (547 не залито) → вкладка/іконка ховаються
   S.chReady=false; S.chDefs=[]; S.chAwards=[]; S.chCfg=null;
   try{
@@ -1990,89 +2004,144 @@ async function loadDynamic(){
     try{ S.chCfg=(await sbGet(`market_challenge_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null; }catch(e1){}
     S.chReady=S.chDefs.length>0;
   }catch(e){}
+  })());
+  jobs.push((async()=>{
   // ⚔️ Rivals (552): дошка дуелей (публічна ПІСЛЯ відкриття складів) і налаштування; нема вьюх (552 не залито) або Rivals вимкнено → іконка/номінація ховаються
   S.rvReady=false; S.rvBoard=[]; S.rvCfg=null;
   try{ S.rvCfg=(await sbGet(`market_rival_settings?tournament_id=eq.${S.tournament}&select=enabled,first_round`))[0]||null;
     S.rvBoard=await sbGet(`market_rival_board?tournament_id=eq.${S.tournament}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored&order=round_number.asc`);
     S.rvReady=!!(S.rvCfg && S.rvCfg.enabled!==false); }catch(e){ S.rvBoard=[]; S.rvReady=false; }
+  })());
+  jobs.push((async()=>{
   // 🐐 Club Legend (586/587): очки Legend уже всередині total_points (General) — тут лише прапорець для підпису; нема таблиці/рядка налаштувань → підпис ховається
   S.lgReady=false; S.lgCfg=null; S.lgRoles=[];
+  S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgCat=[];   // вьюхи самі віддають порожньо до відкриття складів Вікенду first_round
   try{ const lgSel=cols=>sbGet(`market_legend_settings?tournament_id=eq.${S.tournament}&select=${cols}`);   // 732: max_replaces (колонки нема → попередній набір)
     const lc=(await lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode,max_replaces').catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,score_mode')).catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points')))[0]; S.lgCfg=lc||null; S.lgReady=!!(lc && lc.enabled!==false);
-    if(S.lgReady){ try{ S.lgRoles=await sbGet('market_legend_roles?select=code,icon,title,description,examples,sort_order&order=sort_order.asc'); }catch(e2){ S.lgRoles=[]; } } }catch(e){ S.lgReady=false; }
-  S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgCat=[];   // вьюхи самі віддають порожньо до відкриття складів Вікенду first_round
+  }catch(e){ S.lgReady=false; }
   if(S.lgReady){ const T=S.tournament;
+    await Promise.all([   // 25.11: ролі, вибори/журнал/таблиця і довідник клубів — паралельно
+      (async()=>{ try{ S.lgRoles=await sbGet('market_legend_roles?select=code,icon,title,description,examples,sort_order&order=sort_order.asc'); }catch(e2){ S.lgRoles=[]; } })(),
+      (async()=>{
     try{ const r=await Promise.all([
       sbGet(`market_legend_picks?tournament_id=eq.${T}&select=participant_id,display_name,slot,club_id,club_name,role_code,legend_name,is_active,is_replacement,points_raw,slot_points&order=slot.asc`),
       sbGet(`market_legend_log?tournament_id=eq.${T}&select=participant_id,slot,club_id,role_code,round_number,gf,ga,result,points&order=round_number.asc`),
       sbGet(`market_legend_standings?tournament_id=eq.${T}&select=participant_id,display_name,raw_points,live_place,live_points,final_place,final_points`)]);
       S.lgPicks=r[0]; S.lgLog=r[1]; S.lgStand=r[2]; }catch(e3){ S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; }
-    try{ S.lgCat=await sbGet(`market_legend_catalog?tournament_id=eq.${T}&select=club_id,club_name`); }catch(e4){ S.lgCat=[]; } }   // 09.11: клуби Legend для блоку «Матчі вікендів» (публічний довідник)
+      })(),
+      (async()=>{ try{ S.lgCat=await sbGet(`market_legend_catalog?tournament_id=eq.${T}&select=club_id,club_name`); }catch(e4){ S.lgCat=[]; } })()   // 09.11: клуби Legend для блоку «Матчі вікендів» (публічний довідник)
+    ]); }
+  })());
+  jobs.push((async()=>{
   // 🔄 зміни правил (570): публічний журнал «що змінилось» (лише параметр і було → стало; без причини й автора); нема вьюхи (570 не залито) → блок ховається
   S.ruleChg=[];
   try{ S.ruleChg=await sbGet(`market_rule_changes?tournament_id=eq.${S.tournament}&select=created_at,kind,key,vkind,label,before,after&order=created_at.desc&limit=200`); }catch(e){ S.ruleChg=[]; }
+  })());
+  jobs.push((async()=>{
   // менеджмент (528): рядки вікенду (рахунок/місце/очки) і наскрізна; нема вьюх → вкладка «General · Management» прихована
   S.mg=[]; S.mgs=[]; S.mgReady=false;
   try{
+    await Promise.all([   // 25.11: рядки вікенду й наскрізна — паралельно
+      (async()=>{
     try{ S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,delta_pct,score,place,points`); }   // delta_pct — з SQL 531
     catch(e){ S.mg=await sbGet(`market_mgmt_round_scores?tournament_id=eq.${S.tournament}&select=round_id,participant_id,value_start_eur,delta_eur,score,place,points`); }
+      })(),
+      (async()=>{
     // final_metric (529): eur = наскрізна за Σ приросту вартості складу, score = за Σ рахунків; без нього (529 не залито) → рахунки, як у 528
     // roi_sum / hybrid_score / roi_weight — з SQL 563 (гібрид «€ + ROI»); без них (563 не залито) → попередні запити
     try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric,roi_sum,hybrid_score,roi_weight&order=place.asc`); }
     catch(e0){ try{ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final,final_metric&order=place.asc`); }
     catch(e){ S.mgs=await sbGet(`market_mgmt_standings?tournament_id=eq.${S.tournament}&select=participant_id,rounds_done,delta_eur,tour_points,total_score,place,projected_points,final_points,is_final&order=place.asc`); } }
+      })()
+    ]);
     S.mgReady=true;
   }catch(e){ S.mg=[]; S.mgs=[]; }
+  })());
+  jobs.push((async()=>{
   // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
   try{ S.bank=await sbGet(`market_bank_board?tournament_id=eq.${S.tournament}&select=stage,participant_id,display_name,round_number,bank_total,squad_price,start_total,delta,place&order=stage.asc,place.asc,display_name.asc`); S.bankReady=true; }catch(e){ S.bank=[]; S.bankReady=false; }
+  })());
+  jobs.push((async()=>{
   // бусти (view показує лише ПІСЛЯ дедлайну); degrade, якщо 501 не залито
   try{ S.boosts=await sbGet(`market_round_boost_pub?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,boost,delta,target_player`); }catch(e){ S.boosts=[]; }
+  })());
+  jobs.push((async()=>{
   try{ S.posb=await sbGet(`market_round_pos_boost_pub?tournament_id=eq.${S.tournament}&select=round_id,participant_id,kind,player_id`); }catch(e){ S.posb=[]; }   // 532: позиційні бусти (після дедлайну)
+  })());
+  jobs.push((async()=>{
   S.players=await sbGet(`market_players?tournament_id=eq.${S.tournament}&owner_participant_id=not.is.null&select=id,name,position,club_id,owner_participant_id,market_value_start,market_value_current,season_avg_rating,photo_url,appearances,injury,shirt_number`);
   S.pById={}; S.players.forEach(p=>S.pById[p.id]=p);
+  })());
+  jobs.push((async()=>{
   // статистика гравця в турнірі (434; market_player_stats публічна) — число очок у детальній картці; degrade якщо не залито
   S.stats={};
   try{ (await sbGet(`market_player_stats?tournament_id=eq.${S.tournament}&select=player_id,scored_points,rounds_played,fielded_points,fielded_rounds`)).forEach(s=>S.stats[s.player_id]=s); }catch(e){ S.stats={}; }
+  })());
+  jobs.push((async()=>{
   // лайнап (RLS: чужий видно після дедлайну) + очки гравця за вікенд
   S.lineup=await sbGet(`market_lineup?round_id=in.(${rids.join(',')})&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice`);
+  })());
+  jobs.push((async()=>{
   S.ppr={}; S.form={};
   (await sbGetAll(`market_player_round_points?tournament_id=eq.${S.tournament}&select=round_id,player_id,points,avg_rating&order=round_id.asc,player_id.asc`))   // 09.11: рядків уже >1000 (ліміт PostgREST) → читаємо сторінками, інакше «очки по вікендах» у картці не сходяться з «Набрав очок»
     .forEach(r=>{ S.ppr[r.player_id+'|'+r.round_id]=r.points;
       (S.form[r.player_id]=S.form[r.player_id]||[]).push(r.avg_rating); });
+  })());
+  jobs.push((async()=>{
   // журнал цін (400; публічний): множник руху ціни гравця ЗА ВІКЕНД — ▲▼ плитки й Val Δ складу ОБРАНОГО вікенду (п.3 відгуку 12.10); не залежить від поточного власника
   S.plog={}; S.plogReady=false;
   try{ (await sbGetAll(`market_price_log?round_id=in.(${rids.join(',')})&select=round_id,player_id,mult,value_after,avg_rating,points&order=round_id.asc,player_id.asc`))
         .forEach(r=>S.plog[r.player_id+'|'+r.round_id]=r); S.plogReady=true; }catch(e){ S.plog={}; S.plogReady=false; }
+  })());
+  jobs.push((async()=>{
   // 516: стан кожного гравця лайнапу «наживо» (зіграв/чекає матч/не грав), що вже в сумі, де ×2; нема вьюхи → старий розрахунок плиток
   // розклад матчів (публічний) — час старту на плитках «матч попереду»; нема доступу → без часу
   try{ S.fix=await sbGet(`market_fixtures?tournament_id=eq.${S.tournament}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc`); }catch(e){ S.fix=[]; }
+  })());
+  jobs.push((async()=>{
   // весь пул (публічний): імена гравців у вкладці «Матчі» + які клуби мають гравців; статичний — вантажимо раз
   if(!S.pool){ try{ S.pool=await sbGet(`market_players?tournament_id=eq.${S.tournament}&select=id,name,position,club_id,in_pool`); S.poolBy={}; S.pool.forEach(x=>S.poolBy[x.id]=x); }catch(e){ S.pool=null; } }
+  })());
+  jobs.push((async()=>{
   S.live=[]; S.liveBy={}; S.liveReady=false;
   try{
     S.live=await sbGet(`market_squad_live?tournament_id=eq.${S.tournament}&select=round_id,participant_id,player_id,role,bench_order,is_captain,is_vice,state,points,avg_rating,counted,dbl`);
     S.liveReady=true;
     S.live.forEach(r=>{ const k=r.round_id+'|'+r.participant_id; (S.liveBy[k]=S.liveBy[k]||[]).push(r); });
   }catch(e){}
+  })());
+  jobs.forEach(j=>j.catch(()=>{}));   // перша помилка перериває Promise.all нижче; решта не лишає «unhandled rejection»
+  await Promise.all(jobs);
   return true;
 }
-async function boot(){
-  try{
-    if(!(await loadDynamic())){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
-    (await sbGet('market_clubs?select=id,name,league,sofascore_tid')).forEach(c=>S.clubs[c.id]=c);
-    // межа етапу (market_config; анонімно читається); degrade, якщо 501 не залито
-    // + налаштування менеджменту (528: очки за вікенд/турнір, кількість вікендів); без них (528 не залито) → старий запит
-    { let cf=null;
+// 25.11 (перформанс): market_config читається без залежності від турніру — старт разом з loadDynamic; кожен запит зберігає каскад degrade (старі БД без колонок)
+async function loadBoardCfg(){
+  let cf=null;
       try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight,mgmt_pct_weight,price_up_top_threshold,price_up_top_pct,price_up_hi_threshold,price_up_hi_pct,price_dn_lo_threshold,price_dn_lo_pct,price_dn_deep_threshold,price_dn_deep_pct'); }
       catch(e00){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight,mgmt_pct_weight'); }
       catch(e0){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round,mgmt_tour_points,mgmt_final_points,mgmt_total_rounds,mgmt_value_weight'); }
       catch(e){ try{ cf=await sbGet('market_config?select=tournament_id,stage1_last_round'); }catch(e2){} } } }
+  let ac=null;
+  try{ ac=await sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min,ratings_settle_hours')
+          .catch(()=>sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min'));   // до SQL 583 колонки ratings_settle_hours нема
+    }catch(eAc){ ac=null; }
+  return {cf, ac};
+}
+async function boot(){
+  try{
+    // 25.11 (перформанс): клуби й market_config не залежать від турніру — стартують паралельно з loadDynamic
+    const clubsP=sbGet('market_clubs?select=id,name,league,sofascore_tid'); clubsP.catch(()=>{});
+    const cfgP=loadBoardCfg();
+    if(!(await loadDynamic())){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
+    (await clubsP).forEach(c=>S.clubs[c.id]=c);
+    // межа етапу (market_config; анонімно читається); degrade, якщо 501 не залито
+    // + налаштування менеджменту (528: очки за вікенд/турнір, кількість вікендів); без них (528 не залито) → старий запит
+    { let cf=null;
+      cf=(await cfgP).cf;
       const row=cf&&(cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null));
       if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round;
       // правила закриття вікенду для спільного тексту в банері (579/575); окремим запитом, щоб старі БД без цих колонок не ламали решту
-      try{ const ac=await sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min,ratings_settle_hours')
-          .catch(()=>sbGet('market_config?select=tournament_id,autoclose_adaptive,autoclose_cap_hours,ratings_recheck_hours,autoclose_buffer_min'));   // до SQL 583 колонки ratings_settle_hours нема
-        S.acCfg=(ac||[]).find(c=>c.tournament_id===S.tournament)||(ac||[]).find(c=>c.tournament_id==null)||null; }catch(eAc){ S.acCfg=null; }
+      { const ac=(await cfgP).ac; S.acCfg=ac?((ac||[]).find(c=>c.tournament_id===S.tournament)||(ac||[]).find(c=>c.tournament_id==null)||null):null; }
       if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25, pw:row.mgmt_pct_weight!=null?+row.mgmt_pct_weight:0,
         pr:{top:row.price_up_top_threshold!=null?+row.price_up_top_threshold:9, topP:row.price_up_top_pct!=null?+row.price_up_top_pct:0.10, hi:row.price_up_hi_threshold!=null?+row.price_up_hi_threshold:7.5, hiP:row.price_up_hi_pct!=null?+row.price_up_hi_pct:0.05,
             lo:row.price_dn_lo_threshold!=null?+row.price_dn_lo_threshold:6.5, loP:row.price_dn_lo_pct!=null?+row.price_dn_lo_pct:-0.05, deep:row.price_dn_deep_threshold!=null?+row.price_dn_deep_threshold:6, deepP:row.price_dn_deep_pct!=null?+row.price_dn_deep_pct:-0.10}}; }

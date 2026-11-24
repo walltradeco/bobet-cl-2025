@@ -199,6 +199,11 @@ table.t{width:100%;border-collapse:collapse}
 .dgbanner.dgb-ok{color:var(--up,#6fcf8f);border-color:rgba(111,207,143,.35)}
 .dgbanner.dgb-warn{color:var(--gold);border-color:var(--gold);background:rgba(212,175,55,.08)}
 .dgbanner.dgb-bad{color:#ff8a80;border-color:rgba(255,138,128,.5);background:rgba(255,138,128,.08)}
+/* 24.11 (беклог Богдана, варіант А): «клуб не грає цього вікенду» — банер у «Мій склад» і «Ринок» */
+.npbanner{margin:10px 0;padding:9px 14px;border-radius:10px;font-size:13px;line-height:1.5;border:1px solid var(--gold);background:rgba(212,175,55,.08)}
+.npbanner .nph{color:var(--gold)}
+.npbanner .npl{margin-top:5px}
+.npbanner .npl.dim{opacity:.8}
 .mtile.dgblock{opacity:.55}
 .mdgb{font-size:10px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--gold);margin:-2px 0 4px}
 .mtile{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 12px 12px;
@@ -378,6 +383,7 @@ table.t{width:100%;border-collapse:collapse}
 .strow .vv{font-family:var(--mono);font-weight:700;font-size:13px}
 
 /* 📇 Колекція — картки (22.10: режими «Мої» · «Усі Rare/Mega» · «Учасник») */
+.colnote{color:var(--dim);font-size:12px;line-height:1.5;margin:-6px 2px 2px}   /* 24.11: звʼязок Колекція → профіль (беклог Богдана 24.11) */
 .col-modes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:12px 0 0}
 .cmode{background:var(--panel);color:var(--text-dim);border:1px solid var(--line);border-radius:9px;padding:8px 14px;font-size:13px;font-weight:700}
 .cmode b{color:var(--text);font-family:var(--mono);margin-left:2px}
@@ -1241,23 +1247,24 @@ $('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email'
 $('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
 // ── СТАРТ ──
+const SQUAD_KEY='squad2026';   // 24.11: STAGE читає ТЕСТОВИЙ турнір; на PROD promote.py підміняє на 'squad2026'
 async function boot(){
   const { data:{ session } } = await sb.auth.getSession();
   if(!session){ $('screen-login').classList.remove('hide'); $('screen-app').classList.add('hide'); return; }
   try{ await sb.rpc('bind_me'); }catch(e){ /* самолікування, ковтаємо */ }
 
-  // squad-турнір (mode='squad', активний). Стейдж = squad_test єдиний.
-  const { data:tt } = await sb.from('tournaments')
-    .select('id,title,key,mode,status').eq('mode','squad').eq('status','active').order('starts_at',{ascending:false});
-  S.tour = (tt&&tt[0])||null;
-  S.ro = false; S.final = null;
-  if(!S.tour){   // 719: активного нема → останній ЗАВЕРШЕНИЙ Squad-турнір у режимі перегляду (архів); раніше тут було «турніру ще не відкрито»
-    const { data:ft } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('status','finished').order('starts_at',{ascending:false}).limit(1);
-    S.tour = (ft&&ft[0])||null; S.ro = !!S.tour;
-  }
+  // 24.11 (737/738): кабінет читає свій Squad-турнір ТІЛЬКИ ЗА КЛЮЧЕМ SQUAD_KEY — STAGE: тестовий 'squad_stage', PROD: справжній 'squad2026'
+  // (promote.py підміняє константу). Запасного «будь-який активний» ТУТ НЕМАЄ свідомо: база спільна, і без тестового турніру STAGE-кабінет
+  // тихо працював би на справжньому (купівля/склад/заміни = дії в реальному турнірі). Нема ключа → «турніру ще не відкрито».
+  // Завершений турнір за ключем — архів, лише перегляд (719).
+  S.tour = null; S.ro = false; S.final = null;
+  try{
+    const { data:kt } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('key',SQUAD_KEY).in('status',['active','finished']).limit(1);
+    if(kt&&kt[0]){ S.tour=kt[0]; S.ro=(kt[0].status==='finished'); }
+  }catch(e){ S.tour=null; }
   if(!S.tour){
     $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
-    $('tabs').innerHTML=''; $('view').innerHTML=`<div class="card"><h2>Squad-турнір ще не відкрито</h2><p class="dim">Активного Squad-турніру немає.</p></div>`;
+    $('tabs').innerHTML=''; $('view').innerHTML=`<div class="card"><h2>Squad-турнір ще не відкрито</h2><p class="dim">Турніру «${esc(SQUAD_KEY)}» немає або він ще не відкритий.</p></div>`;
     return;
   }
   // я в цьому турнірі?
@@ -1443,7 +1450,21 @@ async function act(fn, args, okMsg, opts){
   S.keepDraft = (S.tab==='my' && fn!=='market_set_lineup' && S.lineup && S.lineupRound)
     ? { rid:S.lineupRound.id, lineup:JSON.parse(JSON.stringify(S.lineup)), boost:S.boost, pos:{...S.pos} } : null;
   if(fn==='market_set_lineup') S.draftStore=null;   // 16.11: склад підтверджено — збережена на час переходів чернетка більше не потрібна
-  try{ await loadRefs(); await go(S.tab, !!(opts&&opts.quiet), true); }   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні; true = не знімати чернетку вдруге (її вже збережено вище)
+  try{
+    // 25.11 (Богдан: «кліки гальмують»): вибір суперника Rivals змінює ЛИШЕ мої рядки й борд Rivals → оновлюємо тільки їх (3 запити замість ≈41: loadRefs ≈29 + повний «Мій склад» ≈12) і
+    // перемальовуємо редактор з памʼяті (чернетка складу/бустів лишається як є). Не вдалось / не в редакторі → повний шлях нижче, як раніше.
+    if(fn==='market_set_rival' && S.tab==='my' && editorOpen()){
+      try{
+        await reloadRivalsLite();
+        if(editorOpen()){   // за час запиту учасник міг перейти на іншу вкладку/вікенд — тоді нічого не малюємо поверх
+          const y=window.scrollY, mineP=S.players.filter(p=>p.owner_participant_id===S.me.id);
+          renderLineup(mineP, S.lineupRound); window.scrollTo(0,y);
+        }
+        return;
+      }catch(eL){ /* легке оновлення не вдалось → повний шлях */ }
+    }
+    await loadRefs(); await go(S.tab, !!(opts&&opts.quiet), true);   // quiet (21.10, Rivals): без «завантаження…» і без стрибка прокрутки — як в ЄвроСезоні; true = не знімати чернетку вдруге (її вже збережено вище)
+  }
   finally{ S.keepDraft=null; }
 }
 // ── 16.11 (QA кабінету): ЧЕРНЕТКА СКЛАДУ ПЕРЕЖИВАЄ ПЕРЕХОДИ ──
@@ -1692,7 +1713,7 @@ async function go(tab, quiet, noSnap){
   const fn={my:viewSquad,market:viewMarket,collection:viewCollection,stats:viewStats,table:viewTable,news:viewNews,prizes:viewPrizes,admin:viewAdmin}[tab];
   if(!fn) return;
   naSync();   // права панель новин: показати/сховати за вкладкою й освіжити
-  if(!S.ro) pressBoot();   // 715: питання преси створює база, коли відкриваєш кабінет; тут — оновити лічильник і (раз на ~6 год) показати вікно. 719: у завершеному турнірі нових питань нема
+  if(!S.ro) pressBoot();   // 715: питання преси створює база, коли відкриваєш кабінет; тут — оновити лічильник і показати вікно (25.11: при кожному відкритті сторінки, поки є питання без відповіді). 719: у завершеному турнірі нових питань нема
   const run=fn();
   if(quiet){ await run; window.scrollTo(0,y); }
   return run;
@@ -2117,33 +2138,45 @@ function viewRoundResult(r){
   if(!closed) S.rrTimer=setTimeout(async()=>{ if(S.tab==='my' && S.ctour===r.id){ await loadRR(true); await loadTourLog(r.id,true); if(S.tab==='my' && S.ctour===r.id) viewRoundResult(r); } }, 60000);   // вікенд у грі: освіжаємо раз на хвилину
 }
 // ── 🧩 МІЙ СКЛАД + ЛАЙНАП (виставлення стартової 5 / капітан / віце / лавка) ──
+// 25.11: дані редактора «Мого складу» одним паралельним кроком. boosts/posb === null → таблиці нема або запит не вдався (блок бустів ховається, як і раніше: S.boostsOK/S.posOK = false); lu при помилці = [].
+async function loadSquadEditorData(round){
+  const me = S.me.id;
+  const [lu, boosts, posb] = await Promise.all([
+    round ? sbSel(`market_lineup?round_id=eq.${round.id}&participant_id=eq.${me}&select=player_id,role,bench_order,is_captain,is_vice`).catch(()=>[]) : Promise.resolve([]),
+    sbSel(`market_round_boosts?participant_id=eq.${me}&select=round_id,boost`).catch(()=>null),
+    sbSel(`market_round_pos_boosts?participant_id=eq.${me}&select=round_id,kind,player_id`).catch(()=>null) ]);
+  return { lu, boosts, posb };
+}
 async function viewSquad(){
   const mine = S.players.filter(p=>p.owner_participant_id===S.me.id);
   // вікенд для виставлення = найближчий із дедлайном попереду (лок після дедлайну)
   const round = S.rounds.find(r => new Date(r.deadline_at) > new Date()) || null;
   clearTimeout(S.rrTimer);
-  await loadLegend();
+  // 25.11 (Богдан: «перемикання вкладок і кліки гальмують»): раніше loadLegend → loadRR → loadChallenges → loadRivals → lineup → бусти → позиційні бусти йшли СТРОГО по черзі
+  // (≈12–14 запитів один за одним ≈1 с при 90 мс/запит). Тепер усе незалежне стартує одразу; порядок присвоєння S.* і гілки вибору екрана — ті самі, що й були.
+  const toLg = S.ctour==='legend';
+  const cur0 = (S.rounds||[]).find(r=>r.id===S.ctour) || null;
+  const needEd = !toLg && (round ? (!cur0 || cur0.id===round.id) : !(S.rounds||[]).length);   // екран «редактор складу» (а не результат вікенду/Legend) — тоді склад і бусти потрібні
+  const lgP = loadLegend();
+  const restP = toLg ? null : Promise.all([ loadRR(), loadChallenges(), loadRivals() ]);   // на вкладку Legend (lgOn) решту не вантажимо — як і раніше
+  const edP = needEd ? loadSquadEditorData(round) : null;
+  await lgP;
   if(S.ctour==='legend'){ if(lgOn()) return viewLegend(); S.ctour=null; }   // 🐐 Legend: окрема псевдо-вкладка рядка вікендів; вимкнено → звичайний вигляд
-  await loadRR();
-  await loadChallenges();
-  await loadRivals();
+  await (restP || Promise.all([ loadRR(), loadChallenges(), loadRivals() ]));
+  await loadNoPlay(round);   // 24.11: «клуб не грає цього вікенду» (банер А + рядок у модалці В); після loadRR — бере матчі з S.rr.fix без запиту
   // вибраний чіп вікенду (15.10): за замовчуванням — відкритий вікенд для виставлення; вікенди без виставлення — результат; коли відкритого нема — останній створений
   let cur = S.rounds.find(r=>r.id===S.ctour) || null;
   if(!cur && !round && S.rounds.length) cur = S.rounds.slice().sort((a,b)=>b.number-a.number)[0];
   if(cur && (!round || cur.id!==round.id)){ S.ctour=cur.id; return viewRoundView(cur, round); }
   S.ctour = round ? round.id : null;
-  let lu = [];
-  if(round){
-    try{ lu = await sbSel(`market_lineup?round_id=eq.${round.id}&participant_id=eq.${S.me.id}&select=player_id,role,bench_order,is_captain,is_vice`); }catch(e){}
-  }
+  const ed = await (edP || loadSquadEditorData(round));   // 25.11: склад + бусти + позиційні бусти — паралельно (і вже в польоті поруч із loadLegend/loadRR/…)
+  const lu = ed.lu;
   // чернетка лайнапу: player_id → {role:'start'|'bench'|'out', cap, vice, ord}
   // бусти вікенду (501): свої рядки видно завжди; немає таблиці (501 не залито) → блок ховається
-  S.myBoosts = []; S.boostsOK = true;
-  try{ S.myBoosts = await sbSel(`market_round_boosts?participant_id=eq.${S.me.id}&select=round_id,boost`); }catch(e){ S.boostsOK=false; }
+  S.myBoosts = ed.boosts || []; S.boostsOK = ed.boosts !== null;
   S.boost = (round && (S.myBoosts.find(b=>b.round_id===round.id)||{}).boost) || null;
   // позиційні бусти (532): свої рядки видно завжди; немає таблиці (532 не залито) → блок ховається
-  S.myPosBoosts = []; S.posOK = true;
-  try{ S.myPosBoosts = await sbSel(`market_round_pos_boosts?participant_id=eq.${S.me.id}&select=round_id,kind,player_id`); }catch(e){ S.posOK=false; }
+  S.myPosBoosts = ed.posb || []; S.posOK = ed.posb !== null;
   S.pos = { fwd:null, mid:null, dg:null };
   if(round) S.myPosBoosts.filter(b=>b.round_id===round.id).forEach(b=>{ if(b.kind in S.pos) S.pos[b.kind]=b.player_id; });
   S.lineup = {}; S.lineupRound = round;
@@ -2216,10 +2249,12 @@ const CH_RULES = {
 // челенджі (547): довідник, налаштування турніру й мої нарахування; немає таблиць (547 не залито) → блок ховається
 async function loadChallenges(){
   S.chOK = true; S.chDefs = []; S.chCfg = null; S.chAwards = [];
-  try{
-    S.chDefs = await sbSel('market_challenges?select=key,sort,title,description,points,active&order=sort.asc');
-    S.chCfg = (await sbSel(`market_challenge_settings?tournament_id=eq.${S.tour.id}&select=enabled,first_round`))[0] || null;
-    S.chAwards = await sbSel(`market_challenge_board?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=challenge_key,round_number,awarded_points`);
+  try{   // 25.11 (перформанс кліків): три незалежні запити — паралельно (раніше по черзі)
+    const [defs, cfg, aw] = await Promise.all([
+      sbSel('market_challenges?select=key,sort,title,description,points,active&order=sort.asc'),
+      sbSel(`market_challenge_settings?tournament_id=eq.${S.tour.id}&select=enabled,first_round`),
+      sbSel(`market_challenge_board?tournament_id=eq.${S.tour.id}&participant_id=eq.${S.me.id}&select=challenge_key,round_number,awarded_points`) ]);
+    S.chDefs = defs; S.chCfg = cfg[0] || null; S.chAwards = aw;
   }catch(e){ S.chOK=false; }
 }
 function chDoneMap(){ const o={}; (S.chAwards||[]).forEach(a=>o[a.challenge_key]=a); return o; }
@@ -2261,22 +2296,39 @@ function challengesRoundBlock(r){
     <div class="chl">${rows||'<p class="dim" style="margin:6px 2px">У цьому вікенді нових челенджів не виконано.</p>'}</div></div>`;
 }
 // ── ⚔️ RIVALS (552; рішення Богдана 19.10): дуель на вікенд, як у ЄвроСезоні; вибір суперника ОБОВ'ЯЗКОВИЙ для підтвердження складу ──
-// «Нікого» показується лише коли невикористаних суперників не лишилось; той самий суперник — раз за турнір; вибір наосліп, одна зміна після відкриття складів.
+// 25.11 (Богдан, SQL 740): «Нікого» ПРИБРАНО як вибір — натомість одного суперника можна обрати ДВІЧІ (6 вікендів / 5 суперників → кожного по разу + один повтор, 12 очок). Вибір наосліп; повтор доступний і для першого вибору, і для єдиної зміни після відкриття складів. Правило (R, N, D, maxPer) рахується тут так само, як на сервері (_market_rival_repeat_ok).
 // Немає таблиць/рядка налаштувань (552 не залито або Rivals вимкнено) → блок ховається, підтвердження не блокується.
 async function loadRivals(){
   S.rvOK=true; S.rvCfg=null; S.rvMine=[]; S.rvBoard=[];
-  try{
-    S.rvCfg=(await sbSel(`market_rival_settings?tournament_id=eq.${S.tour.id}&select=enabled,first_round`))[0]||null;
-    S.rvMine=await sbSel(`market_my_rival?tournament_id=eq.${S.tour.id}&select=round_id,round_number,opponent_participant,opponent_name,is_nobody,first_opponent_name,first_is_nobody,post_open_used,status,points,chooser_pts,opponent_pts,opp_counted,scored`);
-    S.rvBoard=await sbSel(`market_rival_board?tournament_id=eq.${S.tour.id}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,first_opponent_name,first_is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored`);
+  try{   // 25.11 (перформанс кліків): налаштування, мої рядки й борд Rivals — паралельно (раніше по черзі)
+    const [cfg, mine, board] = await Promise.all([
+      sbSel(`market_rival_settings?tournament_id=eq.${S.tour.id}&select=enabled,first_round`), rvQMine(), rvQBoard() ]);
+    S.rvCfg=cfg[0]||null; S.rvMine=mine; S.rvBoard=board;
   }catch(e){ S.rvOK=false; }
+}
+const rvQMine  = () => sbSel(`market_my_rival?tournament_id=eq.${S.tour.id}&select=round_id,round_number,opponent_participant,opponent_name,is_nobody,first_opponent_name,first_is_nobody,post_open_used,status,points,chooser_pts,opponent_pts,opp_counted,scored`);
+const rvQBoard = () => sbSel(`market_rival_board?tournament_id=eq.${S.tour.id}&select=round_id,round_number,chooser_participant,chooser_name,opponent_participant,opponent_name,is_nobody,first_opponent_name,first_is_nobody,status,points,chooser_pts,opponent_pts,opp_counted,scored`);
+// 25.11: після вибору суперника змінюються ЛИШЕ мої рядки й борд Rivals (налаштування — ні) → «легке» оновлення замість loadRefs() + повного перемальовування «Мого складу» (≈41 запит → 3). Кидає виняток → act() іде повним шляхом.
+async function reloadRivalsLite(){
+  const [mine, board] = await Promise.all([ rvQMine(), rvQBoard() ]);
+  S.rvMine = mine; S.rvBoard = board; S.rvOK = true;
 }
 function rvOn(round){ const c=S.rvCfg; return !!(S.rvOK && round && c && c.enabled!==false && round.number>=(c.first_round||1)); }
 function rvMy(round){ return (S.rvMine||[]).find(x=>x.round_id===round.id)||null; }
-function rvUsed(round){ const o={}; (S.rvMine||[]).filter(x=>x.round_id!==round.id && x.opponent_participant).forEach(x=>{ o[x.opponent_participant]=x.round_number; }); return o; }
+// 740: скільки разів і в яких вікендах я вже обирав кожного суперника — лише ІНШІ вікенди (поточний не рахується, як і на сервері)
+function rvTimes(round){ const o={}; (S.rvMine||[]).filter(x=>x.round_id!==round.id && x.opponent_participant).forEach(x=>{ (o[x.opponent_participant]=o[x.opponent_participant]||[]).push(x.round_number); }); Object.keys(o).forEach(k=>o[k].sort((a,b)=>a-b)); return o; }
 function rvCandidates(){ return Object.keys(S.names||{}).filter(id=>id!==S.me.id).sort((a,b)=>String(S.names[a]).localeCompare(String(S.names[b]))); }
-function rvUnused(round){ const u=rvUsed(round); return rvCandidates().filter(id=>u[id]==null); }
-function rvRoundsMax(){ const c=S.rvCfg||{}, total=Math.max((S.cfg&&S.cfg.mgmt_total_rounds)||6,(S.rounds||[]).length); return Math.max(0, total-((c.first_round||1)-1)); }
+// R — Rivals-вікендів (номер ≥ first_round), N — суперників, D = max(0, R−N) — бюджет повторів, max = ceil(R/N) — скільки разів можна обрати одного суперника
+function rvR(){ const c=S.rvCfg||{}, f=c.first_round||1, n=(S.rounds||[]).filter(r=>r.number>=f).length; return n || Math.max(0, Math.max((S.cfg&&S.cfg.mgmt_total_rounds)||6,(S.rounds||[]).length)-(f-1)); }
+function rvRules(){ const R=rvR(), N=rvCandidates().length; return {R,N,D:Math.max(0,R-N),max:N>0?Math.max(1,Math.ceil(R/N)):1}; }
+function rvRepLeft(T,rl){ let used=0; Object.keys(T).forEach(k=>{ used+=Math.max(0,T[k].length-1); }); return Math.max(0, rl.D-used); }
+function rvCanPick(tms,rl,repLeft){ return tms===0 || (rl.D>0 && repLeft>0 && tms<rl.max); }
+function rvRuleTxt(rl,repLeft){
+  if(rl.D<=0) return 'Кожного суперника можна обрати лише раз за турнір.';
+  const left = rl.D===1 ? (repLeft>0?'повтор ще не використано':'повтор уже використано') : (repLeft>0?`повторів лишилось ${repLeft} з ${rl.D}`:'повторів не лишилось');
+  return rl.D===1 ? `Вікендів ${rl.R}, а суперників ${rl.N} — тому одного суперника за турнір можна обрати двічі (${left}); решту — по одному разу.`
+                  : `Вікендів ${rl.R}, а суперників ${rl.N} — тому суперників можна повторювати: до ${rl.D} повторів за турнір, але одного — не більше ${rl.max} разів (${left}).`;
+}
 // фаза вибору: free (до підтвердження) · locked_conf (підтверджено, склади ще закриті) · switch (відкрито, одна зміна) · locked_open (відкрито, зміну витрачено/вікно закрито) · closed
 function rvPhase(round){
   if(round.results_entered_at) return 'closed';
@@ -2289,66 +2341,66 @@ function rvStatusMark(x){
   if(x.status==='win')  return `<span style="color:var(--up)">⚔️ переміг +${x.points}</span>`;
   if(x.status==='draw') return `<span class="dim">⚔️ нічия +${x.points}${x.opp_counted===false?' (суперник без складу)':''}</span>`;
   if(x.status==='loss') return `<span class="dim">⚔️ поразка +0</span>`;
-  if(x.status==='nobody') return `<span class="dim">⚔️ Нікого · 0</span>`;
+  if(x.status==='nobody') return `<span class="dim">⚔️ без дуелі · 0</span>`;   // лише старі дані (до SQL 740)
   if(x.status==='void') return `<span class="dim">⚔️ склад не зараховано · 0</span>`;
   return `<span class="dim">⚔️ очікує</span>`;
 }
 function rivalBox(round){
   if(!rvOn(round)) return '';
-  const my=rvMy(round), ph=rvPhase(round), used=rvUsed(round), unused=rvUnused(round), nobodyOk=unused.length===0;
+  const my=rvMy(round), ph=rvPhase(round), T=rvTimes(round), rl=rvRules(), repLeft=rvRepLeft(T,rl), mg=mgActive();
   const rrPts={}; ((S.rr&&S.rr.rs)||[]).filter(x=>x.round_id===round.id).forEach(x=>{ rrPts[x.participant_id]=x.points||0; });
   const mineAll=(S.rvMine||[]).slice().sort((a,b)=>a.round_number-b.round_number);
-  const got=mineAll.reduce((a,x)=>a+(x.scored?(x.points||0):0),0), max=rvRoundsMax()*2;
-  const brk=mineAll.map(x=>`Вікенд ${x.round_number}: ${x.scored?(x.status==='nobody'?'Нікого':'+'+(x.points||0)+'/2'):(x.is_nobody?'Нікого':'очікує')}`).join(' · ');
+  const got=mineAll.reduce((a,x)=>a+(x.scored?(x.points||0):0),0), max=rl.R*2;
+  const brk=mineAll.map(x=>`Вікенд ${x.round_number}: ${x.scored?(x.status==='nobody'?'без дуелі':'+'+(x.points||0)+'/2'):(x.is_nobody?'без дуелі':'очікує')}`).join(' · ');
   let h=`<div class="rv-h"><b>⚔️ Rivals · дуель на вікенд</b><span class="rv-pts ${got?'up':''}" title="взято за турнір із можливих">${got}/${max}</span></div>
     ${brk?`<div class="rv-bd">${brk}</div>`:''}
-    <p class="rv-desc">Дуель на вікенд: порівнюються твої очки матчів за цей вікенд і суперникові — основа й заміни з лавки, капітан/віце ×2, бусти (Автопілот, All-in, позиційні ×2), без 💎 менеджменту, 🎯 челенджів і самого Rivals. Виграв — +2, нічия — +1, програв — 0. Рівні очки — нічия (тайбрейка нема).</p>`;
+    <p class="rv-desc">Дуель на вікенд: порівнюються твої очки матчів за цей вікенд і суперникові — основа й заміни з лавки, капітан/віце ×2, бусти (Автопілот, All-in, позиційні ×2), без ${mg?'💎 менеджменту, ':''}🎯 челенджів і самого Rivals. Виграв — +2, нічия — +1, програв — 0. Рівні очки — нічия (тайбрейка нема).</p>`;
   const chipsHtml=(canClick)=>{
-    const chips=rvCandidates().map(id=>{ const isMine=my && my.opponent_participant===id, usedT=!isMine?used[id]:null;
-      return `<button data-rv="${id}" class="${isMine?'on':''}" ${(usedT!=null||!canClick)?'disabled':''}>${esc(S.names[id])}${usedT!=null?` · вікенд ${usedT}`:''}</button>`; });
-    if(nobodyOk) chips.push(`<button data-rv="nobody" class="${my&&my.is_nobody?'on':''}" ${canClick?'':'disabled'}>Нікого</button>`);
+    const chips=rvCandidates().map(id=>{ const isMine=my && my.opponent_participant===id, w=T[id]||[], tms=w.length, can=rvCanPick(tms,rl,repLeft);
+      const lbl=tms?` · вже ${tms===1?'1 раз':(tms<5?tms+' рази':tms+' разів')}`:'';
+      const tip=tms?esc(`Ти вже обирав його у вікенд${w.length>1?'ах':'і'} ${w.join(', ')}${can?' — це буде повтор':' — повторити не можна'}`):'';
+      return `<button data-rv="${id}" class="${isMine?'on':''}" ${((!isMine&&!can)||!canClick)?'disabled':''}${tip?` title="${tip}"`:''}>${esc(S.names[id])}${lbl}</button>`; });
     return `<div class="rv-chips" id="rv-pick">${chips.join('')}</div>`;
   };
   if(ph==='free'){
-    h+=`<p class="rv-hint">Обери одного суперника на цей вікенд — <b>без вибору склад підтвердити не можна</b>. Одного й того самого суперника двічі за турнір брати не можна${nobodyOk?'; суперників не лишилось — тепер можна обрати «Нікого» (0 очок)':', «Нікого» з’явиться, коли суперників не лишиться'}.</p>${chipsHtml(true)}
-      <p class="rv-hint">${my?`Твій вибір: <b style="color:var(--gold)">${my.is_nobody?'Нікого':esc(my.opponent_name)}</b>. `:'Вибір ще не зроблено. '}Поки не підтвердив склад — міняти можна скільки завгодно. Підтвердив — зафіксовано; коли склади відкриються — <b>одна</b> зміна.</p>`;
+    h+=`<p class="rv-hint">Обери одного суперника на цей вікенд — <b>без вибору склад підтвердити не можна</b>. ${esc(rvRuleTxt(rl,repLeft))}</p>${chipsHtml(true)}
+      <p class="rv-hint">${my?`Твій вибір: <b style="color:var(--gold)">${my.is_nobody?'без дуелі':esc(my.opponent_name)}</b>. `:'Вибір ще не зроблено. '}Поки не підтвердив склад — міняти можна скільки завгодно. Підтвердив — зафіксовано; коли склади відкриються — <b>одна</b> зміна.</p>`;
   }else if(ph==='switch'){
-    h+=`<p class="rv-hint"><b style="color:var(--gold)">Склади відкрито.</b> Тепер видно чужі склади, і суперника можна переобрати <b>рівно один раз</b> (до дедлайну + 2 год). Після цієї зміни суперник зафіксований до кінця вікенду.</p>${chipsHtml(true)}
+    h+=`<p class="rv-hint"><b style="color:var(--gold)">Склади відкрито.</b> Тепер видно чужі склади, і суперника можна переобрати <b>рівно один раз</b> (до дедлайну + 2 год)${rl.D>0?` — у тому числі на того, проти кого ти вже грав в іншому вікенді, якщо повтор ще дозволено (${esc(rvRuleTxt(rl,repLeft))})`:''}. Після цієї зміни суперник зафіксований до кінця вікенду.</p>${chipsHtml(true)}
       <button class="btn" id="rv-change" disabled style="margin-top:10px;width:100%">Підтвердити зміну суперника</button>`;
   }else{
     const why = ph==='closed' ? 'Результати вікенду внесені — дуель зіграна, суперник зафіксований.'
       : ph==='locked_conf' ? 'Склад підтверджено — суперник зафіксований разом зі складом. Коли склади відкриються, його можна буде переобрати <b>один раз</b>.'
       : (my && my.post_open_used ? 'Стратегічну зміну після відкриття вже використано — далі без змін до кінця вікенду.' : 'Вікно зміни суперника закрите — суперник зафіксований.');
-    h+=(my ? `<div class="rv-chips"><button class="on" disabled>${my.is_nobody?'Нікого':esc(my.opponent_name)} · вікенд ${round.number}</button></div>` : `<p class="rv-hint">Суперника на цей вікенд ти не обрав.</p>`)+`<p class="rv-hint">${why}</p>`;
+    h+=(my ? `<div class="rv-chips"><button class="on" disabled>${my.is_nobody?'без дуелі':esc(my.opponent_name)} · вікенд ${round.number}</button></div>` : `<p class="rv-hint">Суперника на цей вікенд ти не обрав.</p>`)+`<p class="rv-hint">${why}</p>`;
   }
   // дуелі всіх — лише коли склади відкрито (приватність: market_rival_board публічна після відкриття)
   const board=(S.rvBoard||[]).filter(x=>x.round_id===round.id).slice().sort((a,b)=>String(a.chooser_name).localeCompare(String(b.chooser_name)));
   if(board.length){
     const rows=board.map(x=>{
-      const first=x.first_opponent_name, finalN=x.is_nobody?'Нікого':x.opponent_name, firstN=x.first_is_nobody?'Нікого':first;
+      const first=x.first_opponent_name, finalN=x.is_nobody?'без дуелі':x.opponent_name, firstN=x.first_is_nobody?'без дуелі':first;
       const changed=firstN && firstN!==finalN;
       const hist=changed ? `<div class="rv-hist">↪ спочатку обрав <b>${esc(firstN)}</b>, змінив на <b>${esc(finalN)}</b></div>`
                 : (firstN ? `<div class="rv-hist">↪ обрав <b>${esc(firstN)}</b> одразу, без змін</div>` : '');
-      return `<div class="rv-row"><div class="rv-line"><div><b>${esc(x.chooser_name)}</b> <span class="dim">${rrPts[x.chooser_participant]??0}</span> <span class="dim">проти</span> ${x.is_nobody?'<i class="dim">Нікого</i>':`${esc(x.opponent_name)} <span class="dim">${rrPts[x.opponent_participant]??0}</span>`}</div><div>${rvStatusMark(x)}</div></div>${hist}</div>`; }).join('');
+      return `<div class="rv-row"><div class="rv-line"><div><b>${esc(x.chooser_name)}</b> <span class="dim">${rrPts[x.chooser_participant]??0}</span> <span class="dim">проти</span> ${x.is_nobody?'<i class="dim">без дуелі</i>':`${esc(x.opponent_name)} <span class="dim">${rrPts[x.opponent_participant]??0}</span>`}</div><div>${rvStatusMark(x)}</div></div>${hist}</div>`; }).join('');
     const rank=Object.keys(S.names).sort((a,b)=>(rrPts[b]??0)-(rrPts[a]??0)).map(id=>`<div class="rv-rk"><span>${esc(S.names[id])}</span><span class="mono dim">${rrPts[id]??0}</span></div>`).join('');
     h+=`<div class="rv-sec">Дуелі вікенду</div>${rows}<div class="rv-sec" style="margin-top:12px">Очки матчів за вікенд — саме це вирішує дуелі</div>${rank}`;
   }
   h+=`<details class="rv-ex"><summary>Як це рахується — приклади</summary><div>${esc(
-`Дуель на вікенд рахується від очок МАТЧІВ за цей вікенд: основа (із замінами з лавки), капітан/віце ×2, бусти (Автопілот, All-in, позиційні ×2). Без 💎 менеджменту, 🎯 челенджів і 💼 — інакше вийшло б саме на себе. Рівні очки — нічия.
+`Дуель на вікенд рахується від очок МАТЧІВ за цей вікенд: основа (із замінами з лавки), капітан/віце ×2, бусти (Автопілот, All-in, позиційні ×2). Без ${mg?'💎 менеджменту, 🎯 челенджів і 💼':'🎯 челенджів і самого Rivals'} — інакше вийшло б саме на себе. Рівні очки — нічия.
 
 • у тебе 16, у суперника 12 — тобі +2
 • у вас по 14 — тобі +1
 • у суперника 18, у тебе 15 — тобі 0
 • суперник не підтвердив склад або його склад «не зараховано» (борг за роль) — тобі +1
-• «Нікого» — дуелі нема, 0 очок
 
 ⚠️ Дуель — це твої власні очки: очки отримує лише той, хто обирав. Ви обидва можете виграти свої дуелі в одному вікенді.
-⚠️ Одного суперника двічі за турнір брати не можна. «Нікого» з’являється, лише коли суперників не лишилось (6 учасників на 6 вікендів — у вікенді 6).
+⚠️ ${rvRuleTxt(rl,repLeft)}${rl.D>0?' Біля імені суперника показано, скільки разів ти вже його обирав. Кожна дуель (і повторна теж) рахується окремо.':''}
 
 Коли міняти:
 • до підтвердження складу — скільки завгодно
 • підтвердив — зафіксовано разом зі складом
-• коли склади відкриються — ще рівно одна зміна (до дедлайну + 2 год)
+• коли склади відкриються — ще рівно одна зміна (до дедлайну + 2 год)${rl.D>0?', і вона теж може бути на повтор — поки він дозволений':''}
 
 За турнір дуелі дають щонайбільше ${max} очок.`)}</div></details>`;
   return `<div class="rvbox">${h}</div>`;
@@ -2360,31 +2412,32 @@ function bindRival(round){
   const call=async(id)=>{
     const chips=[...box.querySelectorAll('[data-rv]')], prev=chips.map(x=>[x,x.classList.contains('on'),x.disabled]);
     chips.forEach(x=>{ x.classList.toggle('on',x.dataset.rv===id); x.disabled=true; });
-    await act('market_set_rival',{p_round:round.id,p_participant:S.me.id,p_opponent:id==='nobody'?null:id,p_nobody:id==='nobody'},null,{quiet:true});
+    await act('market_set_rival',{p_round:round.id,p_participant:S.me.id,p_opponent:id,p_nobody:false},null,{quiet:true});
     if(document.body.contains(box)) prev.forEach(([x,on,dis])=>{ x.classList.toggle('on',on); x.disabled=dis; });   // не перемальовано = помилка → відкат
   };
   if(ph==='free'){ box.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>{ if(!b.disabled) call(b.dataset.rv); }); }
   else if(ph==='switch'){
-    let pending=my?(my.is_nobody?'nobody':my.opponent_participant):null; const btn=box.querySelector('#rv-change');
+    let pending=my?my.opponent_participant:null; const btn=box.querySelector('#rv-change');
     box.querySelectorAll('[data-rv]').forEach(b=>b.onclick=()=>{ if(b.disabled) return; pending=b.dataset.rv;
       box.querySelectorAll('[data-rv]').forEach(x=>x.classList.toggle('on',x.dataset.rv===pending));
-      if(btn) btn.disabled=(pending===(my?(my.is_nobody?'nobody':my.opponent_participant):null)); });
-    if(btn) btn.onclick=()=>confirmModal(`Новий суперник: <b>${pending==='nobody'?'Нікого':esc(S.names[pending]||'?')}</b>.<br>Це остання зміна цього вікенду — після підтвердження суперника більше не можна буде переобрати.`, 'Підтвердити зміну', ()=>call(pending));
+      if(btn) btn.disabled=(pending===(my?my.opponent_participant:null)); });
+    if(btn) btn.onclick=()=>confirmModal(`Новий суперник: <b>${esc(S.names[pending]||'?')}</b>.<br>Це остання зміна цього вікенду — після підтвердження суперника більше не можна буде переобрати.`, 'Підтвердити зміну', ()=>call(pending));
   }
 }
 function rivalsModalHtml(round){
   if(!rvOn(round)) return '';
   const my=rvMy(round);
-  return `<div class="msec" style="margin-top:14px">⚔️ Rivals</div><p class="mnote">${my?`Суперник на цей вікенд: <b>${my.is_nobody?'Нікого':esc(my.opponent_name)}</b>. Після підтвердження зафіксований; коли склади відкриються — одна зміна.`:'<b class="warnc">Суперника не обрано</b> — склад підтвердити не можна.'}</p>`;
+  return `<div class="msec" style="margin-top:14px">⚔️ Rivals</div><p class="mnote">${my?`Суперник на цей вікенд: <b>${my.is_nobody?'без дуелі':esc(my.opponent_name)}</b>. Після підтвердження зафіксований; коли склади відкриються — одна зміна.`:'<b class="warnc">Суперника не обрано</b> — склад підтвердити не можна.'}</p>`;
 }
 // ── 🐐 CLUB LEGEND (586/587; рішення Богдана 31.10): паралельна гра — 3 вибори «клуб + роль», очки з реальних матчів клубу, наприкінці місця → очки в General ──
 // Вибір вільний, доки не підтверджено склад Вікенду first_round (потім — заміни вибору: market_legend_settings.max_replaces, 732; дефолт 1); без 3 виборів склад підтвердити не можна (сервер теж відмовить).
 // Немає таблиць/рядка налаштувань (586/587 не залито або Legend вимкнено) → чіп і блоки ховаються, підтвердження не блокується.
 async function loadLegend(){
   S.lgOK=true; S.lgCfg=null; S.lgRoles=[]; S.lgCat=[]; S.lgPicks=[]; S.lgLog=[]; S.lgStand=[]; S.lgFix=[];
+  let fxP=null;   // 25.11 (перформанс кліків): матчі вікендів і налаштування Legend ідуть ПАРАЛЕЛЬНО (раніше — одне за одним)
   try{
     const T=S.tour.id, q='tournament_id=eq.'+T;
-    S.lgFix=await sbSel(`market_fixtures?${q}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc&limit=1000`).catch(()=>[]);   // 09.11: розклад і рахунки — для блоку «Матчі вікендів» на вкладці Legend
+    fxP=sbSel(`market_fixtures?${q}&select=id,round_id,home_club_id,away_club_id,kickoff_at,status,home_score,away_score&order=kickoff_at.asc&limit=1000`).catch(()=>[]);   // 09.11: розклад і рахунки — для блоку «Матчі вікендів» на вкладці Legend
     const lgSel=cols=>sbSel(`market_legend_settings?${q}&select=${cols}`);   // 732: max_replaces (колонки нема → попередній набір); 597: score_mode
     S.lgCfg=(await lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode,max_replaces').catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round,score_mode')).catch(()=>lgSel('enabled,first_round,picks,max_per_club,cap_per_slot,final_points,last_round')))[0]||null;
     if(S.lgCfg && S.lgCfg.enabled!==false){
@@ -2398,6 +2451,7 @@ async function loadLegend(){
       S.lgRoles=r[0]; S.lgCat=r[1]; S.lgPicks=r[2]; S.lgLog=r[3]; S.lgStand=r[4];
     }
   }catch(e){ S.lgOK=false; S.lgCfg=null; }
+  S.lgFix = fxP ? await fxP : [];   // у будь-якому випадку (навіть коли налаштування Legend не вдалось) — як і раніше матчі лишаються
 }
 // 03.11 (Богдан): менеджмент ховаємо, коли обидві сітки очок = нулі (market_cfg.mgmt_tour_points/mgmt_final_points); нараховане в Вікендах 1–4 лишається
 function mgActive(){ const c=S.cfg; if(!c || (!c.mgmt_tour_points && !c.mgmt_final_points)) return true; return [].concat(c.mgmt_tour_points||[], c.mgmt_final_points||[]).some(v=>+v>0); }
@@ -2849,7 +2903,7 @@ function renderLineup(mine, round){
   const zoneBlock=(title,arr,z,sub)=>`<div class="slot-h" style="margin-top:14px"><span>${title}</span><span>${sub||''}</span></div>
     <div class="plist">${arr.length?arr.map((p,i)=>row(p,z,i)).join(''):'<div class="dim" style="padding:6px 2px">—</div>'}</div>`;
 
-  if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + budgetPanel() +
+  if(S.tab!=='my') return; $('view').innerHTML = tourChipsHtml() + stateBlock(mine,'squad') + defgkBanner(mine) + noPlayBanner('squad', round, s, mine) + budgetPanel() +
     `<div class="head2x"><h2>Мій склад</h2><div class="subx"><div>основа ${s.min5} + лавка ${s.benchMax} · виставлення кліком (Капітан / Віце / На лаву / В основу) · ${dgNote()}</div>${rolesNoteInner(mine)?`<div>${rolesNoteInner(mine)}</div>`:''}</div></div>
      ${mine.length?'':'<div class="soon" style="margin-bottom:12px">Склад порожній. Купуй гравців у вкладці <b>💱 Ринок</b> (аукціон / викуп).</div>'}
      <div class="squad-wrap">
@@ -2867,7 +2921,7 @@ function renderLineup(mine, round){
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved && (!S.confOK || locked), nTxt=round?' на Вікенд '+round.number:'';
                   const label = same ? '✓ Склад'+nTxt+' підтверджено' : ((saved && !S.confOK) ? 'Підтвердити зміни складу'+nTxt : 'Підтвердити склад'+nTxt);
                   const prevO=prevOpenRound(round), rvNeed=!!(round && rvOn(round) && !rvMy(round) && !same), lgNeed=!!(round && lgGateOn(round) && lgActive().length<lgNeedPicks() && !same);
-                  return (lgNeed ? '<p class="mnote warn" style="margin:0 0 8px">🐐 Щоб підтвердити склад, обери ' + lgNeedPicks() + ' вибори <b>Club Legend</b> — <button class="ghost" data-lgjump style="padding:3px 10px;font-size:12.5px">перейти до Club Legend</button></p>' : '') + (rvNeed ? '<p class="mnote warn" style="margin:0 0 8px">⚔️ Щоб підтвердити склад, обери суперника в блоці <b>Rivals</b> вище (або «Нікого», якщо суперників не лишилось).</p>' : '') + (prevO && !same ? `<p class="mnote warn" style="margin:0 0 8px">⏳ Склад на Вікенд ${round.number} можна підтвердити лише після закриття Вікенду ${prevO.number} — тоді нарахуються борги й автопродажі, і ринок відкриється. Поки можна переглянути й розкласти склад.</p>` : '')
+                  return (lgNeed ? '<p class="mnote warn" style="margin:0 0 8px">🐐 Щоб підтвердити склад, обери ' + lgNeedPicks() + ' вибори <b>Club Legend</b> — <button class="ghost" data-lgjump style="padding:3px 10px;font-size:12.5px">перейти до Club Legend</button></p>' : '') + (rvNeed ? '<p class="mnote warn" style="margin:0 0 8px">⚔️ Щоб підтвердити склад, обери суперника в блоці <b>Rivals</b> вище.</p>' : '') + (prevO && !same ? `<p class="mnote warn" style="margin:0 0 8px">⏳ Склад на Вікенд ${round.number} можна підтвердити лише після закриття Вікенду ${prevO.number} — тоді нарахуються борги й автопродажі, і ринок відкриється. Поки можна переглянути й розкласти склад.</p>` : '')
                        + `<button class="btn" id="ln-save" ${(!round||!s.ok||same||prevO||rvNeed||lgNeed)?'disabled':''} style="width:100%${same?';opacity:.75':''}">${label}</button>`
                        + (same ? (S.confOK ? '<p class="mnote" style="margin:8px 0 0">🔒 Підтвердження фінальне: змінити склад і бусти не можна. Розблокувати може лише адмін.</p>'
                                                 : '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну вікенду — після змін кнопка знову стане активною.</p>')
@@ -2969,6 +3023,10 @@ function openLineupReview(mine, round){
         <p class="mnote">У цьому вікенді ${exp.length>1?'вони ще грають':'він ще грає'} і ${exp.length>1?'дають':'дає'} очки. ${(()=>{ const t=autosaleTxt(exp.length>1); return t.charAt(0).toUpperCase()+t.slice(1); })()}. Хочеш залишити ${exp.length>1?'гравців':'гравця'} — продовж ${exp.length>1?'їхні контракти':'його контракт'} до підтвердження складу (після підтвердження продовжити не вийде).</p>
         ${left<5?`<p class="mnote warn">Після автопродажу у складі лишиться гравців: ${left}. Для наступного вікенду потрібно мінімум 5 — доведеться добирати.</p>`:''}`;
     } }
+  // 24.11 (беклог Богдана, варіант В): клуб гравця з мого складу цього вікенду не грає — застереження перед ФІНАЛЬНИМ підтвердженням (нічого не блокує)
+  let npBlk='';
+  { const nn=npLineupNotes(round, s.st, s.bn, s.cap, s.vice, s.auto, S.pos);
+    if(nn.length) npBlk=`<div class="msec" style="margin-top:12px">⚠️ Клуб не грає цього вікенду</div>`+nn.map(t=>`<p class="mnote warn">${t}</p>`).join(''); }
   modalOpen(`<h3>Підтвердити склад · вікенд ${round.number}</h3>
     <div class="cfgrid"><div class="cfcol">
     <div class="msec" style="margin-top:12px">Основа (${s.st.length})</div>${starters}
@@ -2980,6 +3038,7 @@ function openLineupReview(mine, round){
     ${S.boost?`<div class="msec" style="margin-top:14px">Буст вікенду</div><p class="mnote">${BOOSTS[S.boost].ico} <b>${BOOSTS[S.boost].name}</b> — ${BOOSTS[S.boost].desc} Він фіксується разом із підтвердженням складу й спишеться назавжди (Автопілот і All-in — по одному разу за турнір).</p>`:''}
     ${boostPlanModal(round)}
     </div><div class="cfcol">
+    ${npBlk}
     ${challengesModalHtml(s, round)}
     ${rivalsModalHtml(round)}
     ${legendModalHtml(round)}
@@ -3071,6 +3130,61 @@ function defgkBanner(mine){
   else if(lack===slots){ cls='dgb-warn'; txt=`⚠️ Решта <b>${slots}</b> ${slots===1?'слот':'слоти'} — <b>лише DEF/GK</b> (потрібно ще ${lack}).`; }
   else { txt=`DEF/GK у складі: <b>${d}</b> з ${need}. Для повного складу з ${max} потрібно ще <b>${lack}</b> · вільних слотів: ${slots}.`; }
   return `<div class="dgbanner ${cls}">${txt}</div>`;
+}
+// ── 24.11 (беклог Богдана; варіанти А+В): «клуб не грає цього вікенду» — лише фронт, дані з market_fixtures (нічого не зашито, SQL не потрібен) ──
+// «не грає» = у пулі є гравці клубу, а в цьому вікенді в нього НЕМАЄ жодного матчу (скасований/перенесений матч теж не рахуємо). Сервер (_market_squad_resolve, стан dnp) у такому разі:
+// 0 очок, ціна не рухається; основного замінює лавка (за порядком, перший хто зіграє); ×2 переходить до другого з пари капітан/віце. Челенджі рахуються за СЛОТАМИ складу, не за грою — їх це не зачіпає.
+async function loadNoPlay(round){
+  if(!round) return;
+  const c=S.noPlay||(S.noPlay={}), hit=c[round.id];
+  if(hit && Date.now()-hit.at<60000) return;
+  let fx=null;
+  if(S.rr && S.rr.fix && S.rr.fix.length && Date.now()-S.rr.at<60000) fx=S.rr.fix.filter(f=>f.round_id===round.id);   // «Мій склад» уже завантажив матчі (loadRR)
+  if(!fx || !fx.length){ try{ fx=await sbSel(`market_fixtures?round_id=eq.${round.id}&select=status,home_club_id,away_club_id&limit=200`); }catch(e){ fx=null; } }
+  c[round.id]={ at:Date.now(), fx:fx||[] };
+}
+function noPlayOf(round){
+  const c=round && S.noPlay && S.noPlay[round.id]; if(!c || !c.fx.length) return null;   // календар вікенду порожній чи не завантажився — нічого не стверджуємо
+  const play=new Set(); c.fx.forEach(f=>{ if(f.status==='cancelled'||f.status==='postponed') return; play.add(f.home_club_id); play.add(f.away_club_id); });
+  const cnt={}; S.players.filter(poolOnly).forEach(p=>{ cnt[p.club_id]=(cnt[p.club_id]||0)+1; });
+  const ids=Object.keys(cnt).filter(id=>!play.has(id)); if(!ids.length) return null;
+  const by={}; ids.forEach(id=>{ const l=clubLeague(id)||'—'; (by[l]=by[l]||[]).push(clubName(id)); });
+  return { ids:new Set(ids), n:ids.length, pl:ids.reduce((a,id)=>a+cnt[id],0), by };
+}
+// що це означає для МОГО складу (основа/лавка/капітан/віце/позиційні бусти) — спільне для банера «Мій склад» (А) і модалки «Підтвердити склад» (В)
+function npLineupNotes(round, st, bn, cap, vice, auto, pos){
+  const np=noPlayOf(round); if(!np) return [];
+  const bad=p=>!!p && np.ids.has(p.club_id), nm=p=>`<b>${esc(lastName(p.name))}</b>`, out=[];
+  const stBad=st.filter(bad), bnBad=bn.filter(bad), bnOk=bn.filter(p=>!bad(p));
+  if(stBad.length){
+    out.push(`В основі не зіграє: ${stBad.map(nm).join(', ')} — ${stBad.length>1?'їх замінить':'його замінить'} лавка за порядком (перший, хто зіграє).`
+      + (bnOk.length<stBad.length ? ` ⚠️ Гравців лавки, що зіграють: ${bnOk.length} — решта слотів основи лишиться з 0 очок.` : ''));
+  }
+  if(!auto && cap && bad(cap)){
+    if(vice && !bad(vice)) out.push(`© Капітан ${nm(cap)} не грає — ×2 дістанеться віце (${nm(vice)}).`);
+    else out.push(`© Капітан ${nm(cap)} не грає${vice?', віце теж':' (віце не обрано)'} — ×2 цього вікенду згорить. Зміни капітана чи віце.`);
+  } else if(!auto && vice && bad(vice) && cap){
+    out.push(`V Віце ${nm(vice)} не грає — ×2 лишається в капітана (${nm(cap)}).`);
+  }
+  if(bnBad.length) out.push(`На лавці не зіграє: ${bnBad.map(nm).join(', ')} — на заміну ${bnBad.length>1?'не вийдуть':'не вийде'}.`);
+  ['fwd','mid','dg'].forEach(k=>{ const id=pos&&pos[k], pl=id&&st.find(p=>p.id===id); if(pl && bad(pl)) out.push(`⚡ ${POSB[k].name} → ${nm(pl)} не зіграє — буст згорить.`); });
+  if(out.length) out.push('Челенджі рахуються за складом (слотами), а не за грою — на них це не впливає.');
+  return out;
+}
+// А: банер угорі «Мій склад» (kind 'squad', s = lnState) і «Ринок» (kind 'market'); показується лише коли в пулі є клуби без матчу у відкритому вікенді
+function noPlayBanner(kind, round, s, mine){
+  const np=noPlayOf(round); if(!np) return '';
+  const parts=Object.entries(np.by).map(([l,ns])=>`<b>${esc(l)}</b>: ${ns.map(esc).join(', ')}`).join(' · ');
+  let extra='';
+  if(kind==='squad'){
+    const notes=npLineupNotes(round, s.st, s.bn, s.cap, s.vice, s.auto, S.pos);
+    extra = notes.length ? notes.map(t=>`<div class="npl">${t}</div>`).join('')
+          : ((mine||[]).length ? '<div class="npl dim">У твоєму складі на цей вікенд (основа й лавка) таких гравців немає — тебе це не зачіпає.</div>' : '');
+  } else {
+    const my=(mine||[]).filter(p=>np.ids.has(p.club_id));
+    extra = `<div class="npl dim">Купуєш на цей вікенд — гравці цих клубів очок не принесуть.${my.length?` У твоєму складі з них: ${my.map(p=>`<b>${esc(lastName(p.name))}</b>`).join(', ')}.`:''}</div>`;
+  }
+  return `<div class="npbanner"><div class="nph">⚠️ Вікенд ${round.number}: ${np.n>1?'не грають клуби':'не грає клуб'} — ${parts}. Їхні гравці (${np.pl}) цього вікенду <b>очок не дадуть</b>, а ціна не зміниться.</div>${extra}</div>`;
 }
 // 20.10 (відгук Богдана): при купівлі нагадуємо правило DEF/GK, якщо в складі їх ще бракує (щоб новачок не помилився)
 function dgWarn(p){
@@ -3298,6 +3412,7 @@ function chTipHTML(){
 // ── 💱 РИНОК (Ринок · Мої ставки · Трансфери) ──
 async function viewMarket(){
   if(!S.chDefs) await loadChallenges();   // 19.10: підказка «Челенджі» потребує довідника й моїх нарахувань навіть якщо «Мій склад» ще не відкривали
+  await loadNoPlay(lnRound());            // 24.11: банер «клуб не грає цього вікенду» (одне легке звернення, кеш 60 с)
   if(S.mktSub==='bids' || S.mktSub==='transfers') S.mktSub='deals';       // старі назви вкладок (до об'єднання)
   if(S.mktSub==='watch' && !S.watchReady) S.mktSub='free';                // 604 не залито → вкладки «Відслідковую» нема
   // 20.10 (Богдан): «Мої угоди (N)» = усе незавершене, під що заморожені мої гроші: пропозиції (мені й від мене) + обміни + аукціони, де я лідирую (як у тілі вкладки)
@@ -3314,8 +3429,8 @@ async function viewMarket(){
     S.f.status = (S.mktSub==='free')?'free':'all';
     const c=S.cfg||{}, hint=`купити зараз (+${Math.round((c.buynow_pct??0.15)*100)}%) або поставити (аукціон ${c.auction_timer_hours??12} год, крок +${Math.round((c.bid_step_pct??0.05)*100)}%)`;
     const sub=(S.mktSub==='free')
-      ? `${hint} · <span id="mcount"></span> · ${dgNote()}`
-      : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint} · ${dgNote()}`;
+      ? `${hint} · <span id="mcount"></span> · ${dgNote()} · 📇 куплені гравці — у твоїй колекції в профілі`
+      : `весь пул + власник · натисни на гравця для дій · <span id="mcount"></span>, ${hint} · ${dgNote()} · 📇 куплені гравці — у твоїй колекції в профілі`;
     const rolesIn = rolesNoteInner((S.players||[]).filter(x=>x.owner_participant_id===S.me.id));
     body = filterBar()+`<div class="head2x"><h2>${S.mktSub==='free'?'Вільні гравці':'Усі гравці'}</h2><div class="subx"><div>${sub}</div>${rolesIn?`<div>${rolesIn}</div>`:''}</div></div><div class="mgrid" id="mgrid"></div>`;   // 19.10: усі пояснення — в 2 рядки праворуч від заголовка
   } else if(S.mktSub==='shop'){
@@ -3405,7 +3520,7 @@ async function viewMarket(){
          <div class="msec" style="margin-top:16px">Моя вітрина${myShop.length?` · ${myShop.length}`:''}</div>${shopHtml}`;
   }
   const mineM = S.players.filter(p=>p.owner_participant_id===S.me.id);
-  if(S.tab!=='market') return; $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+budgetPanel()+bar+((S.mktSub==='free'||S.mktSub==='all')?'':(rolesNoteInner(mineM)?`<div class="subx1">${rolesNoteInner(mineM)}</div>`:''))+body;   // одна інформація на «Мій склад» і «Ринок»; 19.10: текст про ролі — в заголовку списку гравців (2 рядки), на «Вітрина»/«Мої угоди» — один рядок під вкладками
+  if(S.tab!=='market') return; $('view').innerHTML = stateBlock(mineM,'market')+defgkBanner(mineM)+(S.mktSub==='deals'?'':noPlayBanner('market', lnRound(), null, mineM))+budgetPanel()+bar+((S.mktSub==='free'||S.mktSub==='all')?'':(rolesNoteInner(mineM)?`<div class="subx1">${rolesNoteInner(mineM)}</div>`:''))+body;   // одна інформація на «Мій склад» і «Ринок»; 19.10: текст про ролі — в заголовку списку гравців (2 рядки), на «Вітрина»/«Мої угоди» — один рядок під вкладками
   const pbM=$('view').querySelector('[data-do="pour"]'); if(pbM) pbM.onclick=pourModal;
   [...document.querySelectorAll('.subtabs button')].forEach(b=>b.onclick=()=>{ S.mktSub=b.dataset.s; viewMarket(); });
   const ctb=$('view').querySelector('.chtipbtn'); if(ctb) ctb.onclick=(e)=>{ e.stopPropagation(); ctb.parentElement.classList.toggle('open'); };   // дотик: підказка по кліку
@@ -4553,10 +4668,13 @@ async function openPlayerModal(pid){
   const ctx={ owned:p.owner_participant_id===S.me.id, free:!p.owner_participant_id,
               au:(!p.owner_participant_id)?S.auctions.find(a=>a.player_id===p.id):null, mv:p.market_value_current };
   // багаті поля картки (вік/країна/№/голи/асисти/травма/історія) — якщо вьюха доступна
-  let card={};
-  try{ card=(await sbSel(`market_player_card?id=eq.${pid}&select=*`))[0]||{}; }catch(e){ card={}; }
-  // Val Δ за турнір = СУМА відсотків руху ціни вікенд за вікендом (market_price_log; публічний); немає журналу → як було (від старту)
-  let plog=null; try{ plog=await sbSel(`market_price_log?player_id=eq.${pid}&select=round_id,mult`); }catch(e){ plog=null; }
+  // 25.11 (перформанс, пакет 1): картка й журнал цін незалежні — тягнемо ПАРАЛЕЛЬНО (було два запити підряд до показу вікна)
+  let card={}, plog=null;
+  await Promise.all([
+    sbSel(`market_player_card?id=eq.${pid}&select=*`).then(r=>{ card=r[0]||{}; }).catch(()=>{ card={}; }),
+    // Val Δ за турнір = СУМА відсотків руху ціни вікенд за вікендом (market_price_log; публічний); немає журналу → як було (від старту)
+    sbSel(`market_price_log?player_id=eq.${pid}&select=round_id,mult`).then(r=>{ plog=r; }).catch(()=>{ plog=null; })
+  ]);
   const tier=card.current_tier||'silver';   // ЕФЕКТИВНИЙ дизайн (443): рамка / rare/mega (solo|team, явний вибір) / silver
   // стан-лінія
   let st;
@@ -4641,6 +4759,8 @@ async function openPlayerModal(pid){
   modalOpen(html);
   const md=$('mhost').querySelector('.modal'); if(md) md.classList.add('pmodal');
   if(md) md.classList.add('settling'); PM_PEND.length=0; fitPmodal();   // усе видно без прокрутки; показуємо вікно, коли все довантажилось (pmSettle) — без стрибка розміру
+  // 25.11 (перформанс, пакет 1): фото/герби/прапори в картці — loading="lazy", а вікно до pmSettle невидиме (visibility:hidden) → браузер не стартує їх ≈330–450 мс, і вікно чекало зображення, що ще не почало вантажитись. Робимо eager
+  if(md) md.querySelectorAll('img[loading="lazy"]').forEach(i=>{ i.loading='eager'; });
   const openFull=()=>showFullCard(p,tier,card);
   const b1=$('pmShowCard'), b2=$('pmShowCard2'); if(b1) b1.onclick=openFull; if(b2) b2.onclick=openFull;
   warmScene(SCENE_FILE[tier]||'steel'); if(card.current_card_png){ hookWarm(b1,card.current_card_png,SCENE_FILE[tier]||'steel'); hookWarm(b2,card.current_card_png,SCENE_FILE[tier]||'steel'); }
@@ -4819,6 +4939,7 @@ async function viewCollection(){
   const modeBtn=(m,ic,lbl,n,who)=>`<button class="cmode${(f.mode===m && (m!=='user' || f.who===who))?' on':''}" data-m="${m}"${who?` data-who="${who}"`:''}>${ic} ${esc(lbl)}${n!=null?` <b>${n}</b>`:''}</button>`;
   if(S.tab!=='collection') return; $('view').innerHTML=`
     <div class="head2"><h2>Колекція</h2><span class="sub" id="colSum"></span></div>
+    <div class="colnote">📇 Усі гравці, яких ти купуєш і маєш (навіть проданих), і твої Rare/Mega-картки — у колекції в твоєму профілі; на головній профілю показується вітрина до 8 карток, яку обираєш сам (☆). Дизайн картки змінюєш лише тут.</div>
     <div class="col-modes">
       ${modeBtn('mine','⭐','Мої',mineUnits.length)}${others.map(id=>modeBtn('user','👤',S.names[id],null,id)).join('')}${modeBtn('all','🛒','Усі Rare/Mega',all.length)}
     </div>
@@ -5169,15 +5290,13 @@ function renderNews(){
 // резерв, капітан влучив/промахнувся — лише про ЗАКРИТИЙ Вікенд; капітан і найдорожчий гравець іншого учасника — лише коли склади відкриті; прогноз-наповнювач),
 // Rivals — не більше 1 за Вікенд і в кінці черги. Відповіді бачать усі учасники турніру; очок за пресу нема; відповісти можна до закриття Вікенду; відповідь остаточна (і в базі).
 // Відповідь учасник ЗАВЖДИ пише сам (поле до 500 символів) або «Пропустити» — готових варіантів немає (Богдан 14.11).
-// Вікно при вході: ВСІ відкриті питання одразу (Богдан 14.11: «як в ЄвроСезоні» — учасник заходить раз до вікенду й раз після), не частіше ніж раз на 6 год;
+// Вікно при вході: ВСІ відкриті питання одразу (Богдан 14.11: «як в ЄвроСезоні»; 25.11: пауза «раз на 6 год» прибрана — при кожному заході/перезавантаженні, поки є питання без відповіді);
 // ✕ лише відкладає (питання лишаються у вкладці з лічильником). Відповів на одне — картка змінюється на місці, решта не чіпається; відповів на всі — вікно закривається саме.
 // Поки 715 не залито — усе мовчки ховається (degrade): ні лічильника, ні вікна, у підвкладці «зʼявиться після заливки».
 const PR_HOOK={big_buy:['💰','Купівля'],auction_win:['🔨','Аукціон'],sold_out:['💸','Продаж'],deal_between:['🤝','Угода'],rival_win:['⚔️','Rivals'],rival_loss:['⚔️','Rivals'],rival_draw:['⚔️','Rivals'],captain_pick:['🎖️','Капітан'],boost_used:['🚀','Буст'],bench_star:['🪑','Лавка'],starter_cheap:['⚽','Основа'],
   top_own:['⭐','Зірка складу'],top_week_own:['🏆','Зірка Вікенду'],top_week_miss:['👀','Зірка Вікенду'],bench_regret:['🪑','Резерв'],captain_hit:['🎖️','Капітан'],captain_miss:['🎖️','Капітан'],
   other_captain:['🪞','Склад суперника'],other_star:['🪞','Склад суперника'],outlook:['🔮','Прогноз'],   // SQL 717
   leader_own:['👑','Лідер таблиці'],leader_lost:['👑','Лідер таблиці'],leader_other:['👑','Лідер таблиці'],rise_own:['📈','Зліт у таблиці'],rise_other:['📈','Зліт у таблиці'],fall_own:['📉','Падіння в таблиці'],fall_other:['📉','Падіння в таблиці'],winner_other:['🥇','Переможець Вікенду']};   // SQL 723/724 «Хвиля 2» (🚀 зайнято бустом → зліт 📈)
-let _prMem=null;   // запасний стан у памʼяті, якщо localStorage недоступний
-const prStore={ get(){ try{ const v=localStorage.getItem('sqPressPopAt'); return v!=null?v:_prMem; }catch(e){ return _prMem; } }, set(v){ _prMem=String(v); try{ localStorage.setItem('sqPressPopAt',String(v)); }catch(e){} } };
 const PR=()=>S.press||(S.press={mine:[],feed:[],ready:false,mineAt:0,syncAt:0,syncP:null,popDone:false,popOpen:false,busy:false,booting:false,loading:false,drafts:{},coll:{},fix:null,fixAt:0});
 const prClosed=id=>{ const r=(S.rounds||[]).find(x=>x.id===id); return !r || !!r.results_entered_at; };   // Вікенд не знайдено → вважаємо закритим (безпечніше)
 const prOpenList=()=> PR().ready ? PR().mine.filter(q=>q.is_open) : [];
@@ -5267,14 +5386,13 @@ function renderPressCol(){
   host.innerHTML=`<div class="prc"><h2>🎤 Преса</h2><div class="pnote">Питання репортерів про твої угоди, результати Вікенду, склад і суперників (та дуелі Rivals) · відповіді бачать усі учасники · очок за пресу нема · відповісти можна до закриття Вікенду.</div>${none}</div>${qs}<div class="prc"><h2>Стрічка</h2>${feedHtml}</div>`;
   if(S.prScroll){ S.prScroll=false; host.scrollIntoView({behavior:'smooth',block:'start'}); }
 }
-// вікно при вході: усі відкриті питання одразу (їх не більше 2–3 на Вікенд), не частіше ніж раз на 6 год; ✕ відкладає
+// вікно при вході: усі відкриті питання одразу (їх не більше 2–3 на Вікенд); 25.11 (Богдан): при КОЖНОМУ заході/перезавантаженні, поки є питання без відповіді (раз за відкриття сторінки); ✕ закриває до наступного відкриття
 function pressPopup(){
   const P=PR(); if(P.popDone||!P.ready) return;
   const qs=prOpenList(); if(!qs.length) return;
   if(!$('mhost').classList.contains('hide')) return;   // не перекриваємо інше вікно
-  P.popDone=true;                                       // ≤1 разу за відкриття кабінету
-  if(Date.now()-(+prStore.get()||0) < 6*3600e3) return;
-  prStore.set(Date.now()); P.popOpen=true;
+  P.popDone=true;                                       // ≤1 разу за відкриття кабінету (перезавантаження сторінки = нове відкриття)
+  P.popOpen=true;                                       // 25.11 (Богдан): пауза «раз на 6 год» прибрана — вікно при КОЖНОМУ заході/перезавантаженні, поки є питання без відповіді
   modalOpen(`<div class="prs-pophd">🎤 Преса хоче тебе запитати</div>${qs.map(q=>pressCard(q)).join('')}
     <div class="prs-popft"><button type="button" class="btn ghost sm" data-pr-all="1">Відкрити «News & Press» →</button></div>`);
 }
@@ -5407,7 +5525,7 @@ const kyInputToISO=v=>{ const m=String(v||'').match(/^(\d{4})-(\d{2})-(\d{2})T(\
 
 const ADM_SUBS=[['overview','📊','Огляд',true],['rounds','🗓','Вікенди',true],['people','👥','Учасники',true],['config','⚙','Налаштування',true],['disputes','⚖','Спірне',true],['pool','🎛','Пул',true],['log','📜','Журнал',true]];
 const ADM_SOON={};
-const ADM_ACT={tournament_finish:'Турнір завершено',tournament_reopen:'Турнір відкрито знову',round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
+const ADM_ACT={tournament_finish:'Турнір завершено',tournament_reopen:'Турнір відкрито знову',tournament_create:'Тестовий турнір створено',tournament_restart:'Тестовий турнір перезапущено',round_create:'Створено вікенд',round_update:'Вікенд: назва/тиждень',round_delete:'Вікенд видалено',round_deadline:'Дедлайн зсунуто',round_close:'Вікенд закрито вручну',
   fixtures_add:'Матчі додано',fixture_update:'Матч: час/event',fixture_status:'Матч: статус',fixture_delete:'Матч видалено',club_add:'Клуб додано',participant_add:'Учасника додано',participant_update:'Учасника змінено',participant_remove:'Учасника видалено',
   config_set:'Налаштування: параметр',module_set:'Модуль вікенду',challenge_set:'Очки челенджа',mgmt_recompute:'Перерахунок менеджменту',template_save:'Шаблон збережено',template_apply:'Шаблон застосовано',template_delete:'Шаблон видалено',
   auction_cancel:'Лот скасовано',transfer_cancel:'Пропозицію скасовано',exchange_cancel:'Обмін скасовано',listing_cancel:'Вітрину знято',balance_adjust:'Баланс виправлено',force_sell:'Гравця продано',player_transfer:'Гравця передано',unconfirm:'Склад розблоковано',forgive_violations:'Порушення пробачено',stage_reset:'Етап скинуто',fixture_ratings:'Ручні оцінки матчу',player_stats_set:'Статистика гравця (вручну)',pool_player_add:'Гравців додано в пул',pool_player_update:'Гравця виправлено',pool_player_remove:'Гравця прибрано з пулу',pool_player_restore:'Гравця повернуто в пул',pool_player_delete:'Гравця видалено',injury_set:'Ручна травма',injury_clear:'Травму знято',club_update:'Клуб виправлено',club_delete:'Клуб видалено'};
@@ -6065,8 +6183,12 @@ async function admDisputes(body){
       <div class="when">Адмін бачить лише факт (без ролей і сум). «Пробачити» скасовує борги, виходи й позначки учасника та повертає його склад, якщо вікенд ще не закрито.</div></div>`;
   // 4. небезпечна зона
   const stRows=(d.stages||[]).map(s=>`<tr><td>Етап ${s.stage}</td><td>${s.closed}</td><td>${s.total}</td><td class="admbtns"><button class="mini ghost" data-dreset="${s.stage}" ${s.closed>0?'disabled title="В етапі є закриті вікенди — скинути не можна"':''}>⚠ Скинути етап</button></td></tr>`).join('');
+  // 24.11 (737): «Перезапустити тестовий турнір» — ЛИШЕ в тестовому squad_stage (на справжньому турнірі блока нема; сервер теж приймає тільки squad_stage)
+  const stageRestart=(S.tour&&S.tour.key==='squad_stage')?`<div class="stconf" style="margin:12px 0 0"><div class="cap">🧪 Тестовий турнір</div>
+    <p class="mnote warn" style="margin:0 0 8px">Це ТЕСТОВИЙ турнір (дані не справжні; справжній турнір цим не чіпається). «Перезапустити» стирає всі дані тесту — склади, ставки, угоди, рейтинги, журнал — і будує його заново: ті самі учасники, пул зі стартовими цінами, календар = копія справжнього (його поточні дедлайни й матчі). Вікенди тесту не закриваються самі — оцінки й закриття вручну.</p>
+    <button class="mini ghost" data-drestart="1">⚠ Перезапустити тестовий турнір</button></div>`:'';
   const danger=`<p class="mnote warn" style="margin:0 0 8px">Скидання етапу: усі активні лоти/пропозиції/обміни/вітрина скасовуються; усі гравці стають вільними й повертаються до стартової вартості; баланси — до стартових; склади, бусти й підтвердження незіграних вікендів етапу видаляються; борги/виходи/ролі етапу очищуються. Можливе <b>лише коли в етапі нема закритих вікендів</b>. «Знімок до» (баланси й імена гравців) піде в журнал.</p>
-    <div class="dsptw"><table class="admt"><thead><tr><th>Етап</th><th>Закритих вікендів</th><th>Усього вікендів</th><th></th></tr></thead><tbody>${stRows}</tbody></table></div>`;
+    <div class="dsptw"><table class="admt"><thead><tr><th>Етап</th><th>Закритих вікендів</th><th>Усього вікендів</th><th></th></tr></thead><tbody>${stRows}</tbody></table></div>${stageRestart}`;
   body.innerHTML=`${sec('deals','💱 Угоди зараз',nDeals,deals)}${sec('money','💶 Гроші й гравці',(d.people||[]).length,money)}${sec('lineups','🔓 Склади й ролі',null,lineups)}${sec('danger','⚠ Небезпечна зона',null,danger)}`;
   body.querySelectorAll('details.dspsec').forEach(x=>x.addEventListener('toggle',()=>{ A.dispOpen[x.dataset.g]=x.open; }));
   // ── скасування угод ──
@@ -6113,6 +6235,13 @@ async function admDisputes(body){
   body.querySelectorAll('[data-dforgive]').forEach(b=>b.onclick=()=>{ const id=b.dataset.dforgive;
     admDanger({title:'Пробачити порушення',body:`Скасувати борги, виходи й позначки «порушив» учасника «${esc(nm(id))}»? Склад на поточний вікенд (якщо його не зараховано) повернеться. Дію не можна скасувати.`,
       word:'СКАСУВАТИ',label:'Пробачити',onOk:(cf,why)=>admDispAct('admin_squad_forgive_violations',{p_participant:id,p_confirm:cf,p_reason:why},'Порушення пробачено')}); });
+  // ── перезапуск тестового турніру (737; лише squad_stage) ──
+  body.querySelectorAll('[data-drestart]').forEach(b=>b.onclick=()=>{
+    admDanger({title:'⚠ Перезапустити тестовий турнір',body:`<p style="margin:0 0 6px">Усі дані ТЕСТОВОГО турніру будуть стерті й створені заново: ті самі учасники, пул зі стартовими цінами, вікенди й матчі — копія календаря справжнього турніру. Справжній турнір не змінюється. Дію не можна скасувати.</p>`,
+      word:'ПЕРЕЗАПУСТИТИ',label:'Перезапустити',
+      onOk:async(cf,why)=>{ const {error}=await sb.rpc('admin_squad_stage_restart',{p_confirm:cf,p_reason:why});   // id турніру після цього НОВИЙ → не admCall (loadRefs зі старим id), а перезавантаження сторінки
+        if(error){ alert('⛔ '+String(error.message||error).replace(/^.*?(Squad: )/,'$1')); return; }
+        alert('✅ Тестовий турнір перезапущено'); location.reload(); }}); });
   // ── скидання етапу ──
   body.querySelectorAll('[data-dreset]').forEach(b=>b.onclick=()=>{ const st=+b.dataset.dreset, cfg=S.cfg||{};
     admDanger({title:`⚠ Скинути етап ${st}`,body:`<p style="margin:0 0 6px">Буде скасовано всі активні угоди, <b>усі гравці стануть вільними</b>, баланси повернуться до стартових (трансферний ${eur(+cfg.budget_eur||0)}, зарплатний ${eur(+cfg.wage_budget_eur||0)}), склади й бусти незіграних вікендів етапу видаляться. Закритих вікендів у етапі нема — реальні результати не постраждають. Дію не можна скасувати (знімок «до» піде в журнал).</p>`,

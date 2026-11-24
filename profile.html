@@ -530,7 +530,7 @@ const cardThumb=p=>String(p||'').replace(/\.png$/i,'_sm.webp');
 const RAR={rare:'RARE',mega_rare:'MEGA RARE'};
 const SCENE={rare:'rare',mega_rare:'mega_rare'};
 // ── Колекція Squad у профілі (SQL 730, 18.11.2026): плитка = картка в стилі кабінету (рамка/Rare/Mega), масштабується JS до ширини плитки ──
-const TEST_SQUAD_KEYS=['squad_test'];   // тестовий турнір Squad: на PROD (HIDE_TEST_TOURS=true) його гравці в колекції не показуються, на STAGE видно
+const TEST_SQUAD_KEYS=['squad_test','squad_stage'];   // тестовий турнір Squad: на PROD (HIDE_TEST_TOURS=true) його гравці в колекції не показуються, на STAGE видно
 const COLL_CAP=8;                        // вітрина колекції на «Огляді» — до 8 карток разом (рішення Богдана 18.11)
 const FRAME_FILE={silver:'steel',gold:'gold',emerald:'emerald'};   // файл рамки: модель зве базову рамку 'silver', а webp — 'steel'
 const frameFile=t=>FRAME_FILE[t]||t;
