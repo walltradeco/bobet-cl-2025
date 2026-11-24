@@ -1805,6 +1805,9 @@
     padding:16px;
   }
   #cabinet-overlay.open{display:flex; flex-direction:column;}
+  /* Squad-кабінет (23.10, відгук Богдана): вікно ширше за 1440 — місця на екрані вистачає, а Squad має праву панель новин і широкі таблиці.
+     Клас `wide` вішається в open() лише для Squad (BoBet-кабінет лишається 1440). Друга стеля — `.wrap/.hbar/.tabrow` у squad-cabinet.html (теж 1800). */
+  #cabinet-overlay.wide:not(.min) #cabinet-shell{max-width:1840px;}
   #cabinet-shell{
     position:relative;
     align-self:center; width:100%;
@@ -2232,6 +2235,18 @@ const TOURNAMENTS = [
       { sheet:'General · Bonus',   kind:'special', source:'special', monthKey:'season2026' },
       { sheet:'Rules',             kind:'rules',   source:'rules' },
     ]
+  },
+  // SQUAD MODE — наступний ТУРНІР BoBet (mode='squad'), не окрема ліга.
+  // Кнопка тут, у ряду турнірів; клік показує власний Squad-фронт
+  // (F1-борда) вбудованим у оболонку BoBet — файл squad.html.
+  // Кабінет — та сама кнопка «Мій кабінет», але src=squad-cabinet.html
+  // (див. гілку в модалці кабінету). Окремі файли — щоб не вплітати Squad
+  // у 5+тис. рядків цього фронту й app; тут лише навігація на них.
+  {
+    key:'squad',
+    title:'Squad Mode',
+    source:'squad',
+    tabs:[],
   },
   // HONORS — наскрізна вітрина по ВСІХ турнірах ліги, а не ще один
   // турнір. Стоїть праворуч останньою: турніри йдуть хронологічно,
@@ -5754,6 +5769,31 @@ async function loadActiveTab(){
   if(etapiLbl) etapiLbl.style.display = '';
   document.getElementById('tabs').style.display = '';
 
+  // SQUAD MODE — власний фронт (борда у стилі BoBet), вбудований iframe-ом у оболонку
+  // BoBet. Свій файл (squad.html), а не вплетений сюди: механіка
+  // market_* не має спільного з прогнозами/бустами. embed=1 ховає власний
+  // бейдж і заголовок борди (контекст уже дає шапка BoBet). Кабінет —
+  // та сама кнопка, src перемикається в модалці кабінету.
+  if(activeTournament.source === 'squad'){
+    document.getElementById('tabs').innerHTML = '';
+    document.getElementById('tabs').style.display = 'none';
+    if(etapiLbl) etapiLbl.style.display = 'none';
+    content.innerHTML =
+      '<iframe id="squad-board-frame" src="squad.html?embed=1" title="Squad Mode — борда" scrolling="no" ' +
+      'style="width:100%;border:0;min-height:82vh;display:block"></iframe>';
+    // 23.10 (відгук Богдана: «2 скроли — загальний і всередині таблиці»): висота iframe = висоті вмісту борди (як у кабінеті), тож лишається
+    // один (загальний) скрол сторінки, як в ЄвроСезоні. Однакова origin → читаємо contentDocument; інакше лишається min-height.
+    (function(){
+      const fr = document.getElementById('squad-board-frame'); if(!fr) return;
+      const fit = () => { try{ const b = fr.contentDocument && fr.contentDocument.body; const h = b ? b.scrollHeight : 0;
+        if(h > 200) fr.style.height = (h + 28) + 'px'; }catch(e){} };
+      fr.addEventListener('load', () => { fit(); setTimeout(fit, 400);
+        try{ new ResizeObserver(fit).observe(fr.contentDocument.body); }catch(e){} });
+      window.addEventListener('resize', fit, { passive:true });
+    })();
+    return;
+  }
+
   // HONORS живе за іншими правилами: не таблиця, а власна сторінка,
   // зібрана з чотирьох в'юх бази. Тому виходимо з загального шляху
   // до того, як він полізе по activeTournament.tabs.
@@ -5945,6 +5985,10 @@ async function refreshAll(){
   // самий, що робили для Squad), решта — BoBet-кабінет. Та сама кнопка.
   async function desiredCabinetSrc(){
     const stage = /(^|\/)test\.html$/.test(location.pathname);
+    if (typeof activeTournament !== 'undefined' && activeTournament
+        && activeTournament.source === 'squad'){
+      return 'squad-cabinet.html';
+    }
     let appSrc = 'app.html';
     // На test.html пробуємо тестовий кабінет; якщо його не залито —
     // тихо відкриваємо бойовий, щоб кнопка ніколи не була «мертвою».
@@ -5961,6 +6005,7 @@ async function refreshAll(){
     // Модалку показуємо одразу (і розгортаємо, якщо була згорнута)
     overlay.classList.remove('min');
     overlay.classList.add('open');
+    overlay.classList.toggle('wide', typeof activeTournament !== 'undefined' && !!activeTournament && activeTournament.source === 'squad');   // Squad — ширше вікно (синхронно, щоб не «стрибало»)
     document.body.classList.add('cabinet-lock');
     minBtn.textContent = '▁ Згорнути';
     // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
