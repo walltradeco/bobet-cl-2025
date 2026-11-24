@@ -60,6 +60,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
 /* сітка карток */
 .sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
+.collnote{font-size:13px;color:var(--text-dim);margin:0 0 12px;line-height:1.5}   /* 24.11: Крамниця → колекція в профілі (беклог Богдана 24.11) */
 .grid{display:flex;flex-wrap:wrap;gap:16px}
 .card{width:170px;cursor:pointer}
 .card .art{position:relative;width:170px;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;
@@ -186,6 +187,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 
   <!-- ВІТРИНА (публічна) -->
   <div id="screen-shop">
+    <div class="collnote">🃏 Картки колекційні: видана тобі картка потрапляє в колекцію в твоєму профілі (вкладка «Колекція»), а в кабінеті Squad її можна поставити дизайном свого гравця.</div>
     <div class="filters">
       <input id="f-q" placeholder="Пошук по назві картки…">
       <select id="f-rar"><option value="">Рідкість: усі</option><option value="rare">Rare</option><option value="mega_rare">Mega Rare</option></select>
