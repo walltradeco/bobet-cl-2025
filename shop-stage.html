@@ -255,15 +255,18 @@ async function boot(){
 }
 
 async function loadShop(){
-  const { data, error } = await sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id,owner_name,is_free').order('tier').order('card_key');
-  S.cards = error ? [] : (data||[]);
-  // колекції (437, anon): реєстр + collections на кожну картку (graceful degrade)
-  try{
-    S.collReg = (await sb.from('card_collections').select('key,title').order('sort_order')).data || [];
-    const meta = (await sb.from('card_items').select('card_key,collections')).data || [];
-    const map = {}; meta.forEach(m=>map[m.card_key]=m.collections||[]);
-    S.cards.forEach(c=>c.collections = map[c.card_key] || []);
-  }catch(e){ S.collReg=[]; S.cards.forEach(c=>c.collections=c.collections||[]); }
+  // 25.11: три незалежні запити йдуть ПАРАЛЕЛЬНО (було послідовно ≈147+117+161 мс → тепер ≈ найдовший ≈150 мс). Кожен не кидає виняток:
+  // мережева помилка = порожня відповідь, як і раніше (graceful degrade).
+  const safe=q=>Promise.resolve(q).then(r=>r||{data:null,error:true},()=>({data:null,error:true}));
+  const [shopR, regR, metaR] = await Promise.all([
+    safe(sb.from('card_shop').select('card_key,tier,kind,png_path,owner_profile_id,owner_name,is_free').order('tier').order('card_key')),
+    safe(sb.from('card_collections').select('key,title').order('sort_order')),    // колекції (437, anon): реєстр
+    safe(sb.from('card_items').select('card_key,collections'))                    // + collections на кожну картку
+  ]);
+  S.cards = shopR.error ? [] : (shopR.data||[]);
+  S.collReg = regR.data || [];
+  const map = {}; (metaR.data||[]).forEach(m=>map[m.card_key]=m.collections||[]);
+  S.cards.forEach(c=>c.collections = map[c.card_key] || []);
   renderColl();
   renderGrid();
 }
