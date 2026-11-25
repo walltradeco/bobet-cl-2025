@@ -2512,7 +2512,7 @@ function lgCap(){ return (S.lgCfg&&S.lgCfg.cap_per_slot)||12; }
 function lgMaxRep(){ const v=S.lgCfg&&S.lgCfg.max_replaces; return (typeof v==='number'&&v>=0)?v:1; }
 function lgRepLeft(){ return Math.max(0, lgMaxRep()-lgMine().filter(x=>x.is_replacement).length); }
 function lgZam(n){ const a=Math.abs(n)%100, b=a%10; return (a>10&&a<20)?'замін':(b===1?'заміна':(b>=2&&b<=4?'заміни':'замін')); }
-function lgWinsTxt(n){ const a=n%100, b=n%10; return (a>10&&a<20)?'перемог':(b===1?'перемога':(b>=2&&b<=4?'перемоги':'перемог')); }
+function lgWinsTxt(n){ const a=n%100, b=n%10; return (a>10&&a<20)?'перемог':(b===1?'перемоги':'перемог'); }   // 25.11: РОДОВИЙ відмінок (після «з»: «серія з 1 перемоги / з 2 перемог / з 5 перемог»); єдине використання — lgLossHint
 function lgRepShort(){ const m=lgMaxRep(); return m<1?'змін уже не буде':(m===1?'одна заміна за турнір':m+' '+lgZam(m)+' за турнір'); }
 function lgRepPhrase(){ const m=lgMaxRep(); return m<1?'замін нема':(m===1?'одна заміна одного вибору за турнір':'до '+m+' замін вибору за турнір'); }
 function lgRepRule(){ const m=lgMaxRep(); return m<1?'Далі вибір не змінюється — замін у цьому турнірі нема.'
