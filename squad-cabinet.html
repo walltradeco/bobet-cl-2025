@@ -1247,6 +1247,36 @@ $('btn-verify').onclick = async () => {
 $('btn-back').onclick=()=>{ $('step-code').classList.add('hide'); $('step-email').classList.remove('hide'); $('login-msg').innerHTML=''; };
 $('btn-logout').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
 
+// ── 747 (25.11.2026): ЧАС-ГЕЙТИ СПРАВЖНЬОГО ТУРНІРУ — «сб 09:00 відкривається турнір, нд 12:00 — ринок» (рішення Богдана) ──
+// tournaments.cabinet_opens_at: до цього часу НЕ-адмін бачить екран «Турнір відкриється…» (заслонка лише тут: дані пулу й так публічні).
+// tournaments.market_opens_at (747): до цього часу СЕРВЕР відмовляє в усій торгівлі (_market_trade_open/_market_bids_open); фронт блокує раніше й каже чому.
+//   Доступні й до відкриття ринку: кабінет, пул, ☆ «Відстежувати» (market_watch_set), Club Legend — вони хелперів ринку не викликають. null = без обмеження (squad_stage, архів).
+function gateFmt(iso){ const d=new Date(iso), o={timeZone:'Europe/Kyiv'};
+  return d.toLocaleDateString('uk',{...o,weekday:'short'})+', '+d.toLocaleDateString('uk',{...o,day:'2-digit',month:'2-digit'})+' о '+d.toLocaleTimeString('uk',{...o,hour:'2-digit',minute:'2-digit',hour12:false}); }
+function preCabinet(){ const o=S.tour&&S.tour.cabinet_opens_at; return !S.ro && !!o && Date.now()<Date.parse(o); }
+function preMarket(){ const o=S.tour&&S.tour.market_opens_at; return !S.ro && !!o && Date.now()<Date.parse(o); }
+function tradeLocked(){ return !!inPlayRound() || preMarket(); }   // «угоди зараз закриті»: вікенд у грі АБО ринок ще не відкрито
+function preTxt(){ return `⏳ Ринок відкриється <b>${gateFmt(S.tour.market_opens_at)}</b> (за Києвом): до того доступні пул, ☆ «Відстежувати» і Club Legend; купівля, ставки, продаж, обміни й трансфери — після відкриття.`; }
+function preTxtPlain(){ return preTxt().replace(/<[^>]+>/g,''); }
+function showOpenSplash(){
+  $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
+  $('my-name').textContent = S.me.display_name; $('tabs').innerHTML='';
+  const mk=S.tour.market_opens_at;
+  $('view').innerHTML=`<div class="card" style="text-align:center;padding:30px 18px"><div style="font-size:44px">🔒</div>
+    <h2 style="margin:8px 0">Турнір відкриється ${gateFmt(S.tour.cabinet_opens_at)}</h2>
+    <p class="dim" style="margin:0">за Києвом · лишилось <b id="openCd"></b></p>
+    <p class="dim" style="max-width:560px;margin:16px auto 0">З цього моменту — кабінет, пул гравців, ☆ «Відстежувати» і вибір Club Legend.${mk?` Купівля, ставки й обміни — з <b>${gateFmt(mk)}</b>.`:''}</p></div>`;
+  const tick=()=>{ if(Date.now()>=Date.parse(S.tour.cabinet_opens_at)){ location.reload(); return; } const e=$('openCd'); if(e) e.textContent=countdownLong(S.tour.cabinet_opens_at); };
+  tick(); setInterval(tick,15000); document.addEventListener('visibilitychange',()=>{ if(!document.hidden) tick(); });
+}
+let _mkTimer=null;
+function scheduleMarketOpen(){   // у момент market_opens_at розблокувати ринок БЕЗ перезавантаження сторінки
+  clearTimeout(_mkTimer); const o=S.tour&&S.tour.market_opens_at; if(!o||S.ro) return;
+  const ms=Date.parse(o)-Date.now(); if(ms<=0) return; S._wasPre=true;
+  _mkTimer=setTimeout(async()=>{ if(preMarket()) return scheduleMarketOpen(); S._wasPre=false; try{ modalClose(); await go(S.tab,true,true); }catch(e){} }, Math.min(ms+800,2147000000));
+}
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && S && S.tour && S._wasPre && !preMarket()){ S._wasPre=false; try{ modalClose(); go(S.tab,true,true); }catch(e){} } });
+
 // ── СТАРТ ──
 const SQUAD_KEY='squad2026';   // 24.11: STAGE читає ТЕСТОВИЙ турнір; на PROD promote.py підміняє на 'squad2026'
 async function boot(){
@@ -1260,7 +1290,12 @@ async function boot(){
   // Завершений турнір за ключем — архів, лише перегляд (719).
   S.tour = null; S.ro = false; S.final = null;
   try{
-    const { data:kt } = await sb.from('tournaments').select('id,title,key,mode,status').eq('mode','squad').eq('key',SQUAD_KEY).in('status',['active','finished']).limit(1);
+    // 747: + cabinet_opens_at / market_opens_at. Колонки market_opens_at на проді може ще не бути (747 не залито) → запит без неї; не вдався і так → як було (без гейтів).
+    const tq=cols=>sb.from('tournaments').select(cols).eq('mode','squad').eq('key',SQUAD_KEY).in('status',['active','finished']).limit(1);
+    let kr=await tq('id,title,key,mode,status,cabinet_opens_at,market_opens_at');
+    if(kr.error) kr=await tq('id,title,key,mode,status,cabinet_opens_at');
+    if(kr.error) kr=await tq('id,title,key,mode,status');
+    const kt=kr.data;
     if(kt&&kt[0]){ S.tour=kt[0]; S.ro=(kt[0].status==='finished'); }
   }catch(e){ S.tour=null; }
   if(!S.tour){
@@ -1277,6 +1312,7 @@ async function boot(){
   S.me = me[0];
   S.me.id = S.me.participant_id;   // ⚠️ me() віддає колонку participant_id; увесь код кабінету чекає .id
   S.myProfile = session.user.id;   // = profiles.id (auth.uid) — для карток/рамок (акаунт-рівень, крос-ліга)
+  if(!S.me.is_admin && preCabinet()){ showOpenSplash(); return; }   // 747: турнір ще не відкрито (сб 09:00) — друзям екран-заслонка, адмін проходить
   if(S.ro){ try{ S.final=(await sbSel(`market_final_pub?tournament_id=eq.${S.tour.id}&select=finished_at,winner_names,snapshot`))[0]||null; }catch(e){ S.final=null; } }   // 719: знімок підсумків (нема вьюхи → банер без переможця)
 
   $('screen-login').classList.add('hide'); $('screen-app').classList.remove('hide');
@@ -1286,6 +1322,7 @@ async function boot(){
     await loadRefs();
     renderTabs();
     go(S.tab);
+    scheduleMarketOpen();   // 747: розблокувати ринок о market_opens_at без перезавантаження
   } catch(e){
     $('view').innerHTML = '<div class="soon">Не вдалось завантажити дані: '
       + esc(e && e.message ? e.message : e) + '</div>';
@@ -1443,6 +1480,7 @@ async function loadRefs(){
 // виклик дії ринку: RPC → показати результат → перезавантажити
 async function act(fn, args, okMsg, opts){
   if(S.ro){ alert('🏁 Турнір завершено — кабінет у режимі перегляду, змінити нічого не можна.'); return; }   // 719 (адмін-дії йдуть через admCall, не тут)
+  if(preMarket() && /^market_(buynow|sell|buy_listing|list_player|start_auction|place_bid|propose_transfer|propose_exchange|extend_contract)$/.test(fn)){ alert(preTxtPlain()); return; }   // 747: страховка — кнопки блокуються раніше, сервер відмовив би так само
   const { data, error } = await sb.rpc(fn, args);
   if(error){ alert('⛔ ' + (error.message||'').replace(/^.*?(Squad: )/, '$1')); return; }
   if(okMsg) alert('✅ ' + okMsg);
@@ -1517,6 +1555,7 @@ function bindActions(){
   document.querySelectorAll('[data-sell]').forEach(b=>b.onclick=()=>{
     const p=S.players.find(x=>x.id===b.dataset.sell)||{name:'гравця'};
     if(lnBlocked(p.id)) return alert(lnMsg());
+    if(preMarket()) return alert(preTxtPlain());   // 747
     if(inPlayRound()) return alert('Вікенд '+inPlayRound().number+' почався — продаж закрито до закриття вікенду.');   // 16.11 (QA): сервер відмовив би («ринок зачинено»)
     confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${b.dataset.price}</b> (−5%)?`, 'Продати · '+b.dataset.price,
       ()=>act('market_sell',{p_player:b.dataset.sell},'Продано')); });
@@ -1776,6 +1815,8 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
   }
   // вікенд у грі: що закрито/відкрито на ринку (текст як був у банері)
   const inplayMsg = inplay ? `<div class="stmsg warn"><b>Вікенд ${inplay.number} почався${(inplay.opened_at && new Date(inplay.deadline_at)>nowD)?' — усі підтвердили склад, склади відкрито':' — дедлайн минув'}. Ринок повністю закритий:</b> купівля, ставки, продаж, угоди, продовження контрактів і зміна ролей неможливі до закриття вікенду. Угоди, створені ДО старту, виконаються після закриття.${(firstFut&&why)?' '+why:''}</div>` : '';
+  // 747: ринок ще не відкрито (час-гейт market_opens_at) — що доступно зараз і коли відкриється
+  const preMsg = (!inplay && preMarket()) ? `<div class="stmsg warn"><b>Ринок відкриється ${gateFmt(S.tour.market_opens_at)} (за Києвом).</b> До того доступні: пул гравців, ☆ «Відстежувати», Club Legend. Купівля, ставки, продаж, обміни й трансфери — після відкриття ринку.</div>` : '';
   // мій склад підтверджено (фінально) на найближчий вікенд
   const locked=!!(firstFut && !inplay && S.confOK && S.me && confOf(S.me.id, firstFut.id));   // 545: коли вікенд почався, замість «поза складом можна…» діє банер «ринок повністю закритий»
   const lockedMsg = locked ? `<div class="stmsg ok">🔒 Склад на Вікенд ${firstFut.number} підтверджено — змінити склад і бусти не можна; гравців зі складу не можна ні продати, ні обміняти, ні продовжити, а ролі всіх твоїх гравців заморожені. Поза складом можна купувати, продавати й продовжувати контракти — до старту вікенду (лише адмін може розблокувати склад).</div>` : '';
@@ -1789,7 +1830,7 @@ function stateBlock(mine, mode){   // mode: 'squad' (з чіпами підтв�
                 : (new Date(cr.deadline_at)<=nowD ? 'Дедлайн минув — склади, капітани й бусти відкрито.' : 'Щойно підтвердять усі — склади, капітани й бусти стануть видні кожному.');
     conf=`<div class="stconf"><div class="cap">підтвердили <b>${done} із ${pids.length}</b></div><div class="cfchips">${chips}</div><div class="when">${note}</div></div>`;
   }
-  return hero + inplayMsg + lockedMsg + penBanners() + evBanners() + dealBanners() + outbidBanners() + agBanners() + conf;
+  return hero + inplayMsg + preMsg + lockedMsg + penBanners() + evBanners() + dealBanners() + outbidBanners() + agBanners() + conf;
 }
 // 542: банери штрафів ролей — МІЙ борг / склад «не зараховано» / вихід гравця (приватне, лише власнику)
 // 555: «Поговорити з агентом» — блок у картці ЧУЖОГО гравця (кнопка, квота вікна, остання відповідь агента)
@@ -2894,7 +2935,7 @@ function renderLineup(mine, round){
           <div class="nm">${ordBadge}${esc(p.name)}${capBadge}${posBadge}${roleChipHTML(p,zone)}</div>
           <div class="meta"><span class="pos ${p.position}">${posCat(p.position)}</span><span>${esc(cl)}</span>${injuryBadge(p)}${ci.rl!=null?`<span class="ctr ${ci.low?'low':''}" title="контракт: лишилось вікендів (продовження — у детальній картці)">📄 ${ci.rl}${ci.low?' · добігає':''}</span>`:''}</div>
         </div>
-        <div class="lctrl">${ctrl}<button class="mini ghost sell" ${lnBlocked(p.id)?'disabled title="🔒 У підтвердженому складі — продаж неможливий"':(inPlayRound()?'disabled title="⏳ Вікенд почався — продаж закрито до закриття вікенду"':'')} data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
+        <div class="lctrl">${ctrl}<button class="mini ghost sell" ${lnBlocked(p.id)?'disabled title="🔒 У підтвердженому складі — продаж неможливий"':(inPlayRound()?'disabled title="⏳ Вікенд почався — продаж закрито до закриття вікенду"':(preMarket()?'disabled title="⏳ Ринок ще не відкрито"':''))} data-sell="${p.id}" data-price="${eur(proceeds)}">Продати ${eur(proceeds)}</button></div>
       </div>
       <div class="rt tap" data-p="${p.id}" title="Детальна картка гравця"><div class="big tnum">★${p.season_avg_rating??'—'}</div><div class="pr tnum">${eur(p.market_value_current)} <span class="${d.dir}">${fmtDelta(d)}</span></div>${startWas(p,'right')}</div>
     </div>`;
@@ -3463,7 +3504,7 @@ async function viewMarket(){
       .sort((a,b)=>(rk(a)-rk(b))||((b.season_avg_rating||0)-(a.season_avg_rating||0))||String(a.name||'').localeCompare(String(b.name||''),'uk'));
     const watchRow=p=>{
       const ok=poolOnly(p), mine=p.owner_participant_id===S.me.id, o=ownerInfo(p), l=(S.listingsReady&&S.listings[p.id])||null, d=vDelta(p);
-      const act=!ok?'': mine?'Моя картка' : inPlayRound()?'Відкрити' : !p.owner_participant_id ? (o.txt.startsWith('аукціон')?'Поставити':'Купити') : (l?'Викупити':'Запропонувати');
+      const act=!ok?'': mine?'Моя картка' : tradeLocked()?'Відкрити' : !p.owner_participant_id ? (o.txt.startsWith('аукціон')?'Поставити':'Купити') : (l?'Викупити':'Запропонувати');
       const st=!ok? '<span class="wlst">поза пулом</span>' : `<span class="wlst ${o.cls}">${o.dot}${o.txt}</span>${l?`<span class="wlshop">🏷 вітрина ${eur(l.ask_price)}</span>`:''}`;
       return `<tr class="shoprow wlrow${mine?' mine':''}${ok?'':' out'}" data-wp="${p.id}"${ok?` data-open="${p.id}" style="cursor:pointer"`:''}>
         <td class="c-pl"><b>${esc(p.name)}</b> <span class="dim">${esc(clubPos(p))}</span></td>
@@ -3500,7 +3541,7 @@ async function viewMarket(){
       ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Поточна</th><th class="n">Умови лідера</th><th class="n">До</th><th></th></tr></thead><tbody>${
         outbid.map(a=>{ const p=S.players.find(x=>x.id===a.player_id)||{};
           return `<tr class="shoprow" data-open="${a.player_id}" style="cursor:pointer"><td><b>${esc(p.name||'?')}</b> <span class="dim">${esc(clubPos(p))}</span></td>
-            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">${inPlayRound()?'Відкрити':'Перебити'}</button></td></tr>`;
+            <td class="n">${eur(a.current_bid)}</td><td class="n">${aucTerms(a,a.leader_role)}</td><td class="n">${aucDt(a)}</td><td class="n"><button class="mini" data-open="${a.player_id}">${tradeLocked()?'Відкрити':'Перебити'}</button></td></tr>`;
         }).join('')}</tbody></table>` : none;
     const shopHtml = !S.listingsReady ? '<div class="dim" style="padding:6px 2px">Вітрина зʼявиться після заливки 421.</div>'
       : myShop.length ? `<table class="t"><thead><tr><th>Гравець</th><th class="n">Вартість зараз</th><th class="n">Ціна (ask)</th><th></th></tr></thead><tbody>${
@@ -4261,18 +4302,19 @@ function actionsHTML(p,ctx){
     const extBlock = extMax>=1
       ? contractPicker(mv,0,p.id,{extend:true,left:rl,oldWage:ci.wage||0,max:extMax})+`<div class="macts"><button class="ghost" data-do="extend">Продовжити контракт</button></div>`
       : `<p class="mnote">Контракт уже покриває всі вікенди, що лишились (лишилось ${si.left} з ${si.len}) — продовжувати нікуди.</p>`;
-    const lockedP = lnBlocked(p.id), playNow = inPlayRound(), expNow = !!(playNow && expiringP(p));
+    const lockedP = lnBlocked(p.id), playNow = inPlayRound(), preNow = preMarket(), expNow = !!(playNow && expiringP(p));
     /* 23.10 (Богдан: «багато повторюваного тексту»): «вікенд почався» — ОДНЕ повідомлення замість двох (контракти + ринок); перед пріоритетом «гравець у підтвердженому складі» — під час вікенду заморожено все */
-    const extBlockF = playNow ? '' : (lockedP ? `<p class="mnote warn">🔒 Гравець у підтвердженому складі — контракт можна продовжити після закриття вікенду.</p>` : extBlock);
+    const extBlockF = (playNow||preNow) ? '' : (lockedP ? `<p class="mnote warn">🔒 Гравець у підтвердженому складі — контракт можна продовжити після закриття вікенду.</p>` : extBlock);
     let right = playNow
       ? `<p class="mnote warn" style="margin:0">⏳ Вікенд ${playNow.number} почався: ринок закритий (продаж, вітрина, обмін, трансфер, продовження контракту) — відкриється після закриття вікенду.</p>`
+      : preNow ? `<p class="mnote warn" style="margin:0">${preTxt()}</p>`
       : (lockedP
           ? `<p class="mnote warn" style="margin:0">${lnMsg()}</p>`
           : `<div class="macts"><button class="ghost" data-do="sell" data-amt="${proceeds}">Продати у ринок · ${eur(proceeds)} (−5%)</button></div>
 `);
     /* 23.10: автопродаж гравця з останнім вікендом контракту тепер сказано ОДИН раз — у рядку «Контракт» зліва (раніше дублювалось тут EXPIRING_TXT) */
     // ВІТРИНА ask (421): виставити свого за фіксованою ціною / зняти
-    if(S.listingsReady && !lockedP && !expNow && !playNow){
+    if(S.listingsReady && !lockedP && !expNow && !playNow && !preNow){
       const lst=S.listings[p.id];
       if(lst){
         right+=`<p class="mnote">🏷 Виставлений на вітрину за <b>${eur(lst.ask_price)}</b> — будь-хто може викупити миттєво, ти отримаєш суму <b>повністю</b> (0% комісії).</p>
@@ -4292,6 +4334,7 @@ function actionsHTML(p,ctx){
     let h='';   // 20.10: «Власник…» і «Агент» винесено в картку (pm-xinfo, під таблицею форми)
     // 535: у вікенді пропозиції на гравця з останнім вікендом контракту заборонені (автопродаж при закритті раніше за будь-яку угоду)
     if(inPlayRound() && expiringP(p) && !finalWkNow()) return h+`<p class="mnote warn">${EXPIRING_TXT.replace('<b>продовж контракт до дедлайну</b>','власник міг би продовжити контракт до дедлайну')}</p>`;
+    if(preMarket()) return h+`<p class="mnote warn">${preTxt()}</p>`;   // 747
     if(inPlayRound()) return h+`<p class="mnote warn">⏳ Вікенд ${inPlayRound().number} почався: угоди закриті — нові пропозиції, лоти й обміни створити не можна до закриття вікенду.</p>`;
     const blockA=acquireBlock(p), lst=(S.listingsReady&&S.listings[p.id])||null;
     // ── 🛒 КУПИТИ: викуп з вітрини (миттєво) або пропозиція власнику (трансфер) ──
@@ -4323,6 +4366,7 @@ function actionsHTML(p,ctx){
     return h+ownerConfHint(p)+ptabs([['buy','🛒 Купити',buy],['ex','🔄 Обмін',ex]], (blockA&&S.exchangesReady)?'ex':'buy');
   }
   const block=acquireBlock(p), ceil=Math.round(mv*(1+(cfg.buynow_pct??0.15)));
+  if(preMarket()) return `<p class="mnote warn">${preTxt()}</p>`;   // 747
   if(inPlayRound()) return `<p class="mnote warn">⏳ Вікенд ${inPlayRound().number} почався: купівля, ставки й викуп вільних гравців закриті до закриття вікенду.</p>`;
   const buyPct=Math.round((cfg.buynow_pct??0.15)*100);
   if(au){
@@ -4710,7 +4754,7 @@ async function openPlayerModal(pid){
   const ptScored  = sp && sp.rounds_played>0  ? sp.scored_points  : '—';
   const ptFielded = sp && sp.fielded_rounds>0 ? sp.fielded_points : '—';
   const lgEn=leagueEn(cl.league);
-  const xinfo=(!ctx.owned&&!ctx.free)?`<div class="pm-xinfo">${ownerNoteHTML(p)}${inPlayRound()?'':agentUI(p)}</div>`:'';   // власник + агент: у вільному місці під формою
+  const xinfo=(!ctx.owned&&!ctx.free)?`<div class="pm-xinfo">${ownerNoteHTML(p)}${tradeLocked()?'':agentUI(p)}</div>`:'';   // власник + агент: у вільному місці під формою
   const html = `<div class="pm-fit">
     <header class="pm-head"><div class="pm-head1">
       <div class="pm-title">Детальна картка гравця</div>
