@@ -1889,6 +1889,9 @@
     overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,0.55);
     display:flex; flex-direction:column;
   }
+  /* 24.11 (Богдан): вікна Профіль / Спільноти / Крамниця — того ж розміру, що й кабінет Squad (там `wide` = 1840). Раніше стеля була 1440, тож сцена
+     картки (fixed, на весь iframe) у крамниці/профілі виходила вужчою, ніж у кабінеті. Клас `wide` вішає openWin() за тим самим правилом, що й кабінет. */
+  #winmodal-overlay.wide:not(.min) #winmodal-shell{max-width:1840px;}
   /* Згорнуте «в себе»: фон прозорий (кабінет під ним клікабельний), лишається
      лише заголовок, докнутий донизу. */
   #winmodal-overlay.min{
@@ -6085,6 +6088,9 @@ async function refreshAll(){
     frame.title = title || 'Вікно';
     if(frame.getAttribute('src') !== href) frame.setAttribute('src', href);
     overlay.classList.add('open');
+    // той самий розмір, що в кабінету: широкий, якщо кабінет відкритий широким або активний турнір — Squad
+    const cab = document.getElementById('cabinet-overlay');
+    overlay.classList.toggle('wide', !!(cab && cab.classList.contains('wide')) || (typeof activeTournament !== 'undefined' && !!activeTournament && activeTournament.source === 'squad'));
     document.body.classList.add('winmodal-lock');
     minBtn.textContent = '▁ Згорнути';
   }

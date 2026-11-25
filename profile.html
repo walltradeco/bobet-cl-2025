@@ -443,11 +443,10 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 .cfilter button b{font-family:var(--mono);font-weight:700;margin-left:5px;color:var(--text-dim)}
 .cfilter button.on{border-color:var(--blue);color:#fff;background:rgba(var(--blue-rgb),.18)}
 .cvit-empty{margin-top:15px;padding:16px;border:1px dashed var(--line2);border-radius:13px;color:var(--text-dim);font-size:12px;line-height:1.5}
-.sqfull .sqinfo{position:absolute;left:0;right:0;bottom:0;z-index:6;text-align:center;padding:56px 16px calc(env(safe-area-inset-bottom,0px) + 16px);pointer-events:none;
-  background:linear-gradient(to top,rgba(5,8,6,.9) 30%,rgba(5,8,6,0))}   /* тло під підписом: світла сцена Mega інакше «з'їдає» білий текст */
-.sqfull .sqinfo strong{display:block;font-size:16px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.9)}
-.sqfull .sqinfo span{display:block;margin-top:3px;font-family:var(--mono);font-size:11px;letter-spacing:.06em;color:#b9c4cc;text-shadow:0 1px 6px rgba(0,0,0,.9)}
-.sqfull .sqvars{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;pointer-events:auto}
+/* 24.11 (Богдан): у сцені з карткою НІКОЛИ нема підпису (ім'я · «RARE · Лише картка») і темної плями під ним — як у кабінеті, на борді й у крамниці.
+   Лишився тільки перемикач дизайнів (кнопки), і лише коли у картки їх кілька. */
+.sqfull .sqinfo{position:absolute;left:0;right:0;bottom:0;z-index:6;text-align:center;padding:0 16px calc(env(safe-area-inset-bottom,0px) + 16px);pointer-events:none}
+.sqfull .sqvars{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:0;pointer-events:auto}
 .sqfull .sqvars button{padding:6px 12px;border:1px solid #3a4550;border-radius:999px;background:rgba(22,27,33,.94);color:#e3e9ee;font-size:12px;font-weight:600;cursor:pointer}
 .sqfull .sqvars button.on{border-color:var(--blue);color:#fff;background:rgba(var(--blue-rgb),.3)}
 @media(max-width:900px){ .cgrid{grid-template-columns:repeat(4,minmax(0,1fr))} }
@@ -802,7 +801,7 @@ function renderHead(){
   if(S.isOwn){
     actions=`<div class="hactions">
       <button class="edit" id="a-edit">${ic('sliders')}Керувати профілем</button>
-      <div class="launch">${HIDE_CARDS?'':``}<a href="community.html">👥 Спільноти</a></div>
+      <div class="launch">${HIDE_CARDS?'':`<a href="shop.html">${ic('layers',13)}Крамниця</a>`}<a href="community.html">👥 Спільноти</a></div>
     </div>`;
   }
   $('phead').innerHTML=`<section class="hero${(legacyChamp||classicGold)?' champ':''}"${heroStyle}>${frame}
@@ -1323,14 +1322,14 @@ function showFullUnit(u,start){
   const el=document.createElement('div'); el.className='sqfull';
   el.innerHTML=`<button class="sqx" aria-label="закрити">✕</button><div class="sqload"></div>
     <div class="stage"><div class="glow"></div><div class="contact"></div><div class="podium-card"><div class="tilt"></div></div></div>
-    <div class="sqinfo">${views.length>1?'<div class="sqvars"></div>':''}<strong></strong><span></span></div>`;
+    ${views.length>1?'<div class="sqinfo"><div class="sqvars"></div></div>':''}`;
   const onKey=e=>{ if(e.key==='Escape') close(); };
   const close=()=>{ el.remove(); document.removeEventListener('keydown',onKey); };
   el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) close(); };
   document.addEventListener('keydown',onKey);
   document.body.appendChild(el);
   const stage=el.querySelector('.stage'), pc=stage.querySelector('.podium-card'), tilt=stage.querySelector('.tilt'), glow=stage.querySelector('.glow');
-  const vars=el.querySelector('.sqvars'), nm=el.querySelector('.sqinfo strong'), sub=el.querySelector('.sqinfo span');
+  const vars=el.querySelector('.sqvars');
   stage.addEventListener('pointermove',e=>{
     const r=stage.getBoundingClientRect(), dx=(e.clientX-r.left)/r.width-.5, dy=(e.clientY-r.top)/r.height-.5;
     tilt.style.animation='none'; tilt.style.transform=`rotateX(${(-dy*14+3).toFixed(1)}deg) rotateY(${(dx*20).toFixed(1)}deg)`; tilt.style.setProperty('--k',thickK(dx*20));
@@ -1343,7 +1342,6 @@ function showFullUnit(u,start){
     pc.className='podium-card'+(mega?' mega':''); tilt.className='tilt'+(isArt?' fx':''); tilt.style.removeProperty('--m'); 
     glow.style.display=isArt?'':'none';
     tilt.innerHTML=isArt?artHTML(v.art.png_path,esc(u.name)):sqCardHTML(u,v,true);
-    nm.textContent=u.name; sub.textContent=(isArt?(RAR[v.art.tier]||v.art.tier):(FRAME_LABEL[v.frame]||'SILVER'))+(collStatusLabel(u)?' · '+collStatusLabel(u):'');
     if(vars) vars.innerHTML=views.map((x,i)=>`<button type="button" class="${i===vi?'on':''}" data-i="${i}">${esc(vlabel(x,i))}</button>`).join('');
     const sceneUrl='scenes/'+(SCENE_FILE[tier]||'steel')+'.webp';
     const showCard=()=>{ if(my!==tok||!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
