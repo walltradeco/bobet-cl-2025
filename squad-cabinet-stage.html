@@ -1749,6 +1749,7 @@ async function naSync(force){
 document.addEventListener('click',e=>{ const b=e.target.closest&&e.target.closest('#naOpen'); if(b){ naStore.set('1'); naRender(); } });
 setInterval(()=>{ if(!document.hidden && S && S.tour && naWanted()) naSync(true); },60000);
 async function go(tab, quiet, noSnap){
+  if(S.me && !S.me.is_admin && preCabinet()) return;   // 25.11 (S0.5): до cabinet_opens_at не-адмін лишається на заслонці — інакше softRefresh/scheduleMarketOpen після повернення на вкладку (Крамниця/Профіль → назад) перемальовували кабінет поверх неї
   if(!noSnap) snapDraft();   // 16.11: йдемо з редактора складу (або перемальовуємо його) — чернетка запамʼятовується до повернення
   if(S.tab!==tab){ S.ctour=null; S.rrp=null; }   // 15.10: нова вкладка — чіп вікенду знову за замовчуванням (відкритий вікенд)
   S.tab=tab; if(!quiet) renderTabs(); renderHeader(); renderFinalBar();   // тихе перемальовування (Rivals): вкладки не чіпаємо
