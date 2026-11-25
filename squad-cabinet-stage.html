@@ -1181,6 +1181,8 @@ const S = { me:null, tour:null, cfg:null, tab:'my', rounds:[], clubs:{}, players
   f:{ q:'', league:'', club:'', pos:'', coll:'', rarity:'', rMin:null, rMax:null, pMin:null, pMax:null, status:'all', sort:'rating' } };
 const $ = (id)=>document.getElementById(id);
 const esc = (s)=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+// 25.11 (F3, Трек S): пошук по імені без регістру й діакритики — «Mbappe» знаходить «Mbappé», «Rudiger» — «Rüdiger», «Odegaard» — «Ødegaard» (ø/ł/đ/ß/æ/œ/ı не розкладаються через NFD — окремо)
+const fold = (s)=>String(s??'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/ø/g,'o').replace(/ł/g,'l').replace(/đ/g,'d').replace(/ß/g,'ss').replace(/æ/g,'ae').replace(/œ/g,'oe').replace(/ı/g,'i').trim();
 function msg(host,text,kind='err'){ host.innerHTML = `<div class="msg ${kind}">${esc(text)}</div>`; }
 function eur(v){ return v==null?'—':'€'+(v/1e6).toFixed(v>=1e8?0:1)+'M'; }
 // межі ПОЛЯ ВВОДУ суми (трансфер/ставка/вітрина/контр): мінімум округлюємо ВГОРУ, максимум ВНИЗ до 0,01M — інакше показана межа («мін 14.9») відхиляється (точний мін 14 904 750)
@@ -3377,7 +3379,7 @@ function marketList(){
   if(f.club)   list=list.filter(p=>p.club_id===f.club);
   if(f.pos)    list=list.filter(p=>p.position===f.pos);
   // рарність/колекція — це косметика, у Ринку не фільтруємо (лише в Колекції/Крамниці)
-  if(f.q){ const q=f.q.toLowerCase(); list=list.filter(p=>(p.name||'').toLowerCase().includes(q)); }
+  if(f.q){ const q=fold(f.q); if(q) list=list.filter(p=>fold(p.name).includes(q)); }
   // немає рейтингу (не грав/травма) ≠ рейтинг 0 — такий гравець не ріжеться слайдером рейтингу
   if(f.rMin!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating >= f.rMin);
   if(f.rMax!=null) list=list.filter(p=>p.season_avg_rating==null || p.season_avg_rating <= f.rMax);
@@ -4854,7 +4856,7 @@ function bindModalActions(p){
     if(kind==='sell'){ if(lnBlocked(p.id)) return alert(lnMsg()); const amt=+b.dataset.amt; confirmModal(`Продати <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> (−5%)?`, 'Продати · '+eur(amt),
       ()=>act('market_sell',{p_player:p.id},'Продано'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buy'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
-      confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} вікенд</b> (${eur(qWageR(p.id,len,p.market_value_current,ra.p_role)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
+      confirmModal(`Купити <b>${esc(p.name)}</b> за <b>${eur(amt)}</b> · контракт <b>${len} ${turW(len)}</b> (${eur(qWageR(p.id,len,p.market_value_current,ra.p_role)*len)} зарплатного резерву)?`, 'Купити · '+eur(amt),
       ()=>act('market_buynow',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='bidcancel'){ cancelBidModal(b.dataset.au,p.name,()=>openPlayerModal(p.id)); return; }
     if(kind==='unlist'){ confirmModal(`Зняти <b>${esc(p.name)}</b> з вітрини продажу?`, 'Зняти',
@@ -4863,7 +4865,7 @@ function bindModalActions(p){
       confirmModal(`Продовжити <b>${esc(p.name)}</b> ще на <b>${len} ${turW(len)}</b>?<br>Було: ${ci.rl} × ${eur(ci.wage)}. Додасться: ${len} × ${eur(w)} (×${em}). Стане: <b>${(ci.rl||0)+len} ${turW((ci.rl||0)+len)}</b>. Додатково заморозиться ${eur(w*len)}.`, 'Продовжити',
       ()=>act('market_extend_contract',{p_player:p.id,p_length:len,...ra},'Контракт продовжено'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='buylist'){ const amt=+b.dataset.amt, len=selectedLen(); if(needRole()) return; const ra=roleArgs();
-      confirmModal(`Викупити <b>${esc(p.name)}</b> з вітрини за <b>${eur(amt)}</b> (миттєво, 0% комісії) · контракт <b>${len} вікенд</b>?`, 'Викупити · '+eur(amt),
+      confirmModal(`Викупити <b>${esc(p.name)}</b> з вітрини за <b>${eur(amt)}</b> (миттєво, 0% комісії) · контракт <b>${len} ${turW(len)}</b>?`, 'Викупити · '+eur(amt),
       ()=>act('market_buy_listing',{p_player:p.id,p_length:len,...ra},'Гравець твій'), ()=>openPlayerModal(p.id)); return; }
     if(kind==='xfair'){ xFair(+b.dataset.fair||0); return; }
     if(kind==='xpropose'){
@@ -5045,10 +5047,10 @@ async function viewCollection(){
       ${chipsHTML}
       <div class="colc-own ${st.cls}"${u.cur?'':` title="Зараз: ${esc(holder)}"`}>${st.t}</div></div>`; };
   const apply=()=>{
-    const f=S.colF, q=(f.q||'').trim().toLowerCase();
+    const f=S.colF, q=fold(f.q);
     if(f.mode==='all'){
       const vis=all.filter(c=>{
-        if(q && !(c.title.toLowerCase().includes(q) || c.card_key.toLowerCase().includes(q))) return false;
+        if(q && !(fold(c.title).includes(q) || fold(c.card_key).includes(q))) return false;
         if(f.pos && !c.pls.some(p=>p.position===f.pos)) return false;
         if(f.club && !c.pls.some(p=>String(p.club_id)===f.club)) return false;
         if(f.coll && !(c.collections||[]).includes(f.coll)) return false;
@@ -5067,7 +5069,7 @@ async function viewCollection(){
     const pid = f.mode==='mine' ? S.me.id : f.who, mine = pid===S.me.id;
     const units = mine ? mineUnits : unitsOf(pid);
     const vis=units.filter(u=>{
-      if(q && !u.title.toLowerCase().includes(q)) return false;
+      if(q && !fold(u.title).includes(q)) return false;
       if(f.pos && u.p.position!==f.pos) return false;
       if(f.club && String(u.p.club_id)!==f.club) return false;
       if(f.coll && !u.cards.some(c=>(c.collections||[]).includes(f.coll))) return false;
@@ -5164,7 +5166,7 @@ function viewStats(){
   const F=S.stF||(S.stF={league:'',club:'',pos:'',own:'',q:'',round:''});
   const all=S.players.filter(poolOnly);
   let pool=all;
-  { const q=(F.q||'').trim().toLowerCase(); if(q) pool=pool.filter(p=>(p.name||'').toLowerCase().includes(q)); }   // пошук по імені — як на «Ринку»
+  { const q=fold(F.q); if(q) pool=pool.filter(p=>fold(p.name).includes(q)); }   // пошук по імені — як на «Ринку»
   if(F.league) pool=pool.filter(p=>(S.clubs[p.club_id]||{}).league===F.league);
   if(F.club)   pool=pool.filter(p=>p.club_id===F.club);
   if(F.pos)    pool=pool.filter(p=>p.position===F.pos);
@@ -6391,8 +6393,8 @@ async function admPool(body){
   body.querySelectorAll('details.dspsec').forEach(x=>x.addEventListener('toggle',()=>{ P.open[x.dataset.g]=x.open; }));
 
   // ── гравці: фільтри й список ──
-  const filt=()=>{ let l=(d.players||[]).slice(); const q=P.q.trim().toLowerCase();
-    if(q) l=l.filter(p=>(p.name||'').toLowerCase().includes(q)); if(P.club) l=l.filter(p=>p.club_id===P.club); if(P.pos) l=l.filter(p=>p.pos===P.pos);
+  const filt=()=>{ let l=(d.players||[]).slice(); const q=fold(P.q);
+    if(q) l=l.filter(p=>fold(p.name).includes(q)); if(P.club) l=l.filter(p=>p.club_id===P.club); if(P.pos) l=l.filter(p=>p.pos===P.pos);
     if(P.st==='free') l=l.filter(p=>!p.owner_id&&p.in_pool); else if(P.st==='owned') l=l.filter(p=>p.owner_id); else if(P.st==='removed') l=l.filter(p=>!p.in_pool);
     else if(P.st==='inj') l=l.filter(p=>p.injury); else if(P.st==='man') l=l.filter(p=>p.injury&&p.injury.source==='admin'); else if(P.st==='nophoto') l=l.filter(p=>!p.photo_url);
     return l; };
