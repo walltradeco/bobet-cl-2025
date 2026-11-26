@@ -21,7 +21,7 @@
   --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;
+body{margin:0;min-height:100vh;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;   /* 26.11 (S4): min-height — без цього на короткому екрані (заслонка, вхід) градієнт тла повторювався і давав шов */
   -webkit-font-smoothing:antialiased;
   background:
     radial-gradient(1100px 480px at 80% -10%, #12261c 0%, transparent 58%),
@@ -87,6 +87,9 @@ nav.tabs::-webkit-scrollbar{display:none}
 .tab:hover{color:var(--text)}
 .tab[aria-selected=true]{color:var(--text);border-bottom-color:var(--accent)}
 .tab .ic{font-size:15px}
+/* 26.11 (S4, вікна 601–1099 px): вкладки стискаються, нижче 940 px — без емодзі; якщо все одно тісно, переносяться другим рядком — «Адмінка» з крапкою 🔴/🟡 ніколи не ховається за краєм (скролбара нема) */
+@media (min-width:601px) and (max-width:1099px){ nav.tabs{gap:0;flex-wrap:wrap} .tab{padding:12px 7px 10px;font-size:13.5px;gap:5px} }
+@media (min-width:601px) and (max-width:939px){ .tab .ic{display:none} }
 #screen-app .wrap{padding-top:18px}
 .spin{color:var(--text-dim);padding:30px 4px}
 
@@ -190,6 +193,15 @@ table.t{width:100%;border-collapse:collapse}
   display:flex;align-items:center;gap:7px;font-weight:700}
 .msort select{background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:8px;
   padding:6px 9px;font-weight:700;font-size:13px;text-transform:none;letter-spacing:0}
+/* 26.11 (S4): фільтри Ринку на 768/1000 — два рівні рядки: пошук і три списки на всю ширину, під ними «Рейтинг», «Ціна» й сортування */
+@media (min-width:601px) and (max-width:1099px){
+  .mfilters.mkt .mf{flex:1 1 0;min-width:0}
+  .mfilters.mkt .mf.search input,.mfilters.mkt .mf select{width:100%;min-width:0}
+  .mfilters.mkt::before{content:'';order:1;flex:0 0 100%;height:0;margin-top:-8px}
+  .mfilters.mkt .mf.range,.mfilters.mkt .msort{order:2}
+  .mfilters.mkt .mf.range .rng{flex:1 1 60px;width:auto;min-width:60px}
+  .mfilters.mkt .msort{flex:0 0 auto;margin-left:0}
+}
 .msec{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--text-dim);font-weight:700;
   border-bottom:1px solid var(--line);padding-bottom:8px;margin:6px 0 14px;display:flex;justify-content:space-between}
 
@@ -381,6 +393,9 @@ table.t{width:100%;border-collapse:collapse}
 .strow:hover .cl{color:#bfe8d3}
 .strow .cl .crest{width:12px;height:12px;border-radius:3px;flex:none}
 .strow .vv{font-family:var(--mono);font-weight:700;font-size:13px}
+/* 26.11 (S4): у вузькій картці (3–4 колонки) «клуб · ліга» переходить під імʼя — інакше імʼя стискалось до ≈51 px і обрізалось трикрапкою */
+.statcard{container-type:inline-size}
+@container (max-width:350px){ .strow{grid-template-columns:26px minmax(0,1fr) auto;row-gap:1px} .strow .rk{grid-column:1;grid-row:1/span 2} .strow .nm{grid-column:2;grid-row:1} .strow .cl{grid-column:2;grid-row:2;min-width:0;overflow:hidden} .strow .vv{grid-column:3;grid-row:1/span 2} }
 
 /* 📇 Колекція — картки (22.10: режими «Мої» · «Усі Rare/Mega» · «Учасник») */
 .colnote{color:var(--dim);font-size:12px;line-height:1.5;margin:-6px 2px 2px}   /* 24.11: звʼязок Колекція → профіль (беклог Богдана 24.11) */
@@ -485,6 +500,7 @@ table.t{width:100%;border-collapse:collapse}
 .feed-item .a .qtext{color:var(--text)} .feed-item.dim .a .qtext{color:var(--text-dim);font-style:italic}
 .prs-pophd{font:700 17px var(--mono);margin:0 26px 10px 0}
 .prs-popft{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.modal.prspop .mx{position:sticky;top:0;float:right;margin:-14px -12px 0 8px;padding:3px 9px;border-radius:8px;background:var(--panel);z-index:5}   /* 26.11 (S4): у вікні преси з кількома питаннями «✕» лишається на екрані при прокрутці */
 .mnote.warn{color:var(--down);font-weight:600}
 
 /* рядки трансферів */
@@ -664,6 +680,7 @@ body:has(#screen-login:not(.hide)){
 .head2x{display:flex;align-items:flex-start;gap:4px 16px;margin:6px 2px 12px;flex-wrap:wrap}
 .head2x h2{font-size:17px;font-weight:700;margin:0;white-space:nowrap}
 .head2x .subx{flex:1;min-width:300px;color:var(--dim);font-size:12px;line-height:1.5}
+@media (min-width:601px) and (max-width:1099px){ .head2x .subx{flex-basis:100%} }   /* 26.11 (S4): на 768/1000 пояснення — під заголовком на всю ширину, а не в тісній колонці праворуч */
 .subx1{color:var(--dim);font-size:12px;line-height:1.5;margin:0 2px 10px}
 .subx b,.subx1 b{color:var(--text)}
 .squad-wrap{display:grid;grid-template-columns:1fr;gap:16px}
@@ -828,6 +845,9 @@ div.bcard.avail{cursor:default}   /* 20.10: позиційний буст, як�
 .admc h3{font:700 13px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--text-dim);margin:0 0 10px}
 .admchips{display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px}
 .admbtns{display:flex;gap:8px;flex-wrap:wrap}
+/* 26.11 (S4): у рядках таблиць адмінки кнопки в один ряд (на 768 «✏ Змінити» ламалось на 2 рядки, кошик — третім); клітинка лишається клітинкою (flex у <td> зсував лінію рядка); на 601–899 щільніші відступи, щоб таблиця вміщалась */
+.admbtns .mini{white-space:nowrap} td.admbtns{display:table-cell;white-space:nowrap} td.admbtns .mini+.mini{margin-left:6px}
+@media (min-width:601px) and (max-width:899px){ .admt{font-size:12px} .admt th,.admt td{padding-left:4px;padding-right:4px} .admt td.admbtns .mini{padding:4px 6px;font-size:11.5px} .admt td.admbtns .blbl{display:none} }
 .admdot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;vertical-align:middle}.admdot.red{background:var(--down)}.admdot.yellow{background:var(--gold)}   /* 23.10: що горить — видно з будь-якої вкладки */
 .admlight{display:flex;align-items:center;gap:14px;flex-wrap:wrap}.admlight .big{font:700 20px var(--mono)}.admlight .cnt{font:600 12px var(--mono);color:var(--text-dim)}
 .sigrow{display:flex;gap:10px;align-items:flex-start;padding:8px 10px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);margin:0 0 6px}
@@ -1341,6 +1361,7 @@ async function loadRefs(){
   // (кожен чекав попереднього) — вхід у кабінет і КОЖНА дія ринку/Rivals (act → loadRefs) «висіли» на кілька секунд. Кожен блок
   // зберіг свій graceful-degrade; залежності: ролі/lineup чекають раунди, штрафи — конфіг, злиття контрактів у гравців і межі слайдерів — після всіх.
   const T=S.tour.id, ME=S.me.id, adm=!!(S.me && S.me.is_admin);
+  pmDrop();   // 26.11 (C2): свіжі дані → старий префетч карток недійсний
   const g=async(q)=>{ try{ return await sbSel(q); }catch(e){ return null; } };
   const roundsP = sbSel(`market_rounds?tournament_id=eq.${T}&select=id,number,title,deadline_at,results_entered_at,opened_at&order=number.asc`).then(r=>{ S.rounds=r; return r; });
   const cfgP = Promise.resolve(sb.rpc('market_cfg', { p_tournament:T })).then(r=>{ S.cfg=r.data||null; return S.cfg; });
@@ -3407,7 +3428,7 @@ function filterBar(){
   const clubs=Object.values(S.clubs).filter(c=>activeClubs.has(c.id)).sort((a,b)=>(a.name||'').localeCompare(b.name||''));
   const opt=(v,t,sel)=>`<option value="${esc(v)}" ${String(v)===String(sel)?'selected':''}>${esc(t)}</option>`;
   const rB=S.rBounds, pB=S.pBounds;
-  return `<div class="mfilters">
+  return `<div class="mfilters mkt">
     <div class="mf search"><input id="f-q" placeholder="Пошук по імені (англ.)" value="${esc(f.q)}"></div>
     <div class="mf"><select id="f-league"><option value="">Ліга: усі (${leagues.length})</option>${leagues.map(l=>opt(l,leagueEn(l),f.league)).join('')}</select></div>
     <div class="mf"><select id="f-club"><option value="">Клуб: усі (${clubs.length})</option>${clubs.map(c=>opt(c.id,c.name,f.club)).join('')}</select></div>
@@ -4619,7 +4640,7 @@ const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
 const artHTML=(p,alt)=>thickOf(p)?`<canvas class="sidelayer" aria-hidden="true"></canvas><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
-const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
+const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmArt(p); };
 // Стінка — canvas: смуги по T.h рядків стискаються по горизонталі навколо краю лиця (T.x0[i]) → товщина стінки пропорційна f, як при справжньому повороті
 // (а не «виїжджає з-під лиця»). f=(k−WALL_K0)/(1−WALL_K0): у крайньому положенні гойдання (k=.17) і «у фас» стінки нема. T.cap (Оліс) вирівнює товщину стінки: широкі смуги
 // (плечі) стискаються до cap px, як у Дуе (без cap і k=1 → рівно оригінальний арт).
@@ -4654,6 +4675,10 @@ function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im
   const fin=v=>{ if(!done){ done=true; res(v); } };
   im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
   im.onerror=()=>fin(null); im.src=u; }); }
+// 26.11: повний арт вантажимо як `_hd.webp` — той самий малюнок без втрат (≈39 % менший за PNG; tools/card_hd.py); нема файла на сайті → майстер PNG.
+const hdOf=p=>/^players\/[^/]+\.png$/i.test(String(p||''))? String(p).replace(/\.png$/i,'_hd.webp') : '';
+async function loadArt(p){ const hd=hdOf(p); if(hd && await loadImg(hd)) return hd; return (await loadImg(p))? p : ''; }
+function warmArt(p){ const hd=hdOf(p); if(!hd) return warmUrl(p); if(_warmSet.has(hd)) return; _warmSet.add(hd); const im=new Image(); im.decoding='async'; im.onerror=()=>warmUrl(p); im.src=hd; _warmRefs.push(im); }
 function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel', sceneUrl='scenes/'+scene+'.webp', full=card.current_card_png||'';
@@ -4672,13 +4697,14 @@ function showFullCard(p, tier, card){
   document.body.appendChild(el);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
   const showCard=()=>{ if(!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
+  const artP=isArt?loadArt(art):null;   // 26.11: арт і сцену вантажимо ПАРАЛЕЛЬНО; показ — як і раніше «сцена → картка»
   loadImg(sceneUrl).then(sc=>{
     if(!el.isConnected) return;
     if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
     el.classList.add('sc');
-    if(isArt) return loadImg(art).then(async big=>{
+    if(isArt) return artP.then(async got=>{
       if(!el.isConnected) return;
-      let src=big?art:'';
+      let src=got;
       if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
       if(!el.isConnected) return;
       if(src){ const thick=T&&src===art; im.src=src; tilt.style.setProperty('--m',"url('"+(thick?showThumb(full):src)+"')"); if(thick) await applySide(tilt,full,T); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); /* decode() інколи не завершується (фонова вкладка) — не чекаємо довше 0,6 с */ }
@@ -4715,9 +4741,38 @@ function designSwitcher(p, card){
 async function setDesign(pid, args){
   try{ const {error}=await sb.rpc('set_card_design', args); if(error) throw error; }
   catch(e){ alert('Дизайн: '+(e.message||e)); return; }
-  await openPlayerModal(pid);   // reopen з новим ефективним дизайном
+  pmDrop(); await openPlayerModal(pid);   // reopen з новим ефективним дизайном
 }
 
+// 26.11 (перформанс, пакет 3, C2): дані картки (картка + журнал цін) тягнуться ще при наведенні / фокусі / дотику — клік тоді майже миттєвий.
+// Кеш живе 60 с і СКИДАЄТЬСЯ після будь-якого перезавантаження даних (loadRefs: дії ринку, адмін-дії, тиха перезвірка) та зміни дизайну — власник, ціна й травма не застарівають.
+const PMC=new Map(), PMC_TTL=60000; let pmSeq=0;
+const pmDrop=()=>PMC.clear();
+function pmData(pid){
+  const hit=PMC.get(pid); if(hit && Date.now()-hit.t<PMC_TTL) return hit.p;
+  const e={t:Date.now()}; let bad=false;
+  e.p=Promise.all([
+    sbSel(`market_player_card?id=eq.${pid}&select=*`).then(r=>r[0]||{}).catch(()=>{ bad=true; return {}; }),
+    // Val Δ за турнір = СУМА відсотків руху ціни вікенд за вікендом (market_price_log; публічний); немає журналу → як було (від старту)
+    sbSel(`market_price_log?player_id=eq.${pid}&select=round_id,mult`).catch(()=>{ bad=true; return null; })
+  ]).then(([card,plog])=>{ if(bad && PMC.get(pid)===e) PMC.delete(pid); return {card,plog}; });   // невдалу відповідь не кешуємо — наступний клік спробує ще раз
+  PMC.set(pid,e); return e.p;
+}
+{ // намір відкрити картку: миша — через 90 мс над рядком (щоб проведення курсором по сітці не сипало запитами), клавіатура й натиск — одразу, палець — через 100 мс (прокрутка скасовує)
+  const SEL='.mtile[data-p],.strow[data-p],.rrt tr[data-p],.pcard[data-pc],[data-open]';
+  let t=null, cur=null;
+  const stop=()=>{ clearTimeout(t); cur=null; };
+  const want=(ev,delay)=>{ const el=ev.target&&ev.target.closest&&ev.target.closest(SEL); if(!el) return;
+    const pid=el.dataset.pc||el.dataset.p||el.dataset.open; if(!pid||!S.players||!S.players.some(x=>x.id===pid)) return;
+    if(delay && el===cur) return;   // вже чекаємо на цьому елементі (рух усередині нього)
+    clearTimeout(t); cur=el; if(delay) t=setTimeout(()=>pmData(pid),delay); else pmData(pid); };
+  const on=(ev,f)=>document.addEventListener(ev,f,{passive:true});
+  on('pointerover',e=>{ if(e.pointerType!=='touch') want(e,90); });
+  on('pointerout',e=>{ if(cur && !cur.contains(e.relatedTarget) && e.pointerType!=='touch') stop(); });
+  on('pointerdown',e=>want(e,e.pointerType==='touch'?100:0));
+  on('pointercancel',stop);   // палець почав прокручувати — не тягнемо
+  on('focusin',e=>want(e,0));
+}
 async function openPlayerModal(pid){
   const p=S.players.find(x=>x.id===pid); if(!p) return;
   const cl=(S.clubs[p.club_id]||{}), o=ownerInfo(p);
@@ -4725,12 +4780,9 @@ async function openPlayerModal(pid){
               au:(!p.owner_participant_id)?S.auctions.find(a=>a.player_id===p.id):null, mv:p.market_value_current };
   // багаті поля картки (вік/країна/№/голи/асисти/травма/історія) — якщо вьюха доступна
   // 25.11 (перформанс, пакет 1): картка й журнал цін незалежні — тягнемо ПАРАЛЕЛЬНО (було два запити підряд до показу вікна)
-  let card={}, plog=null;
-  await Promise.all([
-    sbSel(`market_player_card?id=eq.${pid}&select=*`).then(r=>{ card=r[0]||{}; }).catch(()=>{ card={}; }),
-    // Val Δ за турнір = СУМА відсотків руху ціни вікенд за вікендом (market_price_log; публічний); немає журналу → як було (від старту)
-    sbSel(`market_price_log?player_id=eq.${pid}&select=round_id,mult`).then(r=>{ plog=r; }).catch(()=>{ plog=null; })
-  ]);
+  const seq=++pmSeq;
+  const {card,plog}=await pmData(pid);
+  if(seq!==pmSeq) return;   // поки чекали, клікнули іншого гравця — показуємо лише останнього (з кешем пізніший клік міг би відповісти раніше)
   const tier=card.current_tier||'silver';   // ЕФЕКТИВНИЙ дизайн (443): рамка / rare/mega (solo|team, явний вибір) / silver
   // стан-лінія
   let st;
@@ -5122,7 +5174,7 @@ async function viewCollection(){
       res=await sb.rpc('set_card_design', args);
     }
     if(res.error) return alert('Дизайн: '+((res.error.message||res.error)+'').replace(/^.*?(Card: )/,'$1'));
-    await viewCollection(); window.scrollTo(0,y);   // перемальовуємо вкладку на місці
+    pmDrop(); await viewCollection(); window.scrollTo(0,y);   // перемальовуємо вкладку на місці
   };
   const bind=(id,key)=>{ const el=$(id); if(el) el.onchange=()=>{ S.colF[key]=el.value; apply(); }; };
   const qi=$('colQ'); if(qi) qi.oninput=()=>{ S.colF.q=qi.value; apply(); };
@@ -5137,7 +5189,7 @@ async function viewCollection(){
   g.onkeydown=e=>{ if(e.key!=='Enter' && e.key!==' ') return; const f=e.target.closest('.colc-face'); if(f && e.target===f){ e.preventDefault(); openFace(f.closest('.colcard')); } };
   // прогрів при наведенні/дотику/фокусі на картку: сцена + повний арт вантажаться ДО кліку
   const warmFace=e=>{ const f=e.target.closest && e.target.closest('.colc-face'); if(!f) return; const t=faceTarget(f.closest('.colcard')); if(!t) return;
-    warmScene(SCENE_FILE[t.tier]||'steel'); if(t.png) warmUrl(t.png); };
+    warmScene(SCENE_FILE[t.tier]||'steel'); if(t.png) warmCard(t.png); };
   ['pointerover','touchstart','focusin'].forEach(ev=>g.addEventListener(ev,warmFace,{passive:true}));
   setTimeout(()=>['steel','gold','rare','mega_rare'].concat(S.myEmerald?['emerald']:[]).forEach(warmScene),1200);   // сцени невеликі (0,1–0,2 МБ) — прогріваємо наперед
   apply();
@@ -5451,6 +5503,7 @@ function pressPopup(){
   P.popOpen=true;                                       // 25.11 (Богдан): пауза «раз на 6 год» прибрана — вікно при КОЖНОМУ заході/перезавантаженні, поки є питання без відповіді
   modalOpen(`<div class="prs-pophd">🎤 Преса хоче тебе запитати</div>${qs.map(q=>pressCard(q)).join('')}
     <div class="prs-popft"><button type="button" class="btn ghost sm" data-pr-all="1">Відкрити «News & Press» →</button></div>`);
+  $('mhost').querySelector('.modal').classList.add('prspop');
 }
 async function pressAnswer(id,kind,text){
   const P=PR(); if(P.busy) return; P.busy=true;
@@ -5781,9 +5834,9 @@ async function admPeople(body){
   const rows=list.map(p=>`<tr><td><b>${esc(p.name)}</b>${p.id===me?' <span class="dim">(ти)</span>':''}</td><td>${esc(p.email||'—')}</td><td>${p.is_admin?'✓ адмін':'—'}</td><td>${p.bound?'<span class="up">привʼязано</span>':'<span class="down">ще не заходив</span>'}</td><td>${p.players}</td>
       <td>${p.bank_eur!=null?eur(+p.bank_eur):'—'}<div class="dim">${p.wage_bank_eur!=null?'зарпл. '+eur(+p.wage_bank_eur):''}</div></td>
       <td>${(p.traces||[]).length?`<span class="dim" title="Є дані в таблицях: ${esc(p.traces.join(', '))}">${esc(p.traces.join(', '))}</span>`:'<span class="up">нема</span>'}</td>
-      <td class="admbtns"><button class="mini" data-pe="${p.id}">✏ Змінити</button><button class="mini" data-pd="${p.id}" ${p.can_remove&&p.id!==me?'':'disabled'} title="${p.id===me?'Себе видалити не можна':p.can_remove?'Видалити (помилково доданого)':'Є сліди — видалити не можна: '+esc((p.traces||[]).join(', '))}">🗑 Видалити</button></td></tr>`).join('');
+      <td class="admbtns"><button class="mini" data-pe="${p.id}">✏ Змінити</button><button class="mini" data-pd="${p.id}" ${p.can_remove&&p.id!==me?'':'disabled'} title="${p.id===me?'Себе видалити не можна':p.can_remove?'Видалити (помилково доданого)':'Є сліди — видалити не можна: '+esc((p.traces||[]).join(', '))}">🗑<span class="blbl"> Видалити</span></button></td></tr>`).join('');
   body.innerHTML=`<div class="admc"><h3>👥 Учасники турніру (${list.length})</h3>
-      <table class="admt"><thead><tr><th>Імʼя</th><th>Пошта допуску</th><th>Права</th><th>Акаунт</th><th>Гравців</th><th>Баланси</th><th>Сліди</th><th></th></tr></thead><tbody>${rows}</tbody></table>
+      <div class="dsptw"><table class="admt"><thead><tr><th>Імʼя</th><th>Пошта допуску</th><th>Права</th><th>Акаунт</th><th>Гравців</th><th>Баланси</th><th>Сліди</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>
       <p class="mnote" style="margin-top:8px">«Сліди» — таблиці, де учасник уже фігурує (гравці, склади, угоди, очки…). Видалити можна лише того, у кого слідів нема (помилково доданого). Вихід учасника посеред турніру — окрема дія в «Спірне» (наступна фаза).</p></div>
     <div class="admc"><h3>＋ Додати учасника</h3>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px">
