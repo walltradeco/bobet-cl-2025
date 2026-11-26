@@ -22,7 +22,7 @@
   --mono:'Rajdhani',system-ui,sans-serif; --body:'Barlow',system-ui,sans-serif;
 }
 *{box-sizing:border-box}
-body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;
+body{margin:0;min-height:100vh;color:var(--text);font-family:var(--body);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;   /* 26.11 (S4): min-height — на екрані входу градієнт тла не повторюється (шов) */
   background:radial-gradient(1100px 520px at 88% -12%, rgba(var(--blue-rgb),.09) 0%, transparent 40%), var(--bg)}
 body:has(#screen-login:not(.hide)){background:radial-gradient(60% 60% at 50% -5%,rgba(46,139,87,.10),transparent 60%),#1B1B1B}
 h1,h2,h3,h4{font-family:var(--mono);letter-spacing:.01em;margin:0}
@@ -1345,15 +1345,16 @@ function showFullUnit(u,start){
     if(vars) vars.innerHTML=views.map((x,i)=>`<button type="button" class="${i===vi?'on':''}" data-i="${i}">${esc(vlabel(x,i))}</button>`).join('');
     const sceneUrl='scenes/'+(SCENE_FILE[tier]||'steel')+'.webp';
     const showCard=()=>{ if(my!==tok||!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
+    const full=isArt?v.art.png_path:'', T=thickOf(full), art=T?thickLayer(full,'face'):full, artP=isArt?loadArt(art):null;   // 26.11: арт і сцену вантажимо ПАРАЛЕЛЬНО
     loadImg(sceneUrl).then(sc=>{
       if(my!==tok||!el.isConnected) return;
       if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
       el.classList.add('sc');
       if(isArt){
-        const im=tilt.querySelector('img.rarepng'), full=v.art.png_path, T=thickOf(full), art=T?thickLayer(full,'face'):full;
-        return loadImg(art).then(async big=>{
+        const im=tilt.querySelector('img.rarepng');
+        return artP.then(async got=>{
           if(my!==tok||!el.isConnected) return;
-          let src=big?art:'';
+          let src=got;
           if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
           if(my!==tok||!el.isConnected) return;
           if(src){ const thick=T&&src===art; im.src=src; tilt.style.setProperty('--m',"url('"+(thick?showThumb(full):src)+"')"); if(thick) await applySide(tilt,full,T); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); }
@@ -1545,7 +1546,7 @@ const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
 const artHTML=(p,alt)=>thickOf(p)?`<canvas class="sidelayer" aria-hidden="true"></canvas><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
-const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
+const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmArt(p); };
 // Стінка — canvas: смуги по T.h рядків стискаються по горизонталі навколо краю лиця (T.x0[i]) → товщина стінки пропорційна f, як при справжньому повороті
 // (а не «виїжджає з-під лиця»). f=(k−WALL_K0)/(1−WALL_K0): у крайньому положенні гойдання (k=.17) і «у фас» стінки нема. T.cap (Оліс) вирівнює товщину стінки: широкі смуги
 // (плечі) стискаються до cap px, як у Дуе (без cap і k=1 → рівно оригінальний арт).
@@ -1577,6 +1578,10 @@ function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im
   const fin=v=>{ if(!done){ done=true; res(v); } };
   im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
   im.onerror=()=>fin(null); im.src=u; }); }
+// 26.11: повний арт вантажимо як `_hd.webp` — той самий малюнок без втрат (≈39 % менший за PNG; tools/card_hd.py); нема файла на сайті → майстер PNG.
+const hdOf=p=>/^players\/[^/]+\.png$/i.test(String(p||''))? String(p).replace(/\.png$/i,'_hd.webp') : '';
+async function loadArt(p){ const hd=hdOf(p); if(hd && await loadImg(hd)) return hd; return (await loadImg(p))? p : ''; }
+function warmArt(p){ const hd=hdOf(p); if(!hd) return warmUrl(p); if(_warmSet.has(hd)) return; _warmSet.add(hd); const im=new Image(); im.decoding='async'; im.onerror=()=>warmUrl(p); im.src=hd; _warmRefs.push(im); }
 // ── керування профілем (перейменування + аватар в одній модалці) ──
 function openEdit(){
   const host=$('mhost');

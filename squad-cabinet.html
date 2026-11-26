@@ -701,6 +701,11 @@ body:has(#screen-login:not(.hide)){
 .chl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:8px}   /* 19.10: 2 челенджі в ряд; на вузьких екранах — один */
 @media (max-width:820px){.chl{grid-template-columns:1fr}}
 @media (max-width:600px){ .modal .mx{min-width:40px;min-height:40px;top:6px;right:8px} button.mini{min-height:34px;padding:7px 11px} .nday{padding:8px 0;min-height:34px} }   /* 16.11 (QA): цілі для дотику ≥32px на телефоні (✕ у модалках, малі кнопки, заголовки днів News) */
+/* 25.11 (F7, QA S5): iOS Safari збільшує сторінку на фокусі поля зі шрифтом < 16px і потім не повертає масштаб — на телефоні всі поля/селекти/textarea 16px; фільтри Ринку/Статистики (.mf) були заввишки 15–16px — ціль для пальця ≥34px. Десктоп (>600px) без змін. */
+@media (max-width:600px){
+  input:not([type=range]):not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):not([type=file]),select,textarea{font-size:16px!important}
+  .mf select,.mf input:not([type=range]){padding:7px 0;min-height:34px}
+}
 .chr{display:flex;gap:9px;align-items:flex-start;padding:8px 11px;border:1px solid var(--line);border-radius:12px;background:var(--panel2)}
 .chr .ci{font-size:16px;line-height:1.25;width:20px;text-align:center;flex:none;color:var(--text-dim)}
 .chr .cb{flex:1;min-width:0}.chr .ct{font-weight:700;font-size:14px}.chr .cd{font-size:12.5px;color:var(--text-dim);line-height:1.4;margin-top:2px}
@@ -3223,8 +3228,11 @@ function noPlayBanner(kind, round, s, mine){
   let extra='';
   if(kind==='squad'){
     const notes=npLineupNotes(round, s.st, s.bn, s.cap, s.vice, s.auto, S.pos);
+    // 25.11 (F6, QA S1): коли склад на цей вікенд ще НЕ виставлено (основа й лавка порожні), «таких гравців немає» вводило в оману — гравець клубу без матчу може бути в ростері. Тоді називаємо їх з ростера.
+    const lineupEmpty=!(s.st||[]).length && !(s.bn||[]).length, myNp=(mine||[]).filter(p=>np.ids.has(p.club_id));
     extra = notes.length ? notes.map(t=>`<div class="npl">${t}</div>`).join('')
-          : ((mine||[]).length ? '<div class="npl dim">У твоєму складі на цей вікенд (основа й лавка) таких гравців немає — тебе це не зачіпає.</div>' : '');
+          : (lineupEmpty && myNp.length ? `<div class="npl dim">Склад на цей вікенд ще не виставлено. У твоєму складі з цих клубів: ${myNp.map(p=>`<b>${esc(lastName(p.name))}</b>`).join(', ')} — ${myNp.length>1?'вони очок не дадуть':'він очок не дасть'}, врахуй при виставленні.</div>`
+          : ((mine||[]).length ? `<div class="npl dim">${lineupEmpty?'У твоєму складі':'У твоєму складі на цей вікенд (основа й лавка)'} таких гравців немає — тебе це не зачіпає.</div>` : ''));
   } else {
     const my=(mine||[]).filter(p=>np.ids.has(p.club_id));
     extra = `<div class="npl dim">Купуєш на цей вікенд — гравці цих клубів очок не принесуть.${my.length?` У твоєму складі з них: ${my.map(p=>`<b>${esc(lastName(p.name))}</b>`).join(', ')}.`:''}</div>`;

@@ -378,7 +378,7 @@ const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
 const artHTML=(p,alt)=>thickOf(p)?`<canvas class="sidelayer" aria-hidden="true"></canvas><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
-const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
+const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmArt(p); };
 // Стінка — canvas: смуги по T.h рядків стискаються по горизонталі навколо краю лиця (T.x0[i]) → товщина стінки пропорційна f, як при справжньому повороті
 // (а не «виїжджає з-під лиця»). f=(k−WALL_K0)/(1−WALL_K0): у крайньому положенні гойдання (k=.17) і «у фас» стінки нема. T.cap (Оліс) вирівнює товщину стінки: широкі смуги
 // (плечі) стискаються до cap px, як у Дуе (без cap і k=1 → рівно оригінальний арт).
@@ -410,6 +410,10 @@ function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im
   const fin=v=>{ if(!done){ done=true; res(v); } };
   im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
   im.onerror=()=>fin(null); im.src=u; }); }
+// 26.11: повний арт вантажимо як `_hd.webp` — той самий малюнок без втрат (≈39 % менший за PNG; tools/card_hd.py); нема файла на сайті → майстер PNG.
+const hdOf=p=>/^players\/[^/]+\.png$/i.test(String(p||''))? String(p).replace(/\.png$/i,'_hd.webp') : '';
+async function loadArt(p){ const hd=hdOf(p); if(hd && await loadImg(hd)) return hd; return (await loadImg(p))? p : ''; }
+function warmArt(p){ const hd=hdOf(p); if(!hd) return warmUrl(p); if(_warmSet.has(hd)) return; _warmSet.add(hd); const im=new Image(); im.decoding='async'; im.onerror=()=>warmUrl(p); im.src=hd; _warmRefs.push(im); }
 function showFullCard(c){
   const scene=SCENE[c.tier]||'rare', sceneUrl='scenes/'+scene+'.webp', full=c.png_path, mega=(c.tier==='mega_rare'), T=thickOf(full), art=T?thickLayer(full,'face'):full;
   const el=document.createElement('div'); el.className='sqfull';
@@ -421,13 +425,14 @@ function showFullCard(c){
   el.onclick=e=>{ if(e.target===el||e.target.classList.contains('sqx')) el.remove(); };
   document.body.appendChild(el);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
+  const artP=loadArt(art);   // 26.11: арт і сцену вантажимо ПАРАЛЕЛЬНО; показ — як і раніше «сцена → картка»
   loadImg(sceneUrl).then(sc=>{
     if(!el.isConnected) return;
     if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
     el.classList.add('sc');
-    return loadImg(art).then(async big=>{
+    return artP.then(async got=>{
       if(!el.isConnected) return;
-      let src=big?art:'';
+      let src=got;
       if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
       if(!el.isConnected) return;
       if(src){ const thick=T&&src===art; im.src=src; tilt.style.setProperty('--m',"url('"+(thick?showThumb(full):src)+"')"); if(thick) await applySide(tilt,full,T); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); /* decode() інколи не завершується (фонова вкладка) — не чекаємо довше 0,6 с */ }

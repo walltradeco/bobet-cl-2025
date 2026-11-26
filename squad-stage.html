@@ -174,6 +174,7 @@ nav.etabs button.stg-lg{color:var(--up)}
 nav.etabs button.stg-lb,nav.etabs button.stg-s1,nav.etabs button.stg-s2,nav.etabs button.stg-bank,nav.etabs button.stg-pts,nav.etabs button.stg-mg,nav.etabs button.stg-ch,nav.etabs button.stg-lg,nav.etabs button.stg-rules{opacity:.55}
 nav.etabs button:hover{opacity:1}
 @media(min-width:521px) and (max-width:1100px){nav.etabs button{font-size:15px;padding:12px 11px}}   /* B-02: усі 6 вкладок (з Rules) видно на 1000 px */
+@media(min-width:521px) and (max-width:899px){nav.etabs{gap:2px;flex-wrap:wrap}nav.etabs button{font-size:13.5px;padding:11px 6px}}   /* 26.11 (S4): і на 768 px (736 корисних) усі вкладки в один ряд; якщо тісно — переносяться, а не ховаються за краєм */
 nav.etabs button.active{opacity:1;border-bottom-color:currentColor}
 
 /* Leaderboard-картки (стиль BoBet Leaderboards): 1-5 Вікенд · 6-10 Вікенд · General */
@@ -714,10 +715,14 @@ async function sbGet(path){
   if(!res.ok) throw new Error('база '+res.status);
   return res.json();
 }
-// усі рядки запиту (PostgREST віддає ≤1000 за раз)
+// усі рядки запиту (PostgREST віддає ≤1000 за раз). 26.11 (перформанс, «дрібне»): перші дві сторінки тягнемо ПАРАЛЕЛЬНО —
+// наприкінці сезону таблиці очок і цін мають >1000 рядків (раніше це був зайвий послідовний крок); коротка таблиця коштує одну порожню відповідь.
 async function sbGetAll(path){
-  const out=[]; for(let off=0;;off+=1000){
-    const r=await sbGet(path+(path.includes('?')?'&':'?')+'limit=1000&offset='+off); out.push(...r); if(r.length<1000) break; }
+  const page=off=>sbGet(path+(path.includes('?')?'&':'?')+'limit=1000&offset='+off);
+  const first=page(0), second=page(1000); second.catch(()=>{});
+  const out=await first; if(out.length<1000) return out;
+  let r=await second; out.push(...r);
+  for(let off=2000;r.length===1000;off+=1000){ r=await page(off); out.push(...r); }
   return out;
 }
 if(new URLSearchParams(location.search).has('embed')) document.body.classList.add('embed');
@@ -1368,7 +1373,7 @@ const thickLayer=(p,l)=>String(p||'').replace(/\.png$/i,'_'+l+'.webp');
 const THICK_R=12;                                            // кут повороту (°), при якому стінка видна повністю
 const thickK=ry=>Math.max(0,Math.min(1,-ry/THICK_R)).toFixed(3);   // rotateY<0 = правий край до глядача
 const artHTML=(p,alt)=>thickOf(p)?`<canvas class="sidelayer" aria-hidden="true"></canvas><img class="rarepng" alt="${alt}">`:`<img class="rarepng" alt="${alt}">`;
-const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmUrl(p); };
+const warmCard=p=>{ if(thickOf(p)){ warmUrl(thickLayer(p,'face')); warmUrl(thickLayer(p,'side')); } else warmArt(p); };
 // Стінка — canvas: смуги по T.h рядків стискаються по горизонталі навколо краю лиця (T.x0[i]) → товщина стінки пропорційна f, як при справжньому повороті
 // (а не «виїжджає з-під лиця»). f=(k−WALL_K0)/(1−WALL_K0): у крайньому положенні гойдання (k=.17) і «у фас» стінки нема. T.cap (Оліс) вирівнює товщину стінки: широкі смуги
 // (плечі) стискаються до cap px, як у Дуе (без cap і k=1 → рівно оригінальний арт).
@@ -1403,6 +1408,10 @@ function loadImg(u){ return new Promise(res=>{ if(!u) return res(null); const im
   const fin=v=>{ if(!done){ done=true; res(v); } };
   im.onload=()=>{ const t=setTimeout(()=>fin(im),700); (im.decode?im.decode():Promise.resolve()).then(()=>{ clearTimeout(t); fin(im); },()=>{ clearTimeout(t); fin(im); }); };
   im.onerror=()=>fin(null); im.src=u; }); }
+// 26.11: повний арт вантажимо як `_hd.webp` — той самий малюнок без втрат (≈39 % менший за PNG; tools/card_hd.py); нема файла на сайті → майстер PNG.
+const hdOf=p=>/^players\/[^/]+\.png$/i.test(String(p||''))? String(p).replace(/\.png$/i,'_hd.webp') : '';
+async function loadArt(p){ const hd=hdOf(p); if(hd && await loadImg(hd)) return hd; return (await loadImg(p))? p : ''; }
+function warmArt(p){ const hd=hdOf(p); if(!hd) return warmUrl(p); if(_warmSet.has(hd)) return; _warmSet.add(hd); const im=new Image(); im.decoding='async'; im.onerror=()=>warmUrl(p); im.src=hd; _warmRefs.push(im); }
 function showFullCard(p, tier, card){
   card=card||{};
   const scene=SCENE_FILE[tier]||'steel', sceneUrl='scenes/'+scene+'.webp', full=card.current_card_png||'';
@@ -1422,13 +1431,14 @@ function showFullCard(p, tier, card){
   embedFull(el);
   const stage=el.querySelector('.stage'), tilt=stage.querySelector('.tilt'), im=tilt.querySelector('img.rarepng');
   const showCard=()=>{ if(!el.isConnected) return; fitPodium(stage); el.classList.add('cd'); requestAnimationFrame(()=>fitPodium(stage)); };
+  const artP=isArt?loadArt(art):null;   // 26.11: арт і сцену вантажимо ПАРАЛЕЛЬНО; показ — як і раніше «сцена → картка»
   loadImg(sceneUrl).then(sc=>{
     if(!el.isConnected) return;
     if(sc) stage.style.backgroundImage="url('"+sceneUrl+"')";
     el.classList.add('sc');
-    if(isArt) return loadImg(art).then(async big=>{
+    if(isArt) return artP.then(async got=>{
       if(!el.isConnected) return;
-      let src=big?art:'';
+      let src=got;
       if(!src){ const th=showThumb(full); if(await loadImg(th)) src=th; }   // повний не завантажився → хоча б мініатюра
       if(!el.isConnected) return;
       if(src){ const thick=T&&src===art; im.src=src; tilt.style.setProperty('--m',"url('"+(thick?showThumb(full):src)+"')"); if(thick) await applySide(tilt,full,T); await Promise.race([im.decode?im.decode().catch(()=>{}):0, new Promise(r=>setTimeout(r,600))]); /* decode() інколи не завершується (фонова вкладка) — не чекаємо довше 0,6 с */ }
@@ -1655,7 +1665,7 @@ function finCard(){
   return `<div class="fincard"><h3>🏁 Підсумки турніру</h3><table class="fintab"><thead><tr><th>№</th><th>Учасник</th><th>General</th>${cols.map(([,l])=>`<th>${l}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>
     <div class="hint" style="margin-top:10px">Фінальна таблиця зафіксована в момент завершення турніру. Рівні очки → спільне місце. Розклад по вікендах — у «Points by weekend».</div></div>`;
 }
-function renderLB(){
+function renderLB(partial){
   const host=$('secLB'); if(!host) return;
   if(!S.lb.length){ host.innerHTML='<div class="hint" style="padding:16px 2px">Ще немає учасників.</div>'; return; }
   const s1=stageSum('s1'), s2=stageSum('s2'), tot={};
@@ -1667,11 +1677,11 @@ function renderLB(){
       ${one? '' : lbCard('blueh','Weekends '+(stage1Max()+1)+'-'+stage2End(), s2, false, lbDeltas(s2, lbBack('s2')))}
       ${lbCard('goldh','General', tot, true, lbDeltas(tot, lbBack(null)))}
     </div>
-    ${(mgShown() && S.mgs) || S.rvReady || (S.lgReady && !lgSum()) ? `<div class="nomgrid">${mgShown() && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}${S.lgReady && !lgSum() ? lgNomCard('🐐 Club Legend') : ''}</div>` : ''}
+    ${partial? '<div class="hint lb-partial">Довантажую номінації та решту вкладок…</div>' : `${(mgShown() && S.mgs) || S.rvReady || (S.lgReady && !lgSum()) ? `<div class="nomgrid">${mgShown() && S.mgs ? mgTotalCard('<span style="color:var(--gold);font-weight:700">💼 Manager</span> of the tournament', true) : ''}${S.rvReady ? rvNomCard('⚔️ Rivals — найбільше перемог за турнір') : ''}${S.lgReady && !lgSum() ? lgNomCard('🐐 Club Legend') : ''}</div>` : ''}
     <div class="hint">${mgShown()
       ? `General = очки матчів + 💎 бонуси «Менеджер вікенду» + 💼 наскрізна «Менеджер турніру» (${fin} очк., нараховується, коли закрито всі ${S.mgCfg?S.mgCfg.total:''} вікендів)${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель вікенду)':''}${S.lgReady?' + 🐐 Club Legend ('+lgGenTxt()+')':''} · деталі — вкладки «General · Management»${S.chReady?' і «General · Challenges»':''}`
       : S.mgReady ? `General = очки матчів${S.chReady?' + 🎯 челенджі (одразу при відкритті складів)':''}${S.rvReady?' + ⚔️ Rivals (+2/+1/0 за дуель вікенду)':''}${S.lgReady?' + 🐐 Club Legend ('+lgGenTxt()+')':''}`
-      : 'Наскрізний залік · General = сума всіх вікендів'} · рівні очки → ділять місце</div>`;
+      : 'Наскрізний залік · General = сума всіх вікендів'} · рівні очки → ділять місце</div>`}`;
 }
 // 🏦 Банк (510) — окрема борда: два етапи (кожен з нуля). Банк = Squad Price + трансферний + зарплатний (повні баланси);
 // публічна лише СУМА, розклад приватний; зі знімка після останнього вікенду з результатами цього етапу.
@@ -1973,7 +1983,7 @@ async function pickTournament(){
   let ts=[]; try{ ts=await sbGet('tournaments?mode=eq.squad&status=in.(active,finished)&select=id,key,title,status,starts_at&order=starts_at.desc'); }catch(e){ ts=[]; }
   return ts.find(t=>t.key===SQUAD_KEY)||ts.find(t=>t.status==='active')||ts[0]||null;
 }
-async function loadDynamic(){
+async function loadDynamic(onCore){
   const tr=await pickTournament(); S.tourRow=tr;
   S.rounds=await sbGet('market_rounds?'+(tr?`tournament_id=eq.${tr.id}&`:'')+'select=id,tournament_id,number,title,deadline_at,results_entered_at,week_start,week_end,opened_at&order=number.asc');
   if(!S.rounds.length) return false;
@@ -1982,22 +1992,22 @@ async function loadDynamic(){
   const rids=S.rounds.map(r=>r.id);
   // 25.11 (перформанс, пакет 1; діагностика 24.11): раніше ~30 запитів ішли СТРОГО один за одним (борда 3–8 с, а ті самі запити паралельно ≈0,7 с).
   // Тепер усі блоки, що залежать лише від турніру/вікендів, стартують разом; кожен зберігає СВІЙ try/catch-degrade (порядок присвоєння S.* не важливий — рендер після Promise.all).
-  const jobs=[];
+  const jobs=[], core=[];   // 26.11 (перформанс, B2): core — те, з чого складається «Таблиця» (підсумки, залік, очки вікендів, менеджмент); onCore малює її, не чекаючи решти
   jobs.push((async()=>{
   if(tr && tr.status==='finished'){ try{ S.final=(await sbGet(`market_final_pub?tournament_id=eq.${S.tournament}&select=finished_at,winner_names,snapshot`))[0]||null; }catch(e){ S.final=null; } }
   paintFinal();
-  })());
+  })()); core.push(jobs[jobs.length-1]);
   jobs.push((async()=>{
   S.lb=await sbGet(`market_leaderboard?tournament_id=eq.${S.tournament}&select=participant_id,display_name,total_points,squad_price,place&order=place.asc`);
   S.names={}; S.lb.forEach(p=>S.names[p.participant_id]=p.display_name);
-  })());
+  })()); core.push(jobs[jobs.length-1]);
   jobs.push((async()=>{
   // mgmt_points (528) — бонус «Менеджер вікенду»; нема колонки (528 не залито) → без нього
   try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points,rival_points`); }   // rival_points — з SQL 552
   catch(eR){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points,challenge_points`); }   // challenge_points — з SQL 547
   catch(e0){ try{ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points,mgmt_points`); }
   catch(e){ S.scores=await sbGet(`market_round_scores?tournament_id=eq.${S.tournament}&select=round_id,round_number,participant_id,points`); } } }
-  })());
+  })()); core.push(jobs[jobs.length-1]);
   jobs.push((async()=>{
   // 🎯 челенджі (547): довідник + хто виконав; нема вьюх (547 не залито) → вкладка/іконка ховаються
   S.chReady=false; S.chDefs=[]; S.chAwards=[]; S.chCfg=null;
@@ -2059,7 +2069,7 @@ async function loadDynamic(){
     ]);
     S.mgReady=true;
   }catch(e){ S.mg=[]; S.mgs=[]; }
-  })());
+  })()); core.push(jobs[jobs.length-1]);
   jobs.push((async()=>{
   // Банк (510): публічна борда за етапами; нема вьюхи (510 не залито) → вкладка покаже пояснення
   try{ S.bank=await sbGet(`market_bank_board?tournament_id=eq.${S.tournament}&select=stage,participant_id,display_name,round_number,bank_total,squad_price,start_total,delta,place&order=stage.asc,place.asc,display_name.asc`); S.bankReady=true; }catch(e){ S.bank=[]; S.bankReady=false; }
@@ -2114,6 +2124,7 @@ async function loadDynamic(){
   }catch(e){}
   })());
   jobs.forEach(j=>j.catch(()=>{}));   // перша помилка перериває Promise.all нижче; решта не лишає «unhandled rejection»
+  if(onCore) Promise.all(core).then(onCore).catch(()=>{});   // ранній показ таблиці; помилку покаже Promise.all нижче
   await Promise.all(jobs);
   return true;
 }
@@ -2130,21 +2141,14 @@ async function loadBoardCfg(){
     }catch(eAc){ ac=null; }
   return {cf, ac};
 }
-async function boot(){
-  try{
-    // 25.11 (перформанс): клуби й market_config не залежать від турніру — стартують паралельно з loadDynamic
-    const clubsP=sbGet('market_clubs?select=id,name,league,sofascore_tid'); clubsP.catch(()=>{});
-    const cfgP=loadBoardCfg();
-    if(!(await loadDynamic())){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
-    (await clubsP).forEach(c=>S.clubs[c.id]=c);
-    // межа етапу (market_config; анонімно читається); degrade, якщо 501 не залито
-    // + налаштування менеджменту (528: очки за вікенд/турнір, кількість вікендів); без них (528 не залито) → старий запит
-    { let cf=null;
-      cf=(await cfgP).cf;
+// межа етапу, очки менеджменту, правила закриття й підписи вкладок — з market_config (викликається двічі: для ранньої «Таблиці» і після повного завантаження)
+function applyBoardCfg(c){
+    // без колонок менеджменту (528 не залито) loadBoardCfg повертає коротший набір — тоді діють значення за замовчуванням
+    { const cf=c.cf;
       const row=cf&&(cf.find(c=>c.tournament_id===S.tournament)||cf.find(c=>c.tournament_id==null));
       if(row&&row.stage1_last_round) S.stage1Last=row.stage1_last_round;
       // правила закриття вікенду для спільного тексту в банері (579/575); окремим запитом, щоб старі БД без цих колонок не ламали решту
-      { const ac=(await cfgP).ac; S.acCfg=ac?((ac||[]).find(c=>c.tournament_id===S.tournament)||(ac||[]).find(c=>c.tournament_id==null)||null):null; }
+      { const ac=c.ac; S.acCfg=ac?((ac||[]).find(c=>c.tournament_id===S.tournament)||(ac||[]).find(c=>c.tournament_id==null)||null):null; }
       if(row&&row.mgmt_total_rounds) S.mgCfg={tour:row.mgmt_tour_points||[3,2,1], fin:row.mgmt_final_points||[10,8,6,4,2], total:row.mgmt_total_rounds, w:row.mgmt_value_weight!=null?+row.mgmt_value_weight:0.25, pw:row.mgmt_pct_weight!=null?+row.mgmt_pct_weight:0,
         pr:{top:row.price_up_top_threshold!=null?+row.price_up_top_threshold:9, topP:row.price_up_top_pct!=null?+row.price_up_top_pct:0.10, hi:row.price_up_hi_threshold!=null?+row.price_up_hi_threshold:7.5, hiP:row.price_up_hi_pct!=null?+row.price_up_hi_pct:0.05,
             lo:row.price_dn_lo_threshold!=null?+row.price_dn_lo_threshold:6.5, loP:row.price_dn_lo_pct!=null?+row.price_dn_lo_pct:-0.05, deep:row.price_dn_deep_threshold!=null?+row.price_dn_deep_threshold:6, deepP:row.price_dn_deep_pct!=null?+row.price_dn_deep_pct:-0.10}}; }
@@ -2156,13 +2160,25 @@ async function boot(){
       if(bm) bm.classList.toggle('hide', !mgShown());
       { const bc=document.querySelector('.stg-ch'); if(bc) bc.classList.toggle('hide', !S.chReady); }
       { const bl=document.querySelector('.stg-lg'); if(bl) bl.classList.toggle('hide', !S.lgReady); } }
-
+}
+async function boot(){
+  try{
+    // 25.11 (перформанс): клуби й market_config не залежать від турніру — стартують паралельно з loadDynamic
+    const clubsP=sbGet('market_clubs?select=id,name,league,sofascore_tid'); clubsP.catch(()=>{});
+    const cfgP=loadBoardCfg();
+    // 26.11 (перформанс, B2): «Таблицю» малюємо, щойно прийшли її дані й конфіг (≈2–3 звернення), — вкладки відкриються, коли довантажиться решта
+    let full=false;
+    const early=async()=>{ const c=await cfgP; if(full) return; applyBoardCfg(c); S.tour=curRound(S.rounds); renderLB(true); };
+    if(!(await loadDynamic(()=>{ early().catch(()=>{}); }))){ document.getElementById('h2tour').textContent='турнір ще не заведено'; return; }
+    (await clubsP).forEach(c=>S.clubs[c.id]=c);
+    const bc=await cfgP; full=true; applyBoardCfg(bc);
     S.tour=curRound(S.rounds);
     document.querySelectorAll('#etabs button').forEach(b=>b.onclick=()=>goStage(b.dataset.stage));
     goStage('lb');   // старт із Leaderboard-огляду
     setInterval(refreshLive,180000);   // по ходу вікенду — оновлення без перезавантаження (раз на 3 хв, лише коли вкладка видима)
   }catch(e){
     document.getElementById('h2tour').textContent='помилка: '+e.message;
+    const pt=document.querySelector('#secLB .lb-partial'); if(pt) pt.textContent='Не вдалось довантажити решту даних ('+e.message+'). Оновіть сторінку.';
   }finally{ const et=document.getElementById('etabs'); if(et) et.classList.remove('etabs-wait'); }   // і при помилці/«турнір не заведено» вкладки не лишаються прихованими
 }
 let _refreshing=false;
