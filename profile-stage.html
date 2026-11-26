@@ -464,6 +464,31 @@ button.primary{background:var(--gold);color:#1a1206;border:none;border-radius:9p
 </style>
 <link rel="stylesheet" href="assets/cosmetics-stage.css">
 <script src="assets/cosmetics-stage.js"></script>
+<style id="wide-readable">
+/* 26.11.2026 (Богдан): «все більшим, місця під тексти», «гарно читабельними». Генерує bobet/scratchpad/gen_readable_26-11.py.
+   Поле по боках лишаємо: декоративні шари рамки виступають ≈10px за .wrap. */
+:root{--text-dim:#9ea5ac;--copy:#c6c9cc}
+@media(min-width:681px){
+  body{font-size:15px;line-height:1.55}
+  .lg,.owner,.founder{font-size:12px}
+  .abadge,.champ-label,.champ-season,.tr-top,.mini-tr span,.trait,.comm-copy span,.ed-name .badge,.award p,.nom .nb span,.rec-tile span,.comm-big p,.cmeta span{font-size:12.5px}
+  .stat span,.play-row .pp small,.rec span,.rec-n,.portrait-box p,.panel-title p,.title-card span,.cup-h,.picker .pl,.ed-gh,.lg-h em,.bar-row,.dna-head .eyebrow2,.cds .dchip,.title-list{font-size:13px}
+  .dna-block h4,.dna-block h4 .sub,.dna-row .n{font-size:13.5px}
+  .edit,.link,.hero-tr p,.comm-copy strong,.tc-show,.ovmod-h .t,.ed-hint,.cbtn,.chip,.chrow span,.launch a,.dna-row .l,.modal label,.cmeta strong,.cfilter button,.cvit-empty,.bc-ed .bc-note{font-size:14px}
+  .dna-head .arch-note,.dna-warn{font-size:14.5px}
+  body,.empty,.sum,.topbar .right,button.ghost,button.primary,.who-sub,.tab,.mini-tr strong,.play-row .pn,.title-card strong,.ovbtn,.nom .nb strong,.portrait-copy p,.dna-head .arch,.dna-row .v i,.msg{font-size:15px}
+}
+@media(min-width:901px){.ov{grid-template-columns:minmax(0,1.35fr) minmax(340px,.9fr)}}
+@media(min-width:681px){.portrait-copy p{max-width:760px}.bars{max-width:720px}.bar-row{grid-template-columns:200px 1fr auto}.dna-head .arch-note{max-width:720px}.dna-blocks{grid-template-columns:repeat(auto-fill,minmax(340px,1fr))}}
+@media(min-width:1360px){.wrap{max-width:1320px}}
+@media(min-width:1500px){.wrap{zoom:1.1}}
+@media(min-width:1700px){.wrap{max-width:1380px;zoom:1.2}}
+@media(min-width:2200px){.wrap{zoom:1.45}}
+/* у вікні (iframe) заголовок вікна вже є — власний логотип-заголовок ховаємо */
+html.embedded .topbar .logo{display:none}
+html.embedded .topbar{padding:12px 0 6px}
+</style>
+<script>if(window.self!==window.top) document.documentElement.classList.add('embedded');</script>
 </head>
 <body>
 <!-- ІКОНКИ (Lucide-стиль, inline-спрайт) -->

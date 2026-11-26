@@ -28,7 +28,8 @@ body{margin:0;color:var(--text);font-family:var(--body);font-size:14px;line-heig
     radial-gradient(900px 400px at 0% 0%, #10201a 0%, transparent 50%),
     var(--bg)}
 h1,h2,h3{font-family:var(--mono);letter-spacing:.01em}
-.wrap{max-width:1200px;margin:0 auto;padding:0 16px 60px}
+.wrap{max-width:2200px;margin:0 auto;padding:0 24px 60px}   /* 26.11 (Богдан): Крамниця на всю ширину вікна */
+@media(max-width:640px){.wrap{padding:0 16px 60px}}
 a{color:var(--accent)}
 button{font-family:var(--mono);cursor:pointer}
 .hide{display:none!important}
@@ -61,9 +62,11 @@ button:disabled{opacity:.45;cursor:not-allowed}
 /* сітка карток */
 .sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
 .collnote{font-size:13px;color:var(--text-dim);margin:0 0 12px;line-height:1.5}   /* 24.11: Крамниця → колекція в профілі (беклог Богдана 24.11) */
-.grid{display:flex;flex-wrap:wrap;gap:16px}
-.card{width:170px;cursor:pointer}
-.card .art{position:relative;width:170px;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 16px}   /* 26.11: колонки тягнуться на всю ширину (≈180–215px; мініатюра _sm = 340px) */
+.grid>.sum{grid-column:1/-1}
+@media(max-width:640px){.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px 10px}}
+.card{min-width:0;cursor:pointer}
+.card .art{position:relative;width:100%;aspect-ratio:1024/1536;border-radius:10px;overflow:hidden;
   background:#0a120e;border:1px solid var(--line)}
 .card .art img{width:100%;height:100%;object-fit:contain;display:block}
 .card:hover .art{outline:2px solid var(--accent)}
@@ -75,11 +78,12 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .card .own.mine{background:rgba(230,193,75,.14);color:var(--gold);border-color:#8a7228}
 
 /* секції */
-.sec{margin:26px 0 10px}
+.sec{margin:26px 0 10px;max-width:1168px}   /* списки заявок — не на всю ширину, щоб статус не тікав від назви */
 .sec h2{font-size:17px;margin:0 0 8px}
 .reqrow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--panel);
   border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin-bottom:6px}
 .reqrow .info{flex:1;min-width:220px;font-size:14px}
+.reqrow .hint{font-size:12px;color:var(--gold);margin-top:4px}
 .reqrow .kindb{font-family:var(--mono);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
   padding:2px 7px;border-radius:5px;margin-right:6px}
 .kindb.claim{background:var(--green-soft);color:var(--up);border:1px solid var(--accent-d)}
@@ -361,7 +365,7 @@ async function doRequest(key, kind){
   const m=$('card-msg'); m.className='msg'; m.textContent='…';
   const { error } = await sb.rpc('request_card', { p_card_key:key, p_kind:kind });
   if(error){ m.className='msg err'; m.textContent='Крамниця: '+(error.message||'не вдалось'); return; }
-  m.className='msg ok'; m.textContent = kind==='claim' ? 'Заявку «Запросити» подано — адмін розгляне.' : 'Позначено «Цікавить» — власник побачить.';
+  m.className='msg ok'; m.textContent = kind==='claim' ? 'Заявку «Запросити» подано — адмін розгляне. Напиши адміну за купівлю.' : 'Позначено «Цікавить» — власник побачить.';
   await loadMine();
 }
 
@@ -452,7 +456,7 @@ async function loadMine(){
   if(!rows.length){ $('mine-sec').classList.add('hide'); return; }
   $('mine-sec').classList.remove('hide');
   $('mine-list').innerHTML=rows.map(r=>`<div class="reqrow">
-    <div class="info"><span class="kindb ${r.kind}">${r.kind==='claim'?'Запросити':'Цікавить'}</span>${esc(r.card_key.replace(/_/g,' '))}</div>
+    <div class="info"><span class="kindb ${r.kind}">${r.kind==='claim'?'Запросити':'Цікавить'}</span>${esc(r.card_key.replace(/_/g,' '))}${r.kind==='claim'&&r.status==='pending'?'<div class="hint">Напиши адміну за купівлю</div>':''}</div>
     <span class="st ${r.status}">${({pending:'на розгляді',approved:'схвалено',rejected:'відхилено'})[r.status]}</span>
   </div>`).join('');
 }

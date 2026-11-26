@@ -298,6 +298,30 @@ body:has(#screen-login:not(.hide)){
 </style>
 <link rel="stylesheet" href="assets/cosmetics.css">
 <script src="assets/cosmetics.js"></script>
+<style id="wide-readable">
+/* 26.11.2026 (Богдан): «все більшим, місця під тексти», «гарно читабельними». Генерує bobet/scratchpad/gen_readable_26-11.py.
+   Поле по боках лишаємо: декоративні шари рамки виступають ≈10px за .wrap. */
+:root{--text-dim:#a9b0b7}
+@media(min-width:681px){
+  body{font-size:15px;line-height:1.55}
+  .preset .lab .tg{font-size:12px}
+  .abadge,.tag,.kindb,.rel-mut,.rankpill{font-size:12.5px}
+  .st,.chip,.perm-list,.lrank .lno,.lrank .lmin,.dstat .lbl,.plevel,.invtier .invu,.title-list{font-size:13px}
+  button.sm,.ccard .foot,.post .ph,.field label,.card.side h4 .n,.post .pfoot,.evrow .evtx .sub,.evrow .evt,.rules-n .num,.ovm .mr,.ovrel .rt,.preset,.pbig small,.pnext,.beerhint,.bc-ed .bc-note{font-size:14px}
+  body,.who,button.primary,button.ghost,button.act,a.ghost,.filters input,.filters select,.sum,.ccard .mot,.reqrow .info,.chead .meta,.tabs button,.postbox textarea,.post .ph b,.post .pbody,.logrow,.rules-box,.field input,.field select,.field textarea,.permgrid label,.msg,.lrank,.sec-links,.evrow .evtx b,.duo .card h4,.ava,.ovm .mn,.ovrel .rn,.wbtn,.beerbtn,.how,.how h5,.donor .drank,.donor .dn{font-size:15px}
+}
+body{min-height:100vh}
+@media(min-width:1100px){.ov{grid-template-columns:minmax(0,1fr) 400px}}
+@media(min-width:681px){.grid{grid-template-columns:repeat(auto-fill,minmax(310px,1fr))}}
+@media(min-width:1360px){.wrap{max-width:1320px}}
+@media(min-width:1500px){.wrap{zoom:1.1}}
+@media(min-width:1700px){.wrap{max-width:1360px;zoom:1.2}}
+@media(min-width:2200px){.wrap{zoom:1.45}}
+/* у вікні (iframe) заголовок вікна вже є — власний логотип-заголовок ховаємо */
+html.embedded .topbar .logo{display:none}
+html.embedded .topbar{padding:12px 0 6px}
+</style>
+<script>if(window.self!==window.top) document.documentElement.classList.add('embedded');</script>
 </head>
 <body>
 
