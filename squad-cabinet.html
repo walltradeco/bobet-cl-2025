@@ -2984,7 +2984,7 @@ function renderLineup(mine, round){
          ${val}
          ${injWarn}
          ${benchWarn}
-         ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.</p>`:''}
+         ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">${locked?'⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце.':'⚠️ Капітана не обрано — без нього склад не підтвердити. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.'}</p>`:''}
          ${capNote}
          ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}${rivalBox(round)}
          ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos);
@@ -3133,7 +3133,7 @@ function posCat(p){ return POS[p]||p; }
 function canCancelBid(a){ if(!a||!S.me||a.leader_participant_id!==S.me.id) return false; if(new Date(a.ends_at)<=new Date()) return false;
   if(!S.bidsReady) return true; const st=S.bidsBy[a.id]; return !st||![...st].some(x=>x!==S.me.id); }
 function cancelBidModal(auId,nm,back){ confirmModal(`Скасувати свою ставку на <b>${esc(nm)}</b>? Лот зніметься, гроші й зарплатний резерв звільняться; гравець знову стане вільним.`, 'Скасувати ставку',
-  ()=>act('market_cancel_bid',{p_auction:auId},'Ставку скасовано'), back); }
+  ()=>act('market_cancel_bid',{p_auction:auId},'Ставку скасовано'), back, 'Назад'); }
 function clubPos(p){ return `${clubWithLeague(p.club_id)} · ${posCat(p.position)}`; }   // 21.10: «Клуб · Ліга · Позиція» скрізь, де гравець у списку/рядку угоди
 // зафіксована початкова вартість під поточною: показуємо лише коли ціна вже зрушила (до першого матчу поточна = початкова — один рядок)
 function startWas(p,align){
@@ -3866,10 +3866,10 @@ function modalClose(){ const h=$('mhost'); h.classList.add('hide'); h.innerHTML=
 document.addEventListener('keydown',e=>{ if(e.key!=='Escape') return; const sf=document.querySelector('.sqfull'); if(sf){ sf.remove(); return; } if(!$('mhost').classList.contains('hide')) modalClose(); });
 document.addEventListener('click',e=>{ document.querySelectorAll('.chtipw.open').forEach(w=>{ if(!w.contains(e.target)) w.classList.remove('open'); }); });   // підказка «Челенджі» на Ринку
 // стилізоване підтвердження (замість системного confirm())
-function confirmModal(msg, okLabel, onOk, onCancel){
+function confirmModal(msg, okLabel, onOk, onCancel, noLabel){
   modalOpen(`<h3>Підтвердження</h3>
     <p style="font-size:15px;margin:10px 0 4px">${msg}</p>
-    <div class="macts"><button data-do="cyes">${okLabel}</button><button class="ghost" data-do="cno">Скасувати</button></div>`);
+    <div class="macts"><button data-do="cyes">${okLabel}</button><button class="ghost" data-do="cno">${noLabel||'Скасувати'}</button></div>`);
   $('mhost').querySelector('[data-do="cyes"]').onclick=async()=>{ modalClose(); await onOk(); };
   $('mhost').querySelector('[data-do="cno"]').onclick=()=>{ if(onCancel) onCancel(); else modalClose(); };
 }
