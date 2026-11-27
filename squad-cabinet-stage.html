@@ -2277,7 +2277,7 @@ async function viewSquad(){
 // ── 🚀 бусти вікенду: «Автопілот Squad» і «All-in» (501). Етапів два: межа = market_config.stage1_last_round ──
 const BOOSTS = {
   squad_autopilot:{ ico:'🤖', name:'Автопілот Squad', desc:'×2 отримає найкращий серед гравців, чиї очки зараховуються: основа, що зіграла, і запасний, що зайшов на заміну. Це завжди не гірше за капітана й віце: вони подвоюють лише одного з пари, а Автопілот — найкращого з усіх зарахованих. Капітана й віце обирати не треба.' },
-  squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — основа і лавка. Ідеально 5+3, але можна й менше.' }
+  squad_all_in:   { ico:'🔥', name:'All-in',          desc:'Очки дають усі гравці складу — основа і лавка. Найбільше дає з повною лавкою (5+3).' }
 };
 // ── ⚡ позиційні бусти (532): 2x FWD / 2x MID / 2x DEF-GK — одна ціль у основі (не капітан/віце), раз за турнір, до трьох в одному вікенді, не з Автопілотом/All-in ──
 const POSB = {
@@ -2883,12 +2883,13 @@ function lnState(mine, round){
   const cap = auto ? null : st.find(p=>S.lineup[p.id].cap);
   const vice= auto ? null : st.find(p=>S.lineup[p.id].vice);
   const errs=[];
-  if(st.length<1||st.length>min5) errs.push(`основа 1..${min5}`);
+  // 27.11 (Богдан «строго 5»): в основі РІВНО squad_min — сервер вимагає те саме (SQL 757)
+  if(st.length!==min5) errs.push(mine.length<min5 ? `в основі рівно ${min5}, а гравців у складі лише ${mine.length}` : `в основі рівно ${min5} (зараз ${st.length})`);
   if(bn.length>benchMax) errs.push(`лавка ≤${benchMax}`);
   if(defgk<dgMin) errs.push(`≥${dgMin} DEF/GK в основі`);
   if(!auto && !cap) errs.push('обери капітана');
   if(round && new Date(round.deadline_at) > new Date()){ const g=boostPlanInfo(round); if(g && g.gateErr) errs.push(g.gateErr); }   // 22.11: гейт-планувальник бустів
-  if(!auto && st.length>=2 && !vice) errs.push('обери віце');   // віце обов'язковий (потребує ≥2 в основі)
+  if(!auto && !vice) errs.push('обери віце');   // 27.11: віце обов'язковий завжди (крім Автопілота) — те саме на сервері (SQL 757)
   return { st, bn, out, defgk, dgMin, min5, benchMax, cap, vice, auto, ok: errs.length===0, errs };
 }
 
@@ -2921,13 +2922,11 @@ function renderLineup(mine, round){
   const locked = !!(round && S.confOK && confOf(S.me.id, round.id));   // 533: підтверджено → фінально, лише перегляд
   const chip=(ok,txt)=>`<span class="chk ${ok?'ok':'no'}">${ok?'✓':'✕'} ${txt}</span>`;
   const val = `<div class="valid">
-    ${chip(s.st.length>=1&&s.st.length<=s.min5, `Основа ${s.st.length}/${s.min5}`)}
+    ${chip(s.st.length===s.min5, `Основа ${s.st.length}/${s.min5}`)}
     ${chip(s.defgk>=s.dgMin, `≥${s.dgMin} DEF/GK в основі`)}
     ${mine.length>=((S.cfg&&S.cfg.squad_max)||8) ? chip(mine.filter(p=>p.position==='D'||p.position==='G').length>=((S.cfg&&S.cfg.defgk_full_min)||2), `≥${(S.cfg&&S.cfg.defgk_full_min)||2} DEF/GK у складі (основа або лавка)`) : ''}
     ${s.auto ? chip(true, '🤖 Автопілот: ×2 отримає найкращий') : chip(!!s.cap, s.cap?`Капітан: ${lastName(s.cap.name)}`:'Капітан не обраний')}
-    ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`)
-                  : s.st.length===1 ? chip(true, 'Віце: не потрібен (1 в основі)')
-                  : chip(false, 'Віце не обраний'))}
+    ${s.auto ? '' : (s.vice ? chip(true, `Віце: ${lastName(s.vice.name)}`) : chip(false, 'Віце не обраний'))}
     ${chip(s.bn.length<=s.benchMax, `Лавка ${s.bn.length}/${s.benchMax}`)}
   </div>`;
   const injStart = s.st.filter(p=>p&&p.injury);
@@ -2992,6 +2991,7 @@ function renderLineup(mine, round){
          ${(!s.auto && s.st.length && !s.cap && round)?`<p class="mnote warn" style="margin:10px 0">${locked?'⚠️ Капітана нема (його могли продати/обміняти) — ×2 діставатиметься лише віце.':'⚠️ Капітана не обрано — без нього склад не підтвердити. Обери капітана або ввімкни <b>Автопілот Squad</b> нижче.'}</p>`:''}
          ${capNote}
          ${locked ? lockedBoosts() : boostBlock(round)+posBlock(mine, round)}${rivalBox(round)}
+         ${(round&&!locked&&mine.length<s.min5)?`<p class="mnote warn" id="ln-few" style="margin:0 0 8px">⚠️ Гравців у твоєму складі: <b>${mine.length}</b>. Щоб підтвердити склад на вікенд ${round.number}, в основі має бути <b>рівно ${s.min5}</b> — без підтвердженого складу очок за матчі цього вікенду не буде. Гравців купують у вкладці <b>💱 Ринок</b>.</p>`:''}
          ${(()=>{ const cur=lnSigOf(mine.filter(p=>S.lineup[p.id].role!=='out').map(p=>({id:p.id,role:S.lineup[p.id].role,ord:S.lineup[p.id].ord,cap:S.lineup[p.id].cap,vice:S.lineup[p.id].vice})), S.boost, S.pos);
                   // 533: «підтверджено» = є підтвердження (після розблокування адміном склад лишається в базі, але його треба підтвердити знову)
                   const saved=S.lnSaved!=null, same=saved && cur===S.lnSaved && (!S.confOK || locked), nTxt=round?' на Вікенд '+round.number:'';
@@ -3002,7 +3002,7 @@ function renderLineup(mine, round){
                        + (same ? (S.confOK ? '<p class="mnote" style="margin:8px 0 0">🔒 Підтвердження фінальне: змінити склад і бусти не можна. Розблокувати може лише адмін.</p>'
                                                 : '<p class="mnote" style="margin:8px 0 0">Склад збережено. Його можна змінити до дедлайну вікенду — після змін кнопка знову стане активною.</p>')
                                : (S.confOK && round ? '<p class="mnote warn" style="margin:8px 0 0">⚠️ Підтвердження ФІНАЛЬНЕ: після нього змінити склад і бусти не вийде. Коли підтвердять усі учасники, склади й бусти всіх відкриються.</p>' : '')); })()}
-         ${!s.ok&&round?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
+         ${!s.ok&&round&&!locked?`<p class="dim" style="margin-top:8px">Потрібно: ${s.errs.join(' · ')}</p>`:''}
        </div>
        <div class="panel">
          ${zoneBlock('Лавка (порядок заміни)', s.bn, 'bench', s.bn.length?'зверху — перший на заміну':'1 · 2 · 3')}
