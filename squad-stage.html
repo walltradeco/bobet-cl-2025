@@ -525,6 +525,7 @@ table.grid{min-width:0}
 .pm-injury{margin:6px 22px 0;border:1px solid #8b3438;background:#3a2020;color:#f29b9f;border-radius:10px;
   padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:7px}
 .pm-injury b{font-weight:600}.pm-injury .em{font-size:15px}
+.pm-injury{flex-wrap:wrap}.pm-injury small{flex-basis:100%;font-size:12.5px;line-height:1.35;color:#f6d3d5}
 .pm-body{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:8px 22px}   /* 20.10: картка більша (було 212) */
 .pm-cardside{display:flex;flex-direction:column;gap:8px;align-items:center}
 .pm-showcard{border:1px solid #315041;background:#102019;color:#bfd0c6;border-radius:10px;height:36px;width:100%;
@@ -1205,6 +1206,17 @@ function thI(label,t){ const i=label.lastIndexOf(' '); return (i<0? '' : esc(lab
 function firstName(f){ const p=(f||'').trim().split(/\s+/); return p.length>1?p.slice(0,-1).join(' '):''; }
 // недоступність (SofaScore): 🤕 травма / 🟥 дискваліфікація. null = здоровий
 // 20.10 (Богдан): на самій картці травму/дискваліфікацію НЕ показуємо — вони лише в «Детальній картці» (infо-смуга «Травмований»)
+// 27.11.2026 (Богдан): статус травми — рівно такий, як на SofaScore («Injured» → «Травмований», «Doubtful» → «під питанням»), нічого
+// не ховаємо й чесно кажемо, що лише передаємо його. Адмінську травму (source='admin') даними SofaScore не називаємо.
+function injInfo(j){
+  const susp=j.kind==='suspension', doubt=j.status==='doubtful';
+  const word = susp ? 'Дискваліфікований' : j.kind==='other' ? 'Недоступний' : 'Травмований';
+  const extra = j.note || j.expected_return || (doubt ? 'під питанням' : '');
+  const d = /^\d{4}-(\d\d)-(\d\d)$/.exec(j.snapshot||'');
+  const src = j.source==='admin' ? 'Статус виставив адмін ліги.'
+    : `За даними SofaScore${d?` на ${d[2]}.${d[1]}`:''}. Ми лише передаємо статус — стеж за реальними новинами.`;
+  return { icon: susp ? '🟥' : '🤕', word, extra, src };
+}
 function monogram(n){ return (n||'?').split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase(); }
 function posCat(p){ return posShort[p]||p; }
 const FLAG={ESP:'🇪🇸',ENG:'🏴',GER:'🇩🇪',DEU:'🇩🇪',ITA:'🇮🇹',FRA:'🇫🇷',UKR:'🇺🇦',POR:'🇵🇹',NED:'🇳🇱',NLD:'🇳🇱',
@@ -1555,7 +1567,8 @@ async function openBoardCard(pid){
   const seasons = gk
     ? [[card.clean_sheets??'—','Сухарі'],[card.saves??'—','Сейви'],[p.appearances??'—','Матчі']]
     : [[card.goals??'—','Голи'],[card.assists??'—','Асисти'],[p.appearances??'—','Матчі']];
-  const inj = card.injury ? `<div class="pm-injury"><span class="em">🤕</span><b>Травмований</b><span>· ${esc(card.injury.note||card.injury.expected_return||card.injury.status||'')}</span></div>` : '';
+  const ii = card.injury ? injInfo(card.injury) : null;
+  const inj = ii ? `<div class="pm-injury"><span class="em">${ii.icon}</span><b>${ii.word}</b>${ii.extra?`<span>· ${esc(ii.extra)}</span>`:''}<small>${esc(ii.src)}</small></div>` : '';
   const ownTxt = p.owner_participant_id ? ('у складі · '+esc(S.names[p.owner_participant_id]||'—')) : '🔒 Вільний';
   // очки в турнірі (434) — НАШ турнір, чисті (без капітанського ×2)
   const sp = (S.stats||{})[pid] || null;

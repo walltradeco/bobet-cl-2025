@@ -3367,11 +3367,16 @@ const LEADERBOARD_NAMES = {
   euroseason2026: ['August', 'September', 'October', 'General'],
 };
 
-// За замовчуванням відкриваємо активний турнір ЄвроСезон 2026 (це живий
-// сезон, а не архів/вітрина). Якщо його колись прибрати — падаємо на
-// останній у списку.
-let activeTournament = TOURNAMENTS.find(t => t.key === 'euroseason2026')
+// 27.11.2026 (рішення Богдана «Squad всюди»): сайт відкривається на Squad Mode (живий турнір), а «Мій кабінет» з
+// будь-якої вкладки веде в Squad-кабінет — щоб учасник не відкрив випадково кабінет завершеного ЄвроСезону. Старий
+// кабінет і Адмінка — лише прямим посиланням app.html. Повернути як було: SQUAD_IS_MAIN = false.
+const SQUAD_IS_MAIN = true;
+let activeTournament = TOURNAMENTS.find(t => t.key === (SQUAD_IS_MAIN ? 'squad' : 'euroseason2026'))
   || TOURNAMENTS[TOURNAMENTS.length - 1];
+// чи веде кабінет у Squad (отже й вікна — широкі)
+function squadCabinetOn(){
+  return SQUAD_IS_MAIN || (!!activeTournament && activeTournament.source === 'squad');
+}
 let activeTabIndex = 0;
 const cache = {};
 
@@ -5984,12 +5989,11 @@ async function refreshAll(){
   }
   labelBtn();
 
-  // Який кабінет вантажити: Squad-турнір → власний Squad-кабінет (той
-  // самий, що робили для Squad), решта — BoBet-кабінет. Та сама кнопка.
+  // Який кабінет вантажити: Squad (squadCabinetOn: з 27.11 — з будь-якої вкладки) → власний Squad-кабінет,
+  // інакше — BoBet-кабінет. Та сама кнопка.
   async function desiredCabinetSrc(){
     const stage = /(^|\/)test\.html$/.test(location.pathname);
-    if (typeof activeTournament !== 'undefined' && activeTournament
-        && activeTournament.source === 'squad'){
+    if (squadCabinetOn()){
       return 'squad-cabinet.html';
     }
     let appSrc = 'app.html';
@@ -6008,11 +6012,11 @@ async function refreshAll(){
     // Модалку показуємо одразу (і розгортаємо, якщо була згорнута)
     overlay.classList.remove('min');
     overlay.classList.add('open');
-    overlay.classList.toggle('wide', typeof activeTournament !== 'undefined' && !!activeTournament && activeTournament.source === 'squad');   // Squad — ширше вікно (синхронно, щоб не «стрибало»)
+    overlay.classList.toggle('wide', squadCabinetOn());   // Squad — ширше вікно (синхронно, щоб не «стрибало»)
     document.body.classList.add('cabinet-lock');
     minBtn.textContent = '▁ Згорнути';
-    // src залежить від активного турніру (BoBet vs Squad) — перевіряємо
-    // щоразу, бо між відкриттями турнір міг змінитись.
+    // src може залежати від активного турніру (коли SQUAD_IS_MAIN = false) —
+    // перевіряємо щоразу, бо між відкриттями турнір міг змінитись.
     const want = await desiredCabinetSrc();
     if (frame.getAttribute('src') !== want){
       frame.setAttribute('src', want);
@@ -6088,9 +6092,9 @@ async function refreshAll(){
     frame.title = title || 'Вікно';
     if(frame.getAttribute('src') !== href) frame.setAttribute('src', href);
     overlay.classList.add('open');
-    // той самий розмір, що в кабінету: широкий, якщо кабінет відкритий широким або активний турнір — Squad
+    // той самий розмір, що в кабінету: широкий, якщо кабінет відкритий широким або веде в Squad
     const cab = document.getElementById('cabinet-overlay');
-    overlay.classList.toggle('wide', !!(cab && cab.classList.contains('wide')) || (typeof activeTournament !== 'undefined' && !!activeTournament && activeTournament.source === 'squad'));
+    overlay.classList.toggle('wide', !!(cab && cab.classList.contains('wide')) || squadCabinetOn());
     document.body.classList.add('winmodal-lock');
     minBtn.textContent = '▁ Згорнути';
   }

@@ -910,6 +910,7 @@ details.dpp{background:var(--panel2);padding:8px 12px;margin:0 0 8px;border-radi
 .pm-injury{margin:6px 22px 0;border:1px solid #8b3438;background:#3a2020;color:#f29b9f;border-radius:10px;
   padding:8px 12px;font-size:12px;display:flex;align-items:center;gap:7px}
 .pm-injury b{font-weight:600}.pm-injury .em{font-size:15px}
+.pm-injury{flex-wrap:wrap}.pm-injury small{flex-basis:100%;font-size:12.5px;line-height:1.35;color:#f6d3d5}
 .pm-body{display:grid;grid-template-columns:280px 1fr;gap:20px;padding:8px 22px}   /* 20.10: картка більша (було 212) */
 .pm-cardside{display:flex;flex-direction:column;gap:8px;align-items:center}
 .pm-showcard{border:1px solid #315041;background:#102019;color:#bfd0c6;border-radius:10px;height:36px;width:100%;
@@ -2932,7 +2933,7 @@ function renderLineup(mine, round){
   const injStart = s.st.filter(p=>p&&p.injury);
   const benchStart = rolesOn() ? s.st.filter(p=>p&&(p.role||'main')==='bench') : [];
   const benchWarn = benchStart.length ? benchEarnedNote(benchStart.map(p=>p.name), 'margin:8px 0') : '';
-  const injWarn = injStart.length ? `<div class="injwarn">🤕 В основі ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
+  const injWarn = injStart.length ? `<div class="injwarn">🤕 В основі ${injStart.map(p=>{const su=p.injury.kind==='suspension';return `<b>${esc(lastName(p.name))}</b> (${su?'🟥 дискваліфікований':p.injury.status==='doubtful'?'🤕 під питанням':'🤕 травмований'})`;}).join(', ')} — ${injStart.length>1?'можуть':'може'} не зіграти й дати 0 очок. Постав із лавки заміну про запас.</div>` : '';
 
   const posBtn = (p,L) => {   // 532: ⚡ 2x … на гравця основи (не капітан/віце; не з Автопілотом/All-in)
     if(locked || !S.posOK || S.boost || L.cap || L.vice) return '';
@@ -3340,7 +3341,9 @@ async function plHydrateForm(){
   ids.forEach(id=>{ const p=S.players.find(x=>x.id===id); if(!p) return;
     document.querySelectorAll(`#view tr[data-open="${id}"] td.c-fm, #view tr[data-wp="${id}"] td.c-fm`).forEach(td=>{ td.innerHTML=plForm(p); }); });
 }
-function plInj(p){ const j=p.injury; return j? `${j.kind==='suspension'?'🟥 Дискваліфікація':'🤕 Травма'}${(j.note||j.expected_return||j.status)?` <span class="dim">· ${esc(j.note||j.expected_return||({missing:'не зіграє',out:'не зіграє',doubtful:'під питанням'}[j.status]||j.status))}</span>`:''}` : '<span class="dim">—</span>'; }
+function plInj(p){ const j=p.injury; if(!j) return '<span class="dim">—</span>'; const i=injInfo(j);
+  const label = j.kind==='suspension' ? '🟥 Дискваліфікація' : j.kind==='other' ? '🤕 Недоступний' : '🤕 Травма';
+  return `<span title="${esc(i.src)}">${label}${i.extra?` <span class="dim">· ${esc(i.extra)}</span>`:''}</span>`; }
 function starBtn(pid){
   if(!S.watchReady) return '';
   const on=S.watch.has(pid);
@@ -4318,11 +4321,21 @@ function wireClen(host){
 // контракт owned-гравця: скільки вікендів лишилось, зарплата/вікенд, «добігає» (≤1)
 function contractInfo(p){ const rl=p.contract_rounds_left; return { rl, wage:p.wage_per_round, low:(rl!=null&&rl<=1) }; }
 // недоступність гравця (SofaScore): 🤕 травма / 🟥 дискваліфікація. null = здоровий
+// 27.11.2026 (Богдан): статус травми — рівно такий, як на SofaScore («Injured» → «Травмований», «Doubtful» → «під питанням»), нічого
+// не ховаємо й чесно кажемо, що лише передаємо його. Адмінську травму (source='admin') даними SofaScore не називаємо.
+function injInfo(j){
+  const susp=j.kind==='suspension', doubt=j.status==='doubtful';
+  const word = susp ? 'Дискваліфікований' : j.kind==='other' ? 'Недоступний' : 'Травмований';
+  const extra = j.note || j.expected_return || (doubt ? 'під питанням' : '');
+  const d = /^\d{4}-(\d\d)-(\d\d)$/.exec(j.snapshot||'');
+  const src = j.source==='admin' ? 'Статус виставив адмін ліги.'
+    : `За даними SofaScore${d?` на ${d[2]}.${d[1]}`:''}. Ми лише передаємо статус — стеж за реальними новинами.`;
+  return { icon: susp ? '🟥' : '🤕', word, extra, src };
+}
 function injuryBadge(p){
   const j=p&&p.injury; if(!j) return '';
-  const susp = j.kind==='suspension';
-  const t = esc(j.note||j.expected_return||j.status||(susp?'дискваліфікований':'травмований'));
-  return `<span class="injb${susp?' susp':''}" title="${t}">${susp?'🟥':'🤕'}</span>`;
+  const i=injInfo(j);
+  return `<span class="injb${j.kind==='suspension'?' susp':''}" title="${esc(i.word+(i.extra?' · '+i.extra:'')+'. '+i.src)}">${i.icon}</span>`;
 }
 // overlay-варіант для великої картки (squadCardHTML)
 // 20.10 (Богдан): на самій картці травму/дискваліфікацію НЕ показуємо — вони лише в «Детальній картці» (infо-смуга «Травмований»)
@@ -4813,7 +4826,8 @@ async function openPlayerModal(pid){
   const seasons = gk
     ? [[card.clean_sheets??'—','Сухарі'],[card.saves??'—','Сейви'],[p.appearances??'—','Матчі']]
     : [[card.goals??'—','Голи'],[card.assists??'—','Асисти'],[p.appearances??'—','Матчі']];
-  const inj = card.injury ? `<div class="pm-injury"><span class="em">🤕</span><b>Травмований</b><span>· ${esc(card.injury.note||card.injury.expected_return||card.injury.status||'')}</span></div>` : '';
+  const ii = card.injury ? injInfo(card.injury) : null;
+  const inj = ii ? `<div class="pm-injury"><span class="em">${ii.icon}</span><b>${ii.word}</b>${ii.extra?`<span>· ${esc(ii.extra)}</span>`:''}<small>${esc(ii.src)}</small></div>` : '';
   const roleBox = ctx.owned ? (rolesOn()
     ? `<div class="pm-box"><span>Роль контракту</span><strong>${roleLabel(p.role||'main')}${(penOn()&&p.marked)?' · 🚩 порушив':''}</strong></div>`   // 539: реальна роль (приватна), не підказка К/V; 542: позначка
     : `<div class="pm-box"><span>Роль у складі</span><strong><span class="roleI">©</span> Капітан <span class="roleI v">V</span> Віце</strong></div>`) : '';
