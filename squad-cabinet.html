@@ -2308,16 +2308,15 @@ function chMetrics(st, bn){
   return { nAll:all.length, nStart:st.length, lgStart:dist(st,lg), lgAll:dist(all,lg), clAll:dist(all,p=>p.club_id),
            m:cnt(all,p=>p.position==='M'), dg:cnt(all,isDG), f:cnt(all,p=>p.position==='F'), dgS:cnt(st,isDG), fS:cnt(st,p=>p.position==='F'), mS:cnt(st,p=>p.position==='M') };
 }
-// «5 в основі» — загальне правило складу (SQL 757), а не умова самого челенджу: без нього склад не підтвердити, тож ✅ не показуємо; якщо числа вже повні — пояснюємо чому (27.11)
-const needFive = (m, full) => full && m.nStart!==5 ? ' · потрібно 5 в основі' : '';
+// ✅ — щойно зібрана умова САМОГО челенджу, навіть якщо в основі ще менше 5: без 5 склад усе одно не підтвердити, тож гравець їх добере (Богдан 27.11; не «виправляти»)
 const CH_RULES = {
   mosaic5:    m=>({ ok:m.nStart===5&&m.lgStart===5, hint:`ліг в основі: ${m.lgStart}/5` }),
-  world6:     m=>({ ok:m.nStart===5&&m.nAll>=6&&m.lgAll>=5, hint:`ліг у складі: ${m.lgAll}/5${m.nAll<6?' · потрібно щонайменше 6 гравців':''}${needFive(m, m.nAll>=6&&m.lgAll>=5)}` }),   // 707: у пулі 5 ліг (УПЛ прибрано); ліги — основа + лавка разом (на відміну від «Мозаїки»)
+  world6:     m=>({ ok:m.nAll>=6&&m.lgAll>=5, hint:`ліг у складі: ${m.lgAll}/5${m.nAll<6?' · потрібно щонайменше 6 гравців':''}` }),   // 707: у пулі 5 ліг (УПЛ прибрано)
   clubs8:     m=>({ ok:m.nAll===8&&m.clAll===8, hint:`різних клубів: ${m.clAll}/8${m.nAll<8?' · потрібно рівно 8 гравців':''}` }),
   mid5:       m=>({ ok:m.nAll===8&&m.m>=5, hint:`MID: ${m.m}/5${m.nAll<8?' · потрібно 8 гравців':''}` }),
   classic332: m=>({ ok:m.nAll===8&&m.dg===3&&m.m===3&&m.f===2, hint:`DEF/GK ${m.dg}/3 · MID ${m.m}/3 · FWD ${m.f}/2${m.nAll<8?' · потрібно 8 гравців':''}` }),
   wall4dg:    m=>({ ok:m.nStart===5&&m.dgS===4&&m.fS===1, hint:`в основі DEF/GK ${m.dgS}/4 · FWD ${m.fS}/1` }),
-  attack3:    m=>({ ok:m.nStart===5&&m.fS>=3, hint:`FWD в основі: ${m.fS}/3${needFive(m, m.fS>=3)}` }),
+  attack3:    m=>({ ok:m.fS>=3, hint:`FWD в основі: ${m.fS}/3` }),
   formation221: m=>({ ok:m.nStart===5&&m.mS===2&&m.dgS===2&&m.fS===1, hint:`в основі MID ${m.mS}/2 · DEF/GK ${m.dgS}/2 · FWD ${m.fS}/1` })
 };
 // челенджі (547): довідник, налаштування турніру й мої нарахування; немає таблиць (547 не залито) → блок ховається
