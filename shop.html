@@ -62,6 +62,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 /* сітка карток */
 .sum{font-size:13px;color:var(--text-dim);margin-bottom:10px}
 .collnote{font-size:13px;color:var(--text-dim);margin:0 0 12px;line-height:1.5}   /* 24.11: Крамниця → колекція в профілі (беклог Богдана 24.11) */
+.marketnote{background:rgba(230,193,75,.08);border:1px solid rgba(230,193,75,.45);border-radius:12px;padding:12px 16px;margin:0 0 14px;font-size:14px;line-height:1.6}   /* 28.11: поки купівля/продаж лише через адміна */
+.marketnote .t{font-weight:700;font-size:15px;color:var(--gold);margin-bottom:2px}
+.marketnote ul{margin:6px 0 0;padding-left:18px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:18px 16px}   /* 26.11: колонки тягнуться на всю ширину (≈180–215px; мініатюра _sm = 340px) */
 .grid>.sum{grid-column:1/-1}
 @media(max-width:640px){.grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px 10px}}
@@ -192,6 +195,15 @@ button:disabled{opacity:.45;cursor:not-allowed}
   <!-- ВІТРИНА (публічна) -->
   <div id="screen-shop">
     <div class="collnote">🃏 Картки колекційні: видана тобі картка потрапляє в колекцію в твоєму профілі (вкладка «Колекція»), а в кабінеті Squad її можна поставити дизайном свого гравця.</div>
+    <div class="marketnote">
+      <div class="t">🛠 Ринок карток ще в розробці</div>
+      <div>Поки що вся купівля та продаж карток — через адміна.</div>
+      <ul>
+        <li><b>Картка з Крамниці:</b> натисни «Запросити» на вільній картці й напиши адміну щодо купівлі.</li>
+        <li><b>Купівля чи продаж між учасниками:</b> теж через адміна — спишіться з ним, щоб обидві сторони підтвердили угоду. Комісія&nbsp;—&nbsp;<b>10%</b>.</li>
+        <li><b>Ціни:</b> звертайся до адміна.</li>
+      </ul>
+    </div>
     <div class="filters">
       <input id="f-q" placeholder="Пошук по назві картки…">
       <select id="f-rar"><option value="">Рідкість: усі</option><option value="rare">Rare</option><option value="mega_rare">Mega Rare</option></select>
@@ -276,8 +288,9 @@ async function loadShop(){
 }
 function renderColl(){
   const sel=$('f-coll'); if(!sel) return;
+  // 28.11: лише колекції, де є хоч одна картка (порожню, напр. Moment, ховаємо; додасться картка — зʼявиться сама)
   sel.innerHTML = '<option value="">Колекція: усі</option>' +
-    S.collReg.map(c=>`<option value="${esc(c.key)}"${S.f.coll===c.key?' selected':''}>${esc(c.title)}</option>`).join('');
+    S.collReg.filter(c=>S.cards.some(x=>x.collections.includes(c.key))).map(c=>`<option value="${esc(c.key)}"${S.f.coll===c.key?' selected':''}>${esc(c.title)}</option>`).join('');
 }
 
 function shopList(){
@@ -365,7 +378,7 @@ async function doRequest(key, kind){
   const m=$('card-msg'); m.className='msg'; m.textContent='…';
   const { error } = await sb.rpc('request_card', { p_card_key:key, p_kind:kind });
   if(error){ m.className='msg err'; m.textContent='Крамниця: '+(error.message||'не вдалось'); return; }
-  m.className='msg ok'; m.textContent = kind==='claim' ? 'Заявку «Запросити» подано — адмін розгляне. Напиши адміну за купівлю.' : 'Позначено «Цікавить» — власник побачить.';
+  m.className='msg ok'; m.textContent = kind==='claim' ? 'Заявку «Запросити» подано — адмін розгляне. Напиши адміну за купівлю.' : 'Позначено «Цікавить» — власник побачить. Угода — через адміна (комісія 10%).';
   await loadMine();
 }
 
@@ -476,8 +489,12 @@ async function loadAdmin(){
   const rows=(data||[]).filter(r=>r.requester_id!==S.me);
   if(!rows.length){ $('admin-sec').classList.add('hide'); return; }
   $('admin-sec').classList.remove('hide');
+  // імʼя заявника: у profiles видно лише власний рядок (04_rls), тому беремо довідник profile_directory (473/494);
+  // схованого там профілю (тестовий) — показуємо коротким id
+  const { data: dir } = await sb.from('profile_directory').select('id,display_name').in('id',[...new Set(rows.map(r=>r.requester_id))]);
+  const names=Object.fromEntries((dir||[]).map(p=>[p.id,p.display_name]));
   $('admin-list').innerHTML=rows.map(r=>`<div class="reqrow" data-req="${r.id}">
-    <div class="info"><span class="kindb claim">Запросити</span>${esc(r.card_key.replace(/_/g,' '))}</div>
+    <div class="info"><span class="kindb claim">Запросити</span>${esc(r.card_key.replace(/_/g,' '))} · просить <b>${esc(names[r.requester_id]||('профіль '+String(r.requester_id).slice(0,8)))}</b></div>
     <button class="act" data-approve="${r.id}">Видати</button>
     <button class="act warn" data-reject="${r.id}">Відхилити</button>
   </div>`).join('');
