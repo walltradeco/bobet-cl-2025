@@ -1426,11 +1426,11 @@
     .wrap{padding:0 12px 60px;}
     header{padding-top:22px;}
     .head-top{flex-direction:column; gap:10px; margin-bottom:14px;}
-    /* Шапка: підпис «Оновлено» окремим рядком, під ним три кнопки однакової
-       ширини (Кабінет · Профіль · Спільноти). Раніше всі елементи йшли в один
+    /* Шапка: підпис «Оновлено» окремим рядком, під ним кнопки однакової
+       ширини, по дві в ряд (Кабінет · Профіль / Спільноти · Крамниця; 28.11.2026). Раніше всі елементи йшли в один
        рядок і не влазили — сторінка розтягувалась убік (25.10.2026). Для кнопок
        потрібен селектор з #cabinet-btn: однойменні правила нижче мають id. */
-    .meta-block{text-align:left; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; align-self:stretch;}
+    .meta-block{text-align:left; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; align-self:stretch;}
     .meta-block #updated-at{grid-column:1 / -1;}
     .meta-block #cabinet-btn, .meta-block .hdr-btn2{
       margin:0; min-width:0; padding:10px 6px; font-size:12px;
@@ -2125,6 +2125,7 @@
         <button id="cabinet-btn">⚽ Кабінет</button>
         <button id="profile-btn" class="hdr-btn2" type="button">👤 Профіль</button>
         <button id="comm-btn" class="hdr-btn2" type="button">👥 Спільноти</button>
+        <button id="shop-btn" class="hdr-btn2" type="button">🃏 Крамниця</button>
       </div>
     </div>
     <!-- Підписи над навігацією: у медалей уже стоїть пара
@@ -6148,6 +6149,7 @@ async function refreshAll(){
    єдине місце, яке promote.py міняє при промоуті (profile-stage → profile). */
 const PROFILE_URL   = 'profile.html';
 const COMMUNITY_URL = 'community.html';
+const SHOP_URL      = 'shop.html';
 function openBoorbitWin(href, title){
   window.postMessage({ type:'boorbit:openwin', href, title }, location.origin);
 }
@@ -6155,6 +6157,8 @@ document.getElementById('profile-btn').addEventListener('click',
   () => openBoorbitWin(PROFILE_URL, '👤 Профіль'));
 document.getElementById('comm-btn').addEventListener('click',
   () => openBoorbitWin(COMMUNITY_URL, '👥 Спільноти'));
+document.getElementById('shop-btn').addEventListener('click',
+  () => openBoorbitWin(SHOP_URL, '🃏 Крамниця'));
 
 /* 👤 біля імені: ім'я → profile_id з публічної вьюхи profile_overview (лише
    ті, хто має профіль; архівні гравці без профілю іконки не мають). Іконка —
